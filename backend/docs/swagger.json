@@ -1,0 +1,1135 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Backend del proyecto AUTOnomIA para la FEPRO 2026 de la BUAP. Gestiona el registro y control de visitantes/accesos en condominios.",
+        "title": "AUTOnomIA API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/api/v1",
+    "paths": {
+        "/accesos": {
+            "get": {
+                "description": "Devuelve todos los accesos del admin autenticado",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accesos"
+                ],
+                "summary": "Listar accesos",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/acceso.AccesoResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Registra un nuevo acceso para el admin y genera su clave de kiosko (se devuelve en texto plano una sola vez, aqui)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accesos"
+                ],
+                "summary": "Crear acceso",
+                "parameters": [
+                    {
+                        "description": "Datos del acceso",
+                        "name": "acceso",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/acceso.AccesoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/acceso.AccesoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/accesos/{id}": {
+            "get": {
+                "description": "Busca un acceso del admin autenticado por su ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accesos"
+                ],
+                "summary": "Obtener acceso por ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del acceso",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/acceso.AccesoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Elimina un acceso del admin autenticado",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accesos"
+                ],
+                "summary": "Eliminar acceso",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del acceso",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Modifica el nombre o ubicacion de un acceso del admin autenticado",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accesos"
+                ],
+                "summary": "Modificar acceso",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del acceso",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos a modificar",
+                        "name": "acceso",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/acceso.AccesoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/acceso.AccesoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/accesos/{id}/visitantes": {
+            "post": {
+                "description": "Registra el ingreso de un nuevo visitante por un Acceso, subiendo la foto del documento y la de su rostro en la misma llamada",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "visitantes"
+                ],
+                "summary": "Registrar visitante",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del acceso",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nombre del visitante",
+                        "name": "nombre",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "INE, PASAPORTE o LICENCIA",
+                        "name": "tipo_documento",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Clave leida del documento",
+                        "name": "clave_lector",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CURP (18 caracteres)",
+                        "name": "curp",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Foto del documento (INE/pasaporte/licencia), jpg o png",
+                        "name": "foto_documento",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Foto de la cara de la persona, jpg o png",
+                        "name": "foto_rostro",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/visitantes.VisitanteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admins/{id}": {
+            "get": {
+                "description": "Busca un administrador por su ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admins"
+                ],
+                "summary": "Obtener admin por ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del admin",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/admin.AdminResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Elimina un administrador",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admins"
+                ],
+                "summary": "Eliminar admin",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del admin",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Modifica los datos de un administrador, re-hasheando su password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admins"
+                ],
+                "summary": "Modificar admin",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del admin",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos a modificar",
+                        "name": "admin",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.AdminRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/admin.AdminResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/acceso/login": {
+            "post": {
+                "description": "Da acceso a un kiosko a partir del ID de su Acceso y su clave, abriendo una sesion revocable",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Loguea a un kiosko",
+                "parameters": [
+                    {
+                        "description": "AccesoID y ClaveKiosko",
+                        "name": "acceso",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginAccesoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/auth.SesionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/acceso/{id}/revocar": {
+            "post": {
+                "description": "Revoca todas las sesiones activas del Acceso indicado, para un kiosko robado o perdido",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Revoca las sesiones de un kiosko",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del acceso",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Da acceso a un admin a partir de su correo y contraseña, devolviendo un JWT",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Loguea a un admin",
+                "parameters": [
+                    {
+                        "description": "Correo y password del Admin",
+                        "name": "admin",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/auth.JWTResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/sign-in": {
+            "post": {
+                "description": "Registra un nuevo administrador, hasheando su password con bcrypt, y devuelve su JWT",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Crear admin",
+                "parameters": [
+                    {
+                        "description": "Correo y password del nuevo Admin",
+                        "name": "admin",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/auth.JWTResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/visitantes": {
+            "get": {
+                "description": "Devuelve, paginados, los registros de visita del admin autenticado. Filtros opcionales combinables: acceso_id, tipo_documento, q (busqueda parcial en nombre/curp/clave_lector). No incluye CURP ni clave_lector en la respuesta (ver GET /visitantes/{id} para el detalle completo)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "visitantes"
+                ],
+                "summary": "Listar visitantes del admin (dashboard)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Numero de pagina (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamaño de pagina (default 20, max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Acota el listado a un Acceso especifico del admin",
+                        "name": "acceso_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "INE, PASAPORTE o LICENCIA",
+                        "name": "tipo_documento",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Busqueda parcial por nombre, CURP o clave de lector",
+                        "name": "q",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/visitantes.VisitantesPaginadosResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/visitantes/buscar": {
+            "get": {
+                "description": "Devuelve todos los registros de visita de una persona, identificada por su CURP, en cualquier Acceso del admin autenticado. Util para saber si ya vino antes y cuantas veces",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "visitantes"
+                ],
+                "summary": "Historial de visitas por CURP (dashboard)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CURP de la persona",
+                        "name": "curp",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/visitantes.HistorialVisitanteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/visitantes/{id}": {
+            "get": {
+                "description": "Busca un registro de visita especifico, sin importar a cual Acceso del admin pertenece",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "visitantes"
+                ],
+                "summary": "Obtener un registro de visita (dashboard)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del registro de visita",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/visitantes.VisitanteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "acceso.AccesoRequest": {
+            "type": "object",
+            "required": [
+                "nombre"
+            ],
+            "properties": {
+                "nombre": {
+                    "type": "string"
+                },
+                "ubicacion": {
+                    "type": "string"
+                }
+            }
+        },
+        "acceso.AccesoResponse": {
+            "type": "object",
+            "properties": {
+                "clave_kiosko": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "ubicacion": {
+                    "type": "string"
+                },
+                "usuario_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "admin.AdminRequest": {
+            "type": "object",
+            "required": [
+                "apellido_materno",
+                "apellido_paterno",
+                "correo",
+                "nombre",
+                "password"
+            ],
+            "properties": {
+                "apellido_materno": {
+                    "type": "string"
+                },
+                "apellido_paterno": {
+                    "type": "string"
+                },
+                "correo": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
+        "admin.AdminResponse": {
+            "type": "object",
+            "properties": {
+                "apellido_materno": {
+                    "type": "string"
+                },
+                "apellido_paterno": {
+                    "type": "string"
+                },
+                "correo": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.JWTResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.LoginAccesoRequest": {
+            "type": "object",
+            "required": [
+                "acceso_id",
+                "clave_kiosko"
+            ],
+            "properties": {
+                "acceso_id": {
+                    "type": "integer"
+                },
+                "clave_kiosko": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.LoginRequest": {
+            "type": "object",
+            "required": [
+                "correo",
+                "password"
+            ],
+            "properties": {
+                "correo": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "correo",
+                "password"
+            ],
+            "properties": {
+                "correo": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "auth.SesionResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "visitantes.HistorialVisitanteResponse": {
+            "type": "object",
+            "properties": {
+                "curp": {
+                    "type": "string"
+                },
+                "total_visitas": {
+                    "type": "integer"
+                },
+                "visitas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/visitantes.VisitanteResponse"
+                    }
+                }
+            }
+        },
+        "visitantes.TipoDocumento": {
+            "type": "string",
+            "enum": [
+                "INE",
+                "PASAPORTE",
+                "LICENCIA"
+            ],
+            "x-enum-varnames": [
+                "DocumentoINE",
+                "DocumentoPasaporte",
+                "DocumentoLicencia"
+            ]
+        },
+        "visitantes.VisitanteListItemResponse": {
+            "type": "object",
+            "properties": {
+                "acceso_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "tipo_documento": {
+                    "$ref": "#/definitions/visitantes.TipoDocumento"
+                }
+            }
+        },
+        "visitantes.VisitanteResponse": {
+            "type": "object",
+            "properties": {
+                "acceso_id": {
+                    "type": "integer"
+                },
+                "clave_lector": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "curp": {
+                    "type": "string"
+                },
+                "foto_documento_url": {
+                    "type": "string"
+                },
+                "foto_rostro_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "tipo_documento": {
+                    "$ref": "#/definitions/visitantes.TipoDocumento"
+                }
+            }
+        },
+        "visitantes.VisitantesPaginadosResponse": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "visitantes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/visitantes.VisitanteListItemResponse"
+                    }
+                }
+            }
+        }
+    }
+}

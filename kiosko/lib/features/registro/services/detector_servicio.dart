@@ -1,0 +1,236 @@
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
+
+class DetectorServicio {
+
+  Future<UserRegistrationModel?> analizarIne(String pathImagen) async {
+    final inputImage = InputImage.fromFilePath(pathImagen);
+    final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+
+    try {
+      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+
+      List<String> lineas = [];
+      for (TextBlock block in recognizedText.blocks) {
+        for (TextLine line in block.lines) {
+          final limpia = _limpiarLinea(line.text);
+          if (limpia.isNotEmpty) lineas.add(limpia);
+        }
+      }
+
+      final textoPlano = lineas.join(' ');
+
+      final modelo = UserRegistrationModel();
+      modelo.pathFotoIne    = pathImagen;
+      modelo.curp           = _extraerCurp(textoPlano, lineas);
+      modelo.claveElector   = _extraerClave(textoPlano, lineas);
+      modelo.nombreCompleto = _extraerNombre(lineas, modelo.curp, modelo.claveElector);
+
+      return modelo;
+
+    } catch (e) {
+      print("Error en OCR: $e");
+      return null;
+    } finally {
+      textRecognizer.close();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Limpieza
+  // ---------------------------------------------------------------------------
+  String _limpiarLinea(String raw) {
+    return raw
+        .toUpperCase()
+        .replaceAll(RegExp(r'[^A-Z0-9\s]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  String _colapsar(String s) => s.replaceAll(' ', '');
+
+  // ---------------------------------------------------------------------------
+  // CURP: 18 chars — 4 letras | 6 dígitos | H/M | 5 letras | 2 alfanum
+  // ---------------------------------------------------------------------------
+  String? _extraerCurp(String textoPlano, List<String> lineas) {
+    // Patrón tolerante: acepta O/0 e I/1 en cualquier posición
+    final patron = RegExp(r'[A-Z0-9]{4}[0-9OI]{6}[HM][A-Z]{5}[A-Z0-9]{2}');
+
+    // 1. Buscar en texto plano
+    for (final m in patron.allMatches(textoPlano)) {
+      final c = _reconstruirCurp(m.group(0)!);
+      if (c != null) return c;
+    }
+
+    // 2. Línea a línea, colapsando espacios
+    for (final linea in lineas) {
+      final token = _colapsar(linea);
+      // Probar todos los substrings de 18 chars
+      for (int k = 0; k + 18 <= token.length; k++) {
+        final c = _reconstruirCurp(token.substring(k, k + 18));
+        if (c != null) return c;
+      }
+    }
+
+    // 3. Buscar cerca de la etiqueta "CURP"
+    for (int i = 0; i < lineas.length; i++) {
+      if (!lineas[i].contains('CURP')) continue;
+      for (int j = 0; j <= 3; j++) {
+        final idx = i + j;
+        if (idx >= lineas.length) break;
+        final token = _colapsar(lineas[idx]);
+        for (int k = 0; k + 18 <= token.length; k++) {
+          final c = _reconstruirCurp(token.substring(k, k + 18));
+          if (c != null) return c;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  String? _reconstruirCurp(String token) {
+    if (token.length < 18) return null;
+    final buf = StringBuffer();
+    for (int i = 0; i < 18; i++) {
+      final c = token[i];
+      if (i >= 4 && i <= 9) {
+        // Zona numérica: O→0, I→1
+        buf.write(c == 'O' ? '0' : c == 'I' ? '1' : c);
+      } else if (i == 10) {
+        if (c != 'H' && c != 'M') return null;
+        buf.write(c);
+      } else {
+        // Zona alfabética: 0→O, 1→I
+        buf.write(c == '0' ? 'O' : c == '1' ? 'I' : c);
+      }
+    }
+    final r = buf.toString();
+    return RegExp(r'^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]{2}$').hasMatch(r) ? r : null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Clave de elector: 18 chars — 6 letras | 6 dígitos | H/M | 5 dígitos
+  // ---------------------------------------------------------------------------
+  String? _extraerClave(String textoPlano, List<String> lineas) {
+    // 1. Texto plano directo
+    final result = _buscarClaveEnToken(textoPlano);
+    if (result != null) return result;
+
+    // 2. Línea a línea
+    for (final linea in lineas) {
+      final r = _buscarClaveEnToken(_colapsar(linea));
+      if (r != null) return r;
+    }
+
+    // 3. Cerca de "CLAVE" / "ELECTOR": concatenar ventana de líneas adyacentes
+    for (int i = 0; i < lineas.length; i++) {
+      if (!lineas[i].contains('CLAVE') && !lineas[i].contains('ELECTOR')) continue;
+      // Concatenar hasta 5 líneas alrededor de la etiqueta
+      for (int ventana = 2; ventana <= 5; ventana++) {
+        for (int inicio = i - 1; inicio <= i + 1; inicio++) {
+          if (inicio < 0) continue;
+          final fin = inicio + ventana;
+          if (fin > lineas.length) continue;
+          final concatenado = _colapsar(lineas.sublist(inicio, fin).join(' '));
+          final r = _buscarClaveEnToken(concatenado);
+          if (r != null) return r;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  String? _buscarClaveEnToken(String token) {
+    for (int k = 0; k + 18 <= token.length; k++) {
+      final c = _reconstruirClave(token.substring(k, k + 18));
+      if (c != null) return c;
+    }
+    return null;
+  }
+
+  String? _reconstruirClave(String token) {
+    if (token.length < 18) return null;
+    final buf = StringBuffer();
+    for (int i = 0; i < 18; i++) {
+      final c = token[i];
+      if (i < 6) {
+        // Zona alfabética: 0→O, 1→I
+        buf.write(c == '0' ? 'O' : c == '1' ? 'I' : c);
+      } else if (i >= 6 && i <= 11) {
+        // Zona numérica: O→0, I→1
+        buf.write(c == 'O' ? '0' : c == 'I' ? '1' : c);
+      } else if (i == 12) {
+        // El OCR frecuentemente confunde H con N, y M con N o W
+        if (c == 'H' || c == 'M') {
+          buf.write(c);
+        } else if (c == 'N' || c == 'K') {
+          buf.write('H'); // corrección de confusión común
+        } else if (c == 'W') {
+          buf.write('M'); // corrección de confusión común
+        } else {
+          return null;
+        }
+      } else {
+        // Zona numérica final: O→0, I→1
+        buf.write(c == 'O' ? '0' : c == 'I' ? '1' : c);
+      }
+    }
+    final r = buf.toString();
+    return RegExp(r'^[A-Z]{6}\d{6}[HM]\d{5}$').hasMatch(r) ? r : null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Nombre: busca cerca de "NOMBRE" / "APELLIDOS" / "APELLIDO PATERNO"
+  // ---------------------------------------------------------------------------
+  String? _extraerNombre(List<String> lineas, String? curp, String? clave) {
+    final filtros = {
+      'DOMICILIO', 'CALLE', 'AVENIDA', 'AV', 'COL', 'COLONIA',
+      'MUNICIPIO', 'ESTADO', 'CP', 'NUM', 'NUMERO', 'INTERIOR',
+      'EXTERIOR', 'SECCION', 'VIGENCIA', 'CURP', 'CLAVE', 'FOLIO',
+      'MEXICO', 'ELECTOR', 'REGISTRO', 'FEDERAL', 'EMISION',
+    };
+
+    final curpRx  = RegExp(r'[A-Z0-9]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]{2}');
+    final claveRx = RegExp(r'[A-Z]{6}\d{6}[HM]\d{5}');
+
+    bool esValida(String linea) {
+      if (curpRx.hasMatch(linea) || claveRx.hasMatch(linea)) return false;
+      if (RegExp(r'\d').hasMatch(linea)) return false;
+      final palabras = linea.split(' ').where((p) => p.isNotEmpty).toSet();
+      if (palabras.any((p) => filtros.contains(p))) return false;
+      if (linea.length < 3) return false;
+      return true;
+    }
+
+    // Etiquetas que preceden al nombre en una INE
+    final etiquetas = ['NOMBRE', 'APELLIDOS', 'APELLIDO PATERNO', 'APELLIDO'];
+
+    for (final etiqueta in etiquetas) {
+      for (int i = 0; i < lineas.length; i++) {
+        if (!lineas[i].contains(etiqueta)) continue;
+
+        // Caso 1: nombre en la misma línea que la etiqueta
+        final sinEtiqueta = lineas[i]
+            .replaceAll(RegExp(r'\bAPELLIDO(S)?\s*(PATERNO|MATERNO)?\b'), '')
+            .replaceAll(RegExp(r'\bNOMBRES?\b'), '')
+            .trim();
+        if (sinEtiqueta.length > 3 && esValida(sinEtiqueta)) return sinEtiqueta;
+
+        // Caso 2: nombre en las líneas siguientes
+        String acumulado = '';
+        for (int j = 1; j <= 4; j++) {
+          if (i + j >= lineas.length) break;
+          final linea = lineas[i + j];
+          if (!esValida(linea)) break;
+          acumulado += '$linea ';
+        }
+        final resultado = acumulado.trim();
+        if (resultado.isNotEmpty) return resultado;
+      }
+    }
+
+    return null;
+  }
+}

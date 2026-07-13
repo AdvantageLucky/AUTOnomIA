@@ -1,0 +1,766 @@
+basePath: /api/v1
+definitions:
+  acceso.AccesoRequest:
+    properties:
+      nombre:
+        type: string
+      ubicacion:
+        type: string
+    required:
+    - nombre
+    type: object
+  acceso.AccesoResponse:
+    properties:
+      clave_kiosko:
+        type: string
+      id:
+        type: integer
+      nombre:
+        type: string
+      ubicacion:
+        type: string
+      usuario_id:
+        type: integer
+    type: object
+  admin.AdminRequest:
+    properties:
+      apellido_materno:
+        type: string
+      apellido_paterno:
+        type: string
+      correo:
+        type: string
+      nombre:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - apellido_materno
+    - apellido_paterno
+    - correo
+    - nombre
+    - password
+    type: object
+  admin.AdminResponse:
+    properties:
+      apellido_materno:
+        type: string
+      apellido_paterno:
+        type: string
+      correo:
+        type: string
+      id:
+        type: integer
+      nombre:
+        type: string
+    type: object
+  auth.JWTResponse:
+    properties:
+      access_token:
+        type: string
+    type: object
+  auth.LoginAccesoRequest:
+    properties:
+      acceso_id:
+        type: integer
+      clave_kiosko:
+        type: string
+    required:
+    - acceso_id
+    - clave_kiosko
+    type: object
+  auth.LoginRequest:
+    properties:
+      correo:
+        type: string
+      password:
+        type: string
+    required:
+    - correo
+    - password
+    type: object
+  auth.RegisterRequest:
+    properties:
+      correo:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - correo
+    - password
+    type: object
+  auth.SesionResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  visitantes.HistorialVisitanteResponse:
+    properties:
+      curp:
+        type: string
+      total_visitas:
+        type: integer
+      visitas:
+        items:
+          $ref: '#/definitions/visitantes.VisitanteResponse'
+        type: array
+    type: object
+  visitantes.TipoDocumento:
+    enum:
+    - INE
+    - PASAPORTE
+    - LICENCIA
+    type: string
+    x-enum-varnames:
+    - DocumentoINE
+    - DocumentoPasaporte
+    - DocumentoLicencia
+  visitantes.VisitanteListItemResponse:
+    properties:
+      acceso_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      nombre:
+        type: string
+      tipo_documento:
+        $ref: '#/definitions/visitantes.TipoDocumento'
+    type: object
+  visitantes.VisitanteResponse:
+    properties:
+      acceso_id:
+        type: integer
+      clave_lector:
+        type: string
+      created_at:
+        type: string
+      curp:
+        type: string
+      foto_documento_url:
+        type: string
+      foto_rostro_url:
+        type: string
+      id:
+        type: integer
+      nombre:
+        type: string
+      tipo_documento:
+        $ref: '#/definitions/visitantes.TipoDocumento'
+    type: object
+  visitantes.VisitantesPaginadosResponse:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      visitantes:
+        items:
+          $ref: '#/definitions/visitantes.VisitanteListItemResponse'
+        type: array
+    type: object
+info:
+  contact: {}
+  description: Backend del proyecto AUTOnomIA para la FEPRO 2026 de la BUAP. Gestiona
+    el registro y control de visitantes/accesos en condominios.
+  title: AUTOnomIA API
+  version: "1.0"
+paths:
+  /accesos:
+    get:
+      description: Devuelve todos los accesos del admin autenticado
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/acceso.AccesoResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar accesos
+      tags:
+      - accesos
+    post:
+      consumes:
+      - application/json
+      description: Registra un nuevo acceso para el admin y genera su clave de kiosko
+        (se devuelve en texto plano una sola vez, aqui)
+      parameters:
+      - description: Datos del acceso
+        in: body
+        name: acceso
+        required: true
+        schema:
+          $ref: '#/definitions/acceso.AccesoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/acceso.AccesoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear acceso
+      tags:
+      - accesos
+  /accesos/{id}:
+    delete:
+      description: Elimina un acceso del admin autenticado
+      parameters:
+      - description: ID del acceso
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar acceso
+      tags:
+      - accesos
+    get:
+      description: Busca un acceso del admin autenticado por su ID
+      parameters:
+      - description: ID del acceso
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/acceso.AccesoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener acceso por ID
+      tags:
+      - accesos
+    patch:
+      consumes:
+      - application/json
+      description: Modifica el nombre o ubicacion de un acceso del admin autenticado
+      parameters:
+      - description: ID del acceso
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Datos a modificar
+        in: body
+        name: acceso
+        required: true
+        schema:
+          $ref: '#/definitions/acceso.AccesoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/acceso.AccesoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Modificar acceso
+      tags:
+      - accesos
+  /accesos/{id}/visitantes:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Registra el ingreso de un nuevo visitante por un Acceso, subiendo
+        la foto del documento y la de su rostro en la misma llamada
+      parameters:
+      - description: ID del acceso
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Nombre del visitante
+        in: formData
+        name: nombre
+        required: true
+        type: string
+      - description: INE, PASAPORTE o LICENCIA
+        in: formData
+        name: tipo_documento
+        required: true
+        type: string
+      - description: Clave leida del documento
+        in: formData
+        name: clave_lector
+        required: true
+        type: string
+      - description: CURP (18 caracteres)
+        in: formData
+        name: curp
+        required: true
+        type: string
+      - description: Foto del documento (INE/pasaporte/licencia), jpg o png
+        in: formData
+        name: foto_documento
+        required: true
+        type: file
+      - description: Foto de la cara de la persona, jpg o png
+        in: formData
+        name: foto_rostro
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/visitantes.VisitanteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Registrar visitante
+      tags:
+      - visitantes
+  /admins/{id}:
+    delete:
+      description: Elimina un administrador
+      parameters:
+      - description: ID del admin
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar admin
+      tags:
+      - admins
+    get:
+      description: Busca un administrador por su ID
+      parameters:
+      - description: ID del admin
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/admin.AdminResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener admin por ID
+      tags:
+      - admins
+    patch:
+      consumes:
+      - application/json
+      description: Modifica los datos de un administrador, re-hasheando su password
+      parameters:
+      - description: ID del admin
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Datos a modificar
+        in: body
+        name: admin
+        required: true
+        schema:
+          $ref: '#/definitions/admin.AdminRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/admin.AdminResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Modificar admin
+      tags:
+      - admins
+  /auth/acceso/{id}/revocar:
+    post:
+      description: Revoca todas las sesiones activas del Acceso indicado, para un
+        kiosko robado o perdido
+      parameters:
+      - description: ID del acceso
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Revoca las sesiones de un kiosko
+      tags:
+      - auth
+  /auth/acceso/login:
+    post:
+      consumes:
+      - application/json
+      description: Da acceso a un kiosko a partir del ID de su Acceso y su clave,
+        abriendo una sesion revocable
+      parameters:
+      - description: AccesoID y ClaveKiosko
+        in: body
+        name: acceso
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginAccesoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.SesionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Loguea a un kiosko
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Da acceso a un admin a partir de su correo y contraseña, devolviendo
+        un JWT
+      parameters:
+      - description: Correo y password del Admin
+        in: body
+        name: admin
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.JWTResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Loguea a un admin
+      tags:
+      - auth
+  /auth/sign-in:
+    post:
+      consumes:
+      - application/json
+      description: Registra un nuevo administrador, hasheando su password con bcrypt,
+        y devuelve su JWT
+      parameters:
+      - description: Correo y password del nuevo Admin
+        in: body
+        name: admin
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.JWTResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear admin
+      tags:
+      - auth
+  /visitantes:
+    get:
+      description: 'Devuelve, paginados, los registros de visita del admin autenticado.
+        Filtros opcionales combinables: acceso_id, tipo_documento, q (busqueda parcial
+        en nombre/curp/clave_lector). No incluye CURP ni clave_lector en la respuesta
+        (ver GET /visitantes/{id} para el detalle completo)'
+      parameters:
+      - description: Numero de pagina (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Tamaño de pagina (default 20, max 100)
+        in: query
+        name: page_size
+        type: integer
+      - description: Acota el listado a un Acceso especifico del admin
+        in: query
+        name: acceso_id
+        type: integer
+      - description: INE, PASAPORTE o LICENCIA
+        in: query
+        name: tipo_documento
+        type: string
+      - description: Busqueda parcial por nombre, CURP o clave de lector
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/visitantes.VisitantesPaginadosResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar visitantes del admin (dashboard)
+      tags:
+      - visitantes
+  /visitantes/{id}:
+    get:
+      description: Busca un registro de visita especifico, sin importar a cual Acceso
+        del admin pertenece
+      parameters:
+      - description: ID del registro de visita
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/visitantes.VisitanteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener un registro de visita (dashboard)
+      tags:
+      - visitantes
+  /visitantes/buscar:
+    get:
+      description: Devuelve todos los registros de visita de una persona, identificada
+        por su CURP, en cualquier Acceso del admin autenticado. Util para saber si
+        ya vino antes y cuantas veces
+      parameters:
+      - description: CURP de la persona
+        in: query
+        name: curp
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/visitantes.HistorialVisitanteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Historial de visitas por CURP (dashboard)
+      tags:
+      - visitantes
+swagger: "2.0"
