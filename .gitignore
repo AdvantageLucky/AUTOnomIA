@@ -1,0 +1,13 @@
+# ai reviewers
+CLAUDE.md
+GEMINI.md
+
+# enviroment keys
+.env
+
+# backend executables
+main
+
+# web dashboard
+web/uploads/visitantes/*
+!web/uploads/visitantes/.gitkeep
