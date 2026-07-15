@@ -7,13 +7,13 @@ class VisitorTypeViewModel extends ChangeNotifier {
   final List<RegisterOptionModel> options = [
     RegisterOptionModel(
       id: 'tengo_invitacion',
-      title: 'Tengo invitación',
+      title: 'Escanear invitación',
       subtitle: '',
-      icon: Icons.people_rounded,
+      icon: Icons.qr_code_scanner_rounded,
     ),
     RegisterOptionModel(
       id: 'soy_visitante',
-      title: 'Soy visitante',
+      title: 'No tengo invitación',
       subtitle: '',
       icon: Icons.badge_rounded,
     ),

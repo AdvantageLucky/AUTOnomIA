@@ -6,7 +6,7 @@ GEMINI.md
 .env
 
 # backend executables
-main
+/backend/main
 
 # web dashboard
 web/uploads/visitantes/*

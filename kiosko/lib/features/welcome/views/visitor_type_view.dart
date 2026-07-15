@@ -229,6 +229,7 @@ class _VisitorTypeViewState extends State<VisitorTypeView> {
             const SizedBox(height: 14),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: presionado ? Colors.white : const Color(0xFFD0CBCB),
                 fontSize: 18,
