@@ -14,3 +14,5 @@ type Residente struct {
 	Telefono        string
 	AccesoID        uint `gorm:"not null;index"`
 }
+
+func (Residente) TableName() string { return "residentes" }

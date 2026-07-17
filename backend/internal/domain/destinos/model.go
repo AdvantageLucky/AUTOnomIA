@@ -11,3 +11,5 @@ type Destino struct {
 	Titular  string `gorm:"not null"` // nombre completo del residente
 	AccesoID uint   `gorm:"not null;index"`
 }
+
+func (Destino) TableName() string { return "destinos" }

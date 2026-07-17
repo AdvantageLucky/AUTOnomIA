@@ -34,3 +34,5 @@ type Visita struct {
 	Estado           EstadoVisita  `gorm:"not null;default:'PENDIENTE'"`
 	AccesoID         uint          `gorm:"not null;index"`
 }
+
+func (Visita) TableName() string { return "visitas" }
