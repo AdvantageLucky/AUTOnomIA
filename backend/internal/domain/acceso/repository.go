@@ -60,6 +60,26 @@ func (r *Repository) Update(a *Acceso, adminID uint) error {
 	return nil
 }
 
+// FindConfigByAccesoID devuelve la AccesoConfig del kiosko; la crea con defaults si no existe.
+func (r *Repository) FindConfigByAccesoID(accesoID uint) (*AccesoConfig, error) {
+	var cfg AccesoConfig
+	err := r.db.Where("acceso_id = ?", accesoID).First(&cfg).Error
+	if err == gorm.ErrRecordNotFound {
+		cfg = AccesoConfig{AccesoID: accesoID}
+		if err := r.db.Create(&cfg).Error; err != nil {
+			return nil, err
+		}
+		return &cfg, nil
+	}
+	return &cfg, err
+}
+
+// UpdateConfig guarda los campos de AccesoConfig para el acceso indicado.
+// Solo admins que posean el acceso deben poder llamar esto (validado en el handler).
+func (r *Repository) UpdateConfig(cfg *AccesoConfig) error {
+	return r.db.Save(cfg).Error
+}
+
 // Delete elimina un Acceso usando acceso_id y admin_id
 func (r *Repository) Delete(id uint, adminID uint) error {
 	result := r.db.Where("admin_id = ?", adminID).Delete(&Acceso{}, id)

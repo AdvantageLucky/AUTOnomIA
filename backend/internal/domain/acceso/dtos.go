@@ -12,6 +12,57 @@ type AccesoRequest struct {
 	Ubicacion string `json:"ubicacion"`
 }
 
+// AccesoConfigRequest DTO para actualizar la configuración de un kiosko
+type AccesoConfigRequest struct {
+	ColorKiosko          *string `json:"color_kiosko"`
+	IdiomaKiosko         *string `json:"idioma_kiosko"`
+	FotoPlacaVisitante   *bool   `json:"foto_placa_visitante"`
+	FotoRostroVisitante  *bool   `json:"foto_rostro_visitante"`
+	FotoIneVisitante     *bool   `json:"foto_ine_visitante"`
+	FotoPlacaInvitado    *bool   `json:"foto_placa_invitado"`
+	FotoRostroInvitado   *bool   `json:"foto_rostro_invitado"`
+	FotoIneInvitado      *bool   `json:"foto_ine_invitado"`
+	TiempoEsperaMin      *int    `json:"tiempo_espera_min"`
+	HorarioInicio        *string `json:"horario_inicio"`
+	HorarioFin           *string `json:"horario_fin"`
+	MensajeBienvenida    *string `json:"mensaje_bienvenida"`
+}
+
+// AccesoConfigResponse DTO de respuesta de la config del kiosko
+type AccesoConfigResponse struct {
+	AccesoID             uint   `json:"acceso_id"`
+	ColorKiosko          string `json:"color_kiosko"`
+	IdiomaKiosko         string `json:"idioma_kiosko"`
+	FotoPlacaVisitante   bool   `json:"foto_placa_visitante"`
+	FotoRostroVisitante  bool   `json:"foto_rostro_visitante"`
+	FotoIneVisitante     bool   `json:"foto_ine_visitante"`
+	FotoPlacaInvitado    bool   `json:"foto_placa_invitado"`
+	FotoRostroInvitado   bool   `json:"foto_rostro_invitado"`
+	FotoIneInvitado      bool   `json:"foto_ine_invitado"`
+	TiempoEsperaMin      int    `json:"tiempo_espera_min"`
+	HorarioInicio        string `json:"horario_inicio"`
+	HorarioFin           string `json:"horario_fin"`
+	MensajeBienvenida    string `json:"mensaje_bienvenida"`
+}
+
+func toConfigResponse(cfg *AccesoConfig) AccesoConfigResponse {
+	return AccesoConfigResponse{
+		AccesoID:            cfg.AccesoID,
+		ColorKiosko:         cfg.ColorKiosko,
+		IdiomaKiosko:        cfg.IdiomaKiosko,
+		FotoPlacaVisitante:  cfg.FotoPlacaVisitante,
+		FotoRostroVisitante: cfg.FotoRostroVisitante,
+		FotoIneVisitante:    cfg.FotoIneVisitante,
+		FotoPlacaInvitado:   cfg.FotoPlacaInvitado,
+		FotoRostroInvitado:  cfg.FotoRostroInvitado,
+		FotoIneInvitado:     cfg.FotoIneInvitado,
+		TiempoEsperaMin:     cfg.TiempoEsperaMin,
+		HorarioInicio:       cfg.HorarioInicio,
+		HorarioFin:          cfg.HorarioFin,
+		MensajeBienvenida:   cfg.MensajeBienvenida,
+	}
+}
+
 // AccesoResponse DTO para devolver info de un acceso despues de ser creado/modificado
 // ClaveKiosko solo viaja en la respuesta de RegisterAccess (texto plano, una sola vez); en cualquier
 // otra respuesta queda vacio y se omite del JSON, porque el servidor solo guarda su hash bcrypt
