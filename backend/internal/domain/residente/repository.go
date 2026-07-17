@@ -40,3 +40,16 @@ func (r *Repository) FindByAccesoID(accesoID uint) ([]Residente, error) {
 	}
 	return list, nil
 }
+
+// FindAllByAdminID devuelve todos los residentes de todos los accesos del admin.
+// Requiere join con accesos para acotar por admin_id (ver ADR-0015).
+func (r *Repository) FindAllByAdminID(adminID uint) ([]Residente, error) {
+	var list []Residente
+	if err := r.db.
+		Joins("JOIN accesos ON accesos.id = residentes.acceso_id").
+		Where("accesos.admin_id = ? AND accesos.deleted_at IS NULL", adminID).
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}

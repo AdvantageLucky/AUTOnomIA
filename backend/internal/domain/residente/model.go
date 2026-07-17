@@ -13,6 +13,7 @@ type Residente struct {
 	CasaDestino     string `gorm:"not null"` // "Torre B, Depto 102" — coincide con Destino.Nombre
 	Telefono        string
 	AccesoID        uint `gorm:"not null;index"`
+	TiempoEsperaMin *int // nil = usar el del AccesoConfig del kiosko
 }
 
 func (Residente) TableName() string { return "residentes" }

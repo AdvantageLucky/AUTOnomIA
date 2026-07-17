@@ -144,3 +144,21 @@ func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {
 
 	c.JSON(http.StatusOK, items)
 }
+
+// ListarResidentesAdmin lista todos los residentes de todos los accesos del admin
+func (h *Handler) ListarResidentesAdmin(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+
+	list, err := h.repo.FindAllByAdminID(adminID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]ResidenteResponse, 0, len(list))
+	for _, r := range list {
+		items = append(items, toResidenteResponse(r))
+	}
+
+	c.JSON(http.StatusOK, items)
+}
