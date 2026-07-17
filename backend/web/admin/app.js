@@ -20,6 +20,9 @@
       hero_sub: "Auto-registro de visitantes para comunidades cerradas. Supervisa bitácoras, verifica visitas y gestiona tus entradas desde un solo lugar.",
       dark_mode: "Modo oscuro",
       light_mode: "Modo claro",
+      preferences: "Preferencias",
+      pref_theme: "Apariencia",
+      pref_lang: "Idioma",
       nav_general: "General",
       nav_dashboard: "Inicio",
       nav_visitas: "Visitas",
@@ -124,6 +127,9 @@
       hero_sub: "Self-registration for gated communities. Monitor logs, verify visits and manage your entries from one place.",
       dark_mode: "Dark mode",
       light_mode: "Light mode",
+      preferences: "Preferences",
+      pref_theme: "Appearance",
+      pref_lang: "Language",
       nav_general: "General",
       nav_dashboard: "Home",
       nav_visitas: "Visits",
@@ -238,15 +244,21 @@
     const saved = localStorage.getItem("autonomia_theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const dark = saved ? saved === "dark" : prefersDark;
-    setTheme(dark ? "dark" : "light");
+    setTheme(dark ? "dark" : "light", false);
   }
 
-  function setTheme(theme) {
+  function setTheme(theme, animate = true) {
+    if (animate) {
+      document.documentElement.classList.add("theme-transitioning");
+      setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 260);
+    }
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("autonomia_theme", theme);
     document.getElementById("icon-theme-dark").hidden = theme === "dark";
     document.getElementById("icon-theme-light").hidden = theme === "light";
     document.getElementById("label-theme").textContent = theme === "dark" ? t("light_mode") : t("dark_mode");
+    const subEl = document.getElementById("pref-theme-sub");
+    if (subEl) subEl.textContent = theme === "dark" ? t("light_mode") : t("dark_mode");
   }
 
   document.getElementById("btn-theme").addEventListener("click", () => {

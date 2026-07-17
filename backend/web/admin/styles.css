@@ -2,6 +2,16 @@
 
 [hidden] { display: none !important; }
 
+/* Transición suave al cambiar de tema */
+html.theme-transitioning,
+html.theme-transitioning * {
+  transition:
+    background-color 0.22s ease,
+    color 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease !important;
+}
+
 /* ========== TOKENS ========== */
 :root {
   --bg:         #F5F3F0;
@@ -224,9 +234,7 @@ label {
   margin-bottom: 6px;
 }
 
-input[type="email"],
-input[type="password"],
-input[type="text"],
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]),
 select,
 .mono-input {
   width: 100%;
@@ -236,10 +244,12 @@ select,
   background: var(--surface);
   color: var(--text);
   font-size: 14px;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
   outline: none;
 }
-input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"])::placeholder { color: var(--text-3); }
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
 
 .form-group { margin-bottom: 16px; }
 
@@ -954,6 +964,39 @@ input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px v
 }
 
 .form-actions { margin-top: 20px; display: flex; gap: 10px; }
+
+/* Preferencias en perfil */
+.pref-list { display: flex; flex-direction: column; gap: 2px; }
+
+.pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pref-row:last-child { border-bottom: none; }
+
+.pref-label { font-size: 14px; color: var(--text); font-weight: 500; }
+.pref-sub   { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.pref-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+.pref-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.pref-toggle svg { flex-shrink: 0; }
 
 /* ========== MODAL ========== */
 .modal-overlay {

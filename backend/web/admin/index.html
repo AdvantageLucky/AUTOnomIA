@@ -108,16 +108,6 @@
     <div class="sidebar-spacer"></div>
 
     <div class="sidebar-bottom">
-      <button class="bottom-btn" id="btn-theme">
-        <svg id="icon-theme-dark" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M15.5 11A7 7 0 1 1 7 2.5 5.5 5.5 0 0 0 15.5 11z"/></svg>
-        <svg id="icon-theme-light" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" hidden><circle cx="9" cy="9" r="3.5"/><line x1="9" y1="1" x2="9" y2="3"/><line x1="9" y1="15" x2="9" y2="17"/><line x1="1" y1="9" x2="3" y2="9"/><line x1="15" y1="9" x2="17" y2="9"/><line x1="3.5" y1="3.5" x2="5" y2="5"/><line x1="13" y1="13" x2="14.5" y2="14.5"/><line x1="14.5" y1="3.5" x2="13" y2="5"/><line x1="5" y1="13" x2="3.5" y2="14.5"/></svg>
-        <span id="label-theme" data-i18n="dark_mode">Modo oscuro</span>
-      </button>
-      <button class="bottom-btn" id="btn-lang">
-        <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="7"/><line x1="9" y1="2" x2="9" y2="16"/><path d="M2 9h14"/><path d="M3 5c2 1 8 1 12 0"/><path d="M3 13c2-1 8-1 12 0"/></svg>
-        <span id="label-lang">EN</span>
-      </button>
-
       <div class="sidebar-user">
         <div class="avatar" id="sidebar-avatar">··</div>
         <div class="sidebar-user-info">
@@ -209,7 +199,7 @@
         <div class="search-row">
           <div class="search-wrap">
             <svg class="search-icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
-            <input id="vis-quick-search" placeholder="Buscar por nombre, CURP o clave…">
+            <input id="vis-quick-search" type="text" placeholder="Buscar por nombre, CURP o clave…">
           </div>
           <select id="vis-filter-tipo" class="search-select">
             <option value="" data-i18n="all_docs">Todos los documentos</option>
@@ -366,10 +356,10 @@
           <form id="perfil-form">
             <div class="form-section-title" data-i18n="personal_data">Datos personales</div>
             <div class="form-grid-2">
-              <div class="form-group"><label data-i18n="first_name">Nombre</label><input id="perfil-nombre" required></div>
+              <div class="form-group"><label data-i18n="first_name">Nombre</label><input id="perfil-nombre" type="text" required></div>
               <div class="form-group"><label data-i18n="email">Correo</label><input id="perfil-correo" type="email" required></div>
-              <div class="form-group"><label data-i18n="paternal">Apellido paterno</label><input id="perfil-paterno" required></div>
-              <div class="form-group"><label data-i18n="maternal">Apellido materno</label><input id="perfil-materno" required></div>
+              <div class="form-group"><label data-i18n="paternal">Apellido paterno</label><input id="perfil-paterno" type="text" required></div>
+              <div class="form-group"><label data-i18n="maternal">Apellido materno</label><input id="perfil-materno" type="text" required></div>
             </div>
             <div class="form-section-title" data-i18n="confirm_pass">Confirmar contraseña</div>
             <div class="form-hint" style="margin-bottom:12px" data-i18n="pass_hint">La API requiere reenviar tu contraseña al actualizar el perfil.</div>
@@ -380,6 +370,33 @@
               <button type="submit" class="btn-primary" data-i18n="save">Guardar cambios</button>
             </div>
           </form>
+        </div>
+
+        <div class="panel panel-padded" style="margin-top:16px">
+          <div class="form-section-title" style="margin-top:0" data-i18n="preferences">Preferencias</div>
+          <div class="pref-list">
+            <div class="pref-row">
+              <div>
+                <div class="pref-label" data-i18n="pref_theme">Apariencia</div>
+                <div class="pref-sub" id="pref-theme-sub" data-i18n="dark_mode">Modo oscuro</div>
+              </div>
+              <button class="pref-toggle" id="btn-theme">
+                <svg id="icon-theme-dark" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M15.5 11A7 7 0 1 1 7 2.5 5.5 5.5 0 0 0 15.5 11z"/></svg>
+                <svg id="icon-theme-light" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" hidden><circle cx="9" cy="9" r="3.5"/><line x1="9" y1="1" x2="9" y2="3"/><line x1="9" y1="15" x2="9" y2="17"/><line x1="1" y1="9" x2="3" y2="9"/><line x1="15" y1="9" x2="17" y2="9"/><line x1="3.5" y1="3.5" x2="5" y2="5"/><line x1="13" y1="13" x2="14.5" y2="14.5"/><line x1="14.5" y1="3.5" x2="13" y2="5"/><line x1="5" y1="13" x2="3.5" y2="14.5"/></svg>
+                <span id="label-theme" data-i18n="dark_mode">Modo oscuro</span>
+              </button>
+            </div>
+            <div class="pref-row">
+              <div>
+                <div class="pref-label" data-i18n="pref_lang">Idioma</div>
+                <div class="pref-sub" id="pref-lang-sub">Español / English</div>
+              </div>
+              <button class="pref-toggle" id="btn-lang">
+                <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="7"/><line x1="9" y1="2" x2="9" y2="16"/><path d="M2 9h14"/><path d="M3 5c2 1 8 1 12 0"/><path d="M3 13c2-1 8-1 12 0"/></svg>
+                <span id="label-lang">EN</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
