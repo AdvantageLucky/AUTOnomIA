@@ -78,6 +78,8 @@ func registerAccesoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 		a.GET("/:id", accesoHandler.GetAccessByID)
 		a.PATCH("/:id", accesoHandler.PatchAccess)
 		a.DELETE("/:id", accesoHandler.DeleteAccess)
+		a.GET("/:id/config", accesoHandler.GetConfig)
+		a.PATCH("/:id/config", accesoHandler.PatchConfig)
 	}
 }
 
@@ -102,6 +104,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 		d.GET("/", visitaHandler.ListarVisitas)
 		d.GET("/buscar", visitaHandler.HistorialVisita)
 		d.GET("/:id", visitaHandler.GetVisitaByID)
+		d.PATCH("/:id/estado", visitaHandler.ActualizarEstado)
 	}
 }
 
@@ -154,5 +157,6 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string)
 	adminR.Use(auth.RequireAdmin(jwtSecret))
 	{
 		adminR.POST("/", residenteHandler.CrearResidente)
+		adminR.GET("/", residenteHandler.ListarResidentesAdmin)
 	}
 }
