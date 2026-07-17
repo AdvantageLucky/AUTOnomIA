@@ -10,7 +10,12 @@ class UserRegistrationModel {
   String? pathFotoIne;
   String? pathFotoRostro;
 
-  // Constructor de la clase 
+  // Datos de la visita capturados en la pantalla de confirmación
+  String? motivoVisita;
+  String? casaDestino;
+  String? placa;
+
+  // Constructor de la clase
   // NOTA: todos los campos son opcionales al inicio porque el usuario los va llenando paso a paso
   UserRegistrationModel({
     this.nombreCompleto,
@@ -18,6 +23,9 @@ class UserRegistrationModel {
     this.claveElector,
     this.pathFotoIne,
     this.pathFotoRostro,
+    this.motivoVisita,
+    this.casaDestino,
+    this.placa,
   });
 
   // Método por si en el futuro se necesita limpiar los datos y reiniciar el registro
@@ -27,6 +35,9 @@ class UserRegistrationModel {
     claveElector = null;
     pathFotoIne = null;
     pathFotoRostro = null;
+    motivoVisita = null;
+    casaDestino = null;
+    placa = null;
   }
 
   // Método para verificar si el paso del INE ya tiene los datos mínimos
