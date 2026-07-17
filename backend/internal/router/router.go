@@ -1,18 +1,6 @@
 /*
 Package router
 Inicializacion y registro de rutas (apps)
-Este paquete funciona para inicializar el router de gin y añadir
-las rutas que contienen encapsuladas su propia informacion de la app
-
-function Setup(db *gorm.DB) -> *gin.Engine
-Inicializa el engine de gin y registra rutas de apps que contiene
-toda su informacion contenida en si misma. Para el registro de rutas
-necesitamos de funciones helper que registran las rutas por app y en grupo.
-Se usa db de tipo gorm.DB para comunicar modelos y services con la gorm y su orm
-
-func register<Dominio>Routes(rg *gin.RouterGroup, db *gorm.DB)
-Una funcion helper por dominio que registra sus rutas (ver registerAdminRoutes,
-registerAccesoRoutes y registerVisitanteRoutes mas abajo)
 */
 package router
 
@@ -20,7 +8,9 @@ import (
 	"kigo-autonomia-backend/internal/domain/acceso"
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/domain/auth"
-	"kigo-autonomia-backend/internal/domain/visitantes"
+	"kigo-autonomia-backend/internal/domain/destinos"
+	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/domain/visitas"
 
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -36,22 +26,17 @@ func Setup(db *gorm.DB, jwtSecret string) *gin.Engine {
 	registerAuthRoutes(api, db, jwtSecret)
 	registerAdminRoutes(api, db, jwtSecret)
 	registerAccesoRoutes(api, db, jwtSecret)
-	registerVisitanteRoutes(api, db, jwtSecret)
+	registerVisitaRoutes(api, db, jwtSecret)
+	registerDestinosRoutes(api, db, jwtSecret)
+	registerResidenteRoutes(api, db, jwtSecret)
 
-	// documentacion OpenAPI/Swagger, regenerar con `go tool swag init -g cmd/server/main.go --parseInternal -o docs`
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-
-	// dashboard de admin: HTML/CSS/JS estatico, sin build step, consume la API en /api/v1 desde el navegador
 	r.Static("/admin", "./web/admin")
-
-	// fotos de visitantes: el kiosko aun no sube archivos via la API (VisitanteRequest.FotoURL es
-	// una URL que el cliente ya trae resuelta), esto solo sirve lo que haya en disco como estatico
 	r.Static("/uploads/visitantes", "./web/uploads/visitantes")
 
 	return r
 }
 
-// registerAuthRoutes registra las rutas de login/registro de Admin (JWT) y de kiosko (sesion)
 func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	adminRepo := admin.NewRepository(db)
 	accesoRepo := acceso.NewRepository(db)
@@ -62,12 +47,12 @@ func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	{
 		g.POST("/sign-in", authHandler.RegisterAdmin)
 		g.POST("/login", authHandler.LoginAdmin)
+		g.POST("/google", authHandler.LoginGoogle)
 		g.POST("/acceso/login", authHandler.LoginAcceso)
 		g.POST("/acceso/:id/revocar", auth.RequireAdmin(jwtSecret), authHandler.RevocarSesionAcceso)
 	}
 }
 
-// registerAdminRoutes registra las rutas de admins, protegidas con el JWT del admin autenticado
 func registerAdminRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	adminRepo := admin.NewRepository(db)
 	adminHandler := admin.NewHandler(adminRepo)
@@ -81,7 +66,6 @@ func registerAdminRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	}
 }
 
-// registerAccesoRoutes registra las rutas de accesos, protegidas con el JWT del admin autenticado
 func registerAccesoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	accesoRepo := acceso.NewRepository(db)
 	accesoHandler := acceso.NewHandler(accesoRepo)
@@ -97,26 +81,78 @@ func registerAccesoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	}
 }
 
-// registerVisitanteRoutes registra las rutas de visitantes: el registro/gestion de un visitante va anidado
-// bajo el Acceso por el que entro, protegido por la sesion del kiosko (RequireAcceso); la consulta para el
-// dashboard del admin va plana en /visitantes, protegida por el JWT del admin (RequireAdmin)
-func registerVisitanteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
-	visitanteRepo := visitantes.NewRepository(db)
-	visitanteHandler := visitantes.NewHandler(visitanteRepo)
+// registerVisitaRoutes registra las rutas de visitas: registro desde el kiosko (sesion) y
+// consulta del admin (JWT).
+func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+	visitaRepo := visitas.NewRepository(db)
+	visitaHandler := visitas.NewHandler(visitaRepo)
 	sesionRepo := auth.NewSesionRepository(db)
 
-	// el kiosko solo registra visitantes; no tiene ninguna ruta de lectura (ver internal/domain/visitantes/handlers.go)
-	v := rg.Group("/accesos/:id/visitantes")
+	// kiosko: solo registra visitas
+	v := rg.Group("/accesos/:id/visitas")
 	v.Use(auth.RequireAcceso(sesionRepo))
 	{
-		v.POST("/", visitanteHandler.RegisterVisitante)
+		v.POST("/", visitaHandler.RegisterVisita)
 	}
 
-	d := rg.Group("/visitantes")
+	// dashboard admin: lectura paginada, detalle e historial
+	d := rg.Group("/visitas")
 	d.Use(auth.RequireAdmin(jwtSecret))
 	{
-		d.GET("/", visitanteHandler.ListarVisitantes)
-		d.GET("/buscar", visitanteHandler.HistorialVisitante)
-		d.GET("/:id", visitanteHandler.GetVisitanteByIDAndAdminID)
+		d.GET("/", visitaHandler.ListarVisitas)
+		d.GET("/buscar", visitaHandler.HistorialVisita)
+		d.GET("/:id", visitaHandler.GetVisitaByID)
+	}
+}
+
+// registerDestinosRoutes registra rutas de destinos: listado por el kiosko (sesion) y
+// creación/gestión por el admin (JWT).
+func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+	destinoRepo := destinos.NewRepository(db)
+	destinoHandler := destinos.NewHandler(destinoRepo)
+	sesionRepo := auth.NewSesionRepository(db)
+
+	// kiosko: solo lee destinos de su acceso
+	k := rg.Group("/accesos/:id/destinos")
+	k.Use(auth.RequireAcceso(sesionRepo))
+	{
+		k.GET("/", destinoHandler.ListarDestinosPorAcceso)
+	}
+
+	// admin: crea destinos para sus accesos
+	a := rg.Group("/accesos/:id/destinos")
+	a.Use(auth.RequireAdmin(jwtSecret))
+	{
+		a.POST("/", destinoHandler.CrearDestino)
+	}
+}
+
+// registerResidenteRoutes registra rutas de residente: login (público) y endpoints
+// autenticados para la app del residente y el dashboard admin.
+func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+	residenteRepo := residente.NewRepository(db)
+	residenteHandler := residente.NewHandler(residenteRepo, jwtSecret)
+
+	// login público
+	rg.POST("/auth/residente/login", residenteHandler.LoginResidente)
+
+	// app residente: rutas protegidas por JWT de residente
+	r := rg.Group("/residentes")
+	r.Use(auth.RequireResidente(jwtSecret))
+	{
+		r.GET("/me", residenteHandler.GetMe)
+	}
+
+	// admin: crea residentes y los lista por acceso
+	a := rg.Group("/accesos/:id/residentes")
+	a.Use(auth.RequireAdmin(jwtSecret))
+	{
+		a.GET("/", residenteHandler.ListarResidentesPorAcceso)
+	}
+
+	adminR := rg.Group("/residentes")
+	adminR.Use(auth.RequireAdmin(jwtSecret))
+	{
+		adminR.POST("/", residenteHandler.CrearResidente)
 	}
 }
