@@ -28,6 +28,7 @@ type Visita struct {
 	Curp             string        `gorm:"not null"`
 	FotoDocumentoURL string        `gorm:"not null"`
 	FotoRostroURL    string        `gorm:"not null"`
+	FotoPlacaURL     string
 	MotivoVisita     string        `gorm:"not null"`
 	CasaDestino      string        `gorm:"not null"`
 	Placa            string

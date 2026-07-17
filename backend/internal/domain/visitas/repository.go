@@ -50,8 +50,9 @@ func (r *Repository) FindAllByAdminID(
 		if filtros.Q != "" {
 			like := "%" + filtros.Q + "%"
 			q = q.Where(
-				"(visitas.nombre ILIKE ? OR visitas.curp ILIKE ? OR visitas.clave_lector ILIKE ?)",
-				like, like, like,
+				`(visitas.nombre ILIKE ? OR visitas.curp ILIKE ? OR visitas.clave_lector ILIKE ?
+				  OR visitas.casa_destino ILIKE ? OR visitas.placa ILIKE ?)`,
+				like, like, like, like, like,
 			)
 		}
 		return q

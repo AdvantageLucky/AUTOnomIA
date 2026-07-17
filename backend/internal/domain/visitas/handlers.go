@@ -150,16 +150,30 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		return
 	}
 
+	var fotoPlacaURL string
+	if req.FotoPlaca != nil {
+		fotoPlacaURL, err = guardarFotoVisitante(c, req.FotoPlaca)
+		if err != nil {
+			if errors.Is(err, errFormatoFotoInvalido) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_placa: " + err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
 	v := &Visita{
-		Nombre:           req.Nombre,
+		Nombre:           strings.ToUpper(strings.TrimSpace(req.Nombre)),
 		TipoDocumento:    req.TipoDocumento,
-		ClaveLector:      req.ClaveLector,
-		Curp:             req.Curp,
+		ClaveLector:      strings.ToUpper(strings.TrimSpace(req.ClaveLector)),
+		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
 		FotoDocumentoURL: fotoDocumentoURL,
 		FotoRostroURL:    fotoRostroURL,
+		FotoPlacaURL:     fotoPlacaURL,
 		MotivoVisita:     req.MotivoVisita,
-		CasaDestino:      req.CasaDestino,
-		Placa:            req.Placa,
+		CasaDestino:      strings.ToUpper(strings.TrimSpace(req.CasaDestino)),
+		Placa:            strings.ToUpper(strings.TrimSpace(req.Placa)),
 		Estado:           EstadoPendiente,
 		AccesoID:         uint(accesoID),
 	}
@@ -262,6 +276,43 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 		Page:     page,
 		PageSize: pageSize,
 	})
+}
+
+// ActualizarEstado cambia el estado de una visita (aprobacion/rechazo manual desde el dashboard)
+func (h *Handler) ActualizarEstado(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
+		return
+	}
+
+	var body struct {
+		Estado string `json:"estado" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	estado := EstadoVisita(body.Estado)
+	if estado != EstadoAprobado && estado != EstadoRechazado {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "estado debe ser APROBADO o RECHAZADO"})
+		return
+	}
+
+	if err := h.repo.UpdateEstado(uint(id), estado); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"estado": string(estado)})
 }
 
 // HistorialVisita historial de visitas por CURP (dashboard)

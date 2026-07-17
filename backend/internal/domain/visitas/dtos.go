@@ -18,6 +18,7 @@ type VisitaRequest struct {
 	Placa         string                `form:"placa"`
 	FotoDocumento *multipart.FileHeader `form:"foto_documento" binding:"required"`
 	FotoRostro    *multipart.FileHeader `form:"foto_rostro"    binding:"required"`
+	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`
 }
 
 // VisitaResponse DTO de respuesta completo para una visita
@@ -29,6 +30,7 @@ type VisitaResponse struct {
 	Curp             string        `json:"curp"`
 	FotoDocumentoURL string        `json:"foto_documento_url"`
 	FotoRostroURL    string        `json:"foto_rostro_url"`
+	FotoPlacaURL     string        `json:"foto_placa_url,omitempty"`
 	MotivoVisita     string        `json:"motivo_visita"`
 	CasaDestino      string        `json:"casa_destino"`
 	Placa            string        `json:"placa"`
@@ -73,6 +75,7 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		Curp:             v.Curp,
 		FotoDocumentoURL: v.FotoDocumentoURL,
 		FotoRostroURL:    v.FotoRostroURL,
+		FotoPlacaURL:     v.FotoPlacaURL,
 		MotivoVisita:     v.MotivoVisita,
 		CasaDestino:      v.CasaDestino,
 		Placa:            v.Placa,
