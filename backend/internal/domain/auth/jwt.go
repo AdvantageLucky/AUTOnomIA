@@ -46,6 +46,37 @@ func ParseAdminToken(tokenStr, secret string) (uint, error) {
 	return claims.AdminID, nil
 }
 
+// residenteClaims son los claims del JWT de un Residente autenticado en la app
+type residenteClaims struct {
+	ResidenteID uint `json:"residente_id"`
+	jwt.RegisteredClaims
+}
+
+// GenerateResidenteToken firma un JWT (HS256) para el Residente autenticado, válido 7 días
+func GenerateResidenteToken(residenteID uint, secret string) (string, error) {
+	claims := residenteClaims{
+		ResidenteID: residenteID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+// ParseResidenteToken valida el JWT del residente y devuelve el ResidenteID
+func ParseResidenteToken(tokenStr, secret string) (uint, error) {
+	claims := &residenteClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+	if err != nil || !token.Valid {
+		return 0, errors.New("token invalido o expirado")
+	}
+	return claims.ResidenteID, nil
+}
+
 // generateSessionToken genera un token opaco de alta entropia para una sesion de kiosko
 func generateSessionToken() (string, error) {
 	b := make([]byte, 32)
