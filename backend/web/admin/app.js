@@ -26,7 +26,6 @@
       nav_general: "General",
       nav_dashboard: "Inicio",
       nav_visitas: "Visitas",
-      nav_historial: "Buscar CURP",
       nav_config: "Configuración",
       nav_accesos: "Accesos",
       nav_perfil: "Perfil",
@@ -34,15 +33,9 @@
       loading: "Cargando…",
       dash_sub: "Resumen de tu comunidad",
       stat_today: "Visitas de hoy",
-      stat_today_hint: "En la última página cargada",
       stat_week: "Últimos 7 días",
-      stat_week_hint: "Sobre la última página cargada",
       stat_total: "Total registros",
-      stat_total_hint: "Visitantes en bitácora",
-      stat_accesos: "Accesos activos",
-      stat_accesos_hint: "Entradas configuradas",
-      q_curp_title: "Buscar por CURP",
-      q_curp_sub: "¿Esta persona ya vino antes?",
+      stat_pending: "Pendientes",
       q_visitas_title: "Ver visitas",
       q_visitas_sub: "Bitácora completa y paginada",
       recent_title: "Visitas recientes",
@@ -55,7 +48,6 @@
       pendiente: "Pendiente",
       aprobado: "Aprobado",
       rechazado: "Rechazado",
-      search_curp_btn: "Buscar CURP →",
       col_visitor: "VISITANTE",
       col_doc: "DOCUMENTO",
       col_access: "ACCESO",
@@ -69,15 +61,6 @@
       prev: "‹ Anterior",
       next: "Siguiente ›",
       detail_title: "Detalle de visita",
-      hist_sub: "¿Esta persona ya vino? Consulta su historial de visitas.",
-      curp_label: "CURP del visitante",
-      search_btn: "Buscar",
-      curp_hint: "18 caracteres exactos.",
-      hist_idle_title: "Consulta el historial de una persona",
-      hist_idle_text: "Ingresa una CURP para ver cuántas veces ha ingresado y por qué accesos.",
-      searching: "Buscando visitas…",
-      hist_empty_title: "Sin visitas con esa CURP",
-      hist_empty_text: "Puede ser su primera vez. Verifica que la CURP esté escrita correctamente.",
       accesos_sub: "Entradas y casetas de tu comunidad",
       new_acceso: "Nuevo acceso",
       perfil_sub: "Tus datos personales y seguridad",
@@ -133,7 +116,6 @@
       nav_general: "General",
       nav_dashboard: "Home",
       nav_visitas: "Visits",
-      nav_historial: "Search CURP",
       nav_config: "Settings",
       nav_accesos: "Entries",
       nav_perfil: "Profile",
@@ -141,15 +123,9 @@
       loading: "Loading…",
       dash_sub: "Community summary",
       stat_today: "Today's visits",
-      stat_today_hint: "From last loaded page",
       stat_week: "Last 7 days",
-      stat_week_hint: "From last loaded page",
       stat_total: "Total records",
-      stat_total_hint: "Visitors in log",
-      stat_accesos: "Active entries",
-      stat_accesos_hint: "Configured entry points",
-      q_curp_title: "Search by CURP",
-      q_curp_sub: "Has this person visited before?",
+      stat_pending: "Pending",
       q_visitas_title: "View visits",
       q_visitas_sub: "Complete paginated log",
       recent_title: "Recent visits",
@@ -162,7 +138,6 @@
       pendiente: "Pending",
       aprobado: "Approved",
       rechazado: "Rejected",
-      search_curp_btn: "Search CURP →",
       col_visitor: "VISITOR",
       col_doc: "DOCUMENT",
       col_access: "ENTRY",
@@ -176,15 +151,6 @@
       prev: "‹ Previous",
       next: "Next ›",
       detail_title: "Visit detail",
-      hist_sub: "Has this person visited? Check their visit history.",
-      curp_label: "Visitor's CURP",
-      search_btn: "Search",
-      curp_hint: "Exactly 18 characters.",
-      hist_idle_title: "Look up a person's history",
-      hist_idle_text: "Enter a CURP to see how many times they've entered and through which entries.",
-      searching: "Searching visits…",
-      hist_empty_title: "No visits found for this CURP",
-      hist_empty_text: "This might be their first time. Verify the CURP is correct.",
       accesos_sub: "Entry points and booths in your community",
       new_acceso: "New entry",
       perfil_sub: "Your personal data and security",
@@ -278,7 +244,7 @@
   const MESES_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
   const MESES_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-  const TIPO_BADGE = { INE: "badge--ine", PASAPORTE: "badge--pasaporte", LICENCIA: "badge--licencia" };
+  const TIPO_BADGE  = { INE: "badge--ine", PASAPORTE: "badge--pasaporte", LICENCIA: "badge--licencia" };
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado" };
 
   const state = {
@@ -291,12 +257,15 @@
     editingAccesoId: null,
     deletingAccesoId: null,
     visSearchTimeout: null,
+    solPollingId: null,
+    residentesFull: [],
+    resSearchTimeout: null,
   };
 
   /* ─── Auth helpers ──────────────────────── */
-  function getToken()       { return localStorage.getItem(TOKEN_KEY); }
-  function setToken(t)      { localStorage.setItem(TOKEN_KEY, t); }
-  function clearToken()     { localStorage.removeItem(TOKEN_KEY); }
+  function getToken()  { return localStorage.getItem(TOKEN_KEY); }
+  function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+  function clearToken(){ localStorage.removeItem(TOKEN_KEY); }
 
   function decodeJWT(token) {
     try {
@@ -327,11 +296,21 @@
     return `${d.getDate()} ${meses[d.getMonth()]}`;
   }
 
+  function fmtElapsed(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1)  return "hace un momento";
+    if (mins < 60) return `hace ${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    return `hace ${hrs}h`;
+  }
+
   /* ─── Navegación ────────────────────────── */
   function showLogin() {
     document.getElementById("screen-login").hidden = false;
     document.getElementById("app-shell").hidden = true;
     clearToken();
+    stopSolPolling();
   }
 
   function showApp() {
@@ -349,10 +328,14 @@
 
     document.querySelectorAll(`[data-nav="${screen}"]`).forEach(b => b.classList.add("active"));
 
-    if (screen === "dashboard") loadDashboard();
-    if (screen === "visitas")   loadVisitas(1);
-    if (screen === "accesos")   loadAccesos();
-    if (screen === "perfil")    loadPerfil();
+    stopSolPolling();
+    if (screen === "dashboard")         loadDashboard();
+    if (screen === "visitas")           loadVisitas(1);
+    if (screen === "solicitudes")       startSolPolling();
+    if (screen === "residentes")        loadResidentes();
+    if (screen === "accesos")           loadAccesos();
+    if (screen === "configuracion")     loadConfigAccesos();
+    if (screen === "perfil")            loadPerfil();
   }
 
   document.addEventListener("click", e => {
@@ -380,11 +363,10 @@
     errEl.hidden = true;
 
     const endpoint = loginMode === "register" ? "/auth/sign-in" : "/auth/login";
-    const method   = "POST";
 
     try {
       const res = await fetch(API_BASE + endpoint, {
-        method,
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo, password }),
       });
@@ -431,24 +413,40 @@
   /* ─── Bootstrap ─────────────────────────── */
   async function bootstrapApp() {
     if (!state.adminId) return;
-    await loadAdminData();
+    await Promise.all([loadAdminData(), preloadAccesos()]);
     showApp();
     navTo("dashboard");
   }
 
-  async function loadAdminData() {
-    const res = await api(`/admins/${state.adminId}`);
+  async function preloadAccesos() {
+    const res = await api("/accesos/");
     if (!res || !res.ok) return;
-    state.admin = await res.json();
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.accesos || []);
+    list.forEach(a => state.accesosById.set(a.id, a));
+  }
 
-    const nombre = [state.admin.nombre, state.admin.apellido_paterno].filter(Boolean).join(" ") || state.admin.correo;
-    const initials = (state.admin.nombre?.[0] || "") + (state.admin.apellido_paterno?.[0] || "");
+  async function loadAdminData() {
+    try {
+      const res = await api(`/admins/${state.adminId}`);
+      if (res && res.ok) {
+        state.admin = await res.json();
+      }
+    } catch { /* continúa con datos parciales */ }
+
+    const nombre = state.admin
+      ? ([state.admin.nombre, state.admin.apellido_paterno].filter(Boolean).join(" ") || state.admin.correo)
+      : (decodeJWT(getToken())?.correo || "—");
+
+    const initials = state.admin
+      ? ((state.admin.nombre?.[0] || "") + (state.admin.apellido_paterno?.[0] || ""))
+      : "";
 
     document.getElementById("sidebar-user-name").textContent = nombre;
     document.getElementById("sidebar-avatar").textContent = initials || "·";
     document.getElementById("perfil-avatar").textContent = initials || "·";
     document.getElementById("perfil-nombre-completo").textContent = nombre;
-    document.getElementById("dash-greeting").textContent = STRINGS[lang].hello(state.admin.nombre || nombre);
+    document.getElementById("dash-greeting").textContent = STRINGS[lang].hello(state.admin?.nombre || nombre);
   }
 
   /* ─── Logout ─────────────────────────────── */
@@ -465,32 +463,25 @@
     if (!res || !res.ok) return;
     const data = await res.json();
 
-    const visitas = data.visitas || [];
-    const total   = data.total  || 0;
+    const visitas   = data.visitas || [];
+    const total     = data.total  || 0;
 
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     const sieteDias = new Date(hoy); sieteDias.setDate(sieteDias.getDate() - 7);
 
-    const hoyCount    = visitas.filter(v => new Date(v.created_at) >= hoy).length;
-    const semanaCount = visitas.filter(v => new Date(v.created_at) >= sieteDias).length;
+    const hoyCount      = visitas.filter(v => new Date(v.created_at) >= hoy).length;
+    const semanaCount   = visitas.filter(v => new Date(v.created_at) >= sieteDias).length;
+    const pendCount     = visitas.filter(v => v.estado === "PENDIENTE").length;
 
-    animateStat("stat-hoy",    hoyCount);
-    animateStat("stat-semana", semanaCount);
-    animateStat("stat-total",  total);
-
-    const accRes = await api("/accesos/");
-    if (accRes && accRes.ok) {
-      const accData = await accRes.json();
-      const list = Array.isArray(accData) ? accData : (accData.accesos || []);
-      animateStat("stat-accesos", list.length);
-      list.forEach(a => state.accesosById.set(a.id, a));
-    }
+    animateStat("stat-hoy",       hoyCount);
+    animateStat("stat-semana",    semanaCount);
+    animateStat("stat-total",     total);
+    animateStat("stat-pendientes", pendCount);
 
     const container = document.getElementById("dash-recent-rows");
     const recent = visitas.slice(0, 8);
     if (recent.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg></div><div class="empty-title" data-i18n="vis_empty_title">${t("vis_empty_title")}</div></div>`;
+      container.innerHTML = `<div class="empty-state"><div class="empty-title">${t("vis_empty_title")}</div></div>`;
       return;
     }
     container.innerHTML = recent.map((v, i) => renderDashRow(v, i)).join("");
@@ -514,7 +505,6 @@
   }
 
   function renderDashRow(v, i) {
-    const acceso = state.accesosById.get(v.acceso_id);
     return `<div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*40}ms" data-id="${v.id}">
       <div>
         <div class="row-name">${esc(v.nombre)}</div>
@@ -562,12 +552,10 @@
 
     const totalPages = Math.ceil(state.visTotal / state.visPageSize);
     const pag = document.getElementById("vis-pagination");
-    const label = document.getElementById("vis-page-label");
-    const cur = document.getElementById("vis-page-current");
     if (totalPages > 1) {
       pag.hidden = false;
-      label.textContent = `${state.visTotal} ${lang === "en" ? "records" : "registros"}`;
-      cur.textContent = page;
+      document.getElementById("vis-page-label").textContent = `${state.visTotal} ${lang === "en" ? "records" : "registros"}`;
+      document.getElementById("vis-page-current").textContent = page;
       document.getElementById("vis-prev").disabled = page <= 1;
       document.getElementById("vis-next").disabled = page >= totalPages;
     } else {
@@ -596,8 +584,8 @@
     </div>`;
   }
 
-  document.getElementById("vis-prev").addEventListener("click", () => loadVisitas(state.visPage - 1));
-  document.getElementById("vis-next").addEventListener("click", () => loadVisitas(state.visPage + 1));
+  document.getElementById("vis-prev").addEventListener("click",  () => loadVisitas(state.visPage - 1));
+  document.getElementById("vis-next").addEventListener("click",  () => loadVisitas(state.visPage + 1));
   document.getElementById("vis-retry").addEventListener("click", () => loadVisitas(state.visPage));
 
   ["vis-quick-search","vis-filter-tipo","vis-filter-estado"].forEach(id => {
@@ -607,22 +595,26 @@
     });
   });
 
-  /* ─── Detalle ───────────────────────────── */
+  /* ─── Detalle de visita + expediente ───── */
   async function loadDetalle(id) {
     navTo("detalle");
     const body = document.getElementById("detalle-body");
     body.innerHTML = `<div class="loading-state"><div class="spinner"></div></div>`;
 
     const res = await api(`/visitas/${id}`);
-    if (!res || !res.ok) { body.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`; return; }
+    if (!res || !res.ok) {
+      body.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`;
+      return;
+    }
     const v = await res.json();
-
     const acceso = state.accesosById.get(v.acceso_id);
+
     body.innerHTML = `
       <div class="detalle-hero">
         <div class="detalle-fotos">
-          <img class="detalle-foto" src="${esc(v.foto_documento_url)}" alt="Documento" loading="lazy">
-          <img class="detalle-foto" src="${esc(v.foto_rostro_url)}" alt="Rostro" loading="lazy">
+          ${v.foto_documento_url ? `<img class="detalle-foto" src="${esc(v.foto_documento_url)}" alt="Documento" loading="lazy">` : ""}
+          ${v.foto_rostro_url    ? `<img class="detalle-foto" src="${esc(v.foto_rostro_url)}"    alt="Rostro"    loading="lazy">` : ""}
+          ${v.foto_placa_url     ? `<img class="detalle-foto" src="${esc(v.foto_placa_url)}"     alt="Placa"     loading="lazy">` : ""}
         </div>
         <div class="detalle-info">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
@@ -632,66 +624,390 @@
           <div class="detalle-nombre">${esc(v.nombre)}</div>
           <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Acceso #${v.acceso_id}`} · ${fmtDate(v.created_at)}</div>
           <div class="detalle-campos">
-            <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp)}</div></div>
+            <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp || "—")}</div></div>
             <div><div class="campo-label">${t("motivo")}</div><div class="campo-value">${esc(v.motivo_visita || "—")}</div></div>
             <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
             <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
-            <div><div class="campo-label">Clave lector</div><div class="campo-value campo-mono">${esc(v.clave_lector)}</div></div>
+            <div><div class="campo-label">Clave lector</div><div class="campo-value campo-mono">${esc(v.clave_lector || "—")}</div></div>
           </div>
         </div>
+      </div>
+      <div class="expediente-section">
+        <div class="expediente-header">
+          <span class="expediente-title">Historial de esta persona</span>
+          <span class="expediente-count" id="exp-count"></span>
+        </div>
+        <div class="expediente-timeline" id="exp-timeline">
+          <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
+        </div>
       </div>`;
+
+    cargarExpediente(v);
   }
 
-  /* ─── Historial ─────────────────────────── */
-  document.getElementById("curp-input").addEventListener("input", e => {
-    const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 18);
-    e.target.value = v;
-    const hint = document.getElementById("curp-hint");
-    hint.textContent = v.length === 18 ? "✓" : `${v.length}/18`;
-  });
+  async function cargarExpediente(visitaActual) {
+    const timeline = document.getElementById("exp-timeline");
+    if (!timeline) return;
 
-  document.getElementById("curp-search-btn").addEventListener("click", buscarHistorial);
-  document.getElementById("curp-input").addEventListener("keydown", e => { if (e.key === "Enter") buscarHistorial(); });
+    const curp = visitaActual.curp?.trim();
+    let mismaPersona = [];
 
-  async function buscarHistorial() {
-    const curp = document.getElementById("curp-input").value.trim();
-    if (curp.length !== 18) return;
+    if (curp) {
+      /* /visitas/buscar devuelve VisitaResponse completo (con curp, fotos, etc.) */
+      const res = await api(`/visitas/buscar?curp=${encodeURIComponent(curp)}`);
+      if (!res || !res.ok) {
+        timeline.innerHTML = renderExpEmpty("No se pudo cargar el historial.");
+        return;
+      }
+      const data = await res.json();
+      mismaPersona = (data.visitas || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    } else {
+      /* fallback: busca por nombre en la lista paginada */
+      const nombre = visitaActual.nombre?.trim();
+      if (!nombre) {
+        timeline.innerHTML = renderExpEmpty("Sin identificador para buscar historial.");
+        return;
+      }
+      const res = await api(`/visitas/?q=${encodeURIComponent(nombre)}&page_size=100`);
+      if (!res || !res.ok) {
+        timeline.innerHTML = renderExpEmpty("No se pudo cargar el historial.");
+        return;
+      }
+      const data = await res.json();
+      mismaPersona = (data.visitas || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
 
-    showHistState("loading");
-    const res = await api(`/visitas/buscar?curp=${encodeURIComponent(curp)}`);
-    if (!res || !res.ok) { showHistState("idle"); return; }
+    const countEl = document.getElementById("exp-count");
+    if (countEl) {
+      const otras = mismaPersona.filter(v => String(v.id) !== String(visitaActual.id)).length;
+      countEl.textContent = otras === 0 ? "primera visita registrada" : `${otras} visita${otras !== 1 ? "s" : ""} anterior${otras !== 1 ? "es" : ""}`;
+    }
+
+    if (mismaPersona.length === 0) {
+      timeline.innerHTML = renderExpEmpty("Primera visita registrada.");
+      return;
+    }
+
+    timeline.innerHTML = mismaPersona.map((v, i) => {
+      const esCurrent = String(v.id) === String(visitaActual.id);
+      const acceso = state.accesosById.get(v.acceso_id);
+      const accNombre = acceso ? esc(acceso.nombre) : `Acceso #${v.acceso_id}`;
+      const meta = [accNombre, v.casa_destino ? esc(v.casa_destino) : null, v.motivo_visita ? esc(v.motivo_visita) : null].filter(Boolean).join(" · ");
+      return `<div class="exp-row${esCurrent ? " exp-row--current" : ""}" style="animation-delay:${i*25}ms" data-id="${v.id}">
+        <div class="exp-marker"><div class="exp-dot"></div></div>
+        <div class="exp-info">
+          <div class="exp-nombre">${esc(v.nombre)}</div>
+          <div class="exp-meta">${meta}</div>
+        </div>
+        <div class="exp-right">
+          <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
+          <span class="exp-date">${fmtDate(v.created_at)}</span>
+          ${esCurrent ? `<span class="exp-current-label">Esta visita</span>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+
+    timeline.querySelectorAll(".exp-row:not(.exp-row--current)").forEach(row => {
+      row.addEventListener("click", () => loadDetalle(row.dataset.id));
+    });
+  }
+
+  function renderExpEmpty(msg) {
+    return `<div class="empty-state" style="padding:24px">
+      <div class="empty-icon"><svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><line x1="9" y1="6" x2="9" y2="9"/><circle cx="9" cy="12" r=".6" fill="currentColor" stroke="none"/></svg></div>
+      <div class="empty-text">${esc(msg)}</div>
+    </div>`;
+  }
+
+  /* ─── Solicitudes ───────────────────────── */
+  function startSolPolling() {
+    loadSolicitudes();
+    state.solPollingId = setInterval(loadSolicitudes, 15000);
+  }
+
+  function stopSolPolling() {
+    if (state.solPollingId) {
+      clearInterval(state.solPollingId);
+      state.solPollingId = null;
+    }
+  }
+
+  async function loadSolicitudes() {
+    const res = await api("/visitas/?estado=PENDIENTE&page_size=50");
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}`;
+    const lastEl = document.getElementById("sol-last-update");
+    if (lastEl) lastEl.textContent = timeStr;
+
+    if (!res || !res.ok) {
+      showSolState("error");
+      return;
+    }
 
     const data = await res.json();
     const visitas = data.visitas || [];
 
-    if (visitas.length === 0) { showHistState("empty"); return; }
+    const countEl = document.getElementById("sol-count");
+    if (countEl) countEl.textContent = visitas.length || "0";
 
-    document.getElementById("hist-total").textContent = visitas.length;
-    document.getElementById("hist-title-text").textContent = STRINGS[lang].visits(visitas.length);
-    document.getElementById("hist-curp-label").textContent = curp;
+    if (visitas.length === 0) {
+      showSolState("empty");
+      return;
+    }
 
-    document.getElementById("hist-rows").innerHTML = visitas.map((v, i) => renderHistRow(v, i)).join("");
-    showHistState("results");
+    const container = document.getElementById("sol-rows");
+    if (!container) return;
+    container.innerHTML = visitas.map((v, i) => renderSolRow(v, i)).join("");
+
+    container.querySelectorAll("[data-aprobar]").forEach(btn => {
+      btn.addEventListener("click", () => actualizarEstado(btn.dataset.aprobar, "APROBADO"));
+    });
+    container.querySelectorAll("[data-rechazar]").forEach(btn => {
+      btn.addEventListener("click", () => actualizarEstado(btn.dataset.rechazar, "RECHAZADO"));
+    });
+
+    showSolState("rows");
   }
 
-  function showHistState(s) {
-    ["idle","loading","results","empty"].forEach(x => {
-      const el = document.getElementById(`hist-${x}`);
+  function showSolState(s) {
+    ["loading","empty","error"].forEach(x => {
+      const el = document.getElementById(`sol-${x}`);
       if (el) el.hidden = x !== s;
+    });
+    const rows = document.getElementById("sol-rows");
+    if (rows) rows.hidden = s !== "rows";
+  }
+
+  function renderSolRow(v, i) {
+    const acceso = state.accesosById.get(v.acceso_id);
+    return `<div class="sol-card" style="animation-delay:${i*40}ms">
+      <div class="sol-card-left">
+        <div class="feed-dot"></div>
+        <div>
+          <div class="row-name">${esc(v.nombre)}</div>
+          <div class="row-sub">${acceso ? esc(acceso.nombre) : `Acceso #${v.acceso_id}`} · ${esc(v.casa_destino || "sin destino")} · <span class="feed-elapsed">${fmtElapsed(v.created_at)}</span></div>
+          ${v.motivo_visita ? `<div class="row-sub" style="margin-top:2px;font-style:italic">"${esc(v.motivo_visita)}"</div>` : ""}
+        </div>
+      </div>
+      <div class="sol-card-actions">
+        <button class="btn-aprobar" data-aprobar="${v.id}">Aprobar</button>
+        <button class="btn-rechazar" data-rechazar="${v.id}">Rechazar</button>
+      </div>
+    </div>`;
+  }
+
+  async function actualizarEstado(id, estado) {
+    const res = await api(`/visitas/${id}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({ estado }),
+    });
+    if (res && res.ok) loadSolicitudes();
+  }
+
+  /* ─── Residentes ────────────────────────── */
+  async function loadResidentes() {
+    const loadEl  = document.getElementById("res-loading");
+    const emptyEl = document.getElementById("res-empty");
+    const gridEl  = document.getElementById("res-grid");
+
+    if (loadEl)  loadEl.hidden = false;
+    if (emptyEl) emptyEl.hidden = true;
+    if (gridEl)  gridEl.innerHTML = "";
+
+    const res = await api("/residentes/");
+    if (loadEl) loadEl.hidden = true;
+
+    if (!res || !res.ok) {
+      if (gridEl) gridEl.innerHTML = `<div class="empty-title">${t("load_err_title")}</div>`;
+      return;
+    }
+
+    state.residentesFull = await res.json();
+    renderResidentesGrid(state.residentesFull);
+  }
+
+  function renderResidentesGrid(list) {
+    const emptyEl = document.getElementById("res-empty");
+    const gridEl  = document.getElementById("res-grid");
+
+    if (list.length === 0) {
+      if (emptyEl) emptyEl.hidden = false;
+      if (gridEl)  gridEl.innerHTML = "";
+      return;
+    }
+    if (emptyEl) emptyEl.hidden = true;
+    if (gridEl) {
+      gridEl.innerHTML = list.map((r, i) => renderResidenteCard(r, i)).join("");
+      gridEl.querySelectorAll("[data-residente-id]").forEach(card => {
+        card.addEventListener("click", () => loadResidenteDetalle(card.dataset.residenteId));
+      });
+    }
+  }
+
+  function renderResidenteCard(r, i) {
+    const initials = ((r.nombre?.[0] || "") + (r.apellido_paterno?.[0] || "")).toUpperCase();
+    const nombre   = [r.nombre, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(" ");
+    return `<div class="residente-card" style="animation-delay:${i*30}ms" data-residente-id="${r.id}">
+      <div class="avatar avatar--lg">${esc(initials) || "·"}</div>
+      <div class="residente-card-info">
+        <div class="residente-card-nombre">${esc(nombre)}</div>
+        <div class="residente-card-casa">${esc(r.casa_destino || "—")}</div>
+        ${r.telefono ? `<div class="row-sub">${esc(r.telefono)}</div>` : ""}
+      </div>
+      <div class="residente-card-arrow">›</div>
+    </div>`;
+  }
+
+  document.getElementById("res-search")?.addEventListener("input", e => {
+    clearTimeout(state.resSearchTimeout);
+    state.resSearchTimeout = setTimeout(() => {
+      const q = e.target.value.toLowerCase();
+      const filtered = state.residentesFull.filter(r => {
+        const nombre = [r.nombre, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(" ").toLowerCase();
+        return nombre.includes(q) || (r.casa_destino || "").toLowerCase().includes(q);
+      });
+      renderResidentesGrid(filtered);
+    }, 250);
+  });
+
+  async function loadResidenteDetalle(residenteId) {
+    navTo("residente-detalle");
+    const body = document.getElementById("residente-detalle-body");
+    body.innerHTML = `<div class="loading-state"><div class="spinner"></div></div>`;
+
+    const res = await api(`/residentes/${residenteId}/me`.replace("/me",""));
+
+    let r = state.residentesFull.find(x => String(x.id) === String(residenteId));
+    if (!r) {
+      body.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`;
+      return;
+    }
+
+    const nombre   = [r.nombre, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(" ");
+    const initials = ((r.nombre?.[0] || "") + (r.apellido_paterno?.[0] || "")).toUpperCase();
+    const accesoNombre = state.accesosById.get(r.acceso_id)?.nombre || `Acceso #${r.acceso_id}`;
+
+    body.innerHTML = `
+      <div class="panel panel-padded" style="margin-bottom:16px">
+        <div class="profile-head">
+          <div class="avatar avatar--lg">${esc(initials) || "·"}</div>
+          <div>
+            <div class="profile-name">${esc(nombre)}</div>
+            <div class="profile-role">${esc(accesoNombre)} · ${esc(r.casa_destino || "—")}</div>
+          </div>
+        </div>
+        <div class="detalle-campos" style="margin-top:16px">
+          <div><div class="campo-label">Casa / Destino</div><div class="campo-value">${esc(r.casa_destino || "—")}</div></div>
+          ${r.telefono ? `<div><div class="campo-label">Teléfono</div><div class="campo-value">${esc(r.telefono)}</div></div>` : ""}
+          ${r.tiempo_espera_min !== undefined && r.tiempo_espera_min !== null
+            ? `<div><div class="campo-label">Tiempo de espera</div><div class="campo-value">${r.tiempo_espera_min} min</div></div>`
+            : ""}
+        </div>
+      </div>
+
+      <div class="panel panel-padded" style="margin-bottom:16px">
+        <div class="panel-header" style="margin-bottom:12px">
+          <div class="panel-title">Invitación QR</div>
+          <span class="row-sub">Placeholder — invitaciones aún no implementadas</span>
+        </div>
+        <div id="qr-placeholder" style="display:flex;align-items:center;gap:16px">
+          <canvas id="qr-canvas" width="120" height="120" style="border-radius:8px;background:var(--bg-2)"></canvas>
+          <div class="row-sub" style="font-size:12px">El QR real se generará cuando se implemente el modelo de invitaciones.<br>Este es un QR de demostración con el ID del residente.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Historial de visitas</div>
+        </div>
+        <div id="residente-visitas-rows">
+          <div class="loading-state"><div class="spinner"></div></div>
+        </div>
+      </div>`;
+
+    renderQRPlaceholder(r.id, "qr-canvas");
+    loadResidenteVisitas(r);
+  }
+
+  function renderQRPlaceholder(id, canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width;
+    const cellSize = 4;
+    const cols = Math.floor(size / cellSize);
+
+    const data = `AUTONOMIA:RESIDENTE:${id}`;
+    let hash = 0;
+    for (let i = 0; i < data.length; i++) hash = (Math.imul(31, hash) + data.charCodeAt(i)) | 0;
+
+    const isDark = document.documentElement.dataset.theme === "dark";
+    const fg = isDark ? "#FFFFFF" : "#111111";
+    const bg = isDark ? "#1a1a1a" : "#F5F5F5";
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = fg;
+
+    for (let y = 0; y < cols; y++) {
+      for (let x = 0; x < cols; x++) {
+        const bit = (hash ^ (x * 7 + y * 13) ^ (x ^ y)) & 1;
+        if (bit) ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+      }
+    }
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 28, 28);
+    ctx.fillRect(size - 28, 0, 28, 28);
+    ctx.fillRect(0, size - 28, 28, 28);
+    ctx.fillStyle = fg;
+    [0, size - 28, 0].forEach((ox, i) => {
+      const oy = i === 2 ? size - 28 : i * (size - 28);
+      ctx.fillRect(ox, oy, 24, 24);
+      ctx.fillStyle = bg;
+      ctx.fillRect(ox + 4, oy + 4, 16, 16);
+      ctx.fillStyle = fg;
+      ctx.fillRect(ox + 8, oy + 8, 8, 8);
     });
   }
 
-  function renderHistRow(v, i) {
-    const acceso = state.accesosById.get(v.acceso_id);
-    return `<div class="row-item vis-row-grid" style="animation-delay:${i*30}ms" data-id="${v.id}">
-      <div><div class="row-name">${esc(v.nombre)}</div></div>
-      <div><span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span></div>
-      <div class="campo-mono" style="font-size:12px">${esc(v.curp)}</div>
-      <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.acceso_id}`}</div>
-      <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
-      <div class="row-date">${fmtDateShort(v.created_at)}</div>
-    </div>`;
+  async function loadResidenteVisitas(r) {
+    const container = document.getElementById("residente-visitas-rows");
+    if (!container) return;
+
+    const q = [r.nombre, r.apellido_paterno].filter(Boolean).join(" ");
+    const res = await api(`/visitas/?q=${encodeURIComponent(q)}&page_size=20`);
+    if (!res || !res.ok) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`;
+      return;
+    }
+
+    const data = await res.json();
+    const visitas = (data.visitas || []).filter(v => v.acceso_id === r.acceso_id);
+
+    if (visitas.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-title">Sin visitas registradas</div></div>`;
+      return;
+    }
+
+    container.innerHTML = visitas.map((v, i) => `
+      <div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*30}ms" data-id="${v.id}">
+        <div>
+          <div class="row-name">${esc(v.nombre)}</div>
+          <div class="row-sub">${esc(v.motivo_visita || v.casa_destino || "—")}</div>
+        </div>
+        <div class="row-date">${fmtDate(v.created_at)}</div>
+        <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
+      </div>`).join("");
+
+    container.querySelectorAll("[data-id]").forEach(row => {
+      row.addEventListener("click", () => loadDetalle(row.dataset.id));
+    });
   }
+
+  document.getElementById("btn-nuevo-residente")?.addEventListener("click", () => {
+    alert("Formulario de nuevo residente — próximamente.");
+  });
 
   /* ─── Accesos ────────────────────────────── */
   async function loadAccesos() {
@@ -733,13 +1049,10 @@
     });
   }
 
-  /* modal acceso */
   document.getElementById("btn-nuevo-acceso").addEventListener("click", () => openAccesoModal(null));
 
   function openAccesoModal(accesoId) {
     state.editingAccesoId = accesoId;
-    const titleEl = document.getElementById("modal-acceso-title");
-    const hintEl  = document.getElementById("acceso-clave-hint");
     const formView = document.getElementById("acceso-form-view");
     const revView  = document.getElementById("acceso-reveal-view");
     formView.hidden = false;
@@ -747,21 +1060,23 @@
 
     if (accesoId) {
       const a = state.accesosById.get(accesoId);
-      titleEl.textContent = lang === "en" ? "Edit entry" : "Editar acceso";
+      document.getElementById("modal-acceso-title").textContent = lang === "en" ? "Edit entry" : "Editar acceso";
       document.getElementById("acceso-nombre").value    = a?.nombre    || "";
       document.getElementById("acceso-ubicacion").value = a?.ubicacion || "";
-      hintEl.hidden = true;
+      document.getElementById("acceso-clave-hint").hidden = true;
     } else {
-      titleEl.textContent = t("modal_new_acceso");
+      document.getElementById("modal-acceso-title").textContent = t("modal_new_acceso");
       document.getElementById("acceso-nombre").value    = "";
       document.getElementById("acceso-ubicacion").value = "";
-      hintEl.hidden = false;
+      document.getElementById("acceso-clave-hint").hidden = false;
     }
     document.getElementById("acceso-form-error").hidden = true;
     document.getElementById("modal-acceso").hidden = false;
   }
 
-  document.getElementById("acceso-cancel").addEventListener("click", () => { document.getElementById("modal-acceso").hidden = true; });
+  document.getElementById("acceso-cancel").addEventListener("click", () => {
+    document.getElementById("modal-acceso").hidden = true;
+  });
 
   document.getElementById("acceso-form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -769,7 +1084,7 @@
     const ubicacion = document.getElementById("acceso-ubicacion").value;
     const errEl     = document.getElementById("acceso-form-error");
 
-    const isNew = state.editingAccesoId === null;
+    const isNew    = state.editingAccesoId === null;
     const endpoint = isNew ? "/accesos/" : `/accesos/${state.editingAccesoId}`;
     const method   = isNew ? "POST" : "PATCH";
 
@@ -800,7 +1115,6 @@
     document.getElementById("modal-acceso").hidden = true;
   });
 
-  /* modal delete */
   function openDeleteModal(accesoId) {
     state.deletingAccesoId = accesoId;
     const a = state.accesosById.get(accesoId);
@@ -818,11 +1132,110 @@
     if (res && res.ok) await loadAccesos();
   });
 
-  /* cerrar modal con Escape */
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       document.querySelectorAll(".modal-overlay").forEach(m => m.hidden = true);
     }
+  });
+
+  /* ─── Configuración ─────────────────────── */
+  let cfgAccesoId = null;
+
+  async function loadConfigAccesos() {
+    const select = document.getElementById("cfg-acceso-select");
+    if (!select) return;
+
+    if (state.accesosById.size === 0) await preloadAccesos();
+
+    select.innerHTML = `<option value="">— Selecciona un acceso —</option>`;
+    state.accesosById.forEach(a => {
+      const opt = document.createElement("option");
+      opt.value = a.id;
+      opt.textContent = `${a.nombre}${a.ubicacion ? ` (${a.ubicacion})` : ""}`;
+      select.appendChild(opt);
+    });
+
+    document.getElementById("cfg-form-wrap").hidden = true;
+    document.getElementById("cfg-idle").hidden = false;
+  }
+
+  document.getElementById("cfg-acceso-select")?.addEventListener("change", async e => {
+    const id = parseInt(e.target.value);
+    if (!id) {
+      document.getElementById("cfg-form-wrap").hidden = true;
+      document.getElementById("cfg-idle").hidden = false;
+      return;
+    }
+    cfgAccesoId = id;
+    await loadConfig(id);
+  });
+
+  async function loadConfig(accesoId) {
+    const wrap = document.getElementById("cfg-form-wrap");
+    const idle = document.getElementById("cfg-idle");
+
+    const res = await api(`/accesos/${accesoId}/config`);
+    if (!res || !res.ok) {
+      alert("No se pudo cargar la configuración.");
+      return;
+    }
+
+    const cfg = await res.json();
+    document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
+    document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
+    document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
+    document.getElementById("cfg-ine-visitante").checked    = !!cfg.foto_ine_visitante;
+    document.getElementById("cfg-rostro-visitante").checked = !!cfg.foto_rostro_visitante;
+    document.getElementById("cfg-placa-visitante").checked  = !!cfg.foto_placa_visitante;
+    document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
+    document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
+    document.getElementById("cfg-placa-invitado").checked   = !!cfg.foto_placa_invitado;
+    document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_min ?? 5;
+    document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
+    document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
+
+    document.getElementById("cfg-error").hidden   = true;
+    document.getElementById("cfg-success").hidden = true;
+    idle.hidden = true;
+    wrap.hidden = false;
+  }
+
+  document.getElementById("cfg-save-btn")?.addEventListener("click", async () => {
+    if (!cfgAccesoId) return;
+    const errEl = document.getElementById("cfg-error");
+    const okEl  = document.getElementById("cfg-success");
+    errEl.hidden = true;
+    okEl.hidden  = true;
+
+    const payload = {
+      color_kiosko:         document.getElementById("cfg-color").value,
+      idioma_kiosko:        document.getElementById("cfg-idioma").value,
+      mensaje_bienvenida:   document.getElementById("cfg-mensaje").value,
+      foto_ine_visitante:   document.getElementById("cfg-ine-visitante").checked,
+      foto_rostro_visitante:document.getElementById("cfg-rostro-visitante").checked,
+      foto_placa_visitante: document.getElementById("cfg-placa-visitante").checked,
+      foto_ine_invitado:    document.getElementById("cfg-ine-invitado").checked,
+      foto_rostro_invitado: document.getElementById("cfg-rostro-invitado").checked,
+      foto_placa_invitado:  document.getElementById("cfg-placa-invitado").checked,
+      tiempo_espera_min:    parseInt(document.getElementById("cfg-tiempo-espera").value) || 0,
+      horario_inicio:       document.getElementById("cfg-horario-inicio").value,
+      horario_fin:          document.getElementById("cfg-horario-fin").value,
+    };
+
+    const res = await api(`/accesos/${cfgAccesoId}/config`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+
+    if (!res) return;
+    if (!res.ok) {
+      const data = await res.json();
+      errEl.textContent = data.error || "Error al guardar";
+      errEl.hidden = false;
+      return;
+    }
+    okEl.hidden = false;
+    setTimeout(() => { okEl.hidden = true; }, 3000);
   });
 
   /* ─── Perfil ─────────────────────────────── */

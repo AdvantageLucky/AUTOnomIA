@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AUTOnomIA · Panel de administración</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
   <script src="https://accounts.google.com/gsi/client" async></script>
 </head>
@@ -54,15 +55,13 @@
   </div>
 
   <div class="login-hero">
-    <div class="login-hero-ring login-hero-ring--1"></div>
-    <div class="login-hero-ring login-hero-ring--2"></div>
-    <div class="login-hero-ring login-hero-ring--3"></div>
+    <div class="login-hero-bg" aria-hidden="true">AUTOnomIA</div>
     <div class="login-hero-content">
       <div class="hero-badge">
         <span class="hero-dot"></span>
         FEPRO 2026 · Kigo Self Check-In AI
       </div>
-      <h2 data-i18n="hero_title">Quién entró, cuándo y por dónde.</h2>
+      <h2 data-i18n="hero_title">Quién entró,<br>cuándo y por dónde.</h2>
       <p data-i18n="hero_sub">Auto-registro de visitantes para comunidades cerradas. Supervisa bitácoras, verifica visitas y gestiona tus entradas desde un solo lugar.</p>
     </div>
   </div>
@@ -71,55 +70,31 @@
 <!-- ===================== APP SHELL ===================== -->
 <div id="app-shell" class="app-shell" hidden>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-brand">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-brand">
       <div class="brand-mark brand-mark--sm">K</div>
-      <div>
-        <div class="brand-name brand-name--sm">AUTO-nom<span>IA</span></div>
-        <div class="brand-sub" data-i18n="brand_sub">Control de acceso</div>
-      </div>
+      <span class="topbar-brand-name">AUTO-nom<span>IA</span></span>
     </div>
 
-    <div class="nav-section" data-i18n="nav_general">General</div>
-    <button class="nav-btn" data-nav="dashboard">
-      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="2" width="5.5" height="5.5" rx="1.2"/><rect x="10.5" y="2" width="5.5" height="5.5" rx="1.2"/><rect x="2" y="10.5" width="5.5" height="5.5" rx="1.2"/><rect x="10.5" y="10.5" width="5.5" height="5.5" rx="1.2"/></svg>
-      <span data-i18n="nav_dashboard">Inicio</span>
-    </button>
-    <button class="nav-btn" data-nav="visitas">
-      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
-      <span data-i18n="nav_visitas">Visitas</span>
-    </button>
-    <button class="nav-btn" data-nav="historial">
-      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
-      <span data-i18n="nav_historial">Buscar CURP</span>
-    </button>
+    <nav class="topbar-nav">
+      <button class="nav-btn" data-nav="dashboard" data-i18n="nav_dashboard">Inicio</button>
+      <button class="nav-btn" data-nav="visitas" data-i18n="nav_visitas">Visitas</button>
+      <button class="nav-btn" data-nav="solicitudes">Solicitudes</button>
+      <button class="nav-btn" data-nav="residentes">Residentes</button>
+      <button class="nav-btn" data-nav="accesos" data-i18n="nav_accesos">Accesos</button>
+      <button class="nav-btn" data-nav="configuracion">Configuración</button>
+      <button class="nav-btn" data-nav="perfil" data-i18n="nav_perfil">Perfil</button>
+    </nav>
 
-    <div class="nav-section" data-i18n="nav_config">Configuración</div>
-    <button class="nav-btn" data-nav="accesos">
-      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.5" y="3" width="13" height="12" rx="1.4"/><line x1="9" y1="3" x2="9" y2="15"/></svg>
-      <span data-i18n="nav_accesos">Accesos</span>
-    </button>
-    <button class="nav-btn" data-nav="perfil">
-      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="6" r="3"/><rect x="3.5" y="11.5" width="11" height="5" rx="2.5"/></svg>
-      <span data-i18n="nav_perfil">Perfil</span>
-    </button>
-
-    <div class="sidebar-spacer"></div>
-
-    <div class="sidebar-bottom">
-      <div class="sidebar-user">
-        <div class="avatar" id="sidebar-avatar">··</div>
-        <div class="sidebar-user-info">
-          <div class="sidebar-user-name" id="sidebar-user-name" data-i18n="loading">Cargando…</div>
-          <div class="sidebar-user-role" data-i18n="role_admin">Administrador</div>
-        </div>
-        <button id="btn-logout" title="Cerrar sesión" class="icon-btn">
-          <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><line x1="11" y1="9" x2="16" y2="9"/><polyline points="13.5,6.5 16,9 13.5,11.5"/></svg>
-        </button>
-      </div>
+    <div class="topbar-end">
+      <div class="avatar" id="sidebar-avatar">··</div>
+      <span class="topbar-username" id="sidebar-user-name">—</span>
+      <button id="btn-logout" title="Cerrar sesión" class="icon-btn">
+        <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><line x1="11" y1="9" x2="16" y2="9"/><polyline points="13.5,6.5 16,9 13.5,11.5"/></svg>
+      </button>
     </div>
-  </aside>
+  </header>
 
   <!-- MAIN -->
   <main class="main">
@@ -132,38 +107,35 @@
           <div class="screen-sub" data-i18n="dash_sub">Resumen de tu comunidad</div>
         </div>
       </div>
-      <div class="screen-body">
-        <div class="stat-grid">
-          <div class="stat-card">
-            <div class="stat-label" data-i18n="stat_today">Visitas de hoy</div>
-            <div class="stat-value" id="stat-hoy">—</div>
-            <div class="stat-hint" data-i18n="stat_today_hint">En la última página cargada</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label" data-i18n="stat_week">Últimos 7 días</div>
-            <div class="stat-value" id="stat-semana">—</div>
-            <div class="stat-hint" data-i18n="stat_week_hint">Sobre la última página cargada</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label" data-i18n="stat_total">Total registros</div>
-            <div class="stat-value" id="stat-total">—</div>
-            <div class="stat-hint" data-i18n="stat_total_hint">Visitantes en bitácora</div>
-          </div>
-          <div class="stat-card stat-card--accent">
-            <div class="stat-label" data-i18n="stat_accesos">Accesos activos</div>
-            <div class="stat-value" id="stat-accesos">—</div>
-            <div class="stat-hint" data-i18n="stat_accesos_hint">Entradas configuradas</div>
-          </div>
-        </div>
 
+      <div class="stat-strip">
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stat_today">Hoy</div>
+          <div class="stat-value" id="stat-hoy">—</div>
+        </div>
+        <div class="stat-card stat-card--accent">
+          <div class="stat-label" data-i18n="stat_pending">Pendientes</div>
+          <div class="stat-value" id="stat-pendientes">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stat_week">Últimos 7 días</div>
+          <div class="stat-value" id="stat-semana">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stat_total">Total</div>
+          <div class="stat-value" id="stat-total">—</div>
+        </div>
+      </div>
+
+      <div class="screen-inner">
         <div class="quick-grid">
-          <button class="quick-card quick-card--accent" data-nav="historial">
+          <button class="quick-card quick-card--accent" data-nav="solicitudes">
             <div class="quick-icon">
-              <svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
+              <svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="7"/><line x1="9" y1="5" x2="9" y2="9"/><circle cx="9" cy="12" r=".8" fill="currentColor" stroke="none"/></svg>
             </div>
             <div>
-              <div class="quick-title" data-i18n="q_curp_title">Buscar por CURP</div>
-              <div class="quick-sub" data-i18n="q_curp_sub">¿Esta persona ya vino antes?</div>
+              <div class="quick-title">Solicitudes pendientes</div>
+              <div class="quick-sub">Aprobar o rechazar accesos en espera</div>
             </div>
           </button>
           <button class="quick-card" data-nav="visitas">
@@ -171,15 +143,15 @@
               <svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
             </div>
             <div>
-              <div class="quick-title" data-i18n="q_visitas_title">Ver visitas</div>
-              <div class="quick-sub" data-i18n="q_visitas_sub">Bitácora completa y paginada</div>
+              <div class="quick-title" data-i18n="q_visitas_title">Ver bitácora completa</div>
+              <div class="quick-sub" data-i18n="q_visitas_sub">Filtros por estado y documento</div>
             </div>
           </button>
         </div>
 
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title" data-i18n="recent_title">Visitas recientes</div>
+            <div class="panel-title" data-i18n="recent_title">Actividad reciente</div>
             <button class="link-btn" data-nav="visitas" data-i18n="see_all">Ver todas ›</button>
           </div>
           <div id="dash-recent-rows"></div>
@@ -199,7 +171,7 @@
         <div class="search-row">
           <div class="search-wrap">
             <svg class="search-icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
-            <input id="vis-quick-search" type="text" placeholder="Buscar por nombre, CURP o clave…">
+            <input id="vis-quick-search" type="text" placeholder="Buscar por nombre, CURP, clave, casa o placa…">
           </div>
           <select id="vis-filter-tipo" class="search-select">
             <option value="" data-i18n="all_docs">Todos los documentos</option>
@@ -213,21 +185,13 @@
             <option value="APROBADO" data-i18n="aprobado">Aprobado</option>
             <option value="RECHAZADO" data-i18n="rechazado">Rechazado</option>
           </select>
-          <button class="btn-secondary" data-nav="historial" data-i18n="search_curp_btn">Buscar CURP →</button>
         </div>
 
         <div class="panel">
-          <div class="table-header vis-row-grid--list">
-            <div data-i18n="col_visitor">VISITANTE</div>
-            <div data-i18n="col_doc">DOCUMENTO</div>
-            <div data-i18n="col_access">ACCESO</div>
-            <div data-i18n="col_estado">ESTADO</div>
-            <div data-i18n="col_date">FECHA</div>
-          </div>
           <div id="vis-loading" hidden>
-            <div class="skel-row"><div class="skel" style="width:38px;height:38px;border-radius:50%;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:7px"><div class="skel" style="height:13px;width:58%"></div><div class="skel" style="height:10px;width:38%"></div></div></div>
-            <div class="skel-row"><div class="skel" style="width:38px;height:38px;border-radius:50%;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:7px"><div class="skel" style="height:13px;width:52%"></div><div class="skel" style="height:10px;width:33%"></div></div></div>
-            <div class="skel-row"><div class="skel" style="width:38px;height:38px;border-radius:50%;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:7px"><div class="skel" style="height:13px;width:64%"></div><div class="skel" style="height:10px;width:44%"></div></div></div>
+            <div class="skel-row"><div class="skel" style="width:8px;height:8px;border-radius:50%;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:7px"><div class="skel" style="height:13px;width:48%"></div><div class="skel" style="height:10px;width:28%"></div></div></div>
+            <div class="skel-row"><div class="skel" style="width:8px;height:8px;border-radius:50%;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:7px"><div class="skel" style="height:13px;width:62%"></div><div class="skel" style="height:10px;width:35%"></div></div></div>
+            <div class="skel-row"><div class="skel" style="width:8px;height:8px;border-radius:50%;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:7px"><div class="skel" style="height:13px;width:55%"></div><div class="skel" style="height:10px;width:40%"></div></div></div>
           </div>
           <div id="vis-rows" hidden></div>
           <div id="vis-empty" class="empty-state" hidden>
@@ -253,7 +217,7 @@
       </div>
     </section>
 
-    <!-- DETALLE -->
+    <!-- DETALLE DE VISITA -->
     <section id="screen-detalle" class="screen" hidden>
       <div class="screen-header screen-header--back">
         <button class="back-btn" data-nav="visitas">
@@ -266,60 +230,79 @@
       <div class="screen-body screen-body--narrow" id="detalle-body"></div>
     </section>
 
-    <!-- HISTORIAL -->
-    <section id="screen-historial" class="screen" hidden>
+    <!-- SOLICITUDES -->
+    <section id="screen-solicitudes" class="screen" hidden>
       <div class="screen-header">
         <div>
-          <div class="screen-title" data-i18n="nav_historial">Buscar por CURP</div>
-          <div class="screen-sub" data-i18n="hist_sub">¿Esta persona ya vino? Consulta su historial de visitas.</div>
+          <div class="screen-title">Solicitudes</div>
+          <div class="screen-sub">Accesos pendientes de aprobación</div>
+        </div>
+        <div class="sol-meta">
+          <span class="sol-badge" id="sol-count">—</span>
+          <span class="sol-update-label">Actualizado: <span id="sol-last-update">—</span></span>
         </div>
       </div>
-      <div class="screen-body screen-body--medium">
-        <div class="panel panel-padded" style="margin-bottom:16px">
-          <div class="curp-search-row">
-            <div class="curp-field">
-              <label for="curp-input" data-i18n="curp_label">CURP del visitante</label>
-              <input id="curp-input" maxlength="18" placeholder="PEPJ900101HDFRRN09" class="mono-input" autocomplete="off">
-            </div>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn-primary" id="curp-search-btn" data-i18n="search_btn">Buscar</button>
-            </div>
-          </div>
-          <div class="curp-hint" id="curp-hint" data-i18n="curp_hint">18 caracteres exactos.</div>
-        </div>
-
-        <div id="hist-idle" class="empty-state">
-          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg></div>
-          <div class="empty-title" data-i18n="hist_idle_title">Consulta el historial de una persona</div>
-          <div class="empty-text" data-i18n="hist_idle_text">Ingresa una CURP para ver cuántas veces ha ingresado y por qué accesos.</div>
-        </div>
-        <div id="hist-loading" class="loading-state" hidden>
+      <div class="screen-body">
+        <div id="sol-loading" class="loading-state" hidden>
           <div class="spinner"></div>
-          <div class="loading-text" data-i18n="searching">Buscando visitas…</div>
+          <div class="loading-text">Cargando solicitudes…</div>
         </div>
-
-        <div id="hist-results" hidden>
-          <div class="hist-summary">
-            <div class="hist-count" id="hist-total">0</div>
-            <div>
-              <div class="hist-title" id="hist-title-text"></div>
-              <div class="hist-curp" id="hist-curp-label"></div>
-            </div>
+        <div id="sol-empty" class="empty-state" hidden>
+          <div class="empty-icon">
+            <svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><path d="M6 9l2 2 4-4"/></svg>
           </div>
-          <div class="panel">
-            <div class="table-header vis-row-grid">
-              <div data-i18n="col_visitor">VISITANTE</div><div data-i18n="col_doc">DOCUMENTO</div><div>CURP</div><div data-i18n="col_access">ACCESO</div><div data-i18n="col_estado">ESTADO</div><div data-i18n="col_date">FECHA</div>
-            </div>
-            <div id="hist-rows"></div>
-          </div>
+          <div class="empty-title">Sin solicitudes pendientes</div>
+          <div class="empty-text">Todas las entradas han sido procesadas. Se actualiza cada 15 segundos.</div>
         </div>
-
-        <div id="hist-empty" class="empty-state" hidden>
-          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><line x1="8.5" y1="12" x2="15.5" y2="12"/></svg></div>
-          <div class="empty-title" data-i18n="hist_empty_title">Sin visitas con esa CURP</div>
-          <div class="empty-text" data-i18n="hist_empty_text">Puede ser su primera vez. Verifica que la CURP esté escrita correctamente.</div>
+        <div id="sol-error" class="empty-state" hidden>
+          <div class="empty-icon empty-icon--err"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 4 L21 19 H3 Z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="16.6" r=".6" fill="currentColor" stroke="none"/></svg></div>
+          <div class="empty-title">Error al cargar</div>
+          <div class="empty-text">Revisa tu conexión e inténtalo de nuevo.</div>
         </div>
+        <div id="sol-rows"></div>
       </div>
+    </section>
+
+    <!-- RESIDENTES -->
+    <section id="screen-residentes" class="screen" hidden>
+      <div class="screen-header">
+        <div>
+          <div class="screen-title">Residentes</div>
+          <div class="screen-sub">Vecinos registrados en tus comunidades</div>
+        </div>
+        <button class="btn-primary" id="btn-nuevo-residente"><span class="plus">+</span> Nuevo residente</button>
+      </div>
+      <div class="screen-body">
+        <div class="search-row">
+          <div class="search-wrap">
+            <svg class="search-icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
+            <input id="res-search" type="text" placeholder="Buscar por nombre o casa…">
+          </div>
+        </div>
+        <div id="res-loading" class="loading-state" hidden>
+          <div class="spinner"></div>
+          <div class="loading-text">Cargando residentes…</div>
+        </div>
+        <div id="res-empty" class="empty-state" hidden>
+          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
+          <div class="empty-title">Sin residentes registrados</div>
+          <div class="empty-text">Crea el primer residente para que pueda usar la app y generar invitaciones.</div>
+        </div>
+        <div id="res-grid" class="residente-grid"></div>
+      </div>
+    </section>
+
+    <!-- DETALLE DE RESIDENTE -->
+    <section id="screen-residente-detalle" class="screen" hidden>
+      <div class="screen-header screen-header--back">
+        <button class="back-btn" data-nav="residentes">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="3" x2="4" y2="9"/><line x1="4" y1="9" x2="12" y2="15"/></svg>
+          <span>Residentes</span>
+        </button>
+        <div class="header-div"></div>
+        <div class="screen-title">Detalle de residente</div>
+      </div>
+      <div class="screen-body screen-body--narrow" id="residente-detalle-body"></div>
     </section>
 
     <!-- ACCESOS -->
@@ -333,6 +316,182 @@
       </div>
       <div class="screen-body screen-body--medium">
         <div id="accesos-list"></div>
+      </div>
+    </section>
+
+    <!-- CONFIGURACIÓN -->
+    <section id="screen-configuracion" class="screen" hidden>
+      <div class="screen-header">
+        <div>
+          <div class="screen-title">Configuración</div>
+          <div class="screen-sub">Parámetros por kiosko</div>
+        </div>
+      </div>
+      <div class="screen-body screen-body--narrow">
+
+        <div class="panel panel-padded" style="margin-bottom:16px">
+          <div class="form-group">
+            <label>Kiosko a configurar</label>
+            <select id="cfg-acceso-select" class="search-select" style="width:100%">
+              <option value="">— Selecciona un acceso —</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="cfg-form-wrap" hidden>
+
+          <div class="config-section">
+            <div class="config-section-title">Apariencia e idioma</div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Modo del kiosko</div>
+                <div class="toggle-sub">Tema visual que verán los visitantes</div>
+              </div>
+              <select id="cfg-color" class="search-select">
+                <option value="oscuro">Oscuro</option>
+                <option value="claro">Claro</option>
+              </select>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Idioma del kiosko</div>
+                <div class="toggle-sub">Idioma de la interfaz del kiosko</div>
+              </div>
+              <select id="cfg-idioma" class="search-select">
+                <option value="es">Español</option>
+                <option value="en">Inglés</option>
+              </select>
+            </div>
+
+            <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div>
+                <div class="toggle-label">Mensaje de bienvenida</div>
+                <div class="toggle-sub">Texto que aparece al inicio del flujo</div>
+              </div>
+              <input id="cfg-mensaje" type="text" placeholder="Bienvenido a Residencial Las Palmas" style="width:100%">
+            </div>
+          </div>
+
+          <div class="config-section">
+            <div class="config-section-title">Requerimientos para visitantes directos</div>
+            <div class="config-section-sub">Personas que llegan sin invitación previa</div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Captura de INE</div>
+                <div class="toggle-sub">OCR de credencial para extraer CURP y nombre</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cfg-ine-visitante">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Foto de rostro</div>
+                <div class="toggle-sub">Captura facial para verificación</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cfg-rostro-visitante">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Foto de placa vehicular</div>
+                <div class="toggle-sub">Registro de matrícula si llega en vehículo</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cfg-placa-visitante">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <div class="config-section-title">Requerimientos para invitados con QR</div>
+            <div class="config-section-sub">Personas con invitación generada por un residente</div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Captura de INE</div>
+                <div class="toggle-sub">Verificar identidad incluso con QR válido</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cfg-ine-invitado">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Foto de rostro</div>
+                <div class="toggle-sub">Captura facial de confirmación</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cfg-rostro-invitado">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Foto de placa vehicular</div>
+                <div class="toggle-sub">Registro de matrícula si llega en vehículo</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cfg-placa-invitado">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <div class="config-section-title">Tiempos y horario</div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Tiempo de espera mínimo (min)</div>
+                <div class="toggle-sub">Minutos que debe esperar el visitante para reintentar</div>
+              </div>
+              <input type="number" id="cfg-tiempo-espera" min="0" max="1440" class="search-select" style="width:80px;text-align:right">
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Horario de inicio</div>
+                <div class="toggle-sub">Kiosko activo desde esta hora</div>
+              </div>
+              <input type="time" id="cfg-horario-inicio" class="search-select">
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Horario de cierre</div>
+                <div class="toggle-sub">Kiosko activo hasta esta hora</div>
+              </div>
+              <input type="time" id="cfg-horario-fin" class="search-select">
+            </div>
+          </div>
+
+          <div id="cfg-error" class="form-error" hidden></div>
+          <div id="cfg-success" class="form-success" hidden>Configuración guardada.</div>
+          <div class="form-actions">
+            <button type="button" class="btn-primary" id="cfg-save-btn">Guardar configuración</button>
+          </div>
+
+        </div>
+
+        <div id="cfg-idle" class="empty-state">
+          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="3"/><path d="M9 1v2m0 12v2M1 9h2m12 0h2m-2.9-5.1-1.4 1.4M5.3 12.7l-1.4 1.4m0-11.2 1.4 1.4m7.4 7.4 1.4 1.4"/></svg></div>
+          <div class="empty-title">Selecciona un kiosko</div>
+          <div class="empty-text">Elige un acceso del menú de arriba para ver y editar su configuración.</div>
+        </div>
+
       </div>
     </section>
 
@@ -411,8 +570,8 @@
       <div class="modal-title" id="modal-acceso-title" data-i18n="modal_new_acceso">Nuevo acceso</div>
       <div class="modal-sub" data-i18n="modal_acceso_sub">Define el nombre y ubicación de la entrada.</div>
       <form id="acceso-form">
-        <div class="form-group"><label data-i18n="name">Nombre</label><input id="acceso-nombre" required placeholder="Entrada A"></div>
-        <div class="form-group"><label data-i18n="location">Ubicación</label><input id="acceso-ubicacion" placeholder="Calle Principal"></div>
+        <div class="form-group"><label data-i18n="name">Nombre</label><input id="acceso-nombre" type="text" required placeholder="Entrada A"></div>
+        <div class="form-group"><label data-i18n="location">Ubicación</label><input id="acceso-ubicacion" type="text" placeholder="Calle Principal"></div>
         <div class="form-hint" id="acceso-clave-hint" data-i18n="acceso_key_hint">La clave de kiosko se genera automáticamente al crear el acceso.</div>
         <div id="acceso-form-error" class="form-error" hidden></div>
         <div class="modal-actions">
