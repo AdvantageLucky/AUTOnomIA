@@ -1,35 +1,273 @@
-/* AUTO-nomIA · Panel de administración
- * Vanilla JS, sin build step. Consume la API real en /api/v1 (ver internal/router/router.go).
- */
+/* AUTOnomIA · Dashboard Admin — sin build step */
 (() => {
   const API_BASE = "/api/v1";
   const TOKEN_KEY = "autonomia_admin_token";
 
-  const MESES = [
-    "ene",
-    "feb",
-    "mar",
-    "abr",
-    "may",
-    "jun",
-    "jul",
-    "ago",
-    "sep",
-    "oct",
-    "nov",
-    "dic",
-  ];
+  /* ─── i18n ─────────────────────────────── */
+  const STRINGS = {
+    es: {
+      brand_sub: "Control de acceso",
+      login_title: "Panel de administración",
+      login_sub: "Inicia sesión para supervisar los accesos de tu comunidad.",
+      login_email: "Correo electrónico",
+      login_pass: "Contraseña",
+      login_btn: "Entrar",
+      or: "o continúa con",
+      google_btn: "Continuar con Google",
+      no_account: "¿No tienes cuenta?",
+      create_account: "Crear cuenta de administrador",
+      hero_title: "Quién entró, cuándo y por dónde.",
+      hero_sub: "Auto-registro de visitantes para comunidades cerradas. Supervisa bitácoras, verifica visitas y gestiona tus entradas desde un solo lugar.",
+      dark_mode: "Modo oscuro",
+      light_mode: "Modo claro",
+      nav_general: "General",
+      nav_dashboard: "Inicio",
+      nav_visitas: "Visitas",
+      nav_historial: "Buscar CURP",
+      nav_config: "Configuración",
+      nav_accesos: "Accesos",
+      nav_perfil: "Perfil",
+      role_admin: "Administrador",
+      loading: "Cargando…",
+      dash_sub: "Resumen de tu comunidad",
+      stat_today: "Visitas de hoy",
+      stat_today_hint: "En la última página cargada",
+      stat_week: "Últimos 7 días",
+      stat_week_hint: "Sobre la última página cargada",
+      stat_total: "Total registros",
+      stat_total_hint: "Visitantes en bitácora",
+      stat_accesos: "Accesos activos",
+      stat_accesos_hint: "Entradas configuradas",
+      q_curp_title: "Buscar por CURP",
+      q_curp_sub: "¿Esta persona ya vino antes?",
+      q_visitas_title: "Ver visitas",
+      q_visitas_sub: "Bitácora completa y paginada",
+      recent_title: "Visitas recientes",
+      see_all: "Ver todas ›",
+      vis_sub: "Bitácora de registros",
+      all_docs: "Todos los documentos",
+      pasaporte: "Pasaporte",
+      licencia: "Licencia",
+      all_states: "Todos los estados",
+      pendiente: "Pendiente",
+      aprobado: "Aprobado",
+      rechazado: "Rechazado",
+      search_curp_btn: "Buscar CURP →",
+      col_visitor: "VISITANTE",
+      col_doc: "DOCUMENTO",
+      col_access: "ACCESO",
+      col_estado: "ESTADO",
+      col_date: "FECHA",
+      vis_empty_title: "Sin visitantes registrados",
+      vis_empty_text: "Cuando alguien se registre en una de tus entradas, aparecerá aquí automáticamente.",
+      load_err_title: "Error al cargar",
+      load_err_text: "Revisa tu conexión e inténtalo de nuevo.",
+      retry: "Reintentar",
+      prev: "‹ Anterior",
+      next: "Siguiente ›",
+      detail_title: "Detalle de visita",
+      hist_sub: "¿Esta persona ya vino? Consulta su historial de visitas.",
+      curp_label: "CURP del visitante",
+      search_btn: "Buscar",
+      curp_hint: "18 caracteres exactos.",
+      hist_idle_title: "Consulta el historial de una persona",
+      hist_idle_text: "Ingresa una CURP para ver cuántas veces ha ingresado y por qué accesos.",
+      searching: "Buscando visitas…",
+      hist_empty_title: "Sin visitas con esa CURP",
+      hist_empty_text: "Puede ser su primera vez. Verifica que la CURP esté escrita correctamente.",
+      accesos_sub: "Entradas y casetas de tu comunidad",
+      new_acceso: "Nuevo acceso",
+      perfil_sub: "Tus datos personales y seguridad",
+      personal_data: "Datos personales",
+      first_name: "Nombre",
+      email: "Correo",
+      paternal: "Apellido paterno",
+      maternal: "Apellido materno",
+      confirm_pass: "Confirmar contraseña",
+      pass_hint: "La API requiere reenviar tu contraseña al actualizar el perfil.",
+      password: "Contraseña",
+      profile_saved: "Perfil actualizado correctamente.",
+      save: "Guardar cambios",
+      modal_new_acceso: "Nuevo acceso",
+      modal_acceso_sub: "Define el nombre y ubicación de la entrada.",
+      name: "Nombre",
+      location: "Ubicación",
+      acceso_key_hint: "La clave de kiosko se genera automáticamente al crear el acceso.",
+      cancel: "Cancelar",
+      acceso_created: "Acceso creado",
+      acceso_created_sub: "Copia esta clave ahora y configúrala en el kiosko. No se mostrará de nuevo.",
+      access_id: "ID del acceso",
+      kiosk_key: "Clave de kiosko",
+      copied: "Listo, ya la copié",
+      delete_acceso: "¿Eliminar acceso?",
+      delete_acceso_text: "Esta acción no se puede deshacer. El acceso dejará de estar disponible.",
+      delete: "Eliminar",
+      motivo: "Motivo de visita",
+      casa_destino: "Casa / Destino",
+      placa: "Placa",
+      no_placa: "Sin placa",
+      visits: n => `${n} visita${n !== 1 ? "s" : ""} registrada${n !== 1 ? "s" : ""}`,
+      hello: name => `Hola, ${name}`,
+    },
+    en: {
+      brand_sub: "Access control",
+      login_title: "Admin dashboard",
+      login_sub: "Sign in to monitor access to your community.",
+      login_email: "Email address",
+      login_pass: "Password",
+      login_btn: "Sign in",
+      or: "or continue with",
+      google_btn: "Continue with Google",
+      no_account: "Don't have an account?",
+      create_account: "Create admin account",
+      hero_title: "Who entered, when and where.",
+      hero_sub: "Self-registration for gated communities. Monitor logs, verify visits and manage your entries from one place.",
+      dark_mode: "Dark mode",
+      light_mode: "Light mode",
+      nav_general: "General",
+      nav_dashboard: "Home",
+      nav_visitas: "Visits",
+      nav_historial: "Search CURP",
+      nav_config: "Settings",
+      nav_accesos: "Entries",
+      nav_perfil: "Profile",
+      role_admin: "Administrator",
+      loading: "Loading…",
+      dash_sub: "Community summary",
+      stat_today: "Today's visits",
+      stat_today_hint: "From last loaded page",
+      stat_week: "Last 7 days",
+      stat_week_hint: "From last loaded page",
+      stat_total: "Total records",
+      stat_total_hint: "Visitors in log",
+      stat_accesos: "Active entries",
+      stat_accesos_hint: "Configured entry points",
+      q_curp_title: "Search by CURP",
+      q_curp_sub: "Has this person visited before?",
+      q_visitas_title: "View visits",
+      q_visitas_sub: "Complete paginated log",
+      recent_title: "Recent visits",
+      see_all: "See all ›",
+      vis_sub: "Visit log",
+      all_docs: "All documents",
+      pasaporte: "Passport",
+      licencia: "Driver's license",
+      all_states: "All statuses",
+      pendiente: "Pending",
+      aprobado: "Approved",
+      rechazado: "Rejected",
+      search_curp_btn: "Search CURP →",
+      col_visitor: "VISITOR",
+      col_doc: "DOCUMENT",
+      col_access: "ENTRY",
+      col_estado: "STATUS",
+      col_date: "DATE",
+      vis_empty_title: "No visitors registered",
+      vis_empty_text: "Once someone registers at one of your entries, they'll appear here.",
+      load_err_title: "Failed to load",
+      load_err_text: "Check your connection and try again.",
+      retry: "Try again",
+      prev: "‹ Previous",
+      next: "Next ›",
+      detail_title: "Visit detail",
+      hist_sub: "Has this person visited? Check their visit history.",
+      curp_label: "Visitor's CURP",
+      search_btn: "Search",
+      curp_hint: "Exactly 18 characters.",
+      hist_idle_title: "Look up a person's history",
+      hist_idle_text: "Enter a CURP to see how many times they've entered and through which entries.",
+      searching: "Searching visits…",
+      hist_empty_title: "No visits found for this CURP",
+      hist_empty_text: "This might be their first time. Verify the CURP is correct.",
+      accesos_sub: "Entry points and booths in your community",
+      new_acceso: "New entry",
+      perfil_sub: "Your personal data and security",
+      personal_data: "Personal information",
+      first_name: "First name",
+      email: "Email",
+      paternal: "First surname",
+      maternal: "Second surname",
+      confirm_pass: "Confirm password",
+      pass_hint: "The API requires your password when updating your profile.",
+      password: "Password",
+      profile_saved: "Profile updated successfully.",
+      save: "Save changes",
+      modal_new_acceso: "New entry",
+      modal_acceso_sub: "Set the name and location for this entry point.",
+      name: "Name",
+      location: "Location",
+      acceso_key_hint: "The kiosk key is auto-generated when the entry is created.",
+      cancel: "Cancel",
+      acceso_created: "Entry created",
+      acceso_created_sub: "Copy this key and configure it in the kiosk now. It won't be shown again.",
+      access_id: "Entry ID",
+      kiosk_key: "Kiosk key",
+      copied: "Done, I copied it",
+      delete_acceso: "Delete entry?",
+      delete_acceso_text: "This cannot be undone. The entry will no longer be available.",
+      delete: "Delete",
+      motivo: "Reason for visit",
+      casa_destino: "House / Destination",
+      placa: "License plate",
+      no_placa: "No plate",
+      visits: n => `${n} visit${n !== 1 ? "s" : ""} recorded`,
+      hello: name => `Hello, ${name}`,
+    },
+  };
 
-  const TIPO_COLOR = {
-    INE: "#FB6514",
-    PASAPORTE: "#2D6CDF",
-    LICENCIA: "#0E9F6E",
-  };
-  const TIPO_LABEL = {
-    INE: "INE",
-    PASAPORTE: "Pasaporte",
-    LICENCIA: "Licencia",
-  };
+  let lang = localStorage.getItem("autonomia_lang") || "es";
+
+  function t(key) {
+    const v = STRINGS[lang][key];
+    return v !== undefined ? v : STRINGS.es[key] ?? key;
+  }
+
+  function applyI18n() {
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.dataset.i18n;
+      const val = STRINGS[lang][key];
+      if (val !== undefined && typeof val === "string") el.textContent = val;
+    });
+    document.getElementById("label-lang").textContent = lang === "es" ? "EN" : "ES";
+    const isDark = document.documentElement.dataset.theme === "dark";
+    document.getElementById("label-theme").textContent = isDark ? t("light_mode") : t("dark_mode");
+  }
+
+  /* ─── Dark / Light ──────────────────────── */
+  function initTheme() {
+    const saved = localStorage.getItem("autonomia_theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const dark = saved ? saved === "dark" : prefersDark;
+    setTheme(dark ? "dark" : "light");
+  }
+
+  function setTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("autonomia_theme", theme);
+    document.getElementById("icon-theme-dark").hidden = theme === "dark";
+    document.getElementById("icon-theme-light").hidden = theme === "light";
+    document.getElementById("label-theme").textContent = theme === "dark" ? t("light_mode") : t("dark_mode");
+  }
+
+  document.getElementById("btn-theme").addEventListener("click", () => {
+    const current = document.documentElement.dataset.theme;
+    setTheme(current === "dark" ? "light" : "dark");
+  });
+
+  document.getElementById("btn-lang").addEventListener("click", () => {
+    lang = lang === "es" ? "en" : "es";
+    localStorage.setItem("autonomia_lang", lang);
+    applyI18n();
+  });
+
+  initTheme();
+
+  /* ─── State ─────────────────────────────── */
+  const MESES_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const MESES_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  const TIPO_BADGE = { INE: "badge--ine", PASAPORTE: "badge--pasaporte", LICENCIA: "badge--licencia" };
+  const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado" };
 
   const state = {
     adminId: null,
@@ -40,826 +278,601 @@
     visTotal: 0,
     editingAccesoId: null,
     deletingAccesoId: null,
+    visSearchTimeout: null,
   };
 
-  // ---------- token / fetch helpers ----------
-
-  function getToken() {
-    return localStorage.getItem(TOKEN_KEY);
-  }
-  function setToken(t) {
-    localStorage.setItem(TOKEN_KEY, t);
-  }
-  function clearToken() {
-    localStorage.removeItem(TOKEN_KEY);
-  }
+  /* ─── Auth helpers ──────────────────────── */
+  function getToken()       { return localStorage.getItem(TOKEN_KEY); }
+  function setToken(t)      { localStorage.setItem(TOKEN_KEY, t); }
+  function clearToken()     { localStorage.removeItem(TOKEN_KEY); }
 
   function decodeJWT(token) {
     try {
-      const payload = token.split(".")[1];
-      const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-      return JSON.parse(json);
-    } catch {
-      return null;
-    }
+      const p = token.split(".")[1];
+      return JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/")));
+    } catch { return null; }
   }
 
   async function api(path, opts = {}) {
-    const headers = Object.assign(
-      { "Content-Type": "application/json" },
-      opts.headers || {},
-    );
+    const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
     const token = getToken();
     if (token) headers.Authorization = "Bearer " + token;
-
-    const res = await fetch(
-      API_BASE + path,
-      Object.assign({}, opts, { headers }),
-    );
-
-    if (res.status === 401) {
-      clearToken();
-      showLogin("Tu sesión expiró. Inicia sesión de nuevo.");
-      throw new Error("No autorizado");
-    }
-
-    let body = null;
-    try {
-      body = await res.json();
-    } catch {
-      /* sin cuerpo */
-    }
-
-    if (!res.ok) {
-      throw new Error((body && body.error) || "Error " + res.status);
-    }
-    return body;
+    const res = await fetch(API_BASE + path, Object.assign({}, opts, { headers }));
+    if (res.status === 401) { showLogin(); return null; }
+    return res;
   }
 
-  // ---------- formato ----------
-
-  function initials(nombre) {
-    return (nombre || "")
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase();
-  }
-
-  function formatFecha(iso) {
-    if (!iso) return "—";
+  /* ─── Formato de fecha ──────────────────── */
+  function fmtDate(iso) {
     const d = new Date(iso);
-    if (isNaN(d.getTime())) return "—";
-    const dia = String(d.getDate()).padStart(2, "0");
-    const mes = MESES[d.getMonth()];
-    const horas = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    return `${dia} ${mes} ${d.getFullYear()} · ${horas}:${min}`;
+    const meses = lang === "en" ? MESES_EN : MESES_ES;
+    return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}, ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
   }
 
-  function accesoInfo(accesoId) {
-    return state.accesosById.get(accesoId) || { nombre: "—", ubicacion: "" };
+  function fmtDateShort(iso) {
+    const d = new Date(iso);
+    const meses = lang === "en" ? MESES_EN : MESES_ES;
+    return `${d.getDate()} ${meses[d.getMonth()]}`;
   }
 
-  // ---------- navegación ----------
-
-  function showLogin(message) {
-    document.getElementById("app-shell").hidden = true;
+  /* ─── Navegación ────────────────────────── */
+  function showLogin() {
     document.getElementById("screen-login").hidden = false;
-    const errEl = document.getElementById("login-error");
-    if (message) {
-      errEl.textContent = message;
-      errEl.hidden = false;
-    } else {
-      errEl.hidden = true;
-    }
+    document.getElementById("app-shell").hidden = true;
+    clearToken();
   }
 
   function showApp() {
     document.getElementById("screen-login").hidden = true;
     document.getElementById("app-shell").hidden = false;
+    applyI18n();
   }
 
-  const SCREEN_LOADERS = {
-    dashboard: loadDashboard,
-    visitantes: () => loadVisitantes(1),
-    historial: loadHistorialIdle,
-    accesos: loadAccesos,
-    perfil: loadPerfil,
-  };
+  function navTo(screen) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
 
-  function goTo(screen, extra) {
-    document.querySelectorAll(".screen").forEach((el) => {
-      el.hidden = true;
-    });
-    document.querySelectorAll(".nav-btn").forEach((el) => {
-      el.classList.toggle(
-        "active",
-        el.dataset.nav === screen ||
-          (screen === "detalle" && el.dataset.nav === "visitantes"),
-      );
-    });
-    const target = document.getElementById("screen-" + screen);
-    if (target) target.hidden = false;
+    const screenEl = document.getElementById(`screen-${screen}`);
+    if (screenEl) { screenEl.hidden = false; screenEl.classList.add("active"); }
 
-    if (screen === "detalle" && extra) {
-      loadDetalle(extra);
-    } else if (SCREEN_LOADERS[screen]) {
-      SCREEN_LOADERS[screen]();
-    }
+    document.querySelectorAll(`[data-nav="${screen}"]`).forEach(b => b.classList.add("active"));
+
+    if (screen === "dashboard") loadDashboard();
+    if (screen === "visitas")   loadVisitas(1);
+    if (screen === "accesos")   loadAccesos();
+    if (screen === "perfil")    loadPerfil();
   }
 
-  document.querySelectorAll("[data-nav]").forEach((el) => {
-    el.addEventListener("click", () => goTo(el.dataset.nav));
+  document.addEventListener("click", e => {
+    const nav = e.target.closest("[data-nav]");
+    if (nav) navTo(nav.dataset.nav);
   });
 
-  // ---------- fila de visitante (equivalente a VisitanteRow.dc.html) ----------
+  /* ─── Login ─────────────────────────────── */
+  let loginMode = "login";
 
-  function visitanteRowEl(v, variant) {
-    const tipoColor = TIPO_COLOR[v.tipo_documento] || "#9A958C";
-    const tipoLabel = TIPO_LABEL[v.tipo_documento] || v.tipo_documento;
-    const acc = accesoInfo(v.acceso_id);
-    const fecha = formatFecha(v.created_at);
+  document.getElementById("login-toggle-mode").addEventListener("click", () => {
+    loginMode = loginMode === "login" ? "register" : "login";
+    const isReg = loginMode === "register";
+    document.getElementById("login-submit").textContent = isReg ? (lang === "en" ? "Create account" : "Crear cuenta") : t("login_btn");
+  });
 
-    const el = document.createElement("div");
-    el.addEventListener("click", () => goTo("detalle", v.id));
+  document.getElementById("login-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const correo   = document.getElementById("login-correo").value;
+    const password = document.getElementById("login-password").value;
+    const errEl    = document.getElementById("login-error");
+    const btn      = document.getElementById("login-submit");
 
-    if (variant === "compact") {
-      el.className = "vis-row-compact";
-      el.innerHTML = `
-        <div class="avatar">${initials(v.nombre)}</div>
-        <div class="vis-row-compact-info">
-          <div class="vis-person-name">${escapeHtml(v.nombre)}</div>
-          <div class="vis-row-compact-sub">${escapeHtml(acc.nombre)} · ${fecha}</div>
-        </div>
-        <div class="vis-chevron">›</div>`;
-      return el;
-    }
+    btn.disabled = true;
+    errEl.hidden = true;
 
-    if (variant === "list") {
-      // listado principal (ListarVisitantes): la API no manda curp ni clave_lector aqui a
-      // proposito, solo se ven en el detalle (goTo("detalle", v.id) abajo)
-      el.className = "vis-row vis-row-grid--list";
-      el.innerHTML = `
-        <div class="vis-person">
-          <div class="avatar">${initials(v.nombre)}</div>
-          <div class="vis-person-name">${escapeHtml(v.nombre)}</div>
-        </div>
-        <div><span class="tipo-badge"><span class="tipo-dot" style="background:${tipoColor}"></span>${tipoLabel}</span></div>
-        <div class="vis-acceso"><span class="vis-acceso-dot"></span><span class="vis-acceso-name">${escapeHtml(acc.nombre)}</span></div>
-        <div class="vis-fecha">${fecha}</div>
-        <div class="vis-chevron">›</div>`;
-      return el;
-    }
-
-    el.className = "vis-row vis-row-grid";
-    el.innerHTML = `
-      <div class="vis-person">
-        <div class="avatar">${initials(v.nombre)}</div>
-        <div>
-          <div class="vis-person-name">${escapeHtml(v.nombre)}</div>
-          <div class="vis-person-clave">${escapeHtml(v.clave_lector)}</div>
-        </div>
-      </div>
-      <div><span class="tipo-badge"><span class="tipo-dot" style="background:${tipoColor}"></span>${tipoLabel}</span></div>
-      <div class="vis-curp">${escapeHtml(v.curp)}</div>
-      <div class="vis-acceso"><span class="vis-acceso-dot"></span><span class="vis-acceso-name">${escapeHtml(acc.nombre)}</span></div>
-      <div class="vis-fecha">${fecha}</div>
-      <div class="vis-chevron">›</div>`;
-    return el;
-  }
-
-  function escapeHtml(s) {
-    const div = document.createElement("div");
-    div.textContent = s == null ? "" : String(s);
-    return div.innerHTML;
-  }
-
-  function skeletonRows(container, count) {
-    container.innerHTML = "";
-    for (let i = 0; i < count; i++) {
-      const row = document.createElement("div");
-      row.className = "skel-row";
-      row.innerHTML = `
-        <div style="display:flex;align-items:center;gap:12px;"><div class="skel-avatar"></div><div style="flex:1;"><div class="skel-block" style="height:11px;width:60%;border-radius:5px;"></div><div class="skel-block" style="height:9px;width:35%;border-radius:5px;margin-top:7px;"></div></div></div>
-        <div class="skel-block" style="height:22px;width:78px;border-radius:20px;"></div>
-        <div class="skel-block" style="height:11px;width:88%;border-radius:5px;"></div>
-        <div class="skel-block" style="height:11px;width:70%;border-radius:5px;"></div>
-        <div class="skel-block" style="height:11px;width:60%;border-radius:5px;"></div>
-        <div></div>`;
-      container.appendChild(row);
-    }
-  }
-
-  // ---------- accesos (cache compartida) ----------
-
-  async function refreshAccesosCache() {
-    const accesos = await api("/accesos/");
-    state.accesosById = new Map((accesos || []).map((a) => [a.id, a]));
-    return accesos || [];
-  }
-
-  // ---------- DASHBOARD ----------
-
-  async function loadDashboard() {
-    document.getElementById("dash-greeting").textContent =
-      "Hola" + (state.admin ? ", " + state.admin.nombre : "") + " 👋";
-
-    const rowsEl = document.getElementById("dash-recent-rows");
-    rowsEl.innerHTML = "";
-    skeletonRows(rowsEl, 5);
+    const endpoint = loginMode === "register" ? "/auth/sign-in" : "/auth/login";
+    const method   = "POST";
 
     try {
-      const [accesos, pagina] = await Promise.all([
-        refreshAccesosCache(),
-        api(`/visitantes/?page=1&page_size=100`),
-      ]);
-
-      document.getElementById("stat-accesos").textContent = accesos.length;
-      document.getElementById("stat-total").textContent = pagina.total;
-
-      const ahora = new Date();
-      const inicioHoy = new Date(
-        ahora.getFullYear(),
-        ahora.getMonth(),
-        ahora.getDate(),
-      );
-      const hace7Dias = new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const visitas = pagina.visitantes || [];
-      const hoy = visitas.filter(
-        (v) => new Date(v.created_at) >= inicioHoy,
-      ).length;
-      const semana = visitas.filter(
-        (v) => new Date(v.created_at) >= hace7Dias,
-      ).length;
-      document.getElementById("stat-hoy").textContent = hoy;
-      document.getElementById("stat-semana").textContent = semana;
-
-      rowsEl.innerHTML = "";
-      visitas
-        .slice(0, 5)
-        .forEach((v) => rowsEl.appendChild(visitanteRowEl(v, "compact")));
-      if (visitas.length === 0) {
-        rowsEl.innerHTML =
-          '<div style="padding:24px;text-align:center;color:#9A958C;font-size:13.5px;">Sin visitas registradas todavía.</div>';
-      }
-    } catch (e) {
-      rowsEl.innerHTML = `<div style="padding:24px;text-align:center;color:#D14343;font-size:13.5px;">${escapeHtml(e.message)}</div>`;
-    }
-  }
-
-  // ---------- VISITANTES (listado paginado) ----------
-
-  function setVisitantesViewState(viewState) {
-    document.getElementById("vis-loading").hidden = viewState !== "loading";
-    document.getElementById("vis-rows").hidden = viewState !== "data";
-    document.getElementById("vis-empty").hidden = viewState !== "empty";
-    document.getElementById("vis-error").hidden = viewState !== "error";
-    document.getElementById("vis-pagination").hidden = viewState !== "data";
-  }
-
-  async function loadVisitantes(page) {
-    state.visPage = page;
-    setVisitantesViewState("loading");
-    skeletonRows(document.getElementById("vis-loading"), 8);
-
-    try {
-      if (state.accesosById.size === 0) await refreshAccesosCache();
-      const params = new URLSearchParams({
-        page: String(page),
-        page_size: String(state.visPageSize),
+      const res = await fetch(API_BASE + endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo, password }),
       });
-      const q = document.getElementById("vis-quick-search").value.trim();
-      if (q) params.set("q", q);
-      const tipo = document.getElementById("vis-filter-tipo").value;
-      if (tipo) params.set("tipo_documento", tipo);
 
-      const pagina = await api(`/visitantes/?${params.toString()}`);
-      state.visTotal = pagina.total;
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || "Error"; errEl.hidden = false; return; }
 
-      document.getElementById("vis-subtitle").textContent =
-        `${pagina.total} registros en la bitácora`;
+      setToken(data.access_token);
+      const claims = decodeJWT(data.access_token);
+      state.adminId = claims?.admin_id;
+      await bootstrapApp();
+    } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
+    finally  { btn.disabled = false; }
+  });
 
-      const rowsEl = document.getElementById("vis-rows");
-      rowsEl.innerHTML = "";
+  /* ─── Google Login ──────────────────────── */
+  document.getElementById("btn-google-login").addEventListener("click", () => {
+    if (typeof google === "undefined" || !google.accounts) {
+      alert("Google Identity Services no disponible. Verifica la conexión.");
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: window.__GOOGLE_CLIENT_ID__ || "",
+      callback: async ({ credential }) => {
+        const errEl = document.getElementById("login-error");
+        try {
+          const res = await fetch(API_BASE + "/auth/google", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ credential }),
+          });
+          const data = await res.json();
+          if (!res.ok) { errEl.textContent = data.error || "Google login fallido"; errEl.hidden = false; return; }
+          setToken(data.access_token);
+          const claims = decodeJWT(data.access_token);
+          state.adminId = claims?.admin_id;
+          await bootstrapApp();
+        } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
+      },
+    });
+    google.accounts.id.prompt();
+  });
 
-      if (!pagina.visitantes || pagina.visitantes.length === 0) {
-        setVisitantesViewState("empty");
-        return;
-      }
+  /* ─── Bootstrap ─────────────────────────── */
+  async function bootstrapApp() {
+    if (!state.adminId) return;
+    await loadAdminData();
+    showApp();
+    navTo("dashboard");
+  }
 
-      pagina.visitantes.forEach((v) =>
-        rowsEl.appendChild(visitanteRowEl(v, "list")),
-      );
-      setVisitantesViewState("data");
+  async function loadAdminData() {
+    const res = await api(`/admins/${state.adminId}`);
+    if (!res || !res.ok) return;
+    state.admin = await res.json();
 
-      const totalPages = Math.max(
-        1,
-        Math.ceil(pagina.total / state.visPageSize),
-      );
-      document.getElementById("vis-page-label").textContent =
-        `Mostrando ${pagina.visitantes.length} de ${pagina.total} registros`;
-      document.getElementById("vis-page-current").textContent =
-        `Página ${page} de ${totalPages}`;
+    const nombre = [state.admin.nombre, state.admin.apellido_paterno].filter(Boolean).join(" ") || state.admin.correo;
+    const initials = (state.admin.nombre?.[0] || "") + (state.admin.apellido_paterno?.[0] || "");
+
+    document.getElementById("sidebar-user-name").textContent = nombre;
+    document.getElementById("sidebar-avatar").textContent = initials || "·";
+    document.getElementById("perfil-avatar").textContent = initials || "·";
+    document.getElementById("perfil-nombre-completo").textContent = nombre;
+    document.getElementById("dash-greeting").textContent = STRINGS[lang].hello(state.admin.nombre || nombre);
+  }
+
+  /* ─── Logout ─────────────────────────────── */
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    clearToken();
+    state.adminId = null;
+    state.admin = null;
+    showLogin();
+  });
+
+  /* ─── Dashboard ─────────────────────────── */
+  async function loadDashboard() {
+    const res = await api("/visitas/?page_size=50");
+    if (!res || !res.ok) return;
+    const data = await res.json();
+
+    const visitas = data.visitas || [];
+    const total   = data.total  || 0;
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const sieteDias = new Date(hoy); sieteDias.setDate(sieteDias.getDate() - 7);
+
+    const hoyCount    = visitas.filter(v => new Date(v.created_at) >= hoy).length;
+    const semanaCount = visitas.filter(v => new Date(v.created_at) >= sieteDias).length;
+
+    animateStat("stat-hoy",    hoyCount);
+    animateStat("stat-semana", semanaCount);
+    animateStat("stat-total",  total);
+
+    const accRes = await api("/accesos/");
+    if (accRes && accRes.ok) {
+      const accData = await accRes.json();
+      const list = Array.isArray(accData) ? accData : (accData.accesos || []);
+      animateStat("stat-accesos", list.length);
+      list.forEach(a => state.accesosById.set(a.id, a));
+    }
+
+    const container = document.getElementById("dash-recent-rows");
+    const recent = visitas.slice(0, 8);
+    if (recent.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg></div><div class="empty-title" data-i18n="vis_empty_title">${t("vis_empty_title")}</div></div>`;
+      return;
+    }
+    container.innerHTML = recent.map((v, i) => renderDashRow(v, i)).join("");
+    container.querySelectorAll("[data-id]").forEach(row => {
+      row.addEventListener("click", () => loadDetalle(row.dataset.id));
+    });
+  }
+
+  function animateStat(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = "0";
+    const duration = 600;
+    const start = performance.now();
+    const step = ts => {
+      const p = Math.min((ts - start) / duration, 1);
+      el.textContent = Math.round(p * value);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  function renderDashRow(v, i) {
+    const acceso = state.accesosById.get(v.acceso_id);
+    return `<div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*40}ms" data-id="${v.id}">
+      <div>
+        <div class="row-name">${esc(v.nombre)}</div>
+        <div class="row-sub">${esc(v.casa_destino || "")}</div>
+      </div>
+      <div class="row-date">${fmtDateShort(v.created_at)}</div>
+      <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
+    </div>`;
+  }
+
+  function estadoLabel(e) {
+    const map = { PENDIENTE: t("pendiente"), APROBADO: t("aprobado"), RECHAZADO: t("rechazado") };
+    return map[e] || e;
+  }
+
+  /* ─── Visitas ────────────────────────────── */
+  async function loadVisitas(page) {
+    state.visPage = page;
+    const tipo   = document.getElementById("vis-filter-tipo").value;
+    const estado = document.getElementById("vis-filter-estado").value;
+    const q      = document.getElementById("vis-quick-search").value.trim();
+
+    let params = `?page=${page}&page_size=${state.visPageSize}`;
+    if (tipo)   params += `&tipo_documento=${tipo}`;
+    if (estado) params += `&estado=${estado}`;
+    if (q)      params += `&q=${encodeURIComponent(q)}`;
+
+    showVisState("loading");
+
+    const res = await api("/visitas/" + params);
+    if (!res || !res.ok) { showVisState("error"); return; }
+
+    const data = await res.json();
+    const visitas = data.visitas || [];
+    state.visTotal = data.total || 0;
+
+    if (visitas.length === 0) { showVisState("empty"); return; }
+
+    const container = document.getElementById("vis-rows");
+    container.innerHTML = visitas.map((v, i) => renderVisRow(v, i)).join("");
+    container.querySelectorAll("[data-id]").forEach(row => {
+      row.addEventListener("click", () => loadDetalle(row.dataset.id));
+    });
+    showVisState("rows");
+
+    const totalPages = Math.ceil(state.visTotal / state.visPageSize);
+    const pag = document.getElementById("vis-pagination");
+    const label = document.getElementById("vis-page-label");
+    const cur = document.getElementById("vis-page-current");
+    if (totalPages > 1) {
+      pag.hidden = false;
+      label.textContent = `${state.visTotal} ${lang === "en" ? "records" : "registros"}`;
+      cur.textContent = page;
       document.getElementById("vis-prev").disabled = page <= 1;
       document.getElementById("vis-next").disabled = page >= totalPages;
-    } catch (e) {
-      setVisitantesViewState("error");
+    } else {
+      pag.hidden = true;
     }
+
+    document.getElementById("vis-subtitle").textContent = `${state.visTotal} ${lang === "en" ? "records" : "registros"}`;
   }
 
-  document.getElementById("vis-prev").addEventListener("click", () => {
-    if (state.visPage > 1) loadVisitantes(state.visPage - 1);
-  });
-  document.getElementById("vis-next").addEventListener("click", () => {
-    const totalPages = Math.max(
-      1,
-      Math.ceil(state.visTotal / state.visPageSize),
-    );
-    if (state.visPage < totalPages) loadVisitantes(state.visPage + 1);
-  });
-  document
-    .getElementById("vis-retry")
-    .addEventListener("click", () => loadVisitantes(state.visPage));
+  function showVisState(s) {
+    ["loading","rows","empty","error"].forEach(x => {
+      const el = document.getElementById(`vis-${x}`);
+      if (el) el.hidden = x !== s;
+    });
+    document.getElementById("vis-pagination").hidden = s !== "rows";
+  }
 
-  let visSearchDebounce = null;
-  document.getElementById("vis-quick-search").addEventListener("input", () => {
-    clearTimeout(visSearchDebounce);
-    visSearchDebounce = setTimeout(() => loadVisitantes(1), 350);
+  function renderVisRow(v, i) {
+    const acceso = state.accesosById.get(v.acceso_id);
+    return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
+      <div><div class="row-name">${esc(v.nombre)}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
+      <div><span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span></div>
+      <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.acceso_id}`}</div>
+      <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
+      <div class="row-date">${fmtDateShort(v.created_at)}</div>
+    </div>`;
+  }
+
+  document.getElementById("vis-prev").addEventListener("click", () => loadVisitas(state.visPage - 1));
+  document.getElementById("vis-next").addEventListener("click", () => loadVisitas(state.visPage + 1));
+  document.getElementById("vis-retry").addEventListener("click", () => loadVisitas(state.visPage));
+
+  ["vis-quick-search","vis-filter-tipo","vis-filter-estado"].forEach(id => {
+    document.getElementById(id)?.addEventListener("input", () => {
+      clearTimeout(state.visSearchTimeout);
+      state.visSearchTimeout = setTimeout(() => loadVisitas(1), 350);
+    });
   });
-  document.getElementById("vis-filter-tipo").addEventListener("change", () => {
-    loadVisitantes(1);
-  });
 
-  // ---------- DETALLE ----------
-
-  const DETALLE_OTRAS_VISITAS_MAX = 4;
-
+  /* ─── Detalle ───────────────────────────── */
   async function loadDetalle(id) {
+    navTo("detalle");
     const body = document.getElementById("detalle-body");
-    body.innerHTML =
-      '<div class="loading-state"><div class="spinner"></div></div>';
+    body.innerHTML = `<div class="loading-state"><div class="spinner"></div></div>`;
 
-    try {
-      if (state.accesosById.size === 0) await refreshAccesosCache();
-      const v = await api(`/visitantes/${id}`);
-      const acc = accesoInfo(v.acceso_id);
-      const tipoColor = TIPO_COLOR[v.tipo_documento] || "#9A958C";
-      const tipoLabel = TIPO_LABEL[v.tipo_documento] || v.tipo_documento;
+    const res = await api(`/visitas/${id}`);
+    if (!res || !res.ok) { body.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`; return; }
+    const v = await res.json();
 
-      const hist = await api(
-        `/visitantes/buscar?curp=${encodeURIComponent(v.curp)}`,
-      );
-      const otras = hist.visitas.filter((x) => x.id !== v.id);
-      const preview = otras.slice(0, DETALLE_OTRAS_VISITAS_MAX);
-      const restantes = otras.length - preview.length;
-
-      const verHistorial = () => {
-        document.getElementById("curp-input").value = v.curp;
-        goTo("historial");
-        buscarHistorial(v.curp);
-      };
-
-      body.innerHTML = `
-        <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start;">
-          <div class="panel panel--padded" style="text-align:center;border-radius:16px;">
-            <div class="avatar avatar--lg" style="margin:0 auto 16px;">${initials(v.nombre)}</div>
-            <div style="font-size:19px;font-weight:700;letter-spacing:-.2px;">${escapeHtml(v.nombre)}</div>
-            <div style="margin-top:10px;"><span class="tipo-badge"><span class="tipo-dot" style="background:${tipoColor}"></span>${tipoLabel}</span></div>
-            <button class="btn-primary btn-block" id="btn-ver-historial" style="margin-top:22px;">Ver historial completo</button>
+    const acceso = state.accesosById.get(v.acceso_id);
+    body.innerHTML = `
+      <div class="detalle-hero">
+        <div class="detalle-fotos">
+          <img class="detalle-foto" src="${esc(v.foto_documento_url)}" alt="Documento" loading="lazy">
+          <img class="detalle-foto" src="${esc(v.foto_rostro_url)}" alt="Rostro" loading="lazy">
+        </div>
+        <div class="detalle-info">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span>
+            <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
           </div>
-          <div>
-            <div class="panel" style="border-radius:16px;padding:8px 26px;">
-              ${detalleRow("Tipo de documento", tipoLabel)}
-              ${detalleRow("Clave de lector", v.clave_lector, true)}
-              ${detalleRow("CURP", v.curp, true)}
-              ${detalleRow("Acceso de entrada", acc.nombre, false, acc.ubicacion)}
-              ${detalleRow("Fecha y hora", formatFecha(v.created_at), false, null, otras.length === 0)}
-            </div>
-            ${
-              otras.length > 0
-                ? `<div class="panel" style="border-radius:16px;margin-top:16px;">
-                <div style="padding:14px 20px;font-size:11px;font-weight:600;letter-spacing:.5px;color:#9A958C;border-bottom:1px solid #F1EFEA;">
-                  OTRAS VISITAS DE ESTA PERSONA (${otras.length})
-                </div>
-                <div id="detalle-otras-visitas"></div>
-                ${
-                  restantes > 0
-                    ? `<button class="btn-outline" id="btn-ver-todas-visitas" style="margin:14px 20px 18px;">Ver las ${otras.length} visitas →</button>`
-                    : ""
-                }
-              </div>`
-                : ""
-            }
+          <div class="detalle-nombre">${esc(v.nombre)}</div>
+          <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Acceso #${v.acceso_id}`} · ${fmtDate(v.created_at)}</div>
+          <div class="detalle-campos">
+            <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp)}</div></div>
+            <div><div class="campo-label">${t("motivo")}</div><div class="campo-value">${esc(v.motivo_visita || "—")}</div></div>
+            <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
+            <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
+            <div><div class="campo-label">Clave lector</div><div class="campo-value campo-mono">${esc(v.clave_lector)}</div></div>
           </div>
-        </div>`;
-
-      if (preview.length > 0) {
-        const cont = document.getElementById("detalle-otras-visitas");
-        preview.forEach((ov) =>
-          cont.appendChild(visitanteRowEl(ov, "compact")),
-        );
-      }
-
-      document
-        .getElementById("btn-ver-historial")
-        .addEventListener("click", verHistorial);
-      const btnTodas = document.getElementById("btn-ver-todas-visitas");
-      if (btnTodas) btnTodas.addEventListener("click", verHistorial);
-    } catch (e) {
-      body.innerHTML = `<div class="empty-state"><div class="empty-title">No se pudo cargar el detalle</div><div class="empty-text">${escapeHtml(e.message)}</div></div>`;
-    }
-  }
-
-  function detalleRow(label, value, mono, sub, last) {
-    return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 0;${last ? "" : "border-bottom:1px solid #F1EFEA;"}">
-        <div style="font-size:13px;font-weight:600;color:#3A362F;">${label}</div>
-        <div style="text-align:right;">
-          <div style="font-size:14px;color:#1C1A17;font-weight:500;${mono ? "font-family:'IBM Plex Mono';letter-spacing:.5px;" : ""}">${escapeHtml(value)}</div>
-          ${sub ? `<div style="font-size:12px;color:#9A958C;margin-top:2px;">${escapeHtml(sub)}</div>` : ""}
         </div>
       </div>`;
   }
 
-  // ---------- HISTORIAL ----------
+  /* ─── Historial ─────────────────────────── */
+  document.getElementById("curp-input").addEventListener("input", e => {
+    const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 18);
+    e.target.value = v;
+    const hint = document.getElementById("curp-hint");
+    hint.textContent = v.length === 18 ? "✓" : `${v.length}/18`;
+  });
 
-  function loadHistorialIdle() {
-    document.getElementById("curp-input").value = "";
-    setHistState("idle");
+  document.getElementById("curp-search-btn").addEventListener("click", buscarHistorial);
+  document.getElementById("curp-input").addEventListener("keydown", e => { if (e.key === "Enter") buscarHistorial(); });
+
+  async function buscarHistorial() {
+    const curp = document.getElementById("curp-input").value.trim();
+    if (curp.length !== 18) return;
+
+    showHistState("loading");
+    const res = await api(`/visitas/buscar?curp=${encodeURIComponent(curp)}`);
+    if (!res || !res.ok) { showHistState("idle"); return; }
+
+    const data = await res.json();
+    const visitas = data.visitas || [];
+
+    if (visitas.length === 0) { showHistState("empty"); return; }
+
+    document.getElementById("hist-total").textContent = visitas.length;
+    document.getElementById("hist-title-text").textContent = STRINGS[lang].visits(visitas.length);
+    document.getElementById("hist-curp-label").textContent = curp;
+
+    document.getElementById("hist-rows").innerHTML = visitas.map((v, i) => renderHistRow(v, i)).join("");
+    showHistState("results");
   }
 
-  function setHistState(s) {
-    ["idle", "loading", "results", "empty"].forEach((name) => {
-      document.getElementById("hist-" + name).hidden = name !== s;
+  function showHistState(s) {
+    ["idle","loading","results","empty"].forEach(x => {
+      const el = document.getElementById(`hist-${x}`);
+      if (el) el.hidden = x !== s;
     });
   }
 
-  async function buscarHistorial(rawCurp) {
-    const curp = (rawCurp || "").trim().toUpperCase();
-    const hintEl = document.getElementById("curp-hint");
+  function renderHistRow(v, i) {
+    const acceso = state.accesosById.get(v.acceso_id);
+    return `<div class="row-item vis-row-grid" style="animation-delay:${i*30}ms" data-id="${v.id}">
+      <div><div class="row-name">${esc(v.nombre)}</div></div>
+      <div><span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span></div>
+      <div class="campo-mono" style="font-size:12px">${esc(v.curp)}</div>
+      <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.acceso_id}`}</div>
+      <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
+      <div class="row-date">${fmtDateShort(v.created_at)}</div>
+    </div>`;
+  }
 
-    if (curp.length !== 18) {
-      hintEl.textContent = "La CURP debe tener exactamente 18 caracteres.";
-      hintEl.classList.add("invalid");
+  /* ─── Accesos ────────────────────────────── */
+  async function loadAccesos() {
+    const res = await api("/accesos/");
+    const container = document.getElementById("accesos-list");
+    if (!res || !res.ok) { container.innerHTML = `<div class="empty-title">${t("load_err_title")}</div>`; return; }
+
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.accesos || []);
+    list.forEach(a => state.accesosById.set(a.id, a));
+
+    if (list.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-title">${t("new_acceso")}</div></div>`;
       return;
     }
-    hintEl.textContent = "18 caracteres exactos.";
-    hintEl.classList.remove("invalid");
 
-    setHistState("loading");
-    try {
-      if (state.accesosById.size === 0) await refreshAccesosCache();
-      const res = await api(
-        `/visitantes/buscar?curp=${encodeURIComponent(curp)}`,
-      );
+    container.innerHTML = list.map(a => `
+      <div class="acceso-card">
+        <div class="acceso-info">
+          <div class="acceso-nombre">${esc(a.nombre)}</div>
+          ${a.ubicacion ? `<div class="acceso-ubi">${esc(a.ubicacion)}</div>` : ""}
+          <div class="acceso-id">ID ${a.id}</div>
+        </div>
+        <div class="acceso-actions">
+          <button class="btn-ghost" data-edit-acceso="${a.id}">
+            <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l3 3-9 9H3v-3z"/></svg>
+          </button>
+          <button class="btn-ghost" data-del-acceso="${a.id}" style="color:var(--red)">
+            <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
+          </button>
+        </div>
+      </div>`).join("");
 
-      if (!res.visitas || res.visitas.length === 0) {
-        setHistState("empty");
-        return;
-      }
+    container.querySelectorAll("[data-edit-acceso]").forEach(btn => {
+      btn.addEventListener("click", () => openAccesoModal(parseInt(btn.dataset.editAcceso)));
+    });
+    container.querySelectorAll("[data-del-acceso]").forEach(btn => {
+      btn.addEventListener("click", () => openDeleteModal(parseInt(btn.dataset.delAcceso)));
+    });
+  }
 
-      document.getElementById("hist-total").textContent = res.total_visitas;
-      document.getElementById("hist-title").textContent =
-        `${res.total_visitas} visita${res.total_visitas === 1 ? "" : "s"} registrada${res.total_visitas === 1 ? "" : "s"}`;
-      document.getElementById("hist-curp-label").textContent = res.curp;
+  /* modal acceso */
+  document.getElementById("btn-nuevo-acceso").addEventListener("click", () => openAccesoModal(null));
 
-      const rowsEl = document.getElementById("hist-rows");
-      rowsEl.innerHTML = "";
-      res.visitas.forEach((v) => rowsEl.appendChild(visitanteRowEl(v, "full")));
+  function openAccesoModal(accesoId) {
+    state.editingAccesoId = accesoId;
+    const titleEl = document.getElementById("modal-acceso-title");
+    const hintEl  = document.getElementById("acceso-clave-hint");
+    const formView = document.getElementById("acceso-form-view");
+    const revView  = document.getElementById("acceso-reveal-view");
+    formView.hidden = false;
+    revView.hidden  = true;
 
-      setHistState("results");
-    } catch (e) {
-      setHistState("empty");
+    if (accesoId) {
+      const a = state.accesosById.get(accesoId);
+      titleEl.textContent = lang === "en" ? "Edit entry" : "Editar acceso";
+      document.getElementById("acceso-nombre").value    = a?.nombre    || "";
+      document.getElementById("acceso-ubicacion").value = a?.ubicacion || "";
+      hintEl.hidden = true;
+    } else {
+      titleEl.textContent = t("modal_new_acceso");
+      document.getElementById("acceso-nombre").value    = "";
+      document.getElementById("acceso-ubicacion").value = "";
+      hintEl.hidden = false;
     }
-  }
-
-  document.getElementById("curp-search-btn").addEventListener("click", () => {
-    buscarHistorial(document.getElementById("curp-input").value);
-  });
-  document.getElementById("curp-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") buscarHistorial(e.target.value);
-  });
-
-  // ---------- ACCESOS ----------
-
-  async function loadAccesos() {
-    const listEl = document.getElementById("accesos-list");
-    listEl.innerHTML =
-      '<div class="loading-state"><div class="spinner"></div></div>';
-    try {
-      const accesos = await refreshAccesosCache();
-      listEl.innerHTML = "";
-      if (accesos.length === 0) {
-        listEl.innerHTML =
-          '<div class="empty-state"><div class="empty-title">No tienes accesos configurados</div><div class="empty-text">Crea tu primera entrada con "Nuevo acceso".</div></div>';
-        return;
-      }
-      accesos.forEach((a) => listEl.appendChild(accesoCardEl(a)));
-    } catch (e) {
-      listEl.innerHTML = `<div class="empty-state"><div class="empty-title">No se pudieron cargar los accesos</div><div class="empty-text">${escapeHtml(e.message)}</div></div>`;
-    }
-  }
-
-  function accesoCardEl(a) {
-    const el = document.createElement("div");
-    el.className = "acceso-card";
-    el.innerHTML = `
-      <div class="acceso-icon"><svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="#C2410C" stroke-width="1.6"><rect x="2.5" y="3" width="13" height="12" rx="1.4"/><line x1="9" y1="3" x2="9" y2="15"/></svg></div>
-      <div class="acceso-info">
-        <div class="acceso-nombre">${escapeHtml(a.nombre)}</div>
-        <div class="acceso-ubicacion"><span class="acceso-ubicacion-dot"></span>${escapeHtml(a.ubicacion || "Sin ubicación")}</div>
-      </div>
-      <span class="acceso-id-badge">ID: ${a.id}</span>
-      <button class="btn-edit">Editar</button>
-      <button class="btn-icon-outline" title="Eliminar"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg></button>`;
-    el.querySelector(".btn-edit").addEventListener("click", () =>
-      openAccesoModal(a),
-    );
-    el.querySelector(".btn-icon-outline").addEventListener("click", () =>
-      openDeleteModal(a),
-    );
-    return el;
-  }
-
-  function openAccesoModal(acceso) {
-    state.editingAccesoId = acceso ? acceso.id : null;
-    document.getElementById("modal-acceso-title").textContent = acceso
-      ? "Editar acceso"
-      : "Nuevo acceso";
-    document.getElementById("acceso-nombre").value = acceso
-      ? acceso.nombre
-      : "";
-    document.getElementById("acceso-ubicacion").value = acceso
-      ? acceso.ubicacion || ""
-      : "";
-    document.getElementById("acceso-clave-hint").hidden = !!acceso;
     document.getElementById("acceso-form-error").hidden = true;
-    document.getElementById("acceso-form-view").hidden = false;
-    document.getElementById("acceso-reveal-view").hidden = true;
     document.getElementById("modal-acceso").hidden = false;
   }
 
-  function closeModals() {
-    document.getElementById("modal-acceso").hidden = true;
-    document.getElementById("modal-delete").hidden = true;
-  }
+  document.getElementById("acceso-cancel").addEventListener("click", () => { document.getElementById("modal-acceso").hidden = true; });
 
-  document
-    .getElementById("btn-nuevo-acceso")
-    .addEventListener("click", () => openAccesoModal(null));
-  document
-    .getElementById("acceso-cancel")
-    .addEventListener("click", closeModals);
-  document
-    .getElementById("acceso-reveal-done")
-    .addEventListener("click", () => {
-      closeModals();
-      loadAccesos();
-    });
-  document.getElementById("modal-acceso").addEventListener("click", (e) => {
-    if (e.target.id === "modal-acceso") closeModals();
+  document.getElementById("acceso-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const nombre    = document.getElementById("acceso-nombre").value;
+    const ubicacion = document.getElementById("acceso-ubicacion").value;
+    const errEl     = document.getElementById("acceso-form-error");
+
+    const isNew = state.editingAccesoId === null;
+    const endpoint = isNew ? "/accesos/" : `/accesos/${state.editingAccesoId}`;
+    const method   = isNew ? "POST" : "PATCH";
+
+    const res = await api(endpoint, { method, body: JSON.stringify({ nombre, ubicacion }) });
+    if (!res) return;
+
+    if (!res.ok) {
+      const data = await res.json();
+      errEl.textContent = data.error || "Error";
+      errEl.hidden = false;
+      return;
+    }
+
+    const created = await res.json();
+    document.getElementById("modal-acceso").hidden = true;
+    await loadAccesos();
+
+    if (isNew) {
+      document.getElementById("reveal-acceso-id").textContent = created.id;
+      document.getElementById("reveal-clave").textContent     = created.clave_kiosko || "—";
+      document.getElementById("acceso-form-view").hidden  = true;
+      document.getElementById("acceso-reveal-view").hidden = false;
+      document.getElementById("modal-acceso").hidden = false;
+    }
   });
 
-  document
-    .getElementById("acceso-form")
-    .addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const errEl = document.getElementById("acceso-form-error");
-      errEl.hidden = true;
+  document.getElementById("acceso-reveal-done").addEventListener("click", () => {
+    document.getElementById("modal-acceso").hidden = true;
+  });
 
-      const payload = {
-        nombre: document.getElementById("acceso-nombre").value.trim(),
-        ubicacion: document.getElementById("acceso-ubicacion").value.trim(),
-      };
-
-      try {
-        if (state.editingAccesoId) {
-          await api(`/accesos/${state.editingAccesoId}`, {
-            method: "PATCH",
-            body: JSON.stringify(payload),
-          });
-          closeModals();
-          loadAccesos();
-        } else {
-          const creado = await api("/accesos/", {
-            method: "POST",
-            body: JSON.stringify(payload),
-          });
-          document.getElementById("reveal-acceso-id").textContent = creado.id;
-          document.getElementById("reveal-clave").textContent =
-            creado.clave_kiosko;
-          document.getElementById("acceso-form-view").hidden = true;
-          document.getElementById("acceso-reveal-view").hidden = false;
-        }
-      } catch (e2) {
-        errEl.textContent = e2.message;
-        errEl.hidden = false;
-      }
-    });
-
-  function openDeleteModal(acceso) {
-    state.deletingAccesoId = acceso.id;
-    document.getElementById("modal-delete-title").textContent =
-      `¿Eliminar "${acceso.nombre}"?`;
+  /* modal delete */
+  function openDeleteModal(accesoId) {
+    state.deletingAccesoId = accesoId;
+    const a = state.accesosById.get(accesoId);
+    document.getElementById("modal-delete-title").textContent = `¿${t("delete")} "${a?.nombre || `#${accesoId}`}"?`;
     document.getElementById("modal-delete").hidden = false;
   }
 
-  document
-    .getElementById("delete-cancel")
-    .addEventListener("click", closeModals);
-  document.getElementById("modal-delete").addEventListener("click", (e) => {
-    if (e.target.id === "modal-delete") closeModals();
+  document.getElementById("delete-cancel").addEventListener("click", () => {
+    document.getElementById("modal-delete").hidden = true;
   });
-  document
-    .getElementById("delete-confirm")
-    .addEventListener("click", async () => {
-      try {
-        await api(`/accesos/${state.deletingAccesoId}`, { method: "DELETE" });
-        closeModals();
-        loadAccesos();
-      } catch (e) {
-        closeModals();
-        alert("No se pudo eliminar: " + e.message);
-      }
-    });
 
-  // ---------- PERFIL ----------
+  document.getElementById("delete-confirm").addEventListener("click", async () => {
+    const res = await api(`/accesos/${state.deletingAccesoId}`, { method: "DELETE" });
+    document.getElementById("modal-delete").hidden = true;
+    if (res && res.ok) await loadAccesos();
+  });
 
-  async function loadPerfil() {
-    try {
-      const a = await api(`/admins/${state.adminId}`);
-      state.admin = a;
-      document.getElementById("perfil-avatar").textContent = initials(
-        a.nombre + " " + a.apellido_paterno,
-      );
-      document.getElementById("perfil-nombre-completo").textContent =
-        `${a.nombre} ${a.apellido_paterno} ${a.apellido_materno}`.trim() ||
-        a.correo;
-      document.getElementById("perfil-nombre").value = a.nombre || "";
-      document.getElementById("perfil-paterno").value =
-        a.apellido_paterno || "";
-      document.getElementById("perfil-materno").value =
-        a.apellido_materno || "";
-      document.getElementById("perfil-correo").value = a.correo || "";
-      document.getElementById("perfil-password").value = "";
-      document.getElementById("perfil-error").hidden = true;
-      document.getElementById("perfil-success").hidden = true;
-      updateSidebarUser();
-    } catch (e) {
-      document.getElementById("perfil-error").textContent = e.message;
-      document.getElementById("perfil-error").hidden = false;
+  /* cerrar modal con Escape */
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      document.querySelectorAll(".modal-overlay").forEach(m => m.hidden = true);
     }
-  }
+  });
 
-  document
-    .getElementById("perfil-form")
-    .addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const errEl = document.getElementById("perfil-error");
-      const okEl = document.getElementById("perfil-success");
-      errEl.hidden = true;
-      okEl.hidden = true;
-
-      const payload = {
-        nombre: document.getElementById("perfil-nombre").value.trim(),
-        apellido_paterno: document
-          .getElementById("perfil-paterno")
-          .value.trim(),
-        apellido_materno: document
-          .getElementById("perfil-materno")
-          .value.trim(),
-        correo: document.getElementById("perfil-correo").value.trim(),
-        password: document.getElementById("perfil-password").value,
-      };
-
-      try {
-        const updated = await api(`/admins/${state.adminId}`, {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        });
-        state.admin = updated;
-        okEl.hidden = false;
-        updateSidebarUser();
-      } catch (e2) {
-        errEl.textContent = e2.message;
-        errEl.hidden = false;
-      }
-    });
-
-  function updateSidebarUser() {
+  /* ─── Perfil ─────────────────────────────── */
+  async function loadPerfil() {
     if (!state.admin) return;
-    const nombreCompleto =
-      `${state.admin.nombre} ${state.admin.apellido_paterno}`.trim() ||
-      state.admin.correo;
-    document.getElementById("sidebar-user-name").textContent = nombreCompleto;
-    document.getElementById("sidebar-avatar").textContent =
-      initials(nombreCompleto) || "··";
+    document.getElementById("perfil-nombre").value   = state.admin.nombre || "";
+    document.getElementById("perfil-correo").value   = state.admin.correo || "";
+    document.getElementById("perfil-paterno").value  = state.admin.apellido_paterno || "";
+    document.getElementById("perfil-materno").value  = state.admin.apellido_materno || "";
   }
 
-  // ---------- login / signup / logout ----------
+  document.getElementById("perfil-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const payload = {
+      nombre:           document.getElementById("perfil-nombre").value,
+      correo:           document.getElementById("perfil-correo").value,
+      apellido_paterno: document.getElementById("perfil-paterno").value,
+      apellido_materno: document.getElementById("perfil-materno").value,
+      password:         document.getElementById("perfil-password").value,
+    };
 
-  let loginMode = "login"; // 'login' | 'signup'
+    const errEl = document.getElementById("perfil-error");
+    const okEl  = document.getElementById("perfil-success");
+    errEl.hidden = true; okEl.hidden = true;
 
-  function setLoginMode(mode) {
-    loginMode = mode;
-    const isSignup = mode === "signup";
-    document.getElementById("login-title").textContent = isSignup
-      ? "Crear cuenta"
-      : "Panel de administración";
-    document.getElementById("login-lead").textContent = isSignup
-      ? "Crea tu cuenta de administrador para empezar a configurar tu comunidad."
-      : "Inicia sesión para supervisar los accesos de tu comunidad.";
-    document.getElementById("login-submit").textContent = isSignup
-      ? "Crear cuenta"
-      : "Entrar";
-    document.getElementById("login-toggle-text").textContent = isSignup
-      ? "¿Ya tienes cuenta?"
-      : "¿No tienes cuenta?";
-    document.getElementById("login-toggle-mode").textContent = isSignup
-      ? "Inicia sesión"
-      : "Crear cuenta de administrador";
-    document.getElementById("login-password").placeholder = isSignup
-      ? "Mínimo 8 caracteres"
-      : "••••••••";
-    document.getElementById("login-error").hidden = true;
-  }
+    const res = await api(`/admins/${state.adminId}`, { method: "PATCH", body: JSON.stringify(payload) });
+    if (!res) return;
 
-  document.getElementById("login-toggle-mode").addEventListener("click", () => {
-    setLoginMode(loginMode === "login" ? "signup" : "login");
-  });
-
-  document
-    .getElementById("login-form")
-    .addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const errEl = document.getElementById("login-error");
-      errEl.hidden = true;
-      const submitBtn = document.getElementById("login-submit");
-      submitBtn.disabled = true;
-
-      const correo = document.getElementById("login-correo").value.trim();
-      const password = document.getElementById("login-password").value;
-      const path = loginMode === "signup" ? "/auth/sign-in" : "/auth/login";
-
-      try {
-        const res = await fetch(API_BASE + path, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ correo, password }),
-        });
-        const body = await res.json();
-        if (!res.ok)
-          throw new Error(body.error || "No se pudo completar la operación");
-
-        setToken(body.access_token);
-        await bootstrapApp();
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.hidden = false;
-      } finally {
-        submitBtn.disabled = false;
-      }
-    });
-
-  document.getElementById("btn-logout").addEventListener("click", () => {
-    clearToken();
-    state.admin = null;
-    state.adminId = null;
-    setLoginMode("login");
-    showLogin();
-  });
-
-  // ---------- bootstrap ----------
-
-  async function bootstrapApp() {
-    const token = getToken();
-    if (!token) {
-      showLogin();
+    if (!res.ok) {
+      const data = await res.json();
+      errEl.textContent = data.error || "Error";
+      errEl.hidden = false;
       return;
     }
+
+    state.admin = { ...state.admin, ...payload };
+    okEl.hidden = false;
+    await loadAdminData();
+  });
+
+  /* ─── Init ───────────────────────────────── */
+  function init() {
+    const token = getToken();
+    if (!token) { showLogin(); applyI18n(); return; }
 
     const claims = decodeJWT(token);
-    if (!claims || !claims.admin_id) {
-      clearToken();
-      showLogin();
-      return;
+    if (!claims || (claims.exp && claims.exp * 1000 < Date.now())) {
+      clearToken(); showLogin(); applyI18n(); return;
     }
 
     state.adminId = claims.admin_id;
-    showApp();
-
-    try {
-      state.admin = await api(`/admins/${state.adminId}`);
-      updateSidebarUser();
-    } catch {
-      return; // si el token ya expiro, api() ya nos regreso al login
-    }
-
-    goTo("dashboard");
+    bootstrapApp();
   }
 
-  bootstrapApp();
+  function esc(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  applyI18n();
+  init();
 })();
