@@ -13,6 +13,7 @@ en sus handlers.
 package ctxkeys
 
 const (
-	AdminID  = "admin_id"
-	AccesoID = "acceso_id"
+	AdminID     = "admin_id"
+	AccesoID    = "acceso_id"
+	ResidenteID = "residente_id"
 )
