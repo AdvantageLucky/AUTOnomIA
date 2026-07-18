@@ -33,3 +33,8 @@ type LoginAccesoRequest struct {
 type SesionResponse struct {
 	Token string `json:"token"`
 }
+
+// GoogleLoginRequest DTO para login con Google Identity Services
+type GoogleLoginRequest struct {
+	Credential string `json:"credential" binding:"required"` // id_token del popup de Google
+}

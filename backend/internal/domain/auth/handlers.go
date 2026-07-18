@@ -1,7 +1,11 @@
 package auth
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 
 	"kigo-autonomia-backend/internal/domain/acceso"
@@ -207,4 +211,87 @@ func (h *Handler) RevocarSesionAcceso(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "sesiones del acceso revocadas correctamente"})
+}
+
+// LoginGoogle autentica a un admin usando el id_token emitido por Google Identity Services.
+// El frontend manda el credential del popup de Google; el backend lo verifica con la API de
+// tokeninfo de Google y, si el email está registrado como admin, devuelve un JWT propio.
+//
+// @Summary Login con Google (dashboard)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body GoogleLoginRequest true "credential (id_token) de Google"
+// @Success 200 {object} JWTResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /auth/google [post]
+func (h *Handler) LoginGoogle(c *gin.Context) {
+	var req GoogleLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "credential requerido"})
+		return
+	}
+
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	if googleClientID == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Google login no configurado"})
+		return
+	}
+
+	tokenInfo, err := verifyGoogleToken(req.Credential)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token de Google invalido"})
+		return
+	}
+
+	if tokenInfo.Aud != googleClientID {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token no corresponde a esta aplicacion"})
+		return
+	}
+
+	a, err := h.adminRepo.FindByCorreo(tokenInfo.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no hay una cuenta de admin para este correo de Google"})
+		return
+	}
+
+	token, err := GenerateAdminToken(a.ID, h.jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, JWTResponse{AccessToken: token})
+}
+
+type googleTokenInfo struct {
+	Aud   string `json:"aud"`
+	Email string `json:"email"`
+	Sub   string `json:"sub"`
+}
+
+func verifyGoogleToken(credential string) (*googleTokenInfo, error) {
+	url := fmt.Sprintf("https://oauth2.googleapis.com/tokeninfo?id_token=%s", credential)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("google tokeninfo devolvio %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var info googleTokenInfo
+	if err := json.Unmarshal(body, &info); err != nil {
+		return nil, err
+	}
+
+	return &info, nil
 }

@@ -58,6 +58,29 @@ func RequireAcceso(sesionRepo *SesionRepository) gin.HandlerFunc {
 	}
 }
 
+// RequireResidente valida el JWT del residente y mete el residente_id en el contexto
+func RequireResidente(secret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := bearerToken(c)
+		if token == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token requerido"})
+			return
+		}
+
+		residenteID, err := ParseResidenteToken(token, secret)
+		if err != nil {
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				gin.H{"error": "token invalido o expirado"},
+			)
+			return
+		}
+
+		c.Set(ctxkeys.ResidenteID, residenteID)
+		c.Next()
+	}
+}
+
 func bearerToken(c *gin.Context) string {
 	const prefix = "Bearer "
 	header := c.GetHeader("Authorization")

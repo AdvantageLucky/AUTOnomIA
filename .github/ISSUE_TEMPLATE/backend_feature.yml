@@ -1,0 +1,56 @@
+name: Backend Feature
+description: Proponer o documentar un cambio técnico en la API o base de datos
+labels: ["backend", "enhancement"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto
+      description: Situación actual y por qué este cambio es necesario.
+    validations:
+      required: true
+
+  - type: textarea
+    id: changes
+    attributes:
+      label: Cambios requeridos
+      description: Lista técnica de lo que hay que modificar (migración, model, DTOs, handler, router, etc.).
+      placeholder: |
+        **Migración**
+        - Crear migrations/000X_...up.sql con:
+          - campo_nuevo VARCHAR(100)
+
+        **Model**
+        - Agregar campo al struct en internal/domain/...
+
+        **DTOs**
+        - Agregar campo a Request y Response
+
+        **Handler / validación**
+        - campo_nuevo: requerido / opcional
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterio de aceptación
+      description: Condiciones observables que confirman que el trabajo está terminado.
+      placeholder: |
+        - POST /api/v1/... acepta los campos y los persiste
+        - Un request sin campo_requerido devuelve 400 con mensaje claro
+        - La migración corre limpia
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Impacto estimado
+      options:
+        - Bloqueante
+        - Alto
+        - Medio
+        - Bajo
+    validations:
+      required: true

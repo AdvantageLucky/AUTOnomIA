@@ -3,11 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class KioskoServicio {
-  // --- Configuración hardcodeada para pruebas ---
   static const String _baseUrl = 'http://127.0.0.1:8000/api/v1';
   static const int _accesoId = 20;
   static const String _claveKiosko = '2H4SURVSQOUPKYZU';
-  // -----------------------------------------------
 
   String? _sessionToken;
 
@@ -36,6 +34,9 @@ class KioskoServicio {
     required String nombre,
     required String claveElector,
     required String curp,
+    required String motivoVisita,
+    required String casaDestino,
+    String placa = '',
     required String pathFotoIne,
     required String pathFotoRostro,
   }) async {
@@ -44,27 +45,50 @@ class KioskoServicio {
       nombre: nombre,
       claveElector: claveElector,
       curp: curp,
+      motivoVisita: motivoVisita,
+      casaDestino: casaDestino,
+      placa: placa,
       pathFotoIne: pathFotoIne,
       pathFotoRostro: pathFotoRostro,
       reintento: false,
     );
   }
 
+  Future<List<Map<String, dynamic>>> obtenerDestinos() async {
+    await _ensureLogin();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/accesos/$_accesoId/destinos/'),
+      headers: {'Authorization': 'Bearer $_sessionToken'},
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.cast<Map<String, dynamic>>();
+    }
+    throw Exception('Error al obtener destinos (${response.statusCode})');
+  }
+
   Future<Map<String, dynamic>> _enviarRegistro({
     required String nombre,
     required String claveElector,
     required String curp,
+    required String motivoVisita,
+    required String casaDestino,
+    required String placa,
     required String pathFotoIne,
     required String pathFotoRostro,
     required bool reintento,
   }) async {
-    final uri = Uri.parse('$_baseUrl/accesos/$_accesoId/visitantes/');
+    final uri = Uri.parse('$_baseUrl/accesos/$_accesoId/visitas/');
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $_sessionToken'
       ..fields['nombre'] = nombre
       ..fields['tipo_documento'] = 'INE'
       ..fields['clave_lector'] = claveElector
-      ..fields['curp'] = curp;
+      ..fields['curp'] = curp
+      ..fields['motivo_visita'] = motivoVisita
+      ..fields['casa_destino'] = casaDestino
+      ..fields['placa'] = placa;
 
     request.files.add(
       await http.MultipartFile.fromPath(
@@ -86,7 +110,6 @@ class KioskoServicio {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
 
-    // Sesión expirada o revocada: reintentar una vez con login fresco
     if (response.statusCode == 401 && !reintento) {
       _sessionToken = null;
       await _ensureLogin();
@@ -94,6 +117,9 @@ class KioskoServicio {
         nombre: nombre,
         claveElector: claveElector,
         curp: curp,
+        motivoVisita: motivoVisita,
+        casaDestino: casaDestino,
+        placa: placa,
         pathFotoIne: pathFotoIne,
         pathFotoRostro: pathFotoRostro,
         reintento: true,
