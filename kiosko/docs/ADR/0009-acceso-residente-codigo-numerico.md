@@ -2,7 +2,7 @@
 
 **Estado:** Aceptado
 **Fecha:** 2026-07-10
-**Autores:** Alberto
+**Autores:** Alberto Luna
 
 ## Contexto
 
@@ -10,7 +10,7 @@ El flujo de residente necesita una forma rápida de identificación sin
 requerir documentos físicos ni biometría. Se evaluó el uso de un campo
 de texto estándar, pero para un kiosco táctil el teclado nativo del
 sistema operativo genera una experiencia deficiente (ocupa media pantalla,
-diseño inconsistente, difícil de usar de pie).
+diseño inconsistente, difícil de usar adentro del vehículo).
 
 ## Decisión
 

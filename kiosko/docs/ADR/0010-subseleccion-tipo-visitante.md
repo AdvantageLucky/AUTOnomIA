@@ -2,7 +2,7 @@
 
 **Estado:** Aceptado
 **Fecha:** 2026-07-10
-**Autores:** Alberto
+**Autores:** Alberto Luna
 
 ## Contexto
 

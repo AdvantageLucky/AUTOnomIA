@@ -2,14 +2,14 @@
 
 **Estado:** Aceptado
 **Fecha:** 2026-07-10
-**Autores:** Alberto
+**Autores:** Alberto Luna
 
 ## Contexto
 
-La pantalla de bienvenida original tenía un único botón de huella dactilar
-que iniciaba el mismo flujo para todos los usuarios, lo que obstaculisaba un 
-registro rápido. El kiosco necesita atender dos perfiles distintos: residentes 
-del edificio y visitantes externos, cada uno con un proceso de acceso diferente.
+La pantalla de bienvenida original tenía un único botón que iniciaba el mismo 
+flujo para todos los usuarios, lo que obstaculisaba un registro rápido. 
+El kiosco necesita atender dos perfiles distintos: residentes del edificio 
+y visitantes externos, cada uno con un proceso de acceso diferente.
 
 ## Decisión
 

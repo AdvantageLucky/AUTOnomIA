@@ -1,7 +1,8 @@
 /* VISTA PRINCIPAL DE REGISTRO TÁCTIL */
 
-import 'dart:io'; // Para File()
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
+import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
+import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:kigo_kiosco/features/registro/viewmodels/touch_register_viewmodel.dart';
@@ -222,85 +223,58 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       floatingActionButton: _buildVoiceWaveButton(),
       body: SizedBox.expand(
         //Expandimos a pantalla completa quitando Center y Container restrictivos
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            // incremente el padding vertical superior (60) e inferior (40) para proteger la legibilidad sin depender de SafeArea.
-            padding: const EdgeInsets.only(
-              left: 42,
-              right: 42,
-              top: 60,
-              bottom: 40,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _buildHeader(),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  // incremente el padding vertical superior (60) e inferior (40) para proteger la legibilidad sin depender de SafeArea.
+                  padding: const EdgeInsets.only(
+                    left: 42,
+                    right: 42,
+                    top: 60,
+                    bottom: 40,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _buildHeader(),
 
-                const SizedBox(height: 40),
+                      const SizedBox(height: 40),
 
-                StepIndicator(
-                  currentStep: viewModel.indicatorStep,
-                  totalSteps: TouchRegisterViewModel.indicatorTotalSteps,
-                ),
+                      StepIndicator(
+                        currentStep: viewModel.indicatorStep,
+                        totalSteps: TouchRegisterViewModel.indicatorTotalSteps,
+                      ),
 
-                const SizedBox(height: 44),
+                      const SizedBox(height: 44),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    step.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 38,
-                      fontWeight: FontWeight.w800,
-                    ),
+                      _buildVideoPlaceholder(),
+
+                      const SizedBox(height: 64),
+
+                      // --- BOTÓN PRINCIPAL CON LOADER ---
+                      viewModel.isProcessingIne
+                        ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF542F)))
+                        : _buildMainButton(step.buttonText),
+
+                      if (viewModel.currentStep > 1) ...[
+                        const SizedBox(height: 16),
+                        _buildBackButton(),
+                      ],
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    step.subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF999494),
-                      fontSize: 21,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 34),
-
-                _buildInstructionCard(
-                  icon: step.icon,
-                  description: step.description,
-                ),
-
-                const SizedBox(height: 28),
-
-                _buildPreviewBox(),
-
-                const SizedBox(height: 28),
-
-                // --- BOTÓN PRINCIPAL CON LOADER ---
-                viewModel.isProcessingIne
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF542F)))
-                  : _buildMainButton(step.buttonText),
-
-                if (viewModel.currentStep > 1) ...[
-                  const SizedBox(height: 16),
-                  _buildBackButton(),
-                ],
-
-                const SizedBox(height: 36),
-
-                _buildFooter(),
-              ],
+              ),
             ),
-          ),
+
+            // Leyenda fija hasta abajo de la pantalla, separada del borde.
+            Padding(
+              padding: const EdgeInsets.only(bottom: 28, top: 12),
+              child: _buildFooter(),
+            ),
+          ],
         ),
       ),
     );
@@ -341,238 +315,84 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     );
   }
 
-  Widget _buildInstructionCard({
-    required IconData icon,
-    required String description,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(26),
-      decoration: BoxDecoration(
-        color: const Color(0xFF211D1D),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFF2F2929),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: const Color(0xFF3A2420),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFFFF542F),
-              size: 36,
-            ),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            child: Text(
-              description,
-              style: const TextStyle(
-                color: Color(0xFFC5BFBF),
-                fontSize: 18,
-                height: 1.45,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreviewBox() {
-    String title = instructionAreaCapture;
-    String subtitle = instructionCameraPreview;
-    IconData icon = Icons.camera_alt_outlined;
-    Widget content;
-
-    // Lógica visual basada en el estado del ViewModel
-    if (viewModel.currentStep == 0) {
-      // Estamos en el paso de escaneo
-      if (viewModel.registrationData.pathFotoIne != null) {
-        // YA SE ESCANEÓ: Mostramos la foto real
-        title = ineDetectedTitle;
-        subtitle = 'CURP: ${viewModel.registrationData.curp ?? noLeida}\nClave: ${viewModel.registrationData.claveElector ?? noLeida}';
-        icon = Icons.check_circle_outline;
-
-        content = ClipRRect(
+  Widget _buildVideoPlaceholder() {
+    return AspectRatio(
+      aspectRatio: 4 / 3,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F0D0D),
           borderRadius: BorderRadius.circular(24),
-          child: Image.file(
-            File(viewModel.registrationData.pathFotoIne!),
-            width: double.infinity,
-            height: 190,
-            fit: BoxFit.cover,
-          ),
-        );
-      } else {
-        // NO SE HA ESCANEADO AÚN: Mostramos la guía visual por defecto
-        title = ineTitle;
-        subtitle = ineSubtitle;
-        icon = Icons.badge_outlined;
-
-        content = Stack(
-          children: [
-            Center(
-              child: Container(
-                width: 260,
-                height: 118,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: const Color(0xFFFF542F).withValues(alpha: 0.7),
-                    width: 2,
-                  ),
-                ),
-              ),
-            ),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, color: const Color(0xFFFF542F), size: 40),
-                  const SizedBox(height: 12),
-                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 6),
-                  Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF8A8585), fontSize: 15)),
-                ],
-              ),
-            ),
-          ],
-        );
-      }
-    } else if (viewModel.currentStep == 1) {
-      // Lógica para el paso de rostro, similar a la anterior...
-      title = photoEvidenceTitle;
-      subtitle = photoEvidenceSubtitle;
-      icon = Icons.photo_camera_outlined;
-      content = Container(); // Placeholder
-    } else {
-      // Placeholder para otros pasos
-      content = Container();
-    }
-
-    return Container(
-      width: double.infinity,
-      height: 190,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F0D0D),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFF363030),
-          width: 1.2,
         ),
-      ),
-      child: Stack(
-        children: [
-          Center(
-            child: Container(
-              width: 260,
-              height: 118,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: const Color(0xFFFF542F).withValues(alpha: 0.7),
-                  width: 2,
-                ),
-              ),
-            ),
-          ),
-          Center(
-            child: content,
-          ),
-        ],
+        child: ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(24)),
+          child: viewModel.currentStep == 0
+              ? const IneApproachAnimation()
+              : const FaceApproachAnimation(),
+        ),
       ),
     );
   }
 
   Widget _buildMainButton(String text) {
-    final String buttonText =
-        viewModel.isLastStep ? continueButtonText : text;
-
     return GestureDetector(
       onTap: _continueProcess,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
-        width: double.infinity,
-        height: 104,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF542F),
-          borderRadius: BorderRadius.circular(18),
+        width: 260,
+        height: 260,
+        decoration: const BoxDecoration(
+          color: Color(0xFFFF542F),
+          shape: BoxShape.circle,
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -18,
-              top: -32,
-              child: Container(
-                width: 135,
-                height: 135,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF714D).withValues(alpha: 0.55),
-                  shape: BoxShape.circle,
+        child: ClipOval(
+          child: Stack(
+            children: [
+              Positioned(
+                right: -18,
+                top: -40,
+                child: Container(
+                  width: 170,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF714D).withValues(alpha: 0.55),
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Row(
-                children: [
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Icon(
-                      viewModel.isLastStep
-                          ? Icons.check_rounded
-                          : Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          buttonText,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        text,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          continuePressText,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Color(0xFFFFE3DC),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                          ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        continuePressText,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFFFFE3DC),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

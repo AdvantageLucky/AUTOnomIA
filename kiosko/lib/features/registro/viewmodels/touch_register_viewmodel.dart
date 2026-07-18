@@ -24,20 +24,20 @@ class TouchRegisterViewModel extends ChangeNotifier {
 
   final List<TouchStepModel> steps = [
     TouchStepModel(
-      title: 'Captura tu INE',
-      subtitle: 'Coloca tu identificación dentro del recuadro',
+      title: 'Coloca tu identificación dentro del recuadro',
+      subtitle: '',
       description:
           'Asegúrate de que tu INE esté bien iluminada, sin reflejos y completamente visible dentro del recuadro.',
       icon: Icons.badge_outlined,
       buttonText: 'Capturar INE',
     ),
     TouchStepModel(
-      title: 'Evidencia fotográfica',
-      subtitle: 'Toma una fotografía de verificación',
+      title: 'Coloca tu rostro dentro del recuadro',
+      subtitle: '',
       description:
           'Puedes capturar una foto de tu rostro o usar evidencia desde cámaras conectadas al sistema de seguridad.',
       icon: Icons.photo_camera_outlined,
-      buttonText: 'Capturar fotografía',
+      buttonText: 'Reconocimiento Facial',
     ),
   ];
 
