@@ -25,7 +25,7 @@ type AdminResponse struct {
 	Correo          string `json:"correo"`
 }
 
-// helper func para convertir un Admin (DB Model) a DTO AdminResponse
+// helper func para convertir un Admin (DB Model) a DTO Response
 func toAdminResponse(a *Admin) AdminResponse {
 	return AdminResponse{
 		ID:              a.ID,

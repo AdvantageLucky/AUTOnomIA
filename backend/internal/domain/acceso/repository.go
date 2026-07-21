@@ -1,8 +1,9 @@
 /*
 Package acceso
-Repositorio relacionado con la tabla Kiosko
+Repositorio relacionado con la tabla kiosko
 
-Funciones CRUD relacionadas solo con el dominio Kiosko, es decir operaciones CRUD en tabal Kiosko
+Funciones CRUD relacionadas solo con el dominio Kiosko, es decir operaciones CRUD
+en tabla kiosko y kiosko_confis
 */
 package acceso
 

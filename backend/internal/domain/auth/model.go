@@ -2,6 +2,7 @@
 Package auth
 DB Models
 
+Model SesionAcceso
 SesionKiosko: Representa tabla de sesiones para kioskos.
 A diferencia del Admin/Residente (login stateless via JWT) el kiosko es un
 dispositivo desatendido que se queda logeado mucho tiempo, asi que su sesion
