@@ -28,6 +28,7 @@ type Config struct {
 	DBName     string
 	ServerPort string
 	JWTSecret  string
+	UploadsDir string
 }
 
 func Load() (*Config, error) {
@@ -39,8 +40,8 @@ func Load() (*Config, error) {
 		DBPassword: getEnv("DB_PASSWORD", ""),
 		DBName:     getEnv("DB_NAME", "kigo_db"),
 		ServerPort: getEnv("SERVER_PORT", "8080"),
-		// JWT_SECRET: en produccion siempre debe venir del .env, este fallback es solo para desarrollo local
-		JWTSecret: getEnv("JWT_SECRET", "dev-secret-change-me"),
+		JWTSecret:  getEnv("JWT_SECRET", "dev-secret-change-me"),
+		UploadsDir: getEnv("UPLOADS_DIR", "./web/uploads/visitantes"),
 	}
 
 	return cfg, nil

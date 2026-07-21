@@ -5,6 +5,7 @@ Inicializacion y registro de rutas (apps)
 package router
 
 import (
+	"kigo-autonomia-backend/configs"
 	"kigo-autonomia-backend/internal/domain/acceso"
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/domain/auth"
@@ -19,16 +20,16 @@ import (
 )
 
 // Setup registra todas las rutas del server
-func Setup(db *gorm.DB, jwtSecret string) *gin.Engine {
+func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	r := gin.Default()
 	api := r.Group("/api/v1")
 
-	registerAuthRoutes(api, db, jwtSecret)
-	registerAdminRoutes(api, db, jwtSecret)
-	registerAccesoRoutes(api, db, jwtSecret)
-	registerVisitaRoutes(api, db, jwtSecret)
-	registerDestinosRoutes(api, db, jwtSecret)
-	registerResidenteRoutes(api, db, jwtSecret)
+	registerAuthRoutes(api, db, cfg.JWTSecret)
+	registerAdminRoutes(api, db, cfg.JWTSecret)
+	registerAccesoRoutes(api, db, cfg.JWTSecret)
+	registerVisitaRoutes(api, db, cfg)
+	registerDestinosRoutes(api, db, cfg.JWTSecret)
+	registerResidenteRoutes(api, db, cfg.JWTSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	r.Static("/admin", "./web/admin")
@@ -45,9 +46,10 @@ func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 
 	g := rg.Group("/auth")
 	{
-		g.POST("/sign-in", authHandler.RegisterAdmin)
-		g.POST("/login", authHandler.LoginAdmin)
-		g.POST("/google", authHandler.LoginGoogle)
+		g.POST("/sign-in", authHandler.RegisterAdminWithMailAndPassword)
+		g.POST("/login", authHandler.LoginAdminWithMailAndPassword)
+		g.POST("/google", authHandler.LoginWithGoogle)
+		g.POST("/google/sign-in", authHandler.RegisterWithGoogle)
 		g.POST("/acceso/login", authHandler.LoginAcceso)
 		g.POST("/acceso/:id/revocar", auth.RequireAdmin(jwtSecret), authHandler.RevocarSesionAcceso)
 	}
@@ -85,9 +87,9 @@ func registerAccesoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 
 // registerVisitaRoutes registra las rutas de visitas: registro desde el kiosko (sesion) y
 // consulta del admin (JWT).
-func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config) {
 	visitaRepo := visitas.NewRepository(db)
-	visitaHandler := visitas.NewHandler(visitaRepo)
+	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: solo registra visitas
@@ -99,7 +101,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 
 	// dashboard admin: lectura paginada, detalle e historial
 	d := rg.Group("/visitas")
-	d.Use(auth.RequireAdmin(jwtSecret))
+	d.Use(auth.RequireAdmin(cfg.JWTSecret))
 	{
 		d.GET("/", visitaHandler.ListarVisitas)
 		d.GET("/buscar", visitaHandler.HistorialVisita)

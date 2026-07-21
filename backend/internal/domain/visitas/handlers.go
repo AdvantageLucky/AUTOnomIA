@@ -1,85 +1,40 @@
+/*
+Package visitas
+
+Handlers relacionados con el dominio visitas.
+Hace uso del repository relacionado a visitas.
+
+Hay dos grupos de endpoints con autenticacion distinta:
+
+ 1. Registro desde kiosko: POST /accesos/:id/visitas — autenticado con sesion de kiosko (RequireAcceso)
+    Recibe multipart/form-data con datos del visitante y fotos (documento, rostro, placa opcional),
+
+    guarda las fotos en disco via guardarFotoVisitante (ver storage.go) y crea la Visita en PENDIENTE
+
+ 2. Consulta y gestion del admin: GET/PATCH /visitas — autenticado con JWT de admin (RequireAdmin)
+    listado paginado con filtros, detalle, historial por CURP y aprobacion/rechazo manual
+
+Documentado con swag
+*/
 package visitas
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
-	"fmt"
-	"mime/multipart"
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
-
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 )
 
-var errFormatoFotoInvalido = errors.New("formato de foto no soportado (usa jpg o png)")
-
 type Handler struct {
-	repo *Repository
+	repo       *Repository
+	uploadsDir string
 }
 
-func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo}
-}
-
-const (
-	defaultPageSize = 20
-	maxPageSize     = 100
-	uploadsDir      = "./web/uploads/visitantes"
-)
-
-var fotoContentTypesPermitidos = map[string]bool{
-	"image/jpeg": true,
-	"image/png":  true,
-}
-
-var fotoExtensionesPermitidas = map[string]bool{
-	".jpg":  true,
-	".jpeg": true,
-	".png":  true,
-}
-
-func guardarFotoVisitante(c *gin.Context, foto *multipart.FileHeader) (string, error) {
-	ext := strings.ToLower(filepath.Ext(foto.Filename))
-	if !fotoExtensionesPermitidas[ext] ||
-		!fotoContentTypesPermitidos[foto.Header.Get("Content-Type")] {
-		return "", errFormatoFotoInvalido
-	}
-
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	nombreArchivo := hex.EncodeToString(b) + ext
-
-	if err := c.SaveUploadedFile(foto, filepath.Join(uploadsDir, nombreArchivo)); err != nil {
-		return "", err
-	}
-
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
-	return fmt.Sprintf("%s://%s/uploads/visitantes/%s", scheme, c.Request.Host, nombreArchivo), nil
-}
-
-func parsePagination(c *gin.Context) (page, pageSize int) {
-	page, err := strconv.Atoi(c.Query("page"))
-	if err != nil || page < 1 {
-		page = 1
-	}
-	pageSize, err = strconv.Atoi(c.Query("page_size"))
-	if err != nil || pageSize < 1 {
-		pageSize = defaultPageSize
-	}
-	if pageSize > maxPageSize {
-		pageSize = maxPageSize
-	}
-	return page, pageSize
+func NewHandler(repo *Repository, uploadsDir string) *Handler {
+	return &Handler{repo: repo, uploadsDir: uploadsDir}
 }
 
 func accesoSesionAutorizada(c *gin.Context, accesoID uint) bool {
@@ -125,12 +80,12 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}
 
 	var req VisitaRequest
-	if err := c.ShouldBind(&req); err != nil {
+	if err = c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	fotoDocumentoURL, err := guardarFotoVisitante(c, req.FotoDocumento)
+	fotoDocumentoURL, err := guardarFotoVisitante(c, req.FotoDocumento, h.uploadsDir)
 	if err != nil {
 		if errors.Is(err, errFormatoFotoInvalido) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_documento: " + err.Error()})
@@ -140,7 +95,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		return
 	}
 
-	fotoRostroURL, err := guardarFotoVisitante(c, req.FotoRostro)
+	fotoRostroURL, err := guardarFotoVisitante(c, req.FotoRostro, h.uploadsDir)
 	if err != nil {
 		if errors.Is(err, errFormatoFotoInvalido) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_rostro: " + err.Error()})
@@ -152,7 +107,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 
 	var fotoPlacaURL string
 	if req.FotoPlaca != nil {
-		fotoPlacaURL, err = guardarFotoVisitante(c, req.FotoPlaca)
+		fotoPlacaURL, err = guardarFotoVisitante(c, req.FotoPlaca, h.uploadsDir)
 		if err != nil {
 			if errors.Is(err, errFormatoFotoInvalido) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_placa: " + err.Error()})

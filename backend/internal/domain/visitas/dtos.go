@@ -1,3 +1,9 @@
+/*
+Package visitas
+
+DTOs relacionados al dominio visitas
+Representan peticiones y respuestas de los endpoints de visitas
+*/
 package visitas
 
 import (
@@ -5,9 +11,7 @@ import (
 	"time"
 )
 
-// VisitaRequest DTO para registrar una visita desde el kiosko. Va como multipart/form-data
-// porque incluye las fotos del documento y del rostro.
-// AccesoID no va aqui: se toma del URL param :id de /accesos/:id/visitas
+// VisitaRequest DTO para registrar una visita desde el kiosko
 type VisitaRequest struct {
 	Nombre        string                `form:"nombre"         binding:"required"`
 	TipoDocumento TipoDocumento         `form:"tipo_documento" binding:"required,oneof=INE PASAPORTE LICENCIA"`
@@ -15,10 +19,10 @@ type VisitaRequest struct {
 	Curp          string                `form:"curp"           binding:"required,len=18"`
 	MotivoVisita  string                `form:"motivo_visita"  binding:"required"`
 	CasaDestino   string                `form:"casa_destino"   binding:"required"`
-	Placa         string                `form:"placa"`
-	FotoDocumento *multipart.FileHeader `form:"foto_documento" binding:"required"`
-	FotoRostro    *multipart.FileHeader `form:"foto_rostro"    binding:"required"`
-	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`
+	Placa         string                `form:"placa"          binding:"required"`
+	FotoDocumento *multipart.FileHeader `form:"foto_documento" binding:"required"` // Content-Type image
+	FotoRostro    *multipart.FileHeader `form:"foto_rostro"    binding:"required"` // Content-Type image
+	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`                        // Content-Type image
 }
 
 // VisitaResponse DTO de respuesta completo para una visita
@@ -39,7 +43,7 @@ type VisitaResponse struct {
 	CreatedAt        time.Time     `json:"created_at"`
 }
 
-// VisitaListItemResponse DTO reducido para el listado del dashboard: omite CURP y clave_lector
+// VisitaListItemResponse DTO reducido para el listado del dashboard (omite CURP y clave_lector)
 type VisitaListItemResponse struct {
 	ID            uint          `json:"id"`
 	Nombre        string        `json:"nombre"`
@@ -66,6 +70,7 @@ type HistorialVisitaResponse struct {
 	Visitas      []VisitaResponse `json:"visitas"`
 }
 
+// helper func para convertir una Visita (DB Model) a DTO Response
 func toVisitaResponse(v Visita) VisitaResponse {
 	return VisitaResponse{
 		ID:               v.ID,
@@ -85,6 +90,8 @@ func toVisitaResponse(v Visita) VisitaResponse {
 	}
 }
 
+// helper func para convertir una Visita (DB Model) a DTO VisitaListItemResponse
+// pensado para iterar visitas y retornar []VisitaListItemResponse
 func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 	return VisitaListItemResponse{
 		ID:            v.ID,

@@ -1,3 +1,9 @@
+/*
+Package visitas
+Repositorio relacionado con modelo Visita
+
+Operaciones CRUD en DB relacionadas solo con el dominio visitas
+*/
 package visitas
 
 import "gorm.io/gorm"
