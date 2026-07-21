@@ -1,11 +1,18 @@
+/*
+Package residente
+
+Handlers relacionados con el dominio residente
+Hace uso del repository de residente
+
+Documentado con swag
+*/
 package residente
 
 import (
-	"net/http"
-	"strconv"
-
 	"kigo-autonomia-backend/internal/domain/auth"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
+	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -85,9 +92,16 @@ func (h *Handler) GetMe(c *gin.Context) {
 // @Success 201 {object} ResidenteResponse
 // @Router /residentes [post]
 func (h *Handler) CrearResidente(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+
 	var req CrearResidenteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.repo.VerificarOwnershipAcceso(req.AccesoID, adminID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
 		return
 	}
 
@@ -124,10 +138,17 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 // @Success 200 {array} ResidenteResponse
 // @Router /accesos/{id}/residentes [get]
 func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+
 	accesoIDStr := c.Param("id")
 	accesoID, err := strconv.ParseUint(accesoIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	if err := h.repo.VerificarOwnershipAcceso(uint(accesoID), adminID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
 		return
 	}
 

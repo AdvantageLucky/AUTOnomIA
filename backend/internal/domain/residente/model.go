@@ -1,3 +1,10 @@
+/*
+Package residente
+DB Models
+
+Model Residente
+Residente: Represnta la tabla de residentes relacionados a un kiosko conteniendo la informacion de un residente
+*/
 package residente
 
 import "gorm.io/gorm"

@@ -1,7 +1,15 @@
+/*
+Package residente
+
+DTOs relacionados a el dominio residente
+Representan respuestas o peticiones relacionados con el modelo Residente
+Usado en endpoints para recibir una respuesta o enviar una respuesta con un cuerpo en especifico
+*/
 package residente
 
 import "time"
 
+// ResidenteResponse DTO para retornar informacion actual de residente
 type ResidenteResponse struct {
 	ID              uint      `json:"id"`
 	Nombre          string    `json:"nombre"`
@@ -31,6 +39,7 @@ type CrearResidenteRequest struct {
 	AccesoID        uint   `json:"acceso_id"        binding:"required"`
 }
 
+// helper func para convertir un Residente (DB Model) a DTO Response
 func toResidenteResponse(r Residente) ResidenteResponse {
 	return ResidenteResponse{
 		ID:              r.ID,

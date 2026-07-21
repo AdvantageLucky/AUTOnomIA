@@ -1,3 +1,9 @@
+/*
+Package residente
+Repositorio relacionado con la tabla residentes
+
+Funciones CRUD relacionadas solo con el dominio residente, es decir operaciones CRUD en tabla residentes
+*/
 package residente
 
 import "gorm.io/gorm"
@@ -39,6 +45,19 @@ func (r *Repository) FindByAccesoID(accesoID uint) ([]Residente, error) {
 		return nil, err
 	}
 	return list, nil
+}
+
+// VerificarOwnershipAcceso devuelve nil si el acceso pertenece al admin; gorm.ErrRecordNotFound si no.
+// Evita importar el paquete acceso desde este dominio.
+func (r *Repository) VerificarOwnershipAcceso(accesoID, adminID uint) error {
+	var count int64
+	r.db.Table("accesos").
+		Where("id = ? AND admin_id = ? AND deleted_at IS NULL", accesoID, adminID).
+		Count(&count)
+	if count == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // FindAllByAdminID devuelve todos los residentes de todos los accesos del admin.
