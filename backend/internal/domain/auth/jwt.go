@@ -1,3 +1,24 @@
+/*
+Package auth
+
+Generacion y validacion de tokens JWT para Admins y Residentes,
+y tokens opacos de sesion para Kioskos
+
+Hay 3 tipos de token en el sistema:
+
+1. JWT de Admin (HS256, 24h): firmado con JWT_SECRET (contiene admin_id)
+y es usado en el dashboard de administracion. Generado por GenerateAdminToken Y
+validado por ParseAdminToken
+
+2. JWT de Residente (HS256, 7 dias): firmado con el mismo JWT_SECRET (contiene residente_id)
+y es usado en la app del residente. Generado por GenerateResidenteToken y
+validado por ParseResidenteToken
+
+3. Token opaco de sesion de Kiosko (hex, 32 bytes / 64 chars): no es JWT ya que
+se genera con generateSessionToken, se persiste en la tabla sesion_accesos y
+se valida contra DB en cada request del kiosko (ver repository.go y middleware.go)
+A diferencia de los JWT, puede revocarse explicitamente
+*/
 package auth
 
 import (
@@ -36,7 +57,7 @@ func GenerateAdminToken(adminID uint, secret string) (string, error) {
 func ParseAdminToken(tokenStr, secret string) (uint, error) {
 	claims := &adminClaims{}
 
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
 		return []byte(secret), nil
 	})
 	if err != nil || !token.Valid {
@@ -68,7 +89,7 @@ func GenerateResidenteToken(residenteID uint, secret string) (string, error) {
 // ParseResidenteToken valida el JWT del residente y devuelve el ResidenteID
 func ParseResidenteToken(tokenStr, secret string) (uint, error) {
 	claims := &residenteClaims{}
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
 		return []byte(secret), nil
 	})
 	if err != nil || !token.Valid {

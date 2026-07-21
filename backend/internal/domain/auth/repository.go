@@ -1,3 +1,9 @@
+/*
+Package auth
+Repositorio relacionado con la tabla de sesiones de Kiosko
+
+Funciones CRUD relacionadas solo con el dominio auth para las sesiones persistidas
+*/
 package auth
 
 import "gorm.io/gorm"

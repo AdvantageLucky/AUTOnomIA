@@ -1,6 +1,28 @@
+/*
+Package auth
+
+Handlers relacionados con el dominio auth
+Hace uso del repository relacionado a auth, admin y acceso
+
+Hay 3 tipos de autorizacion:
+1. Autorizacion a Administradores: desbloquean panel de bitacora
+Pueden registrarse/loguearse con correo/contraseña o google services
+
+2. Autorizacion a Kioskos: desbloquean operaciones en endpoints orientados a kiosko
+Pueden registrarse con codigo qr que redirigue a registro de kioskos (se necesita cuenta
+de admin logueada) o con codigo numerico
+
+3. Autorizacion a residentes: TODO. Desbloquean app orientada a residentes que puede hacer
+operaciones relacionadas con el dominio residentes. Pueden registrarse con correo/contraseña
+o con google services
+
+Documentado con swag
+*/
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +36,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -37,7 +60,33 @@ func NewHandler(
 	}
 }
 
-// RegisterAdmin crea un nuevo Admin y devuelve su JWT
+// func helper para verificar un token credencial emitido por google services sea valido (para logearse/registrarse)
+func verifyGoogleToken(credential string) (*googleTokenInfo, error) {
+	url := fmt.Sprintf("https://oauth2.googleapis.com/tokeninfo?id_token=%s", credential)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("google tokeninfo devolvio %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var info googleTokenInfo
+	if err := json.Unmarshal(body, &info); err != nil {
+		return nil, err
+	}
+
+	return &info, nil
+}
+
+// RegisterAdminWithMailAndPassword crea un nuevo Admin y devuelve su JWT
 // Request: RegisterRequest
 // Response: JWTResponse
 //
@@ -51,7 +100,7 @@ func NewHandler(
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /auth/sign-in [post]
-func (h *Handler) RegisterAdmin(c *gin.Context) {
+func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "correo y password son requeridos"})
@@ -83,7 +132,7 @@ func (h *Handler) RegisterAdmin(c *gin.Context) {
 	c.JSON(http.StatusCreated, JWTResponse{AccessToken: token})
 }
 
-// LoginAdmin da acceso al panel admin a un Admin existente
+// LoginAdminWithMailAndPassword da acceso al panel admin a un Admin con su correo/contraseña
 // Request: LoginRequest
 // Response: JWTResponse
 //
@@ -97,7 +146,7 @@ func (h *Handler) RegisterAdmin(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Router /auth/login [post]
-func (h *Handler) LoginAdmin(c *gin.Context) {
+func (h *Handler) LoginAdminWithMailAndPassword(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "campos incorrectos"})
@@ -122,6 +171,138 @@ func (h *Handler) LoginAdmin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, JWTResponse{AccessToken: token})
+}
+
+// LoginWithGoogle autentica a un admin usando el id_token emitido por Google Identity Services.
+// El frontend manda el credential del popup de Google; el backend lo verifica con la API de
+// tokeninfo de Google y, si el email está registrado como admin, devuelve un JWT propio.
+//
+// @Summary Login con Google (dashboard)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body GoogleLoginRequest true "credential (id_token) de Google"
+// @Success 200 {object} JWTResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /auth/google [post]
+func (h *Handler) LoginWithGoogle(c *gin.Context) {
+	var req GoogleLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "credential requerido"})
+		return
+	}
+
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	if googleClientID == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Google login no configurado"})
+		return
+	}
+
+	tokenInfo, err := verifyGoogleToken(req.Credential)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token de Google invalido"})
+		return
+	}
+
+	if tokenInfo.Aud != googleClientID {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token no corresponde a esta aplicacion"})
+		return
+	}
+
+	a, err := h.adminRepo.FindByCorreo(tokenInfo.Email)
+	if err != nil {
+		c.JSON(
+			http.StatusUnauthorized,
+			gin.H{"error": "no hay una cuenta de admin para este correo de Google"},
+		)
+		return
+	}
+
+	token, err := GenerateAdminToken(a.ID, h.jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, JWTResponse{AccessToken: token})
+}
+
+// RegisterWithGoogle registra un nuevo Admin usando el id_token de Google Identity Services.
+// Si el correo ya tiene una cuenta, devuelve 409.
+// El Admin creado no tiene password utilizable: solo puede autenticarse via Google.
+//
+// @Summary Registrar admin con Google
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body GoogleLoginRequest true "credential (id_token) de Google"
+// @Success 201 {object} JWTResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/google/sign-in [post]
+func (h *Handler) RegisterWithGoogle(c *gin.Context) {
+	var req GoogleLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "credential requerido"})
+		return
+	}
+
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	if googleClientID == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Google login no configurado"})
+		return
+	}
+
+	tokenInfo, err := verifyGoogleToken(req.Credential)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token de Google invalido"})
+		return
+	}
+
+	if tokenInfo.Aud != googleClientID {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token no corresponde a esta aplicacion"})
+		return
+	}
+
+	if _, err := h.adminRepo.FindByCorreo(tokenInfo.Email); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "ya existe una cuenta con este correo"})
+		return
+	} else if err != gorm.ErrRecordNotFound {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// password inutilizable: satisface el not null de DB pero imposible de adivinar
+	randBytes := make([]byte, 32)
+	if _, err := rand.Read(randBytes); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(randBytes)), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	a := &admin.Admin{
+		Correo:   tokenInfo.Email,
+		Password: string(hash),
+	}
+	if err := h.adminRepo.Create(a); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, err := GenerateAdminToken(a.ID, h.jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, JWTResponse{AccessToken: token})
 }
 
 // LoginAcceso loguea a un kiosko con el AccesoID y su ClaveKiosko, abriendo una sesion persistida
@@ -211,87 +392,4 @@ func (h *Handler) RevocarSesionAcceso(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "sesiones del acceso revocadas correctamente"})
-}
-
-// LoginGoogle autentica a un admin usando el id_token emitido por Google Identity Services.
-// El frontend manda el credential del popup de Google; el backend lo verifica con la API de
-// tokeninfo de Google y, si el email está registrado como admin, devuelve un JWT propio.
-//
-// @Summary Login con Google (dashboard)
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param body body GoogleLoginRequest true "credential (id_token) de Google"
-// @Success 200 {object} JWTResponse
-// @Failure 400 {object} map[string]string
-// @Failure 401 {object} map[string]string
-// @Router /auth/google [post]
-func (h *Handler) LoginGoogle(c *gin.Context) {
-	var req GoogleLoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "credential requerido"})
-		return
-	}
-
-	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
-	if googleClientID == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Google login no configurado"})
-		return
-	}
-
-	tokenInfo, err := verifyGoogleToken(req.Credential)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "token de Google invalido"})
-		return
-	}
-
-	if tokenInfo.Aud != googleClientID {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "token no corresponde a esta aplicacion"})
-		return
-	}
-
-	a, err := h.adminRepo.FindByCorreo(tokenInfo.Email)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "no hay una cuenta de admin para este correo de Google"})
-		return
-	}
-
-	token, err := GenerateAdminToken(a.ID, h.jwtSecret)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, JWTResponse{AccessToken: token})
-}
-
-type googleTokenInfo struct {
-	Aud   string `json:"aud"`
-	Email string `json:"email"`
-	Sub   string `json:"sub"`
-}
-
-func verifyGoogleToken(credential string) (*googleTokenInfo, error) {
-	url := fmt.Sprintf("https://oauth2.googleapis.com/tokeninfo?id_token=%s", credential)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("google tokeninfo devolvio %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var info googleTokenInfo
-	if err := json.Unmarshal(body, &info); err != nil {
-		return nil, err
-	}
-
-	return &info, nil
 }

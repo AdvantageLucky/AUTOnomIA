@@ -2,7 +2,7 @@
 Package admin
 Repositorio relacionado con modelo Admin
 
-Operaciones CRUD en DB relacionadas solo con el dominio Admin
+Operaciones CRUD en DB relacionadas solo con el dominio admin
 */
 package admin
 

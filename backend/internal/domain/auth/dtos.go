@@ -2,11 +2,11 @@
 Package auth
 
 Paquete de estructuras que representan respuestas o peticiones relacionadas con
-el login de Admin (JWT) y de Acceso/kiosko (sesion persistida).
+el login de Admin (JWT/Google) y de Acceso/kiosko (sesion persistida)
 */
 package auth
 
-// RegisterRequest DTO para registrar un nuevo Admin (alta de cuenta)
+// RegisterRequest DTO para registrar un nuevo Admin
 type RegisterRequest struct {
 	Correo   string `json:"correo"   binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
