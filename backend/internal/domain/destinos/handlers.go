@@ -1,10 +1,17 @@
+/*
+Package destinos
+
+Handlers relacionados con el dominio destinos
+Hace uso del repository de destinos
+
+Documentado con swag
+*/
 package destinos
 
 import (
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"strconv"
-
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 )
