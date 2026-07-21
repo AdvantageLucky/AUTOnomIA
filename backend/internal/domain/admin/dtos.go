@@ -1,7 +1,8 @@
 /*
 Package admin
 
-Paquete de estructuras que representan respuestas o peticiones relacionadas con el modelo Admin
+DTOs relacionados a dominio admin (cuenta de admin)
+Representan respuestas o peticiones relacionadas con el modelo Admin
 Usado en endpoints para recibir una respuesta o enviar una respuesta con un cuerpo en especifico
 */
 package admin
@@ -22,4 +23,15 @@ type AdminResponse struct {
 	ApellidoPaterno string `json:"apellido_paterno"`
 	ApellidoMaterno string `json:"apellido_materno"`
 	Correo          string `json:"correo"`
+}
+
+// helper func para convertir un Admin (DB Model) a DTO AdminResponse
+func toAdminResponse(a *Admin) AdminResponse {
+	return AdminResponse{
+		ID:              a.ID,
+		Nombre:          a.Nombre,
+		ApellidoPaterno: a.ApellidoPaterno,
+		ApellidoMaterno: a.ApellidoMaterno,
+		Correo:          a.Correo,
+	}
 }

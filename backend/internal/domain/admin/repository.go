@@ -1,3 +1,9 @@
+/*
+Package admin
+Repositorio relacionado con modelo Admin
+
+Operaciones CRUD en DB relacionadas solo con el dominio Admin
+*/
 package admin
 
 import (

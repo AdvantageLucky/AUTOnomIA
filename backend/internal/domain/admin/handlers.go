@@ -1,10 +1,17 @@
+/*
+Package admin
+
+Handlers relacionados con el dominio admin
+Hace uso del repository relacionado a admin
+
+Documentado con swag
+*/
 package admin
 
 import (
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"strconv"
-
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -16,17 +23,6 @@ type Handler struct {
 
 func NewHandler(repo *Repository) *Handler {
 	return &Handler{repo: repo}
-}
-
-// toAdminResponse mapea un Admin a su DTO de respuesta; Password nunca se incluye, queda fuera del DTO
-func toAdminResponse(a *Admin) AdminResponse {
-	return AdminResponse{
-		ID:              a.ID,
-		Nombre:          a.Nombre,
-		ApellidoPaterno: a.ApellidoPaterno,
-		ApellidoMaterno: a.ApellidoMaterno,
-		Correo:          a.Correo,
-	}
 }
 
 // GetAdminByID busca un Admin por su ID

@@ -1,9 +1,9 @@
 /*
 Package admin
+DB Models
 
-Paquete de modelo Admin. Este representa la tabla Admin en la base de datos con la ayuda de gorm
-Un Admin es el administrador de uno o varios Accesos de un condominio, y es la entidad raiz
-contra la que se autentica el login (ver internal/domain/auth/)
+Model Admin
+Admin: Representa admins en la base de datos con ayuda de gorm
 */
 package admin
 
