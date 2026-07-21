@@ -9,11 +9,10 @@ Documentado con swag
 package acceso
 
 import (
-	"crypto/rand"
-	"encoding/base32"
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"strconv"
+
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -25,16 +24,6 @@ type Handler struct {
 
 func NewHandler(repo *Repository) *Handler {
 	return &Handler{repo: repo}
-}
-
-// generateClaveKiosko genera una credencial aleatoria de alta entropia para un kiosko
-// usamos el alfabeto base32 estandar (A-Z, 2-7) que no tiene caracteres ambiguos (0/O, 1/I/L)
-func generateClaveKiosko() (string, error) {
-	b := make([]byte, 10)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(b), nil
 }
 
 // RegisterAccess crea un nuevo Acceso del Admin, generando su clave de kiosko
