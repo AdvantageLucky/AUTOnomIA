@@ -1,12 +1,19 @@
+/*
+Package acceso
+
+Handlers relacionados con el dominio acceso
+Hace uso del repository relacionado tambien a acesso
+
+Documentado con swag
+*/
 package acceso
 
 import (
 	"crypto/rand"
 	"encoding/base32"
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"strconv"
-
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -30,22 +37,11 @@ func generateClaveKiosko() (string, error) {
 	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(b), nil
 }
 
-// toAccesoResponse mapea un Acceso a su DTO de respuesta. ClaveKiosko no se incluye aqui: solo
-// viaja en texto plano en la respuesta del handler RegisterAccess, una sola vez
-func toAccesoResponse(a *Acceso) AccesoResponse {
-	return AccesoResponse{
-		ID:        a.ID,
-		Nombre:    a.Nombre,
-		Ubicacion: a.Ubicacion,
-		AdminID:   a.AdminID,
-	}
-}
-
 // RegisterAccess crea un nuevo Acceso del Admin, generando su clave de kiosko
-// Request: AccesoRequest
+// Request: RegisterAccesoRequest
 // Response: AccesoResponse (con clave_kiosko en texto plano, solo en esta respuesta)
 //
-// @Summary Crear acceso
+// @Summary Registrar un acceso
 // @Description Registra un nuevo acceso para el admin y genera su clave de kiosko (se devuelve en texto plano una sola vez, aqui)
 // @Tags accesos
 // @Accept json
@@ -58,7 +54,7 @@ func toAccesoResponse(a *Acceso) AccesoResponse {
 func (h *Handler) RegisterAccess(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
-	var req AccesoRequest
+	var req RegisterAccesoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -78,6 +74,7 @@ func (h *Handler) RegisterAccess(c *gin.Context) {
 		return
 	}
 
+	// creamos el acceso y retornamos
 	a := &Acceso{
 		Nombre:      req.Nombre,
 		Ubicacion:   req.Ubicacion,
@@ -182,7 +179,7 @@ func (h *Handler) PatchAccess(c *gin.Context) {
 		return
 	}
 
-	var req AccesoRequest
+	var req RegisterAccesoRequest
 	if err = c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -205,78 +202,6 @@ func (h *Handler) PatchAccess(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, toAccesoResponse(a))
-}
-
-// GetConfig devuelve la configuración del kiosko de un acceso
-func (h *Handler) GetConfig(c *gin.Context) {
-	adminID := c.MustGet(ctxkeys.AdminID).(uint)
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
-		return
-	}
-
-	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
-		return
-	}
-
-	cfg, err := h.repo.FindConfigByAccesoID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, toConfigResponse(cfg))
-}
-
-// PatchConfig actualiza los campos indicados de la config del kiosko (PATCH parcial)
-func (h *Handler) PatchConfig(c *gin.Context) {
-	adminID := c.MustGet(ctxkeys.AdminID).(uint)
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
-		return
-	}
-
-	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
-		return
-	}
-
-	var req AccesoConfigRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	cfg, err := h.repo.FindConfigByAccesoID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if req.ColorKiosko != nil         { cfg.ColorKiosko = *req.ColorKiosko }
-	if req.IdiomaKiosko != nil        { cfg.IdiomaKiosko = *req.IdiomaKiosko }
-	if req.FotoPlacaVisitante != nil  { cfg.FotoPlacaVisitante = *req.FotoPlacaVisitante }
-	if req.FotoRostroVisitante != nil { cfg.FotoRostroVisitante = *req.FotoRostroVisitante }
-	if req.FotoIneVisitante != nil    { cfg.FotoIneVisitante = *req.FotoIneVisitante }
-	if req.FotoPlacaInvitado != nil   { cfg.FotoPlacaInvitado = *req.FotoPlacaInvitado }
-	if req.FotoRostroInvitado != nil  { cfg.FotoRostroInvitado = *req.FotoRostroInvitado }
-	if req.FotoIneInvitado != nil     { cfg.FotoIneInvitado = *req.FotoIneInvitado }
-	if req.TiempoEsperaMin != nil     { cfg.TiempoEsperaMin = *req.TiempoEsperaMin }
-	if req.HorarioInicio != nil       { cfg.HorarioInicio = *req.HorarioInicio }
-	if req.HorarioFin != nil          { cfg.HorarioFin = *req.HorarioFin }
-	if req.MensajeBienvenida != nil   { cfg.MensajeBienvenida = *req.MensajeBienvenida }
-
-	if err := h.repo.UpdateConfig(cfg); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, toConfigResponse(cfg))
 }
 
 // DeleteAccess elimina un acceso
@@ -308,4 +233,124 @@ func (h *Handler) DeleteAccess(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "acceso eliminado correctamente"})
+}
+
+// GetConfig devuelve la configuración del kiosko de un acceso
+//
+// @Summary Obtener configuración de kiosko
+// @Description Devuelve la AccesoConfig del acceso; la crea con valores por defecto si no existía
+// @Tags accesos
+// @Produce json
+// @Param id path int true "ID del acceso"
+// @Success 200 {object} AccesoConfigResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /accesos/{id}/config [get]
+func (h *Handler) GetConfig(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+		return
+	}
+
+	cfg, err := h.repo.FindConfigByAccesoID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toConfigResponse(cfg))
+}
+
+// PatchConfig actualiza los campos indicados de la config del kiosko (PATCH parcial)
+//
+// @Summary Actualizar configuración de kiosko
+// @Description Actualiza parcialmente la AccesoConfig; solo se modifican los campos presentes en el body
+// @Tags accesos
+// @Accept json
+// @Produce json
+// @Param id path int true "ID del acceso"
+// @Param config body AccesoConfigRequest true "Campos a actualizar (todos opcionales)"
+// @Success 200 {object} AccesoConfigResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /accesos/{id}/config [patch]
+func (h *Handler) PatchConfig(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+		return
+	}
+
+	var req AccesoConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	cfg, err := h.repo.FindConfigByAccesoID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.ColorKiosko != nil {
+		cfg.ColorKiosko = *req.ColorKiosko
+	}
+	if req.IdiomaKiosko != nil {
+		cfg.IdiomaKiosko = *req.IdiomaKiosko
+	}
+	if req.FotoPlacaVisitante != nil {
+		cfg.FotoPlacaVisitante = *req.FotoPlacaVisitante
+	}
+	if req.FotoRostroVisitante != nil {
+		cfg.FotoRostroVisitante = *req.FotoRostroVisitante
+	}
+	if req.FotoIneVisitante != nil {
+		cfg.FotoIneVisitante = *req.FotoIneVisitante
+	}
+	if req.FotoPlacaInvitado != nil {
+		cfg.FotoPlacaInvitado = *req.FotoPlacaInvitado
+	}
+	if req.FotoRostroInvitado != nil {
+		cfg.FotoRostroInvitado = *req.FotoRostroInvitado
+	}
+	if req.FotoIneInvitado != nil {
+		cfg.FotoIneInvitado = *req.FotoIneInvitado
+	}
+	if req.TiempoEsperaMin != nil {
+		cfg.TiempoEsperaMin = *req.TiempoEsperaMin
+	}
+	if req.HorarioInicio != nil {
+		cfg.HorarioInicio = *req.HorarioInicio
+	}
+	if req.HorarioFin != nil {
+		cfg.HorarioFin = *req.HorarioFin
+	}
+	if req.MensajeBienvenida != nil {
+		cfg.MensajeBienvenida = *req.MensajeBienvenida
+	}
+
+	if err := h.repo.UpdateConfig(cfg); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toConfigResponse(cfg))
 }

@@ -1,8 +1,12 @@
+/*
+Package acceso
+Repositorio relacionado con la tabla Kiosko
+
+Funciones CRUD relacionadas solo con el dominio Kiosko, es decir operaciones CRUD en tabal Kiosko
+*/
 package acceso
 
-import (
-	"gorm.io/gorm"
-)
+import "gorm.io/gorm"
 
 type Repository struct {
 	db *gorm.DB
@@ -17,8 +21,8 @@ func (r *Repository) Create(a *Acceso) error {
 	return r.db.Create(a).Error
 }
 
-// FindByID encuentra un Acceso por su id, sin filtrar por admin.
-// Usado en el login del kiosko (auth/), que solo conoce su AccesoID y su ClaveKiosko, no un adminID.
+// FindByID encuentra un Acceso por su id
+// Usado en el login del kiosko (auth/), que solo conoce su AccesoID y su ClaveKiosko, no un adminID
 func (r *Repository) FindByID(id uint) (*Acceso, error) {
 	var a Acceso
 	if err := r.db.First(&a, id).Error; err != nil {
@@ -60,7 +64,7 @@ func (r *Repository) Update(a *Acceso, adminID uint) error {
 	return nil
 }
 
-// FindConfigByAccesoID devuelve la AccesoConfig del kiosko; la crea con defaults si no existe.
+// FindConfigByAccesoID devuelve la AccesoConfig del kiosko; la crea con defaults si no existe
 func (r *Repository) FindConfigByAccesoID(accesoID uint) (*AccesoConfig, error) {
 	var cfg AccesoConfig
 	err := r.db.Where("acceso_id = ?", accesoID).First(&cfg).Error
@@ -74,8 +78,8 @@ func (r *Repository) FindConfigByAccesoID(accesoID uint) (*AccesoConfig, error) 
 	return &cfg, err
 }
 
-// UpdateConfig guarda los campos de AccesoConfig para el acceso indicado.
-// Solo admins que posean el acceso deben poder llamar esto (validado en el handler).
+// UpdateConfig guarda los campos de AccesoConfig para el acceso indicado
+// Solo admins que posean el acceso deben poder llamar esto (validado en el handler)
 func (r *Repository) UpdateConfig(cfg *AccesoConfig) error {
 	return r.db.Save(cfg).Error
 }
