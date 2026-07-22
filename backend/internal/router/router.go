@@ -33,7 +33,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	r.Static("/admin", "./web/admin")
-	r.Static("/uploads/visitantes", "./web/uploads/visitantes")
+	r.Static("/uploads/visitantes", cfg.UploadsDir)
 
 	return r
 }

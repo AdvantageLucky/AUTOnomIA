@@ -419,10 +419,10 @@
   }
 
   async function preloadAccesos() {
-    const res = await api("/accesos/");
+    const res = await api("/kioskos/");
     if (!res || !res.ok) return;
     const data = await res.json();
-    const list = Array.isArray(data) ? data : (data.accesos || []);
+    const list = Array.isArray(data) ? data : (data.kioskos || []);
     list.forEach(a => state.accesosById.set(a.id, a));
   }
 
@@ -574,11 +574,11 @@
   }
 
   function renderVisRow(v, i) {
-    const acceso = state.accesosById.get(v.acceso_id);
+    const acceso = state.accesosById.get(v.kiosko_id);
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
       <div><div class="row-name">${esc(v.nombre)}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span></div>
-      <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.acceso_id}`}</div>
+      <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
       <div class="row-date">${fmtDateShort(v.created_at)}</div>
     </div>`;
@@ -690,8 +690,8 @@
 
     timeline.innerHTML = mismaPersona.map((v, i) => {
       const esCurrent = String(v.id) === String(visitaActual.id);
-      const acceso = state.accesosById.get(v.acceso_id);
-      const accNombre = acceso ? esc(acceso.nombre) : `Acceso #${v.acceso_id}`;
+      const acceso = state.accesosById.get(v.kiosko_id);
+      const accNombre = acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`;
       const meta = [accNombre, v.casa_destino ? esc(v.casa_destino) : null, v.motivo_visita ? esc(v.motivo_visita) : null].filter(Boolean).join(" · ");
       return `<div class="exp-row${esCurrent ? " exp-row--current" : ""}" style="animation-delay:${i*25}ms" data-id="${v.id}">
         <div class="exp-marker"><div class="exp-dot"></div></div>
@@ -779,13 +779,13 @@
   }
 
   function renderSolRow(v, i) {
-    const acceso = state.accesosById.get(v.acceso_id);
+    const acceso = state.accesosById.get(v.kiosko_id);
     return `<div class="sol-card" style="animation-delay:${i*40}ms">
       <div class="sol-card-left">
         <div class="feed-dot"></div>
         <div>
           <div class="row-name">${esc(v.nombre)}</div>
-          <div class="row-sub">${acceso ? esc(acceso.nombre) : `Acceso #${v.acceso_id}`} · ${esc(v.casa_destino || "sin destino")} · <span class="feed-elapsed">${fmtElapsed(v.created_at)}</span></div>
+          <div class="row-sub">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${esc(v.casa_destino || "sin destino")} · <span class="feed-elapsed">${fmtElapsed(v.created_at)}</span></div>
           ${v.motivo_visita ? `<div class="row-sub" style="margin-top:2px;font-style:italic">"${esc(v.motivo_visita)}"</div>` : ""}
         </div>
       </div>
@@ -885,7 +885,7 @@
 
     const nombre   = [r.nombre, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(" ");
     const initials = ((r.nombre?.[0] || "") + (r.apellido_paterno?.[0] || "")).toUpperCase();
-    const accesoNombre = state.accesosById.get(r.acceso_id)?.nombre || `Acceso #${r.acceso_id}`;
+    const accesoNombre = state.accesosById.get(r.kiosko_id)?.nombre || `Kiosko #${r.kiosko_id}`;
 
     body.innerHTML = `
       <div class="panel panel-padded" style="margin-bottom:16px">
@@ -1011,12 +1011,12 @@
 
   /* ─── Accesos ────────────────────────────── */
   async function loadAccesos() {
-    const res = await api("/accesos/");
+    const res = await api("/kioskos/");
     const container = document.getElementById("accesos-list");
     if (!res || !res.ok) { container.innerHTML = `<div class="empty-title">${t("load_err_title")}</div>`; return; }
 
     const data = await res.json();
-    const list = Array.isArray(data) ? data : (data.accesos || []);
+    const list = Array.isArray(data) ? data : (data.kioskos || []);
     list.forEach(a => state.accesosById.set(a.id, a));
 
     if (list.length === 0) {
@@ -1085,7 +1085,7 @@
     const errEl     = document.getElementById("acceso-form-error");
 
     const isNew    = state.editingAccesoId === null;
-    const endpoint = isNew ? "/accesos/" : `/accesos/${state.editingAccesoId}`;
+    const endpoint = isNew ? "/kioskos/" : `/kioskos/${state.editingAccesoId}`;
     const method   = isNew ? "POST" : "PATCH";
 
     const res = await api(endpoint, { method, body: JSON.stringify({ nombre, ubicacion }) });
