@@ -363,6 +363,23 @@ func (h *Handler) StreamSolicitudes(c *gin.Context) {
 	})
 }
 
+// ListarReportes devuelve los ultimos 7 reportes de IA
+//
+// @Summary Listar reportes de IA
+// @Tags visitas
+// @Produce json
+// @Success 200
+// @Router /visitas/reportes [get]
+func (h *Handler) ListarReportes(c *gin.Context) {
+	repo := &reporteRepository{db: h.repo.db}
+	reportes, err := repo.ultimos(7)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error obteniendo reportes"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"reportes": reportes})
+}
+
 // HistorialVisita historial de visitas por CURP (dashboard)
 //
 // @Summary Historial de visitas por CURP

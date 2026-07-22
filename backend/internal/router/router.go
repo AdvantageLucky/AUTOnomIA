@@ -26,6 +26,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	api := r.Group("/api/v1")
 
 	hub := sse.NewHub()
+	visitas.IniciarAgenteReportes(db, cfg.LLMUrl)
 
 	registerAuthRoutes(api, db, cfg.JWTSecret)
 	registerAdminRoutes(api, db, cfg.JWTSecret)
@@ -108,6 +109,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	{
 		d.GET("/", visitaHandler.ListarVisitas)
 		d.GET("/buscar", visitaHandler.HistorialVisita)
+		d.GET("/reportes", visitaHandler.ListarReportes)
 		d.GET("/:id", visitaHandler.GetVisitaByID)
 		d.PATCH("/:id/estado", visitaHandler.ActualizarEstado)
 	}
