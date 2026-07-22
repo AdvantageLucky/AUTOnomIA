@@ -100,8 +100,12 @@ func RequireResidente(secret string) gin.HandlerFunc {
 func bearerToken(c *gin.Context) string {
 	const prefix = "Bearer "
 	header := c.GetHeader("Authorization")
-	if !strings.HasPrefix(header, prefix) {
-		return ""
+	if strings.HasPrefix(header, prefix) {
+		return strings.TrimPrefix(header, prefix)
 	}
-	return strings.TrimPrefix(header, prefix)
+	// EventSource no puede enviar headers; acepta ?token= solo para SSE
+	if q := c.Query("token"); q != "" {
+		return q
+	}
+	return ""
 }

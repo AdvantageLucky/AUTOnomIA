@@ -247,9 +247,15 @@
   const TIPO_BADGE  = { INE: "badge--ine", PASAPORTE: "badge--pasaporte", LICENCIA: "badge--licencia" };
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado" };
 
+  const RUTAS_POR_ROL = {
+    admin:     ["dashboard","visitas","detalle","solicitudes","residentes","residente-detalle","accesos","configuracion","equipo","perfil"],
+    vigilante: ["solicitudes","perfil"],
+  };
+
   const state = {
     adminId: null,
     admin: null,
+    rol: "admin",
     accesosById: new Map(),
     visPage: 1,
     visPageSize: 20,
@@ -258,6 +264,7 @@
     deletingAccesoId: null,
     visSearchTimeout: null,
     solPollingId: null,
+    sseSource: null,
     residentesFull: [],
     resSearchTimeout: null,
   };
@@ -272,6 +279,57 @@
       const p = token.split(".")[1];
       return JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/")));
     } catch { return null; }
+  }
+
+  function getRolFromToken(token) {
+    return decodeJWT(token)?.rol || "admin";
+  }
+
+  function aplicarRol(rol) {
+    state.rol = rol;
+    const rutas = RUTAS_POR_ROL[rol] || RUTAS_POR_ROL.admin;
+    document.querySelectorAll(".nav-btn[data-nav]").forEach(btn => {
+      btn.hidden = !rutas.includes(btn.dataset.nav);
+    });
+    const esVigilante = rol === "vigilante";
+    document.getElementById("screen-solicitudes")?.classList.toggle("sol-vigilante-mode", esVigilante);
+  }
+
+  function mostrarToast(msg, tipo = "info") {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+    const toast = document.createElement("div");
+    toast.className = `toast toast--${tipo}`;
+    toast.textContent = msg;
+    toast.style.cssText = "background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.18);pointer-events:auto;cursor:pointer;max-width:320px;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s";
+    container.appendChild(toast);
+    requestAnimationFrame(() => { toast.style.opacity = "1"; toast.style.transform = "translateY(0)"; });
+    const remove = () => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 200); };
+    toast.addEventListener("click", remove);
+    setTimeout(remove, 5000);
+  }
+
+  function initSSE(token) {
+    if (state.sseSource) { state.sseSource.close(); state.sseSource = null; }
+    const url = `${API_BASE}/kioskos/solicitudes/stream?token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
+    state.sseSource = es;
+
+    const dot = document.getElementById("sse-dot");
+
+    es.onopen = () => { if (dot) { dot.className = "sse-dot sse-dot--on"; dot.title = "Stream conectado"; } };
+    es.onerror = () => { if (dot) { dot.className = "sse-dot"; dot.title = "Stream desconectado"; } };
+
+    es.onmessage = e => {
+      try {
+        const v = JSON.parse(e.data);
+        const nombre = v.nombre || "Nuevo visitante";
+        mostrarToast(`Nueva solicitud: ${nombre}`);
+        if (document.getElementById("screen-solicitudes")?.classList.contains("active")) {
+          loadSolicitudes();
+        }
+      } catch { /* ignorar mensajes malformados */ }
+    };
   }
 
   async function api(path, opts = {}) {
@@ -320,6 +378,9 @@
   }
 
   function navTo(screen) {
+    const rutas = RUTAS_POR_ROL[state.rol] || RUTAS_POR_ROL.admin;
+    if (!rutas.includes(screen)) screen = state.rol === "vigilante" ? "solicitudes" : "dashboard";
+
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
 
@@ -335,6 +396,7 @@
     if (screen === "residentes")        loadResidentes();
     if (screen === "accesos")           loadAccesos();
     if (screen === "configuracion")     loadConfigAccesos();
+    if (screen === "equipo")            loadEquipo();
     if (screen === "perfil")            loadPerfil();
   }
 
@@ -413,9 +475,13 @@
   /* ─── Bootstrap ─────────────────────────── */
   async function bootstrapApp() {
     if (!state.adminId) return;
+    const token = getToken();
+    state.rol = getRolFromToken(token);
     await Promise.all([loadAdminData(), preloadAccesos()]);
     showApp();
-    navTo("dashboard");
+    aplicarRol(state.rol);
+    initSSE(token);
+    navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard");
   }
 
   async function preloadAccesos() {
@@ -451,9 +517,11 @@
 
   /* ─── Logout ─────────────────────────────── */
   document.getElementById("btn-logout").addEventListener("click", () => {
+    if (state.sseSource) { state.sseSource.close(); state.sseSource = null; }
     clearToken();
     state.adminId = null;
     state.admin = null;
+    state.rol = "admin";
     showLogin();
   });
 
@@ -607,7 +675,7 @@
       return;
     }
     const v = await res.json();
-    const acceso = state.accesosById.get(v.acceso_id);
+    const acceso = state.accesosById.get(v.kiosko_id);
 
     body.innerHTML = `
       <div class="detalle-hero">
@@ -617,12 +685,13 @@
           ${v.foto_placa_url     ? `<img class="detalle-foto" src="${esc(v.foto_placa_url)}"     alt="Placa"     loading="lazy">` : ""}
         </div>
         <div class="detalle-info">
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
             <span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span>
             <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
+            ${v.intervenida ? `<span class="badge badge--intervenida">Revisada por IA</span>` : ""}
           </div>
           <div class="detalle-nombre">${esc(v.nombre)}</div>
-          <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Acceso #${v.acceso_id}`} · ${fmtDate(v.created_at)}</div>
+          <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${fmtDate(v.created_at)}</div>
           <div class="detalle-campos">
             <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp || "—")}</div></div>
             <div><div class="campo-label">${t("motivo")}</div><div class="campo-value">${esc(v.motivo_visita || "—")}</div></div>
@@ -885,7 +954,7 @@
 
     const nombre   = [r.nombre, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(" ");
     const initials = ((r.nombre?.[0] || "") + (r.apellido_paterno?.[0] || "")).toUpperCase();
-    const accesoNombre = state.accesosById.get(r.kiosko_id)?.nombre || `Kiosko #${r.kiosko_id}`;
+    const accesoNombre = state.accesosById.get(r.kiosko_id)?.nombre || `Kiosko #${r.kiosko_id || "—"}`;
 
     body.innerHTML = `
       <div class="panel panel-padded" style="margin-bottom:16px">
@@ -983,7 +1052,7 @@
     }
 
     const data = await res.json();
-    const visitas = (data.visitas || []).filter(v => v.acceso_id === r.acceso_id);
+    const visitas = (data.visitas || []).filter(v => v.kiosko_id === r.kiosko_id);
 
     if (visitas.length === 0) {
       container.innerHTML = `<div class="empty-state"><div class="empty-title">Sin visitas registradas</div></div>`;
@@ -1238,6 +1307,104 @@
     setTimeout(() => { okEl.hidden = true; }, 3000);
   });
 
+  /* ─── Equipo ─────────────────────────────── */
+  async function loadEquipo() {
+    const loadEl  = document.getElementById("equipo-loading");
+    const emptyEl = document.getElementById("equipo-empty");
+    const rowsEl  = document.getElementById("equipo-rows");
+
+    if (loadEl)  loadEl.hidden = false;
+    if (emptyEl) emptyEl.hidden = true;
+    if (rowsEl)  rowsEl.innerHTML = "";
+
+    const res = await api("/admins/?rol=vigilante");
+    if (loadEl) loadEl.hidden = true;
+
+    if (!res || !res.ok) {
+      if (rowsEl) rowsEl.innerHTML = `<div class="empty-title">${t("load_err_title")}</div>`;
+      return;
+    }
+
+    const data = await res.json();
+    const vigilantes = data.admins || [];
+
+    if (vigilantes.length === 0) {
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
+
+    rowsEl.innerHTML = vigilantes.map((v, i) => {
+      const nombre = [v.nombre, v.apellido_paterno].filter(Boolean).join(" ") || v.correo;
+      const initials = ((v.nombre?.[0] || "") + (v.apellido_paterno?.[0] || "")).toUpperCase();
+      return `<div class="acceso-card" style="animation-delay:${i*30}ms">
+        <div class="acceso-info" style="display:flex;align-items:center;gap:12px">
+          <div class="avatar">${esc(initials) || "·"}</div>
+          <div>
+            <div class="acceso-nombre">${esc(nombre)}</div>
+            <div class="acceso-ubi">${esc(v.correo)}</div>
+          </div>
+        </div>
+        <div class="acceso-actions">
+          <button class="btn-ghost" style="color:var(--red)" data-del-vigilante="${v.id}" title="Eliminar vigilante">
+            <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
+          </button>
+        </div>
+      </div>`;
+    }).join("");
+
+    rowsEl.querySelectorAll("[data-del-vigilante]").forEach(btn => {
+      btn.addEventListener("click", () => eliminarVigilante(parseInt(btn.dataset.delVigilante)));
+    });
+  }
+
+  async function eliminarVigilante(id) {
+    if (!confirm("¿Eliminar este vigilante?")) return;
+    const res = await api(`/admins/${id}`, { method: "DELETE" });
+    if (res && res.ok) loadEquipo();
+    else mostrarToast("No se pudo eliminar el vigilante", "err");
+  }
+
+  document.getElementById("btn-nuevo-vigilante")?.addEventListener("click", () => {
+    document.getElementById("vig-nombre").value   = "";
+    document.getElementById("vig-paterno").value  = "";
+    document.getElementById("vig-correo").value   = "";
+    document.getElementById("vig-password").value = "";
+    document.getElementById("vig-error").hidden   = true;
+    document.getElementById("modal-vigilante").hidden = false;
+  });
+
+  document.getElementById("vig-cancel")?.addEventListener("click", () => {
+    document.getElementById("modal-vigilante").hidden = true;
+  });
+
+  document.getElementById("vigilante-form")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    const errEl = document.getElementById("vig-error");
+    errEl.hidden = true;
+
+    const payload = {
+      correo:          document.getElementById("vig-correo").value,
+      password:        document.getElementById("vig-password").value,
+      nombre:          document.getElementById("vig-nombre").value,
+      apellido_paterno:document.getElementById("vig-paterno").value,
+      rol:             "vigilante",
+    };
+
+    const res = await api("/auth/sign-in", { method: "POST", body: JSON.stringify(payload) });
+    if (!res) return;
+
+    if (!res.ok) {
+      const data = await res.json();
+      errEl.textContent = data.error || "Error al crear vigilante";
+      errEl.hidden = false;
+      return;
+    }
+
+    document.getElementById("modal-vigilante").hidden = true;
+    mostrarToast("Vigilante creado correctamente");
+    loadEquipo();
+  });
+
   /* ─── Perfil ─────────────────────────────── */
   async function loadPerfil() {
     if (!state.admin) return;
@@ -1287,6 +1454,7 @@
     }
 
     state.adminId = claims.admin_id;
+    state.rol = claims.rol || "admin";
     bootstrapApp();
   }
 

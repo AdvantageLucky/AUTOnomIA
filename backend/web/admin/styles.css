@@ -1870,3 +1870,31 @@ input::placeholder { color: var(--text-2); }
   margin-top: -8px;
   margin-bottom: 12px;
 }
+
+/* ── SSE dot indicator ──────────────────── */
+.sse-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-3); opacity: .5;
+  transition: background .3s, opacity .3s;
+  flex-shrink: 0;
+}
+.sse-dot--on { background: var(--green); opacity: 1; }
+
+/* ── Badge intervenida ──────────────────── */
+.badge--intervenida { background: rgba(139,92,246,.14); color: #8b5cf6; }
+
+/* ── Toast ──────────────────────────────── */
+.toast { animation: toast-in .2s ease; }
+@keyframes toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+/* ── Vigilante live-feed mode ───────────── */
+.sol-vigilante-mode .sol-card {
+  padding: 20px;
+  gap: 20px;
+}
+.sol-vigilante-mode .sol-card .row-name { font-size: 18px; font-weight: 700; }
+.sol-vigilante-mode .sol-card .btn-aprobar,
+.sol-vigilante-mode .sol-card .btn-rechazar {
+  padding: 10px 24px;
+  font-size: 15px;
+}

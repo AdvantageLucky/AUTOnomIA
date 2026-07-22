@@ -45,10 +45,10 @@ type KioskoConfig struct {
 	HorarioFin        string `gorm:"not null;default:'23:59'"`
 	MensajeBienvenida string
 
-	// Configuración de IA
+	// Configuracion de IA
 	AutoPassHabilitado     bool `gorm:"not null;default:true"`
 	UmbralConfianzaVisitas int  `gorm:"not null;default:5"`
 }
 
-func (Kiosko) TableName() string      { return "kioskos" }
+func (Kiosko) TableName() string       { return "kioskos" }
 func (KioskoConfig) TableName() string { return "kiosko_configs" }
