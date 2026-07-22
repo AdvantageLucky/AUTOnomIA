@@ -335,6 +335,12 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.MensajeBienvenida != nil {
 		cfg.MensajeBienvenida = *req.MensajeBienvenida
 	}
+	if req.AutoPassHabilitado != nil {
+		cfg.AutoPassHabilitado = *req.AutoPassHabilitado
+	}
+	if req.UmbralConfianzaVisitas != nil {
+		cfg.UmbralConfianzaVisitas = *req.UmbralConfianzaVisitas
+	}
 
 	if err := h.repo.UpdateConfig(cfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

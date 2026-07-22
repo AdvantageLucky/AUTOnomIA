@@ -28,6 +28,7 @@ const (
 	EstadoPendiente EstadoVisita = "PENDIENTE"
 	EstadoAprobado  EstadoVisita = "APROBADO"
 	EstadoRechazado EstadoVisita = "RECHAZADO"
+	EstadoRevision  EstadoVisita = "REVISION"
 )
 
 type Visita struct {
@@ -42,8 +43,9 @@ type Visita struct {
 	MotivoVisita     string `gorm:"not null"`
 	CasaDestino      string `gorm:"not null"`
 	Placa            string
-	Estado           EstadoVisita `gorm:"not null;default:'PENDIENTE'"`
-	KioskoID uint         `gorm:"not null;index"`
+	Estado      EstadoVisita `gorm:"not null;default:'PENDIENTE'"`
+	Intervenida bool         `gorm:"not null;default:false"`
+	KioskoID    uint         `gorm:"not null;index"`
 }
 
 func (Visita) TableName() string { return "visitas" }
