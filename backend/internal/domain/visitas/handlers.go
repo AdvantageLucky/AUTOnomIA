@@ -19,22 +19,37 @@ Documentado con swag
 package visitas
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
+
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 )
 
+// SseHub interfaz para evitar dependencia circular con el paquete sse
+type SseHub interface {
+	Broadcast(data []byte)
+	Subscribe() chan []byte
+	Unsubscribe(ch chan []byte)
+}
+
 type Handler struct {
 	repo       *Repository
 	uploadsDir string
+	llmUrl     string
+	sseHub     SseHub
 }
 
-func NewHandler(repo *Repository, uploadsDir string) *Handler {
-	return &Handler{repo: repo, uploadsDir: uploadsDir}
+func NewHandler(repo *Repository, uploadsDir string, llmUrl string, hub SseHub) *Handler {
+	return &Handler{repo: repo, uploadsDir: uploadsDir, llmUrl: llmUrl, sseHub: hub}
 }
 
 func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
@@ -139,6 +154,54 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, toVisitaResponse(*v))
+
+	// Análisis asíncrono — no bloquea la respuesta al kiosko
+	visitaCopy := *v
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		cfg, err := h.repo.GetKioskoConfig(visitaCopy.KioskoID)
+		if err != nil {
+			return
+		}
+
+		historial, err := h.repo.HistorialPorCURP(visitaCopy.Curp)
+		if err != nil {
+			return
+		}
+		var historialPrevio []Visita
+		for _, vh := range historial {
+			if vh.ID != visitaCopy.ID {
+				historialPrevio = append(historialPrevio, vh)
+			}
+		}
+
+		sc := AnalizarVisita(historialPrevio, visitaCopy, cfg.UmbralConfianzaVisitas)
+		resumen, _ := GenerarResumen(ctx, h.llmUrl, sc)
+		sc.ResumenTexto = resumen
+
+		tieneAnomalias := sc.AnomaliaMatricula || sc.CambioModalidad || sc.HorarioInusual ||
+			sc.RechazadoPrevio || sc.OCRSospechoso
+
+		nuevoEstado := EstadoPendiente
+		if sc.Confiable && !tieneAnomalias && cfg.AutoPassHabilitado {
+			nuevoEstado = EstadoAprobado
+		} else if tieneAnomalias || (sc.Confiable && !cfg.AutoPassHabilitado) {
+			nuevoEstado = EstadoRevision
+		}
+
+		if nuevoEstado != EstadoPendiente {
+			_ = h.repo.ActualizarEstadoConScore(visitaCopy.ID, nuevoEstado, false)
+		}
+
+		if h.sseHub != nil && (nuevoEstado == EstadoRevision || nuevoEstado == EstadoPendiente) {
+			visitaCopy.Estado = nuevoEstado
+			if jsonData, err := json.Marshal(toVisitaResponse(visitaCopy)); err == nil {
+				h.sseHub.Broadcast(jsonData)
+			}
+		}
+	}()
 }
 
 // GetVisitaByID obtiene el detalle de una visita (dashboard admin)
@@ -268,6 +331,36 @@ func (h *Handler) ActualizarEstado(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"estado": string(estado)})
+}
+
+// StreamSolicitudes abre una conexión SSE y envía nuevas visitas al cliente
+//
+// @Summary Stream SSE de solicitudes
+// @Tags visitas
+// @Produce text/event-stream
+// @Success 200
+// @Router /kioskos/solicitudes/stream [get]
+func (h *Handler) StreamSolicitudes(c *gin.Context) {
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	ch := h.sseHub.Subscribe()
+	defer h.sseHub.Unsubscribe(ch)
+
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case data, ok := <-ch:
+			if !ok {
+				return false
+			}
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			return true
+		case <-c.Request.Context().Done():
+			return false
+		}
+	})
 }
 
 // HistorialVisita historial de visitas por CURP (dashboard)

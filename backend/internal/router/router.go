@@ -12,6 +12,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/domain/visitas"
+	"kigo-autonomia-backend/internal/platform/sse"
 
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -24,10 +25,12 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	r := gin.Default()
 	api := r.Group("/api/v1")
 
+	hub := sse.NewHub()
+
 	registerAuthRoutes(api, db, cfg.JWTSecret)
 	registerAdminRoutes(api, db, cfg.JWTSecret)
 	registerKioskoRoutes(api, db, cfg.JWTSecret)
-	registerVisitaRoutes(api, db, cfg)
+	registerVisitaRoutes(api, db, cfg, hub)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret)
 
@@ -87,9 +90,9 @@ func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 
 // registerVisitaRoutes registra las rutas de visitas: registro desde el kiosko (sesion) y
 // consulta del admin (JWT).
-func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config) {
+func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config, hub *sse.Hub) {
 	visitaRepo := visitas.NewRepository(db)
-	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir)
+	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: solo registra visitas
@@ -99,7 +102,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config)
 		v.POST("/", visitaHandler.RegisterVisita)
 	}
 
-	// dashboard admin: lectura paginada, detalle e historial
+	// dashboard admin: lectura paginada, detalle, historial y reportes
 	d := rg.Group("/visitas")
 	d.Use(auth.RequireAdmin(cfg.JWTSecret))
 	{
@@ -107,6 +110,13 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config)
 		d.GET("/buscar", visitaHandler.HistorialVisita)
 		d.GET("/:id", visitaHandler.GetVisitaByID)
 		d.PATCH("/:id/estado", visitaHandler.ActualizarEstado)
+	}
+
+	// SSE stream — admin de cualquier rol puede suscribirse
+	stream := rg.Group("/kioskos/solicitudes")
+	stream.Use(auth.RequireAdmin(cfg.JWTSecret))
+	{
+		stream.GET("/stream", visitaHandler.StreamSolicitudes)
 	}
 }
 

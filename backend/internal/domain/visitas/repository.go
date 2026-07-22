@@ -6,7 +6,13 @@ Operaciones CRUD en DB relacionadas solo con el dominio visitas
 */
 package visitas
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"kigo-autonomia-backend/internal/domain/kiosko"
+
+	"gorm.io/gorm"
+)
 
 type Repository struct {
 	db *gorm.DB
@@ -128,4 +134,36 @@ func (r *Repository) UpdateEstado(id uint, estado EstadoVisita) error {
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+// HistorialPorCURP devuelve visitas previas de un CURP, de más reciente a más antigua
+func (r *Repository) HistorialPorCURP(curp string) ([]Visita, error) {
+	var visitas []Visita
+	err := r.db.Where("curp = ?", curp).Order("created_at DESC").Find(&visitas).Error
+	return visitas, err
+}
+
+// ActualizarEstadoConScore actualiza estado e intervenida de una visita
+func (r *Repository) ActualizarEstadoConScore(id uint, estado EstadoVisita, intervenida bool) error {
+	return r.db.Model(&Visita{}).Where("id = ?", id).Updates(map[string]any{
+		"estado":      estado,
+		"intervenida": intervenida,
+	}).Error
+}
+
+// GetKioskoConfig devuelve la config del kiosko, o valores por defecto si no existe aún
+func (r *Repository) GetKioskoConfig(kioskoID uint) (*kiosko.KioskoConfig, error) {
+	var cfg kiosko.KioskoConfig
+	err := r.db.Where("kiosko_id = ?", kioskoID).First(&cfg).Error
+	if err == gorm.ErrRecordNotFound {
+		return &kiosko.KioskoConfig{AutoPassHabilitado: true, UmbralConfianzaVisitas: 5}, nil
+	}
+	return &cfg, err
+}
+
+// ListarEnPeriodo devuelve visitas creadas entre inicio y fin
+func (r *Repository) ListarEnPeriodo(inicio, fin time.Time) ([]Visita, error) {
+	var visitas []Visita
+	err := r.db.Where("created_at BETWEEN ? AND ?", inicio, fin).Find(&visitas).Error
+	return visitas, err
 }
