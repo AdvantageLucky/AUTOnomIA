@@ -25,6 +25,24 @@ func NewHandler(repo *Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
+// ListarAdmins devuelve todos los admins, filtrando por ?rol= si se proporciona
+//
+// @Summary Listar admins
+// @Tags admins
+// @Produce json
+// @Param rol query string false "Filtrar por rol (admin, vigilante)"
+// @Success 200
+// @Router /admins [get]
+func (h *Handler) ListarAdmins(c *gin.Context) {
+	rol := c.Query("rol")
+	admins, err := h.repo.FindAll(rol)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error obteniendo admins"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"admins": admins})
+}
+
 // GetAdminByID busca un Admin por su ID
 // Request: id uint (URL Param)
 // Response: AdminResponse

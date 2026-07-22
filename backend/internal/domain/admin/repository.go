@@ -53,6 +53,16 @@ func (r *Repository) Update(a *Admin) error {
 	return nil
 }
 
+// FindAll devuelve todos los admins; filtra por rol si se proporciona
+func (r *Repository) FindAll(rolFiltro string) ([]Admin, error) {
+	var admins []Admin
+	q := r.db.Model(&Admin{})
+	if rolFiltro != "" {
+		q = q.Where("rol = ?", rolFiltro)
+	}
+	return admins, q.Find(&admins).Error
+}
+
 // Delete elimina un Admin por su id
 func (r *Repository) Delete(id uint) error {
 	result := r.db.Delete(&Admin{}, id)

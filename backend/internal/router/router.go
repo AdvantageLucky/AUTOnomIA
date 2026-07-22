@@ -66,6 +66,7 @@ func registerAdminRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	a := rg.Group("/admins")
 	a.Use(auth.RequireAdmin(jwtSecret))
 	{
+		a.GET("/", adminHandler.ListarAdmins)
 		a.GET("/:id", adminHandler.GetAdminByID)
 		a.PATCH("/:id", adminHandler.PatchAdmin)
 		a.DELETE("/:id", adminHandler.DeleteAdmin)
