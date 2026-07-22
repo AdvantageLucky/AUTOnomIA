@@ -10,6 +10,9 @@ package auth
 type RegisterRequest struct {
 	Correo   string `json:"correo"   binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
+	Nombre   string `json:"nombre"`
+	ApellidoPaterno string `json:"apellido_paterno"`
+	Rol      string `json:"rol"` // "admin" (default) o "vigilante" si el solicitante es admin
 }
 
 // LoginRequest DTO para loguear a un Admin existente

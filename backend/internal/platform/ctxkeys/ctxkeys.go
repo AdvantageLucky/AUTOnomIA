@@ -14,6 +14,7 @@ package ctxkeys
 
 const (
 	AdminID     = "admin_id"
-	KioskoID = "kiosko_id"
+	AdminRol    = "admin_rol"
+	KioskoID    = "kiosko_id"
 	ResidenteID = "residente_id"
 )

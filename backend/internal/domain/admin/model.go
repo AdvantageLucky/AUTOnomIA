@@ -16,4 +16,5 @@ type Admin struct {
 	ApellidoMaterno string
 	Correo          string `gorm:"not null;uniqueIndex"`          // identificador unico de login
 	Password        string `gorm:"not null"             json:"-"` // hash bcrypt, nunca se expone en JSON
+	Rol             string `gorm:"not null;default:'admin'"`
 }

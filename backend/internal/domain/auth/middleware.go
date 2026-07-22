@@ -10,7 +10,7 @@ import (
 )
 
 // RequireAdmin valida el JWT del header "Authorization: Bearer <token>" y mete el admin_id
-// que contiene en el contexto de gin (ctxkeys.AdminID)
+// y admin_rol en el contexto de gin
 func RequireAdmin(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := bearerToken(c)
@@ -19,7 +19,7 @@ func RequireAdmin(secret string) gin.HandlerFunc {
 			return
 		}
 
-		adminID, err := ParseAdminToken(token, secret)
+		adminID, rol, err := ParseAdminToken(token, secret)
 		if err != nil {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
@@ -29,7 +29,23 @@ func RequireAdmin(secret string) gin.HandlerFunc {
 		}
 
 		c.Set(ctxkeys.AdminID, adminID)
+		c.Set(ctxkeys.AdminRol, rol)
 		c.Next()
+	}
+}
+
+// RequireAdminRole verifica que el rol del admin autenticado esté en la lista permitida.
+// Debe usarse después de RequireAdmin en la cadena de middlewares.
+func RequireAdminRole(roles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		rol, _ := c.Get(ctxkeys.AdminRol)
+		for _, r := range roles {
+			if rol == r {
+				c.Next()
+				return
+			}
+		}
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "permisos insuficientes"})
 	}
 }
 

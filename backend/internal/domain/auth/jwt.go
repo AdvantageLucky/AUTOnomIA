@@ -35,14 +35,16 @@ const adminTokenTTL = 24 * time.Hour
 
 // adminClaims son los claims del JWT de un Admin logeado en el dashboard
 type adminClaims struct {
-	AdminID uint `json:"admin_id"`
+	AdminID uint   `json:"admin_id"`
+	Rol     string `json:"rol"`
 	jwt.RegisteredClaims
 }
 
 // GenerateAdminToken firma un JWT (HS256) para el Admin autenticado, valido por adminTokenTTL
-func GenerateAdminToken(adminID uint, secret string) (string, error) {
+func GenerateAdminToken(adminID uint, rol string, secret string) (string, error) {
 	claims := adminClaims{
 		AdminID: adminID,
+		Rol:     rol,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(adminTokenTTL)),
@@ -53,18 +55,18 @@ func GenerateAdminToken(adminID uint, secret string) (string, error) {
 	return token.SignedString([]byte(secret))
 }
 
-// ParseAdminToken valida la firma y vigencia de un JWT y devuelve el AdminID que contiene
-func ParseAdminToken(tokenStr, secret string) (uint, error) {
+// ParseAdminToken valida la firma y vigencia de un JWT y devuelve (adminID, rol, error)
+func ParseAdminToken(tokenStr, secret string) (uint, string, error) {
 	claims := &adminClaims{}
 
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
 		return []byte(secret), nil
 	})
 	if err != nil || !token.Valid {
-		return 0, errors.New("token invalido o expirado")
+		return 0, "", errors.New("token invalido o expirado")
 	}
 
-	return claims.AdminID, nil
+	return claims.AdminID, claims.Rol, nil
 }
 
 // residenteClaims son los claims del JWT de un Residente autenticado en la app

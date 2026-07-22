@@ -29,9 +29,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
-	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/admin"
+	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
@@ -113,9 +114,24 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 		return
 	}
 
+	rol := "admin"
+	if req.Rol == "vigilante" {
+		tokenHeader := c.GetHeader("Authorization")
+		if strings.HasPrefix(tokenHeader, "Bearer ") {
+			t := strings.TrimPrefix(tokenHeader, "Bearer ")
+			_, rolSolicitante, e := ParseAdminToken(t, h.jwtSecret)
+			if e == nil && rolSolicitante == "admin" {
+				rol = "vigilante"
+			}
+		}
+	}
+
 	a := &admin.Admin{
-		Correo:   req.Correo,
-		Password: string(hash),
+		Correo:          req.Correo,
+		Password:        string(hash),
+		Rol:             rol,
+		Nombre:          req.Nombre,
+		ApellidoPaterno: req.ApellidoPaterno,
 	}
 
 	if err = h.adminRepo.Create(a); err != nil {
@@ -123,7 +139,7 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, h.jwtSecret)
+	token, err := GenerateAdminToken(a.ID, a.Rol, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -164,7 +180,7 @@ func (h *Handler) LoginAdminWithMailAndPassword(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, h.jwtSecret)
+	token, err := GenerateAdminToken(a.ID, a.Rol, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -219,7 +235,7 @@ func (h *Handler) LoginWithGoogle(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, h.jwtSecret)
+	token, err := GenerateAdminToken(a.ID, a.Rol, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -296,7 +312,7 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, h.jwtSecret)
+	token, err := GenerateAdminToken(a.ID, a.Rol, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
