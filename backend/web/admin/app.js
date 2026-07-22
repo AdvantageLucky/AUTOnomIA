@@ -1127,7 +1127,7 @@
   });
 
   document.getElementById("delete-confirm").addEventListener("click", async () => {
-    const res = await api(`/accesos/${state.deletingAccesoId}`, { method: "DELETE" });
+    const res = await api(`/kioskos/${state.deletingAccesoId}`, { method: "DELETE" });
     document.getElementById("modal-delete").hidden = true;
     if (res && res.ok) await loadAccesos();
   });
@@ -1174,7 +1174,7 @@
     const wrap = document.getElementById("cfg-form-wrap");
     const idle = document.getElementById("cfg-idle");
 
-    const res = await api(`/accesos/${accesoId}/config`);
+    const res = await api(`/kioskos/${accesoId}/config`);
     if (!res || !res.ok) {
       alert("No se pudo cargar la configuración.");
       return;
@@ -1222,7 +1222,7 @@
       horario_fin:          document.getElementById("cfg-horario-fin").value,
     };
 
-    const res = await api(`/accesos/${cfgAccesoId}/config`, {
+    const res = await api(`/kioskos/${cfgAccesoId}/config`, {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
