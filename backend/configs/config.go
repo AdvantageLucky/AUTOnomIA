@@ -29,6 +29,7 @@ type Config struct {
 	ServerPort string
 	JWTSecret  string
 	UploadsDir string
+	LLMUrl     string
 }
 
 func Load() (*Config, error) {
@@ -42,6 +43,7 @@ func Load() (*Config, error) {
 		ServerPort: getEnv("SERVER_PORT", "8080"),
 		JWTSecret:  getEnv("JWT_SECRET", "dev-secret-change-me"),
 		UploadsDir: getEnv("UPLOADS_DIR", "./web/uploads/visitantes"),
+		LLMUrl:     getEnv("LLM_URL", "http://localhost:8081"),
 	}
 
 	return cfg, nil
