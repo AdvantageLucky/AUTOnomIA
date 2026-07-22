@@ -2,7 +2,7 @@
 Package auth
 
 Paquete de estructuras que representan respuestas o peticiones relacionadas con
-el login de Admin (JWT/Google) y de Acceso/kiosko (sesion persistida)
+el login de Admin (JWT/Google) y de Kiosko (sesion persistida)
 */
 package auth
 
@@ -23,9 +23,9 @@ type JWTResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-// LoginAccesoRequest DTO para loguear a un kiosko usando el AccesoID y su ClaveKiosko
-type LoginAccesoRequest struct {
-	AccesoID    uint   `json:"acceso_id"    binding:"required"`
+// LoginKioskoRequest DTO para loguear a un kiosko usando el KioskoID y su ClaveKiosko
+type LoginKioskoRequest struct {
+	KioskoID    uint   `json:"kiosko_id"    binding:"required"`
 	ClaveKiosko string `json:"clave_kiosko" binding:"required"`
 }
 

@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-El backend de AUTOnomIA necesita servir una API HTTP para registro y control de accesos/visitantes en condominios, persistir datos en una base relacional, y versionar el esquema de esa base de forma reproducible entre entornos.
+El backend de AUTOnomIA necesita servir una API HTTP para registro y control de kioskos/visitantes en condominios, persistir datos en una base relacional, y versionar el esquema de esa base de forma reproducible entre entornos.
 
 ## Decision
 Usar Go como lenguaje, con:

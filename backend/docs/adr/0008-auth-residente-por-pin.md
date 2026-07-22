@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-La app residente permite a los residentes del condominio aprobar o rechazar solicitudes de acceso
+La app residente permite a los residentes del condominio aprobar o rechazar solicitudes de kiosko
 pendientes (`Visita.estado = PENDIENTE`). Necesita un mecanismo de autenticación distinto al del
 admin y al del kiosko.
 
@@ -20,8 +20,8 @@ teléfono desbloqueado, no un atacante remoto.
 
 ## Decision
 El modelo `Residente` almacena el PIN hasheado con bcrypt (costo 12). El login es
-`POST /auth/residente/login` con `{ casa_destino, pin, acceso_id }` — el `casa_destino` actúa
-como identificador de usuario (es único por `acceso_id`) y el `pin` como contraseña.
+`POST /auth/residente/login` con `{ casa_destino, pin, kiosko_id }` — el `casa_destino` actúa
+como identificador de usuario (es único por `kiosko_id`) y el `pin` como contraseña.
 
 El login exitoso devuelve un JWT firmado con HS256, TTL de 7 días, con claim `residente_id`.
 El middleware `RequireResidente` valida ese token y expone el `residente_id` en el contexto de
@@ -36,7 +36,7 @@ no puede auto-registrarse.
 - El PIN debe tener un mínimo de longitud que el handler valida antes de hashear; si el admin
   crea un residente con PIN "1234" el sistema lo acepta — la política de complejidad queda en
   el criterio del administrador por ahora.
-- 7 días de TTL significa que un teléfono robado da acceso a la app hasta que el admin elimine
+- 7 días de TTL significa que un teléfono robado da kiosko a la app hasta que el admin elimine
   al residente o lo recree con nuevo PIN. Si se necesita revocación inmediata habría que migrar
   a sesiones persistidas como el kiosko.
 - `casa_destino` como username ata la identidad del residente a su ubicación física. Si el

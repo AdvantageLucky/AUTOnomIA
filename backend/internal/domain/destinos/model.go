@@ -16,7 +16,7 @@ type Destino struct {
 	gorm.Model
 	Nombre   string `gorm:"not null"` // "Torre B, Depto 102"
 	Titular  string `gorm:"not null"` // nombre completo del residente
-	AccesoID uint   `gorm:"not null;index"`
+	KioskoID uint   `gorm:"not null;index"`
 }
 
 func (Destino) TableName() string { return "destinos" }

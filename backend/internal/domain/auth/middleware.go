@@ -33,10 +33,10 @@ func RequireAdmin(secret string) gin.HandlerFunc {
 	}
 }
 
-// RequireAcceso valida la sesion persistida del kiosko (header "Authorization: Bearer <token>")
-// contra sesionRepo y mete el acceso_id de esa sesion en el contexto de gin (ctxkeys.AccesoID),
-// para las rutas de registro/consulta de visitantes anidadas bajo /accesos/:id/visitantes.
-func RequireAcceso(sesionRepo *SesionRepository) gin.HandlerFunc {
+// RequireKiosko valida la sesion persistida del kiosko (header "Authorization: Bearer <token>")
+// contra sesionRepo y mete el kiosko_id de esa sesion en el contexto de gin (ctxkeys.KioskoID),
+// para las rutas de registro/consulta de visitantes anidadas bajo /kioskos/:id/visitas.
+func RequireKiosko(sesionRepo *SesionRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := bearerToken(c)
 		if token == "" {
@@ -53,7 +53,7 @@ func RequireAcceso(sesionRepo *SesionRepository) gin.HandlerFunc {
 			return
 		}
 
-		c.Set(ctxkeys.AccesoID, sesion.AccesoID)
+		c.Set(ctxkeys.KioskoID, sesion.KioskoID)
 		c.Next()
 	}
 }

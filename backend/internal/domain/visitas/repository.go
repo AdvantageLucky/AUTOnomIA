@@ -25,13 +25,13 @@ func (r *Repository) Create(v *Visita) error {
 // id/created_at del join corrompan el resultado.
 func (r *Repository) joinVisitasDeAdmin(adminID uint) *gorm.DB {
 	return r.db.Model(&Visita{}).
-		Joins("JOIN accesos ON accesos.id = visitas.acceso_id").
-		Where("accesos.admin_id = ?", adminID)
+		Joins("JOIN kioskos ON kioskos.id = visitas.kiosko_id").
+		Where("kioskos.admin_id = ?", adminID)
 }
 
 // VisitaFiltros acota el listado de ListarVisitas. Todos los campos son opcionales.
 type VisitaFiltros struct {
-	AccesoID      *uint
+	KioskoID      *uint
 	TipoDocumento *TipoDocumento
 	Estado        *EstadoVisita
 	Q             string // ILIKE parcial sobre nombre, curp y clave_lector
@@ -44,8 +44,8 @@ func (r *Repository) FindAllByAdminID(
 ) ([]Visita, int64, error) {
 	query := func() *gorm.DB {
 		q := r.joinVisitasDeAdmin(adminID)
-		if filtros.AccesoID != nil {
-			q = q.Where("visitas.acceso_id = ?", *filtros.AccesoID)
+		if filtros.KioskoID != nil {
+			q = q.Where("visitas.kiosko_id = ?", *filtros.KioskoID)
 		}
 		if filtros.TipoDocumento != nil {
 			q = q.Where("visitas.tipo_documento = ?", *filtros.TipoDocumento)
@@ -106,12 +106,12 @@ func (r *Repository) FindByCurpAndAdminID(curp string, adminID uint) ([]Visita, 
 	return list, nil
 }
 
-// FindPendientesByAccesoID devuelve las visitas PENDIENTE de aprobación para un acceso,
+// FindPendientesByKioskoID devuelve las visitas PENDIENTE de aprobación para un kiosko,
 // usado por la app del residente.
-func (r *Repository) FindPendientesByAccesoID(accesoID uint) ([]Visita, error) {
+func (r *Repository) FindPendientesByKioskoID(kioskoID uint) ([]Visita, error) {
 	var list []Visita
 	if err := r.db.
-		Where("acceso_id = ? AND estado = ?", accesoID, EstadoPendiente).
+		Where("kiosko_id = ? AND estado = ?", kioskoID, EstadoPendiente).
 		Order("created_at DESC").
 		Find(&list).Error; err != nil {
 		return nil, err

@@ -1,4 +1,4 @@
-package acceso
+package kiosko
 
 import (
 	"crypto/rand"

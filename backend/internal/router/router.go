@@ -6,10 +6,10 @@ package router
 
 import (
 	"kigo-autonomia-backend/configs"
-	"kigo-autonomia-backend/internal/domain/acceso"
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/domain/auth"
 	"kigo-autonomia-backend/internal/domain/destinos"
+	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/domain/visitas"
 
@@ -26,7 +26,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 
 	registerAuthRoutes(api, db, cfg.JWTSecret)
 	registerAdminRoutes(api, db, cfg.JWTSecret)
-	registerAccesoRoutes(api, db, cfg.JWTSecret)
+	registerKioskoRoutes(api, db, cfg.JWTSecret)
 	registerVisitaRoutes(api, db, cfg)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret)
@@ -40,9 +40,9 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 
 func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	adminRepo := admin.NewRepository(db)
-	accesoRepo := acceso.NewRepository(db)
+	kioskoRepo := kiosko.NewRepository(db)
 	sesionRepo := auth.NewSesionRepository(db)
-	authHandler := auth.NewHandler(adminRepo, accesoRepo, sesionRepo, jwtSecret)
+	authHandler := auth.NewHandler(adminRepo, kioskoRepo, sesionRepo, jwtSecret)
 
 	g := rg.Group("/auth")
 	{
@@ -50,8 +50,8 @@ func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 		g.POST("/login", authHandler.LoginAdminWithMailAndPassword)
 		g.POST("/google", authHandler.LoginWithGoogle)
 		g.POST("/google/sign-in", authHandler.RegisterWithGoogle)
-		g.POST("/acceso/login", authHandler.LoginAcceso)
-		g.POST("/acceso/:id/revocar", auth.RequireAdmin(jwtSecret), authHandler.RevocarSesionAcceso)
+		g.POST("/kiosko/login", authHandler.LoginKiosko)
+		g.POST("/kiosko/:id/revocar", auth.RequireAdmin(jwtSecret), authHandler.RevocarSesionKiosko)
 	}
 }
 
@@ -68,20 +68,20 @@ func registerAdminRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	}
 }
 
-func registerAccesoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
-	accesoRepo := acceso.NewRepository(db)
-	accesoHandler := acceso.NewHandler(accesoRepo)
+func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+	kioskoRepo := kiosko.NewRepository(db)
+	kioskoHandler := kiosko.NewHandler(kioskoRepo)
 
-	a := rg.Group("/accesos")
+	a := rg.Group("/kioskos")
 	a.Use(auth.RequireAdmin(jwtSecret))
 	{
-		a.POST("/", accesoHandler.RegisterAccess)
-		a.GET("/", accesoHandler.GetAllAccess)
-		a.GET("/:id", accesoHandler.GetAccessByID)
-		a.PATCH("/:id", accesoHandler.PatchAccess)
-		a.DELETE("/:id", accesoHandler.DeleteAccess)
-		a.GET("/:id/config", accesoHandler.GetConfig)
-		a.PATCH("/:id/config", accesoHandler.PatchConfig)
+		a.POST("/", kioskoHandler.RegisterKiosko)
+		a.GET("/", kioskoHandler.GetAllKioskos)
+		a.GET("/:id", kioskoHandler.GetKioskoByID)
+		a.PATCH("/:id", kioskoHandler.PatchKiosko)
+		a.DELETE("/:id", kioskoHandler.DeleteKiosko)
+		a.GET("/:id/config", kioskoHandler.GetConfig)
+		a.PATCH("/:id/config", kioskoHandler.PatchConfig)
 	}
 }
 
@@ -93,8 +93,8 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: solo registra visitas
-	v := rg.Group("/accesos/:id/visitas")
-	v.Use(auth.RequireAcceso(sesionRepo))
+	v := rg.Group("/kioskos/:id/visitas")
+	v.Use(auth.RequireKiosko(sesionRepo))
 	{
 		v.POST("/", visitaHandler.RegisterVisita)
 	}
@@ -117,15 +117,15 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 	destinoHandler := destinos.NewHandler(destinoRepo)
 	sesionRepo := auth.NewSesionRepository(db)
 
-	// kiosko: solo lee destinos de su acceso
-	k := rg.Group("/accesos/:id/destinos")
-	k.Use(auth.RequireAcceso(sesionRepo))
+	// kiosko: solo lee destinos de su kiosko
+	k := rg.Group("/kioskos/:id/destinos")
+	k.Use(auth.RequireKiosko(sesionRepo))
 	{
 		k.GET("/", destinoHandler.ListarDestinosPorAcceso)
 	}
 
-	// admin: crea destinos para sus accesos
-	a := rg.Group("/accesos/:id/destinos")
+	// admin: crea destinos para sus kioskos
+	a := rg.Group("/kioskos/:id/destinos")
 	a.Use(auth.RequireAdmin(jwtSecret))
 	{
 		a.POST("/", destinoHandler.CrearDestino)
@@ -148,8 +148,8 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string)
 		r.GET("/me", residenteHandler.GetMe)
 	}
 
-	// admin: crea residentes y los lista por acceso
-	a := rg.Group("/accesos/:id/residentes")
+	// admin: crea residentes y los lista por kiosko
+	a := rg.Group("/kioskos/:id/residentes")
 	a.Use(auth.RequireAdmin(jwtSecret))
 	{
 		a.GET("/", residenteHandler.ListarResidentesPorAcceso)

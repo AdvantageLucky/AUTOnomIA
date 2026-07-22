@@ -1,12 +1,12 @@
 /*
-Package acceso
+Package kiosko
 
-Handlers relacionados con el dominio acceso
-Hace uso del repository relacionado tambien a acesso
+Handlers relacionados con el dominio kiosko
+Hace uso del repository relacionado tambien a kiosko
 
 Documentado con swag
 */
-package acceso
+package kiosko
 
 import (
 	"net/http"
@@ -26,24 +26,24 @@ func NewHandler(repo *Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
-// RegisterAccess crea un nuevo Acceso del Admin, generando su clave de kiosko
-// Request: RegisterAccesoRequest
-// Response: AccesoResponse (con clave_kiosko en texto plano, solo en esta respuesta)
+// RegisterKiosko crea un nuevo Kiosko del Admin, generando su clave de kiosko
+// Request: RegisterKioskoRequest
+// Response: KioskoResponse (con clave_kiosko en texto plano, solo en esta respuesta)
 //
-// @Summary Registrar un acceso
-// @Description Registra un nuevo acceso para el admin y genera su clave de kiosko (se devuelve en texto plano una sola vez, aqui)
-// @Tags accesos
+// @Summary Registrar un kiosko
+// @Description Registra un nuevo kiosko para el admin y genera su clave de kiosko (se devuelve en texto plano una sola vez, aqui)
+// @Tags kioskos
 // @Accept json
 // @Produce json
-// @Param acceso body AccesoRequest true "Datos del acceso"
-// @Success 201 {object} AccesoResponse
+// @Param kiosko body RegisterKioskoRequest true "Datos del kiosko"
+// @Success 201 {object} KioskoResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /accesos [post]
-func (h *Handler) RegisterAccess(c *gin.Context) {
+// @Router /kioskos [post]
+func (h *Handler) RegisterKiosko(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
-	var req RegisterAccesoRequest
+	var req RegisterKioskoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -63,8 +63,8 @@ func (h *Handler) RegisterAccess(c *gin.Context) {
 		return
 	}
 
-	// creamos el acceso y retornamos
-	a := &Acceso{
+	// creamos el kiosko y retornamos
+	a := &Kiosko{
 		Nombre:      req.Nombre,
 		Ubicacion:   req.Ubicacion,
 		ClaveKiosko: string(hash),
@@ -76,26 +76,26 @@ func (h *Handler) RegisterAccess(c *gin.Context) {
 		return
 	}
 
-	res := toAccesoResponse(a)
+	res := toKioskoResponse(a)
 	res.ClaveKiosko = claveKiosko
 
 	c.JSON(http.StatusCreated, res)
 }
 
-// GetAccessByID busca un acceso por su ID
+// GetKioskoByID busca un kiosko por su ID
 // Request: id uint (URL Param)
-// Response: AccesoReponse
+// Response: KioskoResponse
 //
-// @Summary Obtener acceso por ID
-// @Description Busca un acceso del admin autenticado por su ID
-// @Tags accesos
+// @Summary Obtener kiosko por ID
+// @Description Busca un kiosko del admin autenticado por su ID
+// @Tags kioskos
 // @Produce json
-// @Param id path int true "ID del acceso"
-// @Success 200 {object} AccesoResponse
+// @Param id path int true "ID del kiosko"
+// @Success 200 {object} KioskoResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
-// @Router /accesos/{id} [get]
-func (h *Handler) GetAccessByID(c *gin.Context) {
+// @Router /kioskos/{id} [get]
+func (h *Handler) GetKioskoByID(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
 	idStr := c.Param("id")
@@ -107,58 +107,58 @@ func (h *Handler) GetAccessByID(c *gin.Context) {
 
 	a, err := h.repo.FindByIDAndAdminID(uint(id), adminID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
-	c.JSON(http.StatusOK, toAccesoResponse(a))
+	c.JSON(http.StatusOK, toKioskoResponse(a))
 }
 
-// GetAllAccess retorna todos los Accesos del usuario
+// GetAllKioskos retorna todos los Kioskos del usuario
 // Request:
-// Response: []AccesoResponse
+// Response: []KioskoResponse
 //
-// @Summary Listar accesos
-// @Description Devuelve todos los accesos del admin autenticado
-// @Tags accesos
+// @Summary Listar kioskos
+// @Description Devuelve todos los kioskos del admin autenticado
+// @Tags kioskos
 // @Produce json
-// @Success 200 {array} AccesoResponse
+// @Success 200 {array} KioskoResponse
 // @Failure 500 {object} map[string]string
-// @Router /accesos [get]
-func (h *Handler) GetAllAccess(c *gin.Context) {
+// @Router /kioskos [get]
+func (h *Handler) GetAllKioskos(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
-	accesos, err := h.repo.FindAllByAdminID(adminID)
+	kioskos, err := h.repo.FindAllByAdminID(adminID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	res := make([]AccesoResponse, 0, len(accesos))
-	for i := range accesos {
-		res = append(res, toAccesoResponse(&accesos[i]))
+	res := make([]KioskoResponse, 0, len(kioskos))
+	for i := range kioskos {
+		res = append(res, toKioskoResponse(&kioskos[i]))
 	}
 
 	c.JSON(http.StatusOK, res)
 }
 
-// PatchAccess modifica el nombre o ubicacion de un acceso (la clave de kiosko no se toca aqui)
-// Request: id uint (URL Param) y AccesoRequest
-// Response: AccesoResponse
+// PatchKiosko modifica el nombre o ubicacion de un kiosko (la clave de kiosko no se toca aqui)
+// Request: id uint (URL Param) y RegisterKioskoRequest
+// Response: KioskoResponse
 //
-// @Summary Modificar acceso
-// @Description Modifica el nombre o ubicacion de un acceso del admin autenticado
-// @Tags accesos
+// @Summary Modificar kiosko
+// @Description Modifica el nombre o ubicacion de un kiosko del admin autenticado
+// @Tags kioskos
 // @Accept json
 // @Produce json
-// @Param id path int true "ID del acceso"
-// @Param acceso body AccesoRequest true "Datos a modificar"
-// @Success 200 {object} AccesoResponse
+// @Param id path int true "ID del kiosko"
+// @Param kiosko body RegisterKioskoRequest true "Datos a modificar"
+// @Success 200 {object} KioskoResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /accesos/{id} [patch]
-func (h *Handler) PatchAccess(c *gin.Context) {
+// @Router /kioskos/{id} [patch]
+func (h *Handler) PatchKiosko(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
 	idStr := c.Param("id")
@@ -168,17 +168,17 @@ func (h *Handler) PatchAccess(c *gin.Context) {
 		return
 	}
 
-	var req RegisterAccesoRequest
+	var req RegisterKioskoRequest
 	if err = c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// cargamos el acceso existente para conservar su ClaveKiosko: Update hace un Save() de
-	// fila completa, y AccesoRequest ya no trae clave_kiosko (la genera el servidor una sola vez)
+	// cargamos el kiosko existente para conservar su ClaveKiosko: Update hace un Save() de
+	// fila completa, y RegisterKioskoRequest ya no trae clave_kiosko (la genera el servidor una sola vez)
 	a, err := h.repo.FindByIDAndAdminID(uint(id), adminID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
@@ -190,23 +190,23 @@ func (h *Handler) PatchAccess(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toAccesoResponse(a))
+	c.JSON(http.StatusOK, toKioskoResponse(a))
 }
 
-// DeleteAccess elimina un acceso
+// DeleteKiosko elimina un kiosko
 // Request: id uint (URL Param)
 // Response: ok msg
 //
-// @Summary Eliminar acceso
-// @Description Elimina un acceso del admin autenticado
-// @Tags accesos
+// @Summary Eliminar kiosko
+// @Description Elimina un kiosko del admin autenticado
+// @Tags kioskos
 // @Produce json
-// @Param id path int true "ID del acceso"
+// @Param id path int true "ID del kiosko"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /accesos/{id} [delete]
-func (h *Handler) DeleteAccess(c *gin.Context) {
+// @Router /kioskos/{id} [delete]
+func (h *Handler) DeleteKiosko(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
 	idStr := c.Param("id")
@@ -221,21 +221,21 @@ func (h *Handler) DeleteAccess(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "acceso eliminado correctamente"})
+	c.JSON(http.StatusOK, gin.H{"message": "kiosko eliminado correctamente"})
 }
 
-// GetConfig devuelve la configuración del kiosko de un acceso
+// GetConfig devuelve la configuración del kiosko
 //
 // @Summary Obtener configuración de kiosko
-// @Description Devuelve la AccesoConfig del acceso; la crea con valores por defecto si no existía
-// @Tags accesos
+// @Description Devuelve la KioskoConfig del kiosko; la crea con valores por defecto si no existía
+// @Tags kioskos
 // @Produce json
-// @Param id path int true "ID del acceso"
-// @Success 200 {object} AccesoConfigResponse
+// @Param id path int true "ID del kiosko"
+// @Success 200 {object} KioskoConfigResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /accesos/{id}/config [get]
+// @Router /kioskos/{id}/config [get]
 func (h *Handler) GetConfig(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
@@ -246,33 +246,33 @@ func (h *Handler) GetConfig(c *gin.Context) {
 	}
 
 	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
-	cfg, err := h.repo.FindConfigByAccesoID(uint(id))
+	cfg, err := h.repo.FindConfigByKioskoID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, toConfigResponse(cfg))
+	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg))
 }
 
 // PatchConfig actualiza los campos indicados de la config del kiosko (PATCH parcial)
 //
 // @Summary Actualizar configuración de kiosko
-// @Description Actualiza parcialmente la AccesoConfig; solo se modifican los campos presentes en el body
-// @Tags accesos
+// @Description Actualiza parcialmente la KioskoConfig; solo se modifican los campos presentes en el body
+// @Tags kioskos
 // @Accept json
 // @Produce json
-// @Param id path int true "ID del acceso"
-// @Param config body AccesoConfigRequest true "Campos a actualizar (todos opcionales)"
-// @Success 200 {object} AccesoConfigResponse
+// @Param id path int true "ID del kiosko"
+// @Param config body KioskoConfigRequest true "Campos a actualizar (todos opcionales)"
+// @Success 200 {object} KioskoConfigResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /accesos/{id}/config [patch]
+// @Router /kioskos/{id}/config [patch]
 func (h *Handler) PatchConfig(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
@@ -283,17 +283,17 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	}
 
 	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
-	var req AccesoConfigRequest
+	var req KioskoConfigRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	cfg, err := h.repo.FindConfigByAccesoID(uint(id))
+	cfg, err := h.repo.FindConfigByKioskoID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -341,5 +341,5 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toConfigResponse(cfg))
+	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg))
 }

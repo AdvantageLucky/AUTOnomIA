@@ -19,7 +19,7 @@ En estos casos el vigilante o administrador del condominio debe poder intervenir
 
 Vista dedicada que muestra `Visitas` con `estado = PENDIENTE`, ordenadas por `created_at` descendente. No es una entidad nueva: es una vista filtrada sobre el modelo existente.
 
-Cada fila muestra: nombre, foto (thumbnail), casa destino, acceso, tiempo transcurrido, y botones **Aprobar** / **Rechazar**.
+Cada fila muestra: nombre, foto (thumbnail), casa destino, kiosko, tiempo transcurrido, y botones **Aprobar** / **Rechazar**.
 
 Al aprobar o rechazar se llama `PATCH /api/v1/visitas/:id` con `{"estado": "APROBADO"}` o `{"estado": "RECHAZADO"}` y el row desaparece de la lista.
 

@@ -15,9 +15,9 @@ restricciones. Esto tiene dos problemas:
    quiere acceder, para poder contrastar esa información con lo que dice el visitante.
 
 ## Decision
-Crear el dominio `destinos/` con el modelo `Destino { Nombre, Titular, AccesoID }`. Cada
-`Acceso` (entrada de condominio) tiene su propio catálogo de destinos, administrado por el Admin
-desde el dashboard. El kiosko consulta `GET /accesos/:id/destinos/` (protegido con
+Crear el dominio `destinos/` con el modelo `Destino { Nombre, Titular, KioskoID }`. Cada
+`Kiosko` (entrada de condominio) tiene su propio catálogo de destinos, administrado por el Admin
+desde el dashboard. El kiosko consulta `GET /kioskos/:id/destinos/` (protegido con
 `RequireAcceso`) y presenta la lista al visitante para que seleccione de un dropdown, no un campo
 de texto libre.
 
@@ -25,13 +25,13 @@ El campo `Titular` es obligatorio y expone a quién notificar/verificar cuando l
 a esa unidad — es el dato que el módulo de STT usará para preguntar "¿el titular X te está
 esperando?".
 
-La creación de destinos (`POST /accesos/:id/destinos/`) está protegida con `RequireAdmin` para
+La creación de destinos (`POST /kioskos/:id/destinos/`) está protegida con `RequireAdmin` para
 que solo el administrador pueda mantener el catálogo.
 
 ## Consequences
 - El campo `casa_destino` en `Visita` sigue siendo texto libre (lo que el visitante seleccionó),
   pero su fuente es el catálogo de `Destino.Nombre`, no entrada arbitraria.
-- El módulo de STT/IA del kiosko puede hacer `GET /accesos/:id/destinos/` al inicio del flujo de
+- El módulo de STT/IA del kiosko puede hacer `GET /kioskos/:id/destinos/` al inicio del flujo de
   registro para tener la lista completa con sus titulares, sin necesidad de un endpoint adicional.
 - Si el Admin no ha cargado destinos, la lista estará vacía y el kiosko mostrará un mensaje
   de configuración pendiente.

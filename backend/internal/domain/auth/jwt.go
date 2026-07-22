@@ -15,7 +15,7 @@ y es usado en la app del residente. Generado por GenerateResidenteToken y
 validado por ParseResidenteToken
 
 3. Token opaco de sesion de Kiosko (hex, 32 bytes / 64 chars): no es JWT ya que
-se genera con generateSessionToken, se persiste en la tabla sesion_accesos y
+se genera con generateSessionToken, se persiste en la tabla sesion_kioskos y
 se valida contra DB en cada request del kiosko (ver repository.go y middleware.go)
 A diferencia de los JWT, puede revocarse explicitamente
 */

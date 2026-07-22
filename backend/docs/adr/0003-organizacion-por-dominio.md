@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-La aplicación maneja varios recursos de negocio (accesos, visitantes, usuarios, kioskos) que son multi-tenant: cada recurso pertenece a un admin y un admin solo debe poder ver/modificar sus propios recursos. Se necesita un patrón repetible para añadir dominios nuevos sin reinventar la estructura cada vez.
+La aplicación maneja varios recursos de negocio (kioskos, visitantes, usuarios, kioskos) que son multi-tenant: cada recurso pertenece a un admin y un admin solo debe poder ver/modificar sus propios recursos. Se necesita un patrón repetible para añadir dominios nuevos sin reinventar la estructura cada vez.
 
 ## Decision
 Cada dominio de negocio vive en su propio paquete bajo `internal/domain/<nombre>/`, con 4 archivos de responsabilidad fija:
@@ -16,6 +16,6 @@ Cada dominio de negocio vive en su propio paquete bajo `internal/domain/<nombre>
 El repo y el handler de cada dominio se instancian en `internal/router/router.go` (función `register<Dominio>Routes`), no dentro del propio paquete de dominio.
 
 ## Consequences
-- Añadir un dominio nuevo es mecánico: replicar los 4 archivos siguiendo `internal/domain/acceso/` como referencia.
-- El filtrado por `adminID` en el repository es la única barrera de aislamiento multi-tenant; mientras no exista `internal/domain/auth/` implementado, ese `adminID` queda hardcodeado a `1` en los handlers (ver TODOs en `acceso/handlers.go`), lo que es aceptable solo mientras no haya autenticación real.
+- Añadir un dominio nuevo es mecánico: replicar los 4 archivos siguiendo `internal/domain/kiosko/` como referencia.
+- El filtrado por `adminID` en el repository es la única barrera de aislamiento multi-tenant; mientras no exista `internal/domain/auth/` implementado, ese `adminID` queda hardcodeado a `1` en los handlers (ver TODOs en `kiosko/handlers.go`), lo que es aceptable solo mientras no haya autenticación real.
 - Instanciar repo/handler en el router (no en el dominio) mantiene los paquetes de dominio libres de lógica de wiring, a costa de que `router.go` crece con una función por dominio.

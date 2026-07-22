@@ -17,13 +17,13 @@ type ResidenteResponse struct {
 	ApellidoMaterno string    `json:"apellido_materno"`
 	CasaDestino     string    `json:"casa_destino"`
 	Telefono        string    `json:"telefono"`
-	AccesoID        uint      `json:"acceso_id"`
+	KioskoID uint      `json:"kiosko_id"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 
-// LoginResidenteRequest login del residente con AccesoID + CasaDestino + PIN
+// LoginResidenteRequest login del residente con KioskoID + CasaDestino + PIN
 type LoginResidenteRequest struct {
-	AccesoID    uint   `json:"acceso_id"    binding:"required"`
+	KioskoID uint   `json:"kiosko_id"    binding:"required"`
 	CasaDestino string `json:"casa_destino" binding:"required"`
 	Pin         string `json:"pin"          binding:"required,min=4,max=6"`
 }
@@ -36,7 +36,7 @@ type CrearResidenteRequest struct {
 	Pin             string `json:"pin"              binding:"required,min=4,max=6"`
 	CasaDestino     string `json:"casa_destino"     binding:"required"`
 	Telefono        string `json:"telefono"`
-	AccesoID        uint   `json:"acceso_id"        binding:"required"`
+	KioskoID uint   `json:"kiosko_id"        binding:"required"`
 }
 
 // helper func para convertir un Residente (DB Model) a DTO Response
@@ -48,7 +48,7 @@ func toResidenteResponse(r Residente) ResidenteResponse {
 		ApellidoMaterno: r.ApellidoMaterno,
 		CasaDestino:     r.CasaDestino,
 		Telefono:        r.Telefono,
-		AccesoID:        r.AccesoID,
+		KioskoID:        r.KioskoID,
 		CreatedAt:       r.CreatedAt,
 	}
 }

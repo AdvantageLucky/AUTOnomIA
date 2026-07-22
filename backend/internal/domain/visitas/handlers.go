@@ -37,10 +37,10 @@ func NewHandler(repo *Repository, uploadsDir string) *Handler {
 	return &Handler{repo: repo, uploadsDir: uploadsDir}
 }
 
-func accesoSesionAutorizada(c *gin.Context, accesoID uint) bool {
-	sesionAccesoID := c.MustGet(ctxkeys.AccesoID).(uint)
-	if sesionAccesoID != accesoID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "la sesion no corresponde a este acceso"})
+func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
+	sesionKioskoID := c.MustGet(ctxkeys.KioskoID).(uint)
+	if sesionKioskoID != kioskoID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "la sesion no corresponde a este kiosko"})
 		return false
 	}
 	return true
@@ -53,7 +53,7 @@ func accesoSesionAutorizada(c *gin.Context, accesoID uint) bool {
 // @Tags visitas
 // @Accept multipart/form-data
 // @Produce json
-// @Param id path int true "ID del acceso"
+// @Param id path int true "ID del kiosko"
 // @Param nombre formData string true "Nombre completo del visitante"
 // @Param tipo_documento formData string true "INE, PASAPORTE o LICENCIA"
 // @Param clave_lector formData string true "Clave leida del documento"
@@ -66,16 +66,16 @@ func accesoSesionAutorizada(c *gin.Context, accesoID uint) bool {
 // @Success 201 {object} VisitaResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /accesos/{id}/visitas [post]
+// @Router /kioskos/{id}/visitas [post]
 func (h *Handler) RegisterVisita(c *gin.Context) {
-	accesoIDStr := c.Param("id")
-	accesoID, err := strconv.ParseUint(accesoIDStr, 10, 32)
+	kioskoIDStr := c.Param("id")
+	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de acceso invalido"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
 		return
 	}
 
-	if !accesoSesionAutorizada(c, uint(accesoID)) {
+	if !kioskoSesionAutorizada(c, uint(kioskoID)) {
 		return
 	}
 
@@ -130,7 +130,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		CasaDestino:      strings.ToUpper(strings.TrimSpace(req.CasaDestino)),
 		Placa:            strings.ToUpper(strings.TrimSpace(req.Placa)),
 		Estado:           EstadoPendiente,
-		AccesoID:         uint(accesoID),
+		KioskoID: uint(kioskoID),
 	}
 
 	if err := h.repo.Create(v); err != nil {
@@ -176,7 +176,7 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Página (default 1)"
 // @Param page_size query int false "Tamaño (default 20, max 100)"
-// @Param acceso_id query int false "Filtrar por acceso"
+// @Param kiosko_id query int false "Filtrar por kiosko"
 // @Param tipo_documento query string false "INE, PASAPORTE o LICENCIA"
 // @Param estado query string false "PENDIENTE, APROBADO o RECHAZADO"
 // @Param q query string false "Búsqueda parcial por nombre, CURP o clave"
@@ -187,14 +187,14 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 	page, pageSize := parsePagination(c)
 
 	var filtros VisitaFiltros
-	if accesoIDStr := c.Query("acceso_id"); accesoIDStr != "" {
-		id, err := strconv.ParseUint(accesoIDStr, 10, 32)
+	if kioskoIDStr := c.Query("kiosko_id"); kioskoIDStr != "" {
+		id, err := strconv.ParseUint(kioskoIDStr, 10, 32)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "acceso_id invalido"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "kiosko_id invalido"})
 			return
 		}
 		idUint := uint(id)
-		filtros.AccesoID = &idUint
+		filtros.KioskoID = &idUint
 	}
 	if tipoStr := c.Query("tipo_documento"); tipoStr != "" {
 		tipo := TipoDocumento(tipoStr)

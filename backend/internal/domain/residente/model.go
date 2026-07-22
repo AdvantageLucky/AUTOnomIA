@@ -19,8 +19,8 @@ type Residente struct {
 	Pin             string `gorm:"not null"` // bcrypt hash del PIN de 4-6 dígitos
 	CasaDestino     string `gorm:"not null"` // "Torre B, Depto 102" — coincide con Destino.Nombre
 	Telefono        string
-	AccesoID        uint `gorm:"not null;index"`
-	TiempoEsperaMin *int // nil = usar el del AccesoConfig del kiosko
+	KioskoID uint `gorm:"not null;index"`
+	TiempoEsperaMin *int // nil = usar el del KioskoConfig del kiosko
 }
 
 func (Residente) TableName() string { return "residentes" }

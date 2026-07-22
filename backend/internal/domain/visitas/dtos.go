@@ -39,7 +39,7 @@ type VisitaResponse struct {
 	CasaDestino      string        `json:"casa_destino"`
 	Placa            string        `json:"placa"`
 	Estado           EstadoVisita  `json:"estado"`
-	AccesoID         uint          `json:"acceso_id"`
+	KioskoID uint          `json:"kiosko_id"`
 	CreatedAt        time.Time     `json:"created_at"`
 }
 
@@ -51,7 +51,7 @@ type VisitaListItemResponse struct {
 	CasaDestino   string        `json:"casa_destino"`
 	MotivoVisita  string        `json:"motivo_visita"`
 	Estado        EstadoVisita  `json:"estado"`
-	AccesoID      uint          `json:"acceso_id"`
+	KioskoID uint          `json:"kiosko_id"`
 	CreatedAt     time.Time     `json:"created_at"`
 }
 
@@ -85,7 +85,7 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		CasaDestino:      v.CasaDestino,
 		Placa:            v.Placa,
 		Estado:           v.Estado,
-		AccesoID:         v.AccesoID,
+		KioskoID:         v.KioskoID,
 		CreatedAt:        v.CreatedAt,
 	}
 }
@@ -100,7 +100,7 @@ func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 		CasaDestino:   v.CasaDestino,
 		MotivoVisita:  v.MotivoVisita,
 		Estado:        v.Estado,
-		AccesoID:      v.AccesoID,
+		KioskoID:         v.KioskoID,
 		CreatedAt:     v.CreatedAt,
 	}
 }

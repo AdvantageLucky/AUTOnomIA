@@ -2,7 +2,7 @@
 Package auth
 
 Handlers relacionados con el dominio auth
-Hace uso del repository relacionado a auth, admin y acceso
+Hace uso del repository relacionado a auth, admin y kiosko
 
 Hay 3 tipos de autorizacion:
 1. Autorizacion a Administradores: desbloquean panel de bitacora
@@ -30,7 +30,7 @@ import (
 	"os"
 	"strconv"
 
-	"kigo-autonomia-backend/internal/domain/acceso"
+	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
@@ -41,20 +41,20 @@ import (
 
 type Handler struct {
 	adminRepo  *admin.Repository
-	accesoRepo *acceso.Repository
+	kioskoRepo *kiosko.Repository
 	sesionRepo *SesionRepository
 	jwtSecret  string
 }
 
 func NewHandler(
 	adminRepo *admin.Repository,
-	accesoRepo *acceso.Repository,
+	kioskoRepo *kiosko.Repository,
 	sesionRepo *SesionRepository,
 	jwtSecret string,
 ) *Handler {
 	return &Handler{
 		adminRepo:  adminRepo,
-		accesoRepo: accesoRepo,
+		kioskoRepo: kioskoRepo,
 		sesionRepo: sesionRepo,
 		jwtSecret:  jwtSecret,
 	}
@@ -305,31 +305,31 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 	c.JSON(http.StatusCreated, JWTResponse{AccessToken: token})
 }
 
-// LoginAcceso loguea a un kiosko con el AccesoID y su ClaveKiosko, abriendo una sesion persistida
-// Request: LoginAccesoRequest
+// LoginKiosko loguea a un kiosko con el KioskoID y su ClaveKiosko, abriendo una sesion persistida
+// Request: LoginKioskoRequest
 // Response: SesionResponse
 //
 // @Summary Loguea a un kiosko
-// @Description Da acceso a un kiosko a partir del ID de su Acceso y su clave, abriendo una sesion revocable
+// @Description Da acceso a un kiosko a partir del ID del Kiosko y su clave, abriendo una sesion revocable
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param acceso body LoginAccesoRequest true "AccesoID y ClaveKiosko"
+// @Param kiosko body LoginKioskoRequest true "KioskoID y ClaveKiosko"
 // @Success 201 {object} SesionResponse
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /auth/acceso/login [post]
-func (h *Handler) LoginAcceso(c *gin.Context) {
-	var req LoginAccesoRequest
+// @Router /auth/kiosko/login [post]
+func (h *Handler) LoginKiosko(c *gin.Context) {
+	var req LoginKioskoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "campos incorrectos"})
 		return
 	}
 
-	a, err := h.accesoRepo.FindByID(req.AccesoID)
+	a, err := h.kioskoRepo.FindByID(req.KioskoID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "acceso o clave invalidos"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "kiosko o clave invalidos"})
 		return
 	}
 
@@ -337,7 +337,7 @@ func (h *Handler) LoginAcceso(c *gin.Context) {
 		[]byte(a.ClaveKiosko),
 		[]byte(req.ClaveKiosko),
 	); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "acceso o clave invalidos"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "kiosko o clave invalidos"})
 		return
 	}
 
@@ -347,7 +347,7 @@ func (h *Handler) LoginAcceso(c *gin.Context) {
 		return
 	}
 
-	sesion := &SesionAcceso{AccesoID: a.ID, Token: token}
+	sesion := &SesionKiosko{KioskoID: a.ID, Token: token}
 	if err := h.sesionRepo.Create(sesion); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -356,22 +356,22 @@ func (h *Handler) LoginAcceso(c *gin.Context) {
 	c.JSON(http.StatusCreated, SesionResponse{Token: token})
 }
 
-// RevocarSesionAcceso revoca todas las sesiones activas de un Acceso, ej. cuando el kiosko fue
-// robado o perdido. Solo el admin propietario de ese Acceso puede revocarlo.
-// Request: id uint (URL Param, acceso_id)
+// RevocarSesionKiosko revoca todas las sesiones activas de un Kiosko, ej. cuando el kiosko fue
+// robado o perdido. Solo el admin propietario de ese Kiosko puede revocarlo.
+// Request: id uint (URL Param, kiosko_id)
 // Response: ok msg
 //
 // @Summary Revoca las sesiones de un kiosko
-// @Description Revoca todas las sesiones activas del Acceso indicado, para un kiosko robado o perdido
+// @Description Revoca todas las sesiones activas del Kiosko indicado, para un kiosko robado o perdido
 // @Tags auth
 // @Produce json
-// @Param id path int true "ID del acceso"
+// @Param id path int true "ID del kiosko"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /auth/acceso/{id}/revocar [post]
-func (h *Handler) RevocarSesionAcceso(c *gin.Context) {
+// @Router /auth/kiosko/{id}/revocar [post]
+func (h *Handler) RevocarSesionKiosko(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
 	idStr := c.Param("id")
@@ -381,15 +381,15 @@ func (h *Handler) RevocarSesionAcceso(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.accesoRepo.FindByIDAndAdminID(uint(id), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+	if _, err := h.kioskoRepo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
-	if err := h.sesionRepo.RevokeAllByAccesoID(uint(id)); err != nil {
+	if err := h.sesionRepo.RevokeAllByKioskoID(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "sesiones del acceso revocadas correctamente"})
+	c.JSON(http.StatusOK, gin.H{"message": "sesiones del kiosko revocadas correctamente"})
 }

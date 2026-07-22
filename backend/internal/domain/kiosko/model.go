@@ -1,19 +1,19 @@
 /*
-Package acceso
+Package kiosko
 DB Models
 
-Models Acceso y AccesoConfig
-Acceso: Este representa la tabla Acceso en la base de datos con la ayuda de gorm
-AccesoConfig: Almacena la configuracion parametrizable de un Acceso. Relacion 1:1 con Acceso
+Models Kiosko y KioskoConfig
+Kiosko: Representa la tabla kioskos en la base de datos con la ayuda de gorm
+KioskoConfig: Almacena la configuracion parametrizable de un Kiosko. Relacion 1:1 con Kiosko
 
-Acceso 1:1 AdminID
-Acceso 1:1 ConfigAcceso
+Kiosko 1:1 AdminID
+Kiosko 1:1 KioskoConfig
 */
-package acceso
+package kiosko
 
 import "gorm.io/gorm"
 
-type Acceso struct {
+type Kiosko struct {
 	gorm.Model
 	Nombre      string `gorm:"not null"`
 	Ubicacion   string
@@ -21,9 +21,9 @@ type Acceso struct {
 	AdminID     uint   `gorm:"not null"`
 }
 
-type AccesoConfig struct {
+type KioskoConfig struct {
 	gorm.Model
-	AccesoID uint `gorm:"uniqueIndex;not null"`
+	KioskoID uint `gorm:"uniqueIndex;not null"`
 
 	// Apariencia
 	ColorKiosko  string `gorm:"not null;default:'oscuro'"` // "claro" | "oscuro"
@@ -46,4 +46,5 @@ type AccesoConfig struct {
 	MensajeBienvenida string
 }
 
-func (AccesoConfig) TableName() string { return "acceso_configs" }
+func (Kiosko) TableName() string      { return "kioskos" }
+func (KioskoConfig) TableName() string { return "kiosko_configs" }

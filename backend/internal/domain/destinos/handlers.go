@@ -24,31 +24,31 @@ func NewHandler(repo *Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
-// ListarDestinosPorAcceso devuelve los destinos del acceso del kiosko autenticado
+// ListarDestinosPorAcceso devuelve los destinos del kiosko autenticado
 //
 // @Summary Listar destinos (kiosko)
-// @Description Devuelve todos los destinos del acceso, incluyendo el titular de cada uno para verificación de IA
+// @Description Devuelve todos los destinos del kiosko, incluyendo el titular de cada uno para verificación de IA
 // @Tags destinos
 // @Produce json
-// @Param id path int true "ID del acceso"
+// @Param id path int true "ID del kiosko"
 // @Success 200 {array} DestinoKioskoResponse
-// @Router /accesos/{id}/destinos [get]
+// @Router /kioskos/{id}/destinos [get]
 func (h *Handler) ListarDestinosPorAcceso(c *gin.Context) {
-	accesoIDStr := c.Param("id")
-	accesoID, err := strconv.ParseUint(accesoIDStr, 10, 32)
+	kioskoIDStr := c.Param("id")
+	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de acceso invalido"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
 		return
 	}
 
-	// verifica que la sesion de kiosko corresponda al acceso de la URL
-	sesionAccesoID := c.MustGet(ctxkeys.AccesoID).(uint)
-	if sesionAccesoID != uint(accesoID) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "la sesion no corresponde a este acceso"})
+	// verifica que la sesion de kiosko corresponda al kiosko de la URL
+	sesionKioskoID := c.MustGet(ctxkeys.KioskoID).(uint)
+	if sesionKioskoID != uint(kioskoID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "la sesion no corresponde a este kiosko"})
 		return
 	}
 
-	list, err := h.repo.FindByAccesoID(uint(accesoID))
+	list, err := h.repo.FindByKioskoID(uint(kioskoID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -68,15 +68,15 @@ func (h *Handler) ListarDestinosPorAcceso(c *gin.Context) {
 // @Tags destinos
 // @Accept json
 // @Produce json
-// @Param id path int true "ID del acceso"
+// @Param id path int true "ID del kiosko"
 // @Param body body DestinoAdminRequest true "Datos del destino"
 // @Success 201 {object} DestinoKioskoResponse
-// @Router /accesos/{id}/destinos [post]
+// @Router /kioskos/{id}/destinos [post]
 func (h *Handler) CrearDestino(c *gin.Context) {
-	accesoIDStr := c.Param("id")
-	accesoID, err := strconv.ParseUint(accesoIDStr, 10, 32)
+	kioskoIDStr := c.Param("id")
+	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de acceso invalido"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
 		return
 	}
 
@@ -89,7 +89,7 @@ func (h *Handler) CrearDestino(c *gin.Context) {
 	d := &Destino{
 		Nombre:   req.Nombre,
 		Titular:  req.Titular,
-		AccesoID: uint(accesoID),
+		KioskoID: uint(kioskoID),
 	}
 
 	if err := h.repo.Create(d); err != nil {

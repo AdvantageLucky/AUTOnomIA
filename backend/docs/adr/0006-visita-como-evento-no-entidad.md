@@ -1,11 +1,11 @@
-# 0006 - Visita como evento de acceso, no como entidad de persona
+# 0006 - Visita como evento de kiosko, no como entidad de persona
 
 ## Status
 Accepted
 
 ## Context
 El dominio original se llamaba `visitantes/` y el modelo era `Visitante`. El nombre sugiere que el
-sistema modela **personas** — pero el sistema en realidad necesita modelar **eventos de acceso**:
+sistema modela **personas** — pero el sistema en realidad necesita modelar **eventos de kiosko**:
 una misma persona puede visitar el condominio múltiples veces y cada registro debe ser
 independiente, con su propio motivo, destino, estado de aprobación y timestamp.
 
@@ -15,13 +15,13 @@ prematura, o a asumir que hay un "visitante" que persiste entre visitas — ning
 semánticas aplica aquí.
 
 También se agregaron campos nuevos (`motivo_visita`, `casa_destino`, `placa`, `estado`) que son
-propiedades del evento de acceso, no de una persona, lo que hacía aún más incorrecto el nombre
+propiedades del evento de kiosko, no de una persona, lo que hacía aún más incorrecto el nombre
 original.
 
 ## Decision
 Renombrar el dominio a `visitas/` y el modelo a `Visita`. La tabla en Postgres se renombra de
 `visitantes` a `visitas` mediante la migración `000007`. El endpoint principal pasa de
-`/accesos/:id/visitantes/` a `/accesos/:id/visitas/`.
+`/kioskos/:id/visitantes/` a `/kioskos/:id/visitas/`.
 
 El campo `estado` (`PENDIENTE` | `APROBADO` | `RECHAZADO`) se modela como un enum en Go y como
 un `CHECK` constraint en Postgres, garantizando que ninguna capa pueda escribir un valor fuera del

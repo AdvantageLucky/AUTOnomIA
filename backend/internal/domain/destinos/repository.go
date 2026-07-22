@@ -21,10 +21,10 @@ func (r *Repository) Create(d *Destino) error {
 	return r.db.Create(d).Error
 }
 
-// FindByAccesoID encuentra por destinos asociados a un kiosko por su kiosko_id
-func (r *Repository) FindByAccesoID(accesoID uint) ([]Destino, error) {
+// FindByKioskoID encuentra por destinos asociados a un kiosko por su kiosko_id
+func (r *Repository) FindByKioskoID(kioskoID uint) ([]Destino, error) {
 	var list []Destino
-	if err := r.db.Where("acceso_id = ?", accesoID).
+	if err := r.db.Where("kiosko_id = ?", kioskoID).
 		Order("nombre ASC").
 		Find(&list).
 		Error; err != nil {
@@ -34,8 +34,8 @@ func (r *Repository) FindByAccesoID(accesoID uint) ([]Destino, error) {
 }
 
 // Delete elimina un destino por su id
-func (r *Repository) Delete(id, accesoID uint) error {
-	result := r.db.Where("id = ? AND acceso_id = ?", id, accesoID).Delete(&Destino{})
+func (r *Repository) Delete(id, kioskoID uint) error {
+	result := r.db.Where("id = ? AND kiosko_id = ?", id, kioskoID).Delete(&Destino{})
 	if result.Error != nil {
 		return result.Error
 	}

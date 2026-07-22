@@ -27,7 +27,7 @@ func NewHandler(repo *Repository, jwtSecret string) *Handler {
 	return &Handler{repo: repo, jwtSecret: jwtSecret}
 }
 
-// LoginResidente autentica a un residente con acceso_id + casa_destino + pin
+// LoginResidente autentica a un residente con kiosko_id + casa_destino + pin
 //
 // @Summary Login del residente
 // @Tags residente
@@ -43,7 +43,7 @@ func (h *Handler) LoginResidente(c *gin.Context) {
 		return
 	}
 
-	res, err := h.repo.FindByCasaAndAcceso(req.CasaDestino, req.AccesoID)
+	res, err := h.repo.FindByCasaAndKiosko(req.CasaDestino, req.KioskoID)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "residente no encontrado"})
 		return
@@ -100,8 +100,8 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.VerificarOwnershipAcceso(req.AccesoID, adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+	if err := h.repo.VerificarOwnershipKiosko(req.KioskoID, adminID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
@@ -118,7 +118,7 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 		Pin:             string(hash),
 		CasaDestino:     req.CasaDestino,
 		Telefono:        req.Telefono,
-		AccesoID:        req.AccesoID,
+		KioskoID:        req.KioskoID,
 	}
 
 	if err := h.repo.Create(res); err != nil {
@@ -129,30 +129,30 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 	c.JSON(http.StatusCreated, toResidenteResponse(*res))
 }
 
-// ListarResidentesPorAcceso lista residentes de un acceso (admin dashboard)
+// ListarResidentesPorAcceso lista residentes de un kiosko (admin dashboard)
 //
-// @Summary Listar residentes de un acceso (admin)
+// @Summary Listar residentes de un kiosko (admin)
 // @Tags residente
 // @Produce json
-// @Param id path int true "ID del acceso"
+// @Param id path int true "ID del kiosko"
 // @Success 200 {array} ResidenteResponse
-// @Router /accesos/{id}/residentes [get]
+// @Router /kioskos/{id}/residentes [get]
 func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
-	accesoIDStr := c.Param("id")
-	accesoID, err := strconv.ParseUint(accesoIDStr, 10, 32)
+	kioskoIDStr := c.Param("id")
+	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
 		return
 	}
 
-	if err := h.repo.VerificarOwnershipAcceso(uint(accesoID), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "acceso no encontrado"})
+	if err := h.repo.VerificarOwnershipKiosko(uint(kioskoID), adminID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
-	list, err := h.repo.FindByAccesoID(uint(accesoID))
+	list, err := h.repo.FindByKioskoID(uint(kioskoID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -166,7 +166,7 @@ func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
-// ListarResidentesAdmin lista todos los residentes de todos los accesos del admin
+// ListarResidentesAdmin lista todos los residentes de todos los kioskos del admin
 func (h *Handler) ListarResidentesAdmin(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 

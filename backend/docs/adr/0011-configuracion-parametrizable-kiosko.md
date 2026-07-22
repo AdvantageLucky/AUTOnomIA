@@ -5,18 +5,18 @@
 
 ## Contexto
 
-Cada acceso (kiosko físico) puede tener requerimientos distintos: un edificio con seguridad alta puede pedir INE + foto de rostro a todos, mientras que un fraccionamiento informal solo pide foto de placa. La configuración debe vivir en el backend para que el kiosko la descargue al iniciar sesión, y debe ser editable desde el dashboard sin reiniciar el proceso.
+Cada kiosko (kiosko físico) puede tener requerimientos distintos: un edificio con seguridad alta puede pedir INE + foto de rostro a todos, mientras que un fraccionamiento informal solo pide foto de placa. La configuración debe vivir en el backend para que el kiosko la descargue al iniciar sesión, y debe ser editable desde el dashboard sin reiniciar el proceso.
 
-Adicionalmente, el tiempo de espera antes de auto-rechazar una solicitud puede necesitar ser ajustado por cada residente individualmente (un residente con horario nocturno prefiere 10 minutos, otro prefiere 2). La prioridad es: `ResidenteConfig.tiempo_espera_min` → `AccesoConfig.tiempo_espera_min`.
+Adicionalmente, el tiempo de espera antes de auto-rechazar una solicitud puede necesitar ser ajustado por cada residente individualmente (un residente con horario nocturno prefiere 10 minutos, otro prefiere 2). La prioridad es: `ResidenteConfig.tiempo_espera_min` → `KioskoConfig.tiempo_espera_min`.
 
 ## Decisión
 
-### Modelo `AccesoConfig` (1:1 con `Acceso`)
+### Modelo `KioskoConfig` (1:1 con `Kiosko`)
 
 ```go
-type AccesoConfig struct {
+type KioskoConfig struct {
     gorm.Model
-    AccesoID uint `gorm:"uniqueIndex;not null"`
+    KioskoID uint `gorm:"uniqueIndex;not null"`
 
     // Apariencia del kiosko
     ColorKiosko  string `gorm:"default:'oscuro'"` // "claro" | "oscuro"
@@ -38,10 +38,10 @@ type AccesoConfig struct {
     HorarioFin      string `gorm:"default:'23:59'"`
     MensajeBienvenida string
 
-    Acceso Acceso `gorm:"foreignKey:AccesoID"`
+    Kiosko Kiosko `gorm:"foreignKey:KioskoID"`
 }
 
-func (AccesoConfig) TableName() string { return "acceso_configs" }
+func (KioskoConfig) TableName() string { return "kiosko_configs" }
 ```
 
 ### Campo adicional en `Residente`
@@ -52,13 +52,13 @@ TiempoEsperaMin *int // nil = usar el del kiosko
 
 ### API
 
-- `GET  /api/v1/accesos/:id/config` — devuelve la config del kiosko (requiere JWT admin)
-- `PATCH /api/v1/accesos/:id/config` — actualiza uno o más campos (requiere JWT admin)
-- El kiosko descarga su config al iniciar sesión con `GET /api/v1/accesos/:id/config` (requiere sesión de kiosko)
+- `GET  /api/v1/kioskos/:id/config` — devuelve la config del kiosko (requiere JWT admin)
+- `PATCH /api/v1/kioskos/:id/config` — actualiza uno o más campos (requiere JWT admin)
+- El kiosko descarga su config al iniciar sesión con `GET /api/v1/kioskos/:id/config` (requiere sesión de kiosko)
 
 ### Migración
 
-Nueva tabla `acceso_configs` + columna `tiempo_espera_min` nullable en `residentes`. Al crear un `Acceso`, se crea su `AccesoConfig` con defaults automáticamente (hook `AfterCreate` o service layer).
+Nueva tabla `kiosko_configs` + columna `tiempo_espera_min` nullable en `residentes`. Al crear un `Kiosko`, se crea su `KioskoConfig` con defaults automáticamente (hook `AfterCreate` o service layer).
 
 ## Consecuencias
 

@@ -15,7 +15,7 @@ type DestinoKioskoResponse struct {
 	ID        uint      `json:"id"`
 	Nombre    string    `json:"nombre"`
 	Titular   string    `json:"titular"`
-	AccesoID  uint      `json:"acceso_id"`
+	KioskoID  uint   `json:"kiosko_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -31,7 +31,7 @@ func toDestinoKioskoResponse(d Destino) DestinoKioskoResponse {
 		ID:        d.ID,
 		Nombre:    d.Nombre,
 		Titular:   d.Titular,
-		AccesoID:  d.AccesoID,
+		KioskoID:  d.KioskoID,
 		CreatedAt: d.CreatedAt,
 	}
 }

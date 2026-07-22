@@ -1,22 +1,22 @@
 /*
-Package acceso
+Package kiosko
 
-DTOs relacionados a el dominio acceso
-Representan respuestas o peticiones relacionados con el modelo Acceso
+DTOs relacionados a el dominio kiosko
+Representan respuestas o peticiones relacionados con el modelo Kiosko
 Usado en endpoints para recibir una respuesta o enviar una respuesta con un cuerpo en especifico
 */
-package acceso
+package kiosko
 
-// RegisterAccesoRequest DTO para dar de alta o modificar un acceso
-type RegisterAccesoRequest struct {
+// RegisterKioskoRequest DTO para dar de alta o modificar un kiosko
+type RegisterKioskoRequest struct {
 	Nombre    string `json:"nombre"    binding:"required"`
 	Ubicacion string `json:"ubicacion"`
 }
 
-// AccesoResponse DTO para devolver info de un acceso despues de ser creado/modificado
-// ClaveKiosko solo viaja en la respuesta de RegisterAccess (texto plano, una sola vez); en cualquier
+// KioskoResponse DTO para devolver info de un kiosko despues de ser creado/modificado
+// ClaveKiosko solo viaja en la respuesta de RegisterKiosko (texto plano, una sola vez); en cualquier
 // otra respuesta queda vacio y se omite del JSON, porque el servidor solo guarda su hash bcrypt
-type AccesoResponse struct {
+type KioskoResponse struct {
 	ID          uint   `json:"id"`
 	Nombre      string `json:"nombre"`
 	Ubicacion   string `json:"ubicacion"`
@@ -24,8 +24,8 @@ type AccesoResponse struct {
 	ClaveKiosko string `json:"clave_kiosko,omitempty"`
 }
 
-// AccesoConfigRequest DTO para actualizar la config de un kiosko
-type AccesoConfigRequest struct {
+// KioskoConfigRequest DTO para actualizar la config de un kiosko
+type KioskoConfigRequest struct {
 	ColorKiosko         *string `json:"color_kiosko"`
 	IdiomaKiosko        *string `json:"idioma_kiosko"`
 	FotoPlacaVisitante  *bool   `json:"foto_placa_visitante"`
@@ -40,9 +40,9 @@ type AccesoConfigRequest struct {
 	MensajeBienvenida   *string `json:"mensaje_bienvenida"`
 }
 
-// AccesoConfigResponse DTO de respuesta de la config del kiosko
-type AccesoConfigResponse struct {
-	AccesoID            uint   `json:"acceso_id"`
+// KioskoConfigResponse DTO de respuesta de la config del kiosko
+type KioskoConfigResponse struct {
+	KioskoID            uint   `json:"kiosko_id"`
 	ColorKiosko         string `json:"color_kiosko"`
 	IdiomaKiosko        string `json:"idioma_kiosko"`
 	FotoPlacaVisitante  bool   `json:"foto_placa_visitante"`
@@ -57,9 +57,9 @@ type AccesoConfigResponse struct {
 	MensajeBienvenida   string `json:"mensaje_bienvenida"`
 }
 
-// helper func para convertir un Acceso (DB Model) a DTO Reponse
-func toAccesoResponse(a *Acceso) AccesoResponse {
-	return AccesoResponse{
+// helper func para convertir un Kiosko (DB Model) a DTO Reponse
+func toKioskoResponse(a *Kiosko) KioskoResponse {
+	return KioskoResponse{
 		ID:        a.ID,
 		Nombre:    a.Nombre,
 		Ubicacion: a.Ubicacion,
@@ -67,10 +67,10 @@ func toAccesoResponse(a *Acceso) AccesoResponse {
 	}
 }
 
-// helper func para convertir un AccesoConfig (DB Model) a DTO Response
-func toConfigResponse(cfg *AccesoConfig) AccesoConfigResponse {
-	return AccesoConfigResponse{
-		AccesoID:            cfg.AccesoID,
+// helper func para convertir un KioskoConfig (DB Model) a DTO Response
+func toKioskoConfigResponse(cfg *KioskoConfig) KioskoConfigResponse {
+	return KioskoConfigResponse{
+		KioskoID:            cfg.KioskoID,
 		ColorKiosko:         cfg.ColorKiosko,
 		IdiomaKiosko:        cfg.IdiomaKiosko,
 		FotoPlacaVisitante:  cfg.FotoPlacaVisitante,

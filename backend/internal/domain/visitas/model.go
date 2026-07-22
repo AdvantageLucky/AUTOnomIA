@@ -43,7 +43,7 @@ type Visita struct {
 	CasaDestino      string `gorm:"not null"`
 	Placa            string
 	Estado           EstadoVisita `gorm:"not null;default:'PENDIENTE'"`
-	AccesoID         uint         `gorm:"not null;index"`
+	KioskoID uint         `gorm:"not null;index"`
 }
 
 func (Visita) TableName() string { return "visitas" }
