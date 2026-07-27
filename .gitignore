@@ -4,10 +4,50 @@ GEMINI.md
 
 # enviroment keys
 .env
-
-# backend executables
-/backend/main
+*.env
 
 # web dashboard
 web/uploads/visitantes/*
 !web/uploads/visitantes/.gitkeep
+
+# =========================
+# Backend (Go)
+# =========================
+/backend/main
+/backend/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# =========================
+# Flutter / Android Builds
+# =========================
+**/build/
+**/.gradle/
+
+# =========================
+# IDEs & Editors
+# =========================
+.idea/
+*.iml
+.vscode/
+
+# =========================
+# FVM (Flutter Version Management)
+# =========================
+.fvm/flutter_sdk
+
+# =========================
+# OS Generated Files
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
