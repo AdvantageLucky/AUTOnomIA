@@ -71,7 +71,7 @@ func (r *Repository) FindConfigByKioskoID(kioskoID uint) (*KioskoConfig, error) 
 	err := r.db.Where("kiosko_id = ?", kioskoID).First(&cfg).Error
 	if err == gorm.ErrRecordNotFound {
 		cfg = KioskoConfig{KioskoID: kioskoID}
-		if err := r.db.Create(&cfg).Error; err != nil {
+		if err = r.db.Create(&cfg).Error; err != nil {
 			return nil, err
 		}
 		return &cfg, nil

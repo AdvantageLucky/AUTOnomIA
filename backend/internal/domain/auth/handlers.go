@@ -26,14 +26,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"kigo-autonomia-backend/internal/domain/admin"
+	"kigo-autonomia-backend/internal/domain/kiosko"
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-
-	"kigo-autonomia-backend/internal/domain/admin"
-	"kigo-autonomia-backend/internal/domain/kiosko"
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -117,8 +116,8 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 	rol := "admin"
 	if req.Rol == "vigilante" {
 		tokenHeader := c.GetHeader("Authorization")
-		if strings.HasPrefix(tokenHeader, "Bearer ") {
-			t := strings.TrimPrefix(tokenHeader, "Bearer ")
+		if after, ok := strings.CutPrefix(tokenHeader, "Bearer "); ok {
+			t := after
 			_, rolSolicitante, e := ParseAdminToken(t, h.jwtSecret)
 			if e == nil && rolSolicitante == "admin" {
 				rol = "vigilante"
@@ -283,7 +282,7 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.adminRepo.FindByCorreo(tokenInfo.Email); err == nil {
+	if _, err = h.adminRepo.FindByCorreo(tokenInfo.Email); err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "ya existe una cuenta con este correo"})
 		return
 	} else if err != gorm.ErrRecordNotFound {
@@ -293,11 +292,14 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 
 	// password inutilizable: satisface el not null de DB pero imposible de adivinar
 	randBytes := make([]byte, 32)
-	if _, err := rand.Read(randBytes); err != nil {
+	if _, err = rand.Read(randBytes); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(randBytes)), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword(
+		[]byte(hex.EncodeToString(randBytes)),
+		bcrypt.DefaultCost,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -307,7 +309,7 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 		Correo:   tokenInfo.Email,
 		Password: string(hash),
 	}
-	if err := h.adminRepo.Create(a); err != nil {
+	if err = h.adminRepo.Create(a); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

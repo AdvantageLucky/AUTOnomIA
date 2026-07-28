@@ -9,10 +9,9 @@ Documentado con swag
 package kiosko
 
 import (
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"strconv"
-
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -245,7 +244,7 @@ func (h *Handler) GetConfig(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+	if _, err = h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
@@ -282,13 +281,13 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+	if _, err = h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
 	var req KioskoConfigRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err = c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
