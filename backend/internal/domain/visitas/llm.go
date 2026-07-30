@@ -22,7 +22,7 @@ type llmResponse struct {
 
 // GenerarResumen convierte un ScoreContexto en texto narrativo en español
 // usando el servidor llama.cpp en llmUrl. Respeta el ctx para timeout.
-func GenerarResumen(ctx context.Context, llmUrl string, s ScoreContexto) (string, error) {
+func GenerarResumen(ctx context.Context, llmURL string, s ScoreContexto) (string, error) {
 	prompt := construirPrompt(s)
 
 	body, _ := json.Marshal(llmRequest{
@@ -32,7 +32,12 @@ func GenerarResumen(ctx context.Context, llmUrl string, s ScoreContexto) (string
 		Stop:        []string{"\n\n", "###"},
 	})
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, llmUrl+"/completion", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		llmURL+"/completion",
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +75,10 @@ func construirPrompt(s ScoreContexto) string {
 		anomalias = append(anomalias, "tiene rechazos previos registrados")
 	}
 	if s.OCRSospechoso {
-		anomalias = append(anomalias, "la CURP o clave de elector no pasan validación estructural (posible error de OCR)")
+		anomalias = append(
+			anomalias,
+			"la CURP o clave de elector no pasan validación estructural (posible error de OCR)",
+		)
 	}
 
 	historial := fmt.Sprintf("Ha visitado %d veces.", s.VecesVisitado)
