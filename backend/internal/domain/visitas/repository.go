@@ -112,6 +112,19 @@ func (r *Repository) FindByCurpAndAdminID(curp string, adminID uint) ([]Visita, 
 	return list, nil
 }
 
+// FindByIDAndKioskoID busca una visita por ID, acotada al kiosko dueño.
+// El filtro por kioskoID es necesario aunque el handler ya valide la sesion,
+// para que un kiosko no pueda leer visitas de otro adivinando el ID.
+func (r *Repository) FindByIDAndKioskoID(id, kioskoID uint) (*Visita, error) {
+	var v Visita
+	if err := r.db.
+		Where("id = ? AND kiosko_id = ?", id, kioskoID).
+		First(&v).Error; err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
 // FindPendientesByKioskoID devuelve las visitas PENDIENTE de aprobación para un kiosko,
 // usado por la app del residente.
 func (r *Repository) FindPendientesByKioskoID(kioskoID uint) ([]Visita, error) {

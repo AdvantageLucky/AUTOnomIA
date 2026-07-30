@@ -6,11 +6,13 @@ import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animat
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:kigo_kiosco/features/registro/viewmodels/touch_register_viewmodel.dart';
-import 'package:kigo_kiosco/features/registro/views/confirm_data_view.dart';
+import 'package:kigo_kiosco/features/registro/views/motivo_visita_view.dart';
+import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
+import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_rostro_widget.dart';
-import 'package:kigo_kiosco/core/services/text_to_speak_servicio.dart';
-import 'package:kigo_kiosco/core/agent/consts.dart';
+import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
+import 'package:kigo_kiosco/features/registro/models/consts.dart';
 
 
 
@@ -75,6 +77,8 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
         // Bucle/Ciclo: Mientras no sea un INE válido, seguirá pidiendo capturar
         while (!esIneValida) {
+          if (!mounted) return;
+
           // 1. Abrir la cámara
           _speakText(voiceInstructionIne);
           final String? pathFoto = await Navigator.push<String>(
@@ -138,6 +142,8 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
       // NUEVO: Mientras no se detecte un rostro válido, sigue pidiendo capturar
       while (!esRostroValido) {
+        if (!mounted) return;
+
         _speakText(voiceInstructionFace);
         // NUEVO: 1. Abrir la cámara frontal
         final String? pathFoto = await Navigator.push<String>(
@@ -154,17 +160,40 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         if (exito) {
           _speakText(registrationCompleteMessage);
           esRostroValido = true;
-          // NUEVO: 3. Rostro válido -> navegamos a la vista de confirmación
-          if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ConfirmDataView(
-                  registrationData: viewModel.registrationData,
-                ),
-              ),
-            );
+          // 3. Rostro válido -> pedimos motivo y casa, y mostramos el resumen final.
+          // Si el usuario da "atrás" en cualquiera de las dos, cancelamos toda la
+          // solicitud y regresamos al inicio del wizard (no hay a dónde "reanudar").
+          if (!mounted) return;
+          final String? motivo = await Navigator.push<String>(
+            context,
+            MaterialPageRoute(builder: (_) => const MotivoVisitaView()),
+          );
+          if (motivo == null) {
+            if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+            return;
           }
+          viewModel.registrationData.motivoVisita = motivo;
+
+          if (!mounted) return;
+          final String? casa = await Navigator.push<String>(
+            context,
+            MaterialPageRoute(builder: (_) => const CasaDestinoView()),
+          );
+          if (casa == null) {
+            if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+            return;
+          }
+          viewModel.registrationData.casaDestino = casa;
+
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ResumenSolicitudView(
+                registrationData: viewModel.registrationData,
+              ),
+            ),
+          );
         } else {
           // NUEVO: 4. Mostrar mensaje de error si no se detectó un rostro
           _speakText(faceNotDetectedMessage);

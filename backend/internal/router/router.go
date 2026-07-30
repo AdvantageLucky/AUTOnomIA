@@ -102,6 +102,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	v.Use(auth.RequireKiosko(sesionRepo))
 	{
 		v.POST("/", visitaHandler.RegisterVisita)
+		v.GET("/:visitaId", visitaHandler.GetVisitaEstado)
 	}
 
 	// dashboard admin: lectura paginada, detalle, historial y reportes

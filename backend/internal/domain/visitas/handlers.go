@@ -204,6 +204,44 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}()
 }
 
+// GetVisitaEstado devuelve el estado actual de una visita para el kiosko que la creo
+//
+// @Summary Consultar estado de visita (kiosko)
+// @Description Usado por el kiosko para hacer polling del estado mientras espera aprobacion
+// @Tags visitas
+// @Produce json
+// @Param id path int true "ID del kiosko"
+// @Param visitaId path int true "ID de la visita"
+// @Success 200 {object} VisitaResponse
+// @Failure 404 {object} map[string]string
+// @Router /kioskos/{id}/visitas/{visitaId} [get]
+func (h *Handler) GetVisitaEstado(c *gin.Context) {
+	kioskoIDStr := c.Param("id")
+	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
+		return
+	}
+
+	if !kioskoSesionAutorizada(c, uint(kioskoID)) {
+		return
+	}
+
+	visitaID, err := strconv.ParseUint(c.Param("visitaId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de visita invalido"})
+		return
+	}
+
+	v, err := h.repo.FindByIDAndKioskoID(uint(visitaID), uint(kioskoID))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
+		return
+	}
+
+	c.JSON(http.StatusOK, toVisitaResponse(*v))
+}
+
 // GetVisitaByID obtiene el detalle de una visita (dashboard admin)
 //
 // @Summary Obtener visita (dashboard)

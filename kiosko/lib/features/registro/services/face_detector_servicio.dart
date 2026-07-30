@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 class FaceDetectorServicio {
@@ -23,7 +24,7 @@ class FaceDetectorServicio {
       final area = rostro.boundingBox.width * rostro.boundingBox.height;
       return area > 8000;
     } catch (e) {
-      print("Error en detección de rostro: $e");
+      debugPrint("Error en detección de rostro: $e");
       return false;
     } finally {
       _detector.close();

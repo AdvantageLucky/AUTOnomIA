@@ -3,7 +3,7 @@ import 'package:camera/camera.dart';
 import 'consent_dialog.dart';
 
 class EscaneoInePage extends StatefulWidget {
-  const EscaneoInePage({Key? key}) : super(key: key);
+  const EscaneoInePage({super.key});
 
   @override
   State<EscaneoInePage> createState() => _EscaneoInePageState();
@@ -52,7 +52,7 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
           });
         }
       } catch (e) {
-        print("Error al inicializar la cámara: $e");
+        debugPrint("Error al inicializar la cámara: $e");
       }
     }
   }
@@ -70,7 +70,7 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
         Navigator.pop(context, foto.path);
       }
     } catch (e) {
-      print("Error al capturar la foto: $e");
+      debugPrint("Error al capturar la foto: $e");
     }
   }
 

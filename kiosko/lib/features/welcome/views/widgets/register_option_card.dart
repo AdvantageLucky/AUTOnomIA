@@ -43,8 +43,8 @@ class RegisterOptionCard extends StatelessWidget {
                 height: 132,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? orangeLight.withOpacity(0.55)
-                      : const Color(0xFF3A2925).withOpacity(0.65),
+                      ? orangeLight.withValues(alpha: 0.55)
+                      : const Color(0xFF3A2925).withValues(alpha: 0.65),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -60,7 +60,7 @@ class RegisterOptionCard extends StatelessWidget {
                     height: 64,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.white.withOpacity(0.18)
+                          ? Colors.white.withValues(alpha: 0.18)
                           : iconGray,
                       borderRadius: BorderRadius.circular(15),
                     ),
@@ -91,7 +91,7 @@ class RegisterOptionCard extends StatelessWidget {
                           option.subtitle,
                           style: TextStyle(
                             color: isSelected
-                                ? Colors.white.withOpacity(0.92)
+                                ? Colors.white.withValues(alpha: 0.92)
                                 : const Color(0xFFA8A3A3),
                             fontSize: 17,
                             fontWeight: FontWeight.w400,

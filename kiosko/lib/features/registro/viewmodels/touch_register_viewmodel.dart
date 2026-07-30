@@ -45,9 +45,9 @@ class TouchRegisterViewModel extends ChangeNotifier {
 
   bool get isLastStep => currentStep == steps.length - 1;
 
-  // El StepIndicator visual muestra los 3 pasos principales:
-  // 0) INE  1) Rostro  2) Confirmación
-  static const int indicatorTotalSteps = 3;
+  // El StepIndicator visual muestra los 5 pasos principales:
+  // 0) INE  1) Rostro  2) Motivo  3) Casa  4) Resumen
+  static const int indicatorTotalSteps = 5;
   int get indicatorStep => currentStep;
 
   void nextStep() {
@@ -91,13 +91,13 @@ class TouchRegisterViewModel extends ChangeNotifier {
         return true; // Todo bien
 
       } else {
-        print("La IA no detectó un INE válido en la imagen.");
+        debugPrint("La IA no detectó un INE válido en la imagen.");
         _isProcessingIne = false;
         notifyListeners();
         return false; // No es un INE o no se pudo leer
       }
     } catch (e) {
-      print("Error en el flujo del ViewModel al procesar la INE: $e");
+      debugPrint("Error en el flujo del ViewModel al procesar la INE: $e");
       _isProcessingIne = false;
       notifyListeners();
       return false;
@@ -124,7 +124,7 @@ class TouchRegisterViewModel extends ChangeNotifier {
       notifyListeners();
       return esValido;
     } catch (e) {
-      print("Error en el flujo del ViewModel al procesar el rostro: $e");
+      debugPrint("Error en el flujo del ViewModel al procesar el rostro: $e");
       _isProcessingRostro = false;
       notifyListeners();
       return false;

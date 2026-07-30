@@ -19,7 +19,7 @@ type VisitaRequest struct {
 	Curp          string                `form:"curp"           binding:"required,len=18"`
 	MotivoVisita  string                `form:"motivo_visita"  binding:"required"`
 	CasaDestino   string                `form:"casa_destino"   binding:"required"`
-	Placa         string                `form:"placa"          binding:"required"`
+	Placa         string                `form:"placa"`
 	FotoDocumento *multipart.FileHeader `form:"foto_documento" binding:"required"` // Content-Type image
 	FotoRostro    *multipart.FileHeader `form:"foto_rostro"    binding:"required"` // Content-Type image
 	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`                        // Content-Type image
