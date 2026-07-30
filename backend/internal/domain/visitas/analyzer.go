@@ -31,7 +31,7 @@ type ScoreContexto struct {
 func AnalizarVisita(historial []Visita, nueva Visita, umbral int) ScoreContexto {
 	sc := ScoreContexto{
 		VecesVisitado: len(historial),
-		OCRSospechoso: validarOCR(nueva.Curp, nueva.ClaveLector, nueva.Nombre),
+		OCRSospechoso: validarOCR(nueva.Curp, nueva.ClaveLector, nueva.Titular),
 	}
 
 	if len(historial) == 0 {
@@ -54,7 +54,8 @@ func AnalizarVisita(historial []Visita, nueva Visita, umbral int) ScoreContexto 
 
 	sc.HorarioInusual = horarioInusual(historial, nueva.CreatedAt)
 
-	sc.Confiable = esConfiable(historial, umbral) && !sc.AnomaliaMatricula && !sc.RechazadoPrevio && !sc.OCRSospechoso
+	sc.Confiable = esConfiable(historial, umbral) && !sc.AnomaliaMatricula && !sc.RechazadoPrevio &&
+		!sc.OCRSospechoso
 
 	return sc
 }
@@ -115,7 +116,7 @@ func esConfiable(historial []Visita, umbral int) bool {
 	if len(historial) < umbral {
 		return false
 	}
-	for i := 0; i < umbral; i++ {
+	for i := range umbral {
 		if historial[i].Estado != EstadoAprobado {
 			return false
 		}

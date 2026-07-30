@@ -40,7 +40,7 @@ type VisitaFiltros struct {
 	KioskoID      *uint
 	TipoDocumento *TipoDocumento
 	Estado        *EstadoVisita
-	Q             string // ILIKE parcial sobre nombre, curp y clave_lector
+	Q             string // ILIKE parcial sobre titular, curp y clave_lector
 }
 
 func (r *Repository) FindAllByAdminID(
@@ -62,7 +62,7 @@ func (r *Repository) FindAllByAdminID(
 		if filtros.Q != "" {
 			like := "%" + filtros.Q + "%"
 			q = q.Where(
-				`(visitas.nombre ILIKE ? OR visitas.curp ILIKE ? OR visitas.clave_lector ILIKE ?
+				`(visitas.titular ILIKE ? OR visitas.curp ILIKE ? OR visitas.clave_lector ILIKE ?
 				  OR visitas.casa_destino ILIKE ? OR visitas.placa ILIKE ?)`,
 				like, like, like, like, like,
 			)
@@ -157,7 +157,11 @@ func (r *Repository) HistorialPorCURP(curp string) ([]Visita, error) {
 }
 
 // ActualizarEstadoConScore actualiza estado e intervenida de una visita
-func (r *Repository) ActualizarEstadoConScore(id uint, estado EstadoVisita, intervenida bool) error {
+func (r *Repository) ActualizarEstadoConScore(
+	id uint,
+	estado EstadoVisita,
+	intervenida bool,
+) error {
 	return r.db.Model(&Visita{}).Where("id = ?", id).Updates(map[string]any{
 		"estado":      estado,
 		"intervenida": intervenida,

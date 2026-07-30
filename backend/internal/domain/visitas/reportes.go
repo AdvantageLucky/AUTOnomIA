@@ -11,7 +11,7 @@ import (
 )
 
 type ReporteIA struct {
-	ID            uint      `gorm:"primaryKey"`
+	ID            uint `gorm:"primaryKey"`
 	CreatedAt     time.Time
 	PeriodoInicio time.Time `gorm:"not null"`
 	PeriodoFin    time.Time `gorm:"not null"`

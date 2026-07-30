@@ -23,6 +23,7 @@ const (
 	DocumentoINE       TipoDocumento = "INE"
 	DocumentoPasaporte TipoDocumento = "PASAPORTE"
 	DocumentoLicencia  TipoDocumento = "LICENCIA"
+	DocumentoQR        TipoDocumento = "QR"
 
 	// EstadoVisita
 	EstadoPendiente EstadoVisita = "PENDIENTE"
@@ -33,7 +34,7 @@ const (
 
 type Visita struct {
 	gorm.Model
-	Nombre           string        `gorm:"not null"`
+	Titular          string        `gorm:"not null"`
 	TipoDocumento    TipoDocumento `gorm:"not null"`
 	ClaveLector      string        `gorm:"not null"`
 	Curp             string        `gorm:"not null"`
@@ -43,9 +44,9 @@ type Visita struct {
 	MotivoVisita     string `gorm:"not null"`
 	CasaDestino      string `gorm:"not null"`
 	Placa            string
-	Estado      EstadoVisita `gorm:"not null;default:'PENDIENTE'"`
-	Intervenida bool         `gorm:"not null;default:false"`
-	KioskoID    uint         `gorm:"not null;index"`
+	Estado           EstadoVisita `gorm:"not null;default:'PENDIENTE'"`
+	Intervenida      bool         `gorm:"not null;default:false"`
+	KioskoID         uint         `gorm:"not null;index"`
 }
 
 func (Visita) TableName() string { return "visitas" }

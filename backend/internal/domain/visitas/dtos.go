@@ -13,7 +13,7 @@ import (
 
 // VisitaRequest DTO para registrar una visita desde el kiosko
 type VisitaRequest struct {
-	Nombre        string                `form:"nombre"         binding:"required"`
+	Titular       string                `form:"titular"        binding:"required"`
 	TipoDocumento TipoDocumento         `form:"tipo_documento" binding:"required,oneof=INE PASAPORTE LICENCIA"`
 	ClaveLector   string                `form:"clave_lector"   binding:"required"`
 	Curp          string                `form:"curp"           binding:"required,len=18"`
@@ -28,7 +28,7 @@ type VisitaRequest struct {
 // VisitaResponse DTO de respuesta completo para una visita
 type VisitaResponse struct {
 	ID               uint          `json:"id"`
-	Nombre           string        `json:"nombre"`
+	Titular          string        `json:"titular"`
 	TipoDocumento    TipoDocumento `json:"tipo_documento"`
 	ClaveLector      string        `json:"clave_lector"`
 	Curp             string        `json:"curp"`
@@ -47,7 +47,7 @@ type VisitaResponse struct {
 // VisitaListItemResponse DTO reducido para el listado del dashboard (omite CURP y clave_lector)
 type VisitaListItemResponse struct {
 	ID            uint          `json:"id"`
-	Nombre        string        `json:"nombre"`
+	Titular       string        `json:"titular"`
 	TipoDocumento TipoDocumento `json:"tipo_documento"`
 	CasaDestino   string        `json:"casa_destino"`
 	MotivoVisita  string        `json:"motivo_visita"`
@@ -76,7 +76,7 @@ type HistorialVisitaResponse struct {
 func toVisitaResponse(v Visita) VisitaResponse {
 	return VisitaResponse{
 		ID:               v.ID,
-		Nombre:           v.Nombre,
+		Titular:          v.Titular,
 		TipoDocumento:    v.TipoDocumento,
 		ClaveLector:      v.ClaveLector,
 		Curp:             v.Curp,
@@ -98,7 +98,7 @@ func toVisitaResponse(v Visita) VisitaResponse {
 func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 	return VisitaListItemResponse{
 		ID:            v.ID,
-		Nombre:        v.Nombre,
+		Titular:       v.Titular,
 		TipoDocumento: v.TipoDocumento,
 		CasaDestino:   v.CasaDestino,
 		MotivoVisita:  v.MotivoVisita,

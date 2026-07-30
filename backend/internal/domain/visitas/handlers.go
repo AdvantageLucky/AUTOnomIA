@@ -44,12 +44,12 @@ type SseHub interface {
 type Handler struct {
 	repo       *Repository
 	uploadsDir string
-	llmUrl     string
+	llmURL     string
 	sseHub     SseHub
 }
 
 func NewHandler(repo *Repository, uploadsDir string, llmUrl string, hub SseHub) *Handler {
-	return &Handler{repo: repo, uploadsDir: uploadsDir, llmUrl: llmUrl, sseHub: hub}
+	return &Handler{repo: repo, uploadsDir: uploadsDir, llmURL: llmUrl, sseHub: hub}
 }
 
 func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
@@ -69,7 +69,7 @@ func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
 // @Accept multipart/form-data
 // @Produce json
 // @Param id path int true "ID del kiosko"
-// @Param nombre formData string true "Nombre completo del visitante"
+// @Param titular formData string true "Nombre completo del visitante titular"
 // @Param tipo_documento formData string true "INE, PASAPORTE o LICENCIA"
 // @Param clave_lector formData string true "Clave leida del documento"
 // @Param curp formData string true "CURP (18 caracteres)"
@@ -134,7 +134,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}
 
 	v := &Visita{
-		Nombre:           strings.ToUpper(strings.TrimSpace(req.Nombre)),
+		Titular:          strings.ToUpper(strings.TrimSpace(req.Titular)),
 		TipoDocumento:    req.TipoDocumento,
 		ClaveLector:      strings.ToUpper(strings.TrimSpace(req.ClaveLector)),
 		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
@@ -145,7 +145,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		CasaDestino:      strings.ToUpper(strings.TrimSpace(req.CasaDestino)),
 		Placa:            strings.ToUpper(strings.TrimSpace(req.Placa)),
 		Estado:           EstadoPendiente,
-		KioskoID: uint(kioskoID),
+		KioskoID:         uint(kioskoID),
 	}
 
 	if err := h.repo.Create(v); err != nil {
@@ -178,7 +178,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 
 		sc := AnalizarVisita(historialPrevio, visitaCopy, cfg.UmbralConfianzaVisitas)
-		resumen, _ := GenerarResumen(ctx, h.llmUrl, sc)
+		resumen, _ := GenerarResumen(ctx, h.llmURL, sc)
 		sc.ResumenTexto = resumen
 
 		tieneAnomalias := sc.AnomaliaMatricula || sc.CambioModalidad || sc.HorarioInusual ||
@@ -280,7 +280,7 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 // @Param kiosko_id query int false "Filtrar por kiosko"
 // @Param tipo_documento query string false "INE, PASAPORTE o LICENCIA"
 // @Param estado query string false "PENDIENTE, APROBADO o RECHAZADO"
-// @Param q query string false "Búsqueda parcial por nombre, CURP o clave"
+// @Param q query string false "Búsqueda parcial por titular, CURP o clave"
 // @Success 200 {object} VisitasPaginadasResponse
 // @Router /visitas [get]
 func (h *Handler) ListarVisitas(c *gin.Context) {
