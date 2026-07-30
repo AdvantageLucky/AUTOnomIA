@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 
@@ -29,7 +30,7 @@ class DetectorServicio {
       return modelo;
 
     } catch (e) {
-      print("Error en OCR: $e");
+      debugPrint("Error en OCR: $e");
       return null;
     } finally {
       textRecognizer.close();

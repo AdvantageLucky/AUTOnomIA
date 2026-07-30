@@ -1,6 +1,6 @@
 # ADR-0005: Flujo de registro en 3 pasos secuenciales con StepIndicator
 
-**Estado:** Aceptado
+**Estado:** Superseded by 0013
 **Fecha:** 2026-06-01
 **Autores:** Ivan Ramirez
 

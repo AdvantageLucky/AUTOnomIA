@@ -3,7 +3,7 @@ import 'package:camera/camera.dart';
 import 'consent_dialog.dart';
 
 class EscaneoRostro extends StatefulWidget {
-  const EscaneoRostro({Key? key}) : super(key: key);
+  const EscaneoRostro({super.key});
 
   @override
   State<EscaneoRostro> createState() => _EscaneoRostroState();
@@ -57,7 +57,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
           });
         }
       } catch (e) {
-        print("Error al inicializar la cámara: $e");
+        debugPrint("Error al inicializar la cámara: $e");
       }
     }
   }
@@ -75,7 +75,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
         Navigator.pop(context, foto.path);
       }
     } catch (e) {
-      print("Error al capturar la foto: $e");
+      debugPrint("Error al capturar la foto: $e");
     }
   }
 
