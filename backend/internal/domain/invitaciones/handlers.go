@@ -1,18 +1,3 @@
-/*
-Package invitaciones
-
-Handlers del dominio invitaciones
-Aqui hay dos grupos de endpoints con autenticacion distinta
-
- 1. App del residente (RequireResidente):
-    POST   /residentes/me/invitaciones — crea invitacion, devuelve token una sola vez
-    GET    /residentes/me/invitaciones — lista invitaciones propias (sin token)
-    DELETE /residentes/me/invitaciones/:id — revoca (soft-delete)
-
- 2. Kiosko (RequireKiosko):
-    GET  /kioskos/:id/invitaciones/validar — valida token, devuelve datos para pre-llenar visita
-    POST /kioskos/:id/invitaciones/:token/usar — incrementa ConteoUsos tras registrar la visita
-*/
 package invitaciones
 
 import (
@@ -22,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"kigo-autonomia-backend/internal/domain/visitas"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
@@ -30,11 +16,14 @@ import (
 
 type Handler struct {
 	repo *Repository
+	db   *gorm.DB
 }
 
-func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(repo *Repository, db *gorm.DB) *Handler {
+	return &Handler{repo: repo, db: db}
 }
+
+
 
 func generarToken() (string, error) {
 	b := make([]byte, 32)
@@ -166,22 +155,45 @@ func (h *Handler) ValidarInvitacion(c *gin.Context) {
 	c.JSON(http.StatusOK, toValidarResponse(inv))
 }
 
-// UsarInvitacion incrementa el ConteoUsos de una invitacion
-// El kiosko lo llama justo despues de registrar la visita con exito
+// UsarInvitacion valida el token, crea un registro de Visita APROBADO y registra el uso
 //
-// @Summary Registrar uso de invitación (kiosko)
+// @Summary Usar invitación (kiosko)
 // @Tags invitaciones
 // @Produce json
 // @Param token path string true "Token de la invitación"
-// @Success 200 {object} map[string]string
+// @Success 200 {object} map[string]interface{}
 // @Failure 404 {object} map[string]string
 // @Router /kioskos/{id}/invitaciones/{token}/usar [post]
 func (h *Handler) UsarInvitacion(c *gin.Context) {
 	token := c.Param("token")
 
+	kioskoIDStr := c.Param("id")
+	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "kiosko id invalido"})
+		return
+	}
+
 	inv, err := h.repo.FindByToken(token)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no valida, expirada o agotada"})
+		return
+	}
+
+	var casaDestino string
+	h.db.Table("destinos").Select("nombre").Where("id = ?", inv.DestinoID).Scan(&casaDestino)
+
+	v := &visitas.Visita{
+		Titular:       inv.Titular,
+		TipoVisitante: visitas.TipoConInvitacion,
+		TipoDocumento: visitas.DocumentoQR,
+		MotivoVisita:  "Invitación QR",
+		CasaDestino:   casaDestino,
+		Estado:        visitas.EstadoAprobado,
+		KioskoID:      uint(kioskoID),
+	}
+	if err := h.db.Create(v).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})
 		return
 	}
 
@@ -190,5 +202,8 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "uso registrado"})
+	c.JSON(http.StatusOK, gin.H{
+		"titular":      inv.Titular,
+		"casa_destino": casaDestino,
+	})
 }

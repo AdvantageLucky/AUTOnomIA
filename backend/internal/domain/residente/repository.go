@@ -1,12 +1,11 @@
-/*
-Package residente
-Repositorio relacionado con la tabla residentes
-
-Funciones CRUD relacionadas solo con el dominio residente, es decir operaciones CRUD en tabla residentes
-*/
 package residente
 
-import "gorm.io/gorm"
+import (
+	"errors"
+
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
 
 type Repository struct {
 	db *gorm.DB
@@ -58,6 +57,21 @@ func (r *Repository) VerificarOwnershipKiosko(kioskoID, adminID uint) error {
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+// FindPorPin busca al residente de un kiosko por PIN, comparando contra el hash almacenado.
+// Itera sobre todos los residentes del kiosko para no exponer timing differences por bcrypt.
+func (r *Repository) FindPorPin(kioskoID uint, pin string) (*Residente, error) {
+	var list []Residente
+	if err := r.db.Where("kiosko_id = ?", kioskoID).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	for i := range list {
+		if err := bcrypt.CompareHashAndPassword([]byte(list[i].Pin), []byte(pin)); err == nil {
+			return &list[i], nil
+		}
+	}
+	return nil, errors.New("pin incorrecto")
 }
 
 // FindAllByAdminID devuelve todos los residentes de todos los kioskos del admin.

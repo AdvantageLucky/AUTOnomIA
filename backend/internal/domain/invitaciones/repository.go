@@ -1,11 +1,3 @@
-/*
-Package invitaciones
-Repositorio del dominio invitaciones
-
-Operaciones sobre la tabla invitaciones
-FindByToken aplica todas las reglas de validez (revocada, expirada, agotada) en una sola llamada
-IncrementarUso corre en transaccion y auto-revoca cuando ConteoUsos alcanza MaxUsos
-*/
 package invitaciones
 
 import (

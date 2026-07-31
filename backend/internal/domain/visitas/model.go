@@ -1,14 +1,3 @@
-/*
-Package visitas
-DB Models
-
-Type TipoDocumento, EstadoVisita
-TipoDocumento: Tipo string personalizado para documentos permitidos
-EstadoVisita: Tipo string personalizado para estado de una visita (solicitud)
-
-Model Visita
-Visita: Registro de entrada al fraccionamiento: quien es, a donde va, informacion extra, etc
-*/
 package visitas
 
 import "gorm.io/gorm"
@@ -23,12 +12,14 @@ const (
 	// TipoVisitante
 	TipoConInvitacion TipoVisitante = "INVITADO"
 	TipoSinInvitacion TipoVisitante = "VISITANTE"
+	TipoResidente     TipoVisitante = "RESIDENTE"
 
 	// TipoDocumento
 	DocumentoINE       TipoDocumento = "INE"
 	DocumentoPasaporte TipoDocumento = "PASAPORTE"
 	DocumentoLicencia  TipoDocumento = "LICENCIA"
 	DocumentoQR        TipoDocumento = "QR"
+	DocumentoPIN       TipoDocumento = "PIN"
 
 	// EstadoVisita
 	EstadoPendiente EstadoVisita = "PENDIENTE"

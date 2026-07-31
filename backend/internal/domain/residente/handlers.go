@@ -1,31 +1,37 @@
-/*
-Package residente
-
-Handlers relacionados con el dominio residente
-Hace uso del repository de residente
-
-Documentado con swag
-*/
 package residente
 
 import (
-	"kigo-autonomia-backend/internal/domain/auth"
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
+	"log"
 	"net/http"
 	"strconv"
 
+	"kigo-autonomia-backend/internal/domain/auth"
+	"kigo-autonomia-backend/internal/domain/visitas"
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-type Handler struct {
-	repo      *Repository
-	jwtSecret string
+// destinoFinder permite al handler de residente resolver el destino_id
+// sin importar directamente el package destinos (evita acoplamiento).
+type destinoFinder interface {
+	FindByNombreAndKioskoID(nombre string, kioskoID uint) (uint, error)
 }
 
-func NewHandler(repo *Repository, jwtSecret string) *Handler {
-	return &Handler{repo: repo, jwtSecret: jwtSecret}
+type Handler struct {
+	repo        *Repository
+	destinoRepo destinoFinder
+	jwtSecret   string
+	db          *gorm.DB
 }
+
+func NewHandler(repo *Repository, destinoRepo destinoFinder, jwtSecret string, db *gorm.DB) *Handler {
+	return &Handler{repo: repo, destinoRepo: destinoRepo, jwtSecret: jwtSecret, db: db}
+}
+
+
 
 // LoginResidente autentica a un residente con kiosko_id + casa_destino + pin
 //
@@ -63,7 +69,7 @@ func (h *Handler) LoginResidente(c *gin.Context) {
 	c.JSON(http.StatusOK, auth.JWTResponse{AccessToken: token})
 }
 
-// GetMe devuelve el perfil del residente autenticado
+// GetMe devuelve el perfil del residente autenticado, incluyendo destino_id si existe
 //
 // @Summary Perfil del residente
 // @Tags residente
@@ -79,7 +85,14 @@ func (h *Handler) GetMe(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toResidenteResponse(*res))
+	var destinoID *uint
+	if h.destinoRepo != nil {
+		if id, err := h.destinoRepo.FindByNombreAndKioskoID(res.CasaDestino, res.KioskoID); err == nil {
+			destinoID = &id
+		}
+	}
+
+	c.JSON(http.StatusOK, toResidenteResponse(*res, destinoID))
 }
 
 // CrearResidente crea un residente (admin dashboard)
@@ -126,7 +139,56 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, toResidenteResponse(*res))
+	c.JSON(http.StatusCreated, toResidenteResponse(*res, nil))
+}
+
+// LoginResidenteDesdeKiosko valida el PIN de un residente desde el kiosko autenticado.
+// Protegido por RequireKiosko: el kiosko ya está autenticado con su sesión.
+func (h *Handler) LoginResidenteDesdeKiosko(c *gin.Context) {
+	kioskoIDStr := c.Param("id")
+	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
+		return
+	}
+
+	sesionKioskoID := c.MustGet(ctxkeys.KioskoID).(uint)
+	if sesionKioskoID != uint(kioskoID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "sesion no corresponde a este kiosko"})
+		return
+	}
+
+	var req struct {
+		Pin string `json:"pin" binding:"required,min=4,max=6"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	res, err := h.repo.FindPorPin(uint(kioskoID), req.Pin)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "PIN incorrecto"})
+		return
+	}
+
+	v := &visitas.Visita{
+		Titular:       res.Nombre + " " + res.ApellidoPaterno,
+		TipoVisitante: visitas.TipoResidente,
+		TipoDocumento: visitas.DocumentoPIN,
+		MotivoVisita:  "Acceso por PIN",
+		CasaDestino:   res.CasaDestino,
+		Estado:        visitas.EstadoAprobado,
+		KioskoID:      uint(kioskoID),
+	}
+	if err := h.db.Create(v).Error; err != nil {
+		log.Printf("LoginResidenteDesdeKiosko: error registrando visita: %v", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"nombre":       res.Nombre + " " + res.ApellidoPaterno,
+		"casa_destino": res.CasaDestino,
+	})
 }
 
 // ListarResidentesPorAcceso lista residentes de un kiosko (admin dashboard)
@@ -160,7 +222,7 @@ func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {
 
 	items := make([]ResidenteResponse, 0, len(list))
 	for _, r := range list {
-		items = append(items, toResidenteResponse(r))
+		items = append(items, toResidenteResponse(r, nil))
 	}
 
 	c.JSON(http.StatusOK, items)
@@ -178,7 +240,7 @@ func (h *Handler) ListarResidentesAdmin(c *gin.Context) {
 
 	items := make([]ResidenteResponse, 0, len(list))
 	for _, r := range list {
-		items = append(items, toResidenteResponse(r))
+		items = append(items, toResidenteResponse(r, nil))
 	}
 
 	c.JSON(http.StatusOK, items)
