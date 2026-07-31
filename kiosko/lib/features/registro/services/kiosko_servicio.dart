@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 
 class KioskoServicio {
   static const String _baseUrl = 'http://127.0.0.1:8000/api/v1';
@@ -30,19 +33,71 @@ class KioskoServicio {
     }
   }
 
+  Future<KioskoConfig> obtenerConfig() async {
+    await _ensureLogin();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/kioskos/$_accesoId/config'),
+      headers: {'Authorization': 'Bearer $_sessionToken'},
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      return KioskoConfig.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>);
+    }
+    throw Exception('Error al obtener config (${response.statusCode})');
+  }
+
+  /// Inicia el stream SSE de la config y llama [onConfig] cada vez que el
+  /// admin la actualiza. Se reconecta automáticamente tras 5 s si se pierde.
+  void escucharConfigStream(void Function(KioskoConfig) onConfig) {
+    _sseLoop(onConfig);
+  }
+
+  Future<void> _sseLoop(void Function(KioskoConfig) onConfig) async {
+    while (true) {
+      try {
+        await _ensureLogin();
+        final client = http.Client();
+        final request = http.Request(
+          'GET',
+          Uri.parse('$_baseUrl/kioskos/$_accesoId/config/stream'),
+        )..headers['Authorization'] = 'Bearer $_sessionToken';
+
+        final response = await client.send(request);
+        await response.stream
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .forEach((line) {
+          if (line.startsWith('data: ')) {
+            try {
+              final cfg = KioskoConfig.fromJson(
+                  jsonDecode(line.substring(6)) as Map<String, dynamic>);
+              onConfig(cfg);
+            } catch (e) {
+              debugPrint('SSE config parse error: $e');
+            }
+          }
+        });
+      } catch (e) {
+        debugPrint('SSE config stream error: $e — reconectando en 5s');
+      }
+      await Future.delayed(const Duration(seconds: 5));
+    }
+  }
+
   Future<Map<String, dynamic>> registrarVisitante({
-    required String nombre,
+    required String titular,
     required String claveElector,
     required String curp,
     required String motivoVisita,
     required String casaDestino,
     String placa = '',
     required String pathFotoIne,
-    required String pathFotoRostro,
+    String? pathFotoRostro,
   }) async {
     await _ensureLogin();
     return _enviarRegistro(
-      nombre: nombre,
+      titular: titular,
       claveElector: claveElector,
       curp: curp,
       motivoVisita: motivoVisita,
@@ -82,20 +137,21 @@ class KioskoServicio {
   }
 
   Future<Map<String, dynamic>> _enviarRegistro({
-    required String nombre,
+    required String titular,
     required String claveElector,
     required String curp,
     required String motivoVisita,
     required String casaDestino,
     required String placa,
     required String pathFotoIne,
-    required String pathFotoRostro,
+    String? pathFotoRostro,
     required bool reintento,
   }) async {
     final uri = Uri.parse('$_baseUrl/kioskos/$_accesoId/visitas/');
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $_sessionToken'
-      ..fields['nombre'] = nombre
+      ..fields['titular'] = titular
+      ..fields['tipo_visitante'] = 'VISITANTE'
       ..fields['tipo_documento'] = 'INE'
       ..fields['clave_lector'] = claveElector
       ..fields['curp'] = curp
@@ -109,12 +165,15 @@ class KioskoServicio {
         contentType: MediaType('image', 'jpeg'),
       ),
     );
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'foto_rostro', pathFotoRostro,
-        contentType: MediaType('image', 'jpeg'),
-      ),
-    );
+
+    if (pathFotoRostro != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'foto_rostro', pathFotoRostro,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
+    }
 
     final streamed = await request.send().timeout(const Duration(seconds: 20));
     final response = await http.Response.fromStream(streamed);
@@ -127,7 +186,7 @@ class KioskoServicio {
       _sessionToken = null;
       await _ensureLogin();
       return _enviarRegistro(
-        nombre: nombre,
+        titular: titular,
         claveElector: claveElector,
         curp: curp,
         motivoVisita: motivoVisita,

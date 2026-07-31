@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
+import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -17,7 +18,7 @@ class ResumenSolicitudView extends StatefulWidget {
 }
 
 class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
-  final KioskoServicio _kioskoServicio = KioskoServicio();
+  late final KioskoServicio _kioskoServicio;
   Timer? _pollTimer;
   Timer? _regresoTimer;
 
@@ -30,6 +31,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   @override
   void initState() {
     super.initState();
+    _kioskoServicio = context.read<KioskoServicio>();
     _registrarVisita();
   }
 
@@ -50,8 +52,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
     if (data.curp == null ||
         data.curp!.length != 18 ||
-        data.pathFotoIne == null ||
-        data.pathFotoRostro == null) {
+        data.pathFotoIne == null) {
       setState(() {
         _isSubmitting = false;
         _submitError = 'Faltan datos del registro. Regresa e intenta de nuevo.';
@@ -65,13 +66,13 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
     try {
       final respuesta = await _kioskoServicio.registrarVisitante(
-        nombre: data.nombreCompleto ?? 'Visitante',
+        titular: data.nombreCompleto ?? 'Visitante',
         claveElector: claveElector,
         curp: data.curp!,
         motivoVisita: data.motivoVisita ?? 'No especificado',
         casaDestino: data.casaDestino ?? 'No especificado',
         pathFotoIne: data.pathFotoIne!,
-        pathFotoRostro: data.pathFotoRostro!,
+        pathFotoRostro: data.pathFotoRostro,
       );
 
       if (!mounted) return;
