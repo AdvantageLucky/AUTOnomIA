@@ -9,9 +9,10 @@ Documentado con swag
 package kiosko
 
 import (
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"strconv"
+
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -310,17 +311,14 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.FotoRostroVisitante != nil {
 		cfg.FotoRostroVisitante = *req.FotoRostroVisitante
 	}
-	if req.FotoIneVisitante != nil {
-		cfg.FotoIneVisitante = *req.FotoIneVisitante
-	}
 	if req.FotoPlacaInvitado != nil {
 		cfg.FotoPlacaInvitado = *req.FotoPlacaInvitado
 	}
 	if req.FotoRostroInvitado != nil {
 		cfg.FotoRostroInvitado = *req.FotoRostroInvitado
 	}
-	if req.FotoIneInvitado != nil {
-		cfg.FotoIneInvitado = *req.FotoIneInvitado
+	if req.IneObligatorioInvitado != nil {
+		cfg.IneObligatorioInvitado = *req.IneObligatorioInvitado
 	}
 	if req.TiempoEsperaMin != nil {
 		cfg.TiempoEsperaMin = *req.TiempoEsperaMin
