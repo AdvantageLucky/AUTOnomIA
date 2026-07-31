@@ -6,9 +6,14 @@ import 'package:http_parser/http_parser.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 
 class KioskoServicio {
-  static const String _baseUrl = 'http://127.0.0.1:8000/api/v1';
+  static const String _serverHost = 'localhost';
+  static const String _baseUrl = 'http://$_serverHost:8000/api/v1';
   static const int _accesoId = 1;
-  static const String _claveKiosko = 'J45PH3K7DUKQDZMR';
+  static const String _claveKiosko = 'YAZP3NZDKPLZP6FD';
+
+  static final KioskoServicio _instance = KioskoServicio._internal();
+  factory KioskoServicio() => _instance;
+  KioskoServicio._internal();
 
   String? _sessionToken;
 
@@ -47,8 +52,6 @@ class KioskoServicio {
     throw Exception('Error al obtener config (${response.statusCode})');
   }
 
-  /// Inicia el stream SSE de la config y llama [onConfig] cada vez que el
-  /// admin la actualiza. Se reconecta automáticamente tras 5 s si se pierde.
   void escucharConfigStream(void Function(KioskoConfig) onConfig) {
     _sseLoop(onConfig);
   }
@@ -107,6 +110,37 @@ class KioskoServicio {
       pathFotoRostro: pathFotoRostro,
       reintento: false,
     );
+  }
+
+  Future<Map<String, dynamic>> usarInvitacion(String token) async {
+    await _ensureLogin();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/kioskos/$_accesoId/invitaciones/$token/usar'),
+      headers: {'Authorization': 'Bearer $_sessionToken'},
+    ).timeout(const Duration(seconds: 10));
+    if (response.statusCode == 200) return jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 404) throw Exception('Invitación no válida, expirada o agotada');
+    throw Exception('Error al procesar invitación (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> validarPinResidente(String pin) async {
+    await _ensureLogin();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/kioskos/$_accesoId/residentes/login'),
+      headers: {
+        'Authorization': 'Bearer $_sessionToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'pin': pin}),
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    if (response.statusCode == 401) {
+      throw Exception('PIN incorrecto');
+    }
+    throw Exception('Error al validar PIN (${response.statusCode})');
   }
 
   Future<List<Map<String, dynamic>>> obtenerDestinos() async {

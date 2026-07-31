@@ -111,7 +111,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                       children: [
                         Icon(Icons.error_outline_rounded, color: Color(0xFFFF542F), size: 28),
                         SizedBox(width: 12),
-                        Text(ineInvalidErrorTitle, style: TextStyle(color: Colors.white)),
+                        Flexible(child: Text(ineInvalidErrorTitle, style: TextStyle(color: Colors.white))),
                       ],
                     ),
                     content: const Text(
@@ -209,7 +209,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                     children: [
                       Icon(Icons.face_retouching_off, color: Color(0xFFFF542F), size: 28),
                       SizedBox(width: 12),
-                      Text(faceNotDetectedErrorTitle, style: TextStyle(color: Colors.white)),
+                      Flexible(child: Text(faceNotDetectedErrorTitle, style: TextStyle(color: Colors.white))),
                     ],
                   ),
                   content: const Text(

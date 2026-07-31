@@ -48,6 +48,10 @@ class _ResidentPinViewState extends State<ResidentPinView> {
 
               _buildKeypad(),
 
+              const SizedBox(height: 28),
+
+              _buildConfirmar(),
+
               const Spacer(),
 
               _buildFooter(),
@@ -233,18 +237,6 @@ class _ResidentPinViewState extends State<ResidentPinView> {
       onTapUp: (_) {
         setState(() => _presionadoId = null);
         widget.viewModel.addDigit(digit);
-        if (widget.viewModel.isComplete) {
-          final navigator = Navigator.of(context);
-          Future.delayed(const Duration(milliseconds: 200), () {
-            navigator.push(MaterialPageRoute(
-              builder: (_) => ResidentWelcomeView(
-                viewModel: ResidentWelcomeViewModel(
-                  residentNumber: widget.viewModel.pin,
-                ),
-              ),
-            ));
-          });
-        }
       },
       onTapCancel: () => setState(() => _presionadoId = null),
       child: AnimatedContainer(
@@ -308,6 +300,69 @@ class _ResidentPinViewState extends State<ResidentPinView> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildConfirmar() {
+    final vm = widget.viewModel;
+    return Column(
+      children: [
+        if (vm.errorMsg != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              vm.errorMsg!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFFFF542F), fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        GestureDetector(
+          onTap: vm.puedeConfirmar
+              ? () async {
+                  final ok = await vm.confirmar();
+                  if (ok && mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ResidentWelcomeView(
+                          viewModel: ResidentWelcomeViewModel(
+                            nombre: vm.nombreResidente ?? 'Residente',
+                            casaDestino: vm.casaDestino ?? '',
+                          ),
+                        ),
+                      ),
+                    ).then((_) => vm.clear());
+                  }
+                }
+              : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: double.infinity,
+            height: 64,
+            decoration: BoxDecoration(
+              color: vm.puedeConfirmar ? const Color(0xFFFF542F) : const Color(0xFF2B2727),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Center(
+              child: vm.isCargando
+                  ? const SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    )
+                  : Text(
+                      'CONFIRMAR',
+                      style: TextStyle(
+                        color: vm.puedeConfirmar ? Colors.white : const Color(0xFF595252),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

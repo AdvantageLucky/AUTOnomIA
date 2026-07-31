@@ -16,6 +16,8 @@ class QrScannerView extends StatefulWidget {
 
 class _QrScannerViewState extends State<QrScannerView> {
   bool _consentGiven = false;
+  bool _readyToScan = false;
+  bool _scanStarted = false;
   MobileScannerController? _controller;
 
   @override
@@ -49,15 +51,26 @@ class _QrScannerViewState extends State<QrScannerView> {
     }
   }
 
+  Future<void> _iniciarEscaneo() async {
+    if (_scanStarted) return;
+    setState(() => _scanStarted = true);
+    // Reiniciar el controller para limpiar el caché de noDuplicates
+    _controller?.stop();
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    _controller?.start();
+    setState(() => _readyToScan = true);
+  }
+
   void _onQrDetected(String value) {
     if (widget.viewModel.isScanned) return;
     widget.viewModel.onQrDetected(value);
     _controller?.stop();
     final navigator = Navigator.of(context);
-    Future.delayed(const Duration(milliseconds: 300), () {
+    Future.delayed(const Duration(milliseconds: 1200), () {
       navigator.pushReplacement(MaterialPageRoute(
         builder: (_) => QrResultView(
-          viewModel: QrResultViewModel(scannedValue: value),
+          viewModel: QrResultViewModel(token: value),
         ),
       ));
     });
@@ -73,16 +86,95 @@ class _QrScannerViewState extends State<QrScannerView> {
             MobileScanner(
               controller: _controller!,
               onDetect: (capture) {
+                if (!_readyToScan) return;
                 final barcode = capture.barcodes.firstOrNull;
                 final value = barcode?.rawValue;
                 if (value != null) _onQrDetected(value);
               },
             ),
 
-          CustomPaint(
-            painter: _QrOverlayPainter(),
-            child: const SizedBox.expand(),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: CustomPaint(
+              key: ValueKey(widget.viewModel.isScanned),
+              painter: _QrOverlayPainter(scanned: widget.viewModel.isScanned),
+              child: const SizedBox.expand(),
+            ),
           ),
+
+          // Botón de inicio de escaneo — centrado en el recuadro del QR
+          if (_consentGiven && !_scanStarted && !widget.viewModel.isScanned)
+            GestureDetector(
+              onTap: _iniciarEscaneo,
+              behavior: HitTestBehavior.translucent,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF542F).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFFF542F), width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.qr_code_scanner_rounded,
+                        color: Color(0xFFFF542F),
+                        size: 38,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Toca para escanear',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          if (widget.viewModel.isScanned)
+            Center(
+              child: Padding(
+                padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.12),
+                child: AnimatedOpacity(
+                  opacity: widget.viewModel.isScanned ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 250),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.5), width: 1.5),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 22),
+                        SizedBox(width: 10),
+                        Text(
+                          '¡Código detectado!',
+                          style: TextStyle(color: Color(0xFF22C55E), fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           SafeArea(
             child: Padding(
@@ -163,9 +255,11 @@ class _QrScannerViewState extends State<QrScannerView> {
   Widget _buildBottomHint() {
     return Column(
       children: [
-        const Text(
-          'Apunta al código QR de tu invitación',
-          style: TextStyle(
+        Text(
+          _readyToScan
+              ? 'Apunta al código QR de tu invitación'
+              : 'Posiciona el código QR y toca para escanear',
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -173,7 +267,7 @@ class _QrScannerViewState extends State<QrScannerView> {
         ),
         const SizedBox(height: 8),
         Text(
-          'El código se detectará automáticamente',
+          _readyToScan ? 'El código se detectará automáticamente' : 'La cámara no escaneará hasta que toques',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.5),
             fontSize: 13,
@@ -185,6 +279,9 @@ class _QrScannerViewState extends State<QrScannerView> {
 }
 
 class _QrOverlayPainter extends CustomPainter {
+  final bool scanned;
+  const _QrOverlayPainter({this.scanned = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final overlayPaint = Paint()
@@ -204,9 +301,8 @@ class _QrOverlayPainter extends CustomPainter {
 
     canvas.drawPath(path, overlayPaint);
 
-    // Esquinas naranjas
     final cornerPaint = Paint()
-      ..color = const Color(0xFFFF542F)
+      ..color = scanned ? const Color(0xFF22C55E) : const Color(0xFFFF542F)
       ..strokeWidth = 3.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -232,5 +328,5 @@ class _QrOverlayPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_QrOverlayPainter oldDelegate) => false;
+  bool shouldRepaint(_QrOverlayPainter oldDelegate) => oldDelegate.scanned != scanned;
 }
