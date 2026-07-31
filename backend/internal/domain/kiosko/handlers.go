@@ -9,21 +9,50 @@ Documentado con swag
 package kiosko
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
+	"kigo-autonomia-backend/internal/platform/sse"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
+// configHubRegistry mantiene un hub SSE por kiosko para emitir cambios de config en tiempo real.
+type configHubRegistry struct {
+	mu   sync.RWMutex
+	hubs map[uint]*sse.Hub
+}
+
+func (r *configHubRegistry) get(kioskoID uint) *sse.Hub {
+	r.mu.RLock()
+	h, ok := r.hubs[kioskoID]
+	r.mu.RUnlock()
+	if ok {
+		return h
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if h, ok = r.hubs[kioskoID]; ok {
+		return h
+	}
+	h = sse.NewHub()
+	r.hubs[kioskoID] = h
+	return h
+}
+
 type Handler struct {
-	repo *Repository
+	repo    *Repository
+	cfgHubs *configHubRegistry
 }
 
 func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo}
+	return &Handler{repo: repo, cfgHubs: &configHubRegistry{hubs: make(map[uint]*sse.Hub)}}
 }
 
 // RegisterKiosko crea un nuevo Kiosko del Admin, generando su clave de kiosko
@@ -367,5 +396,49 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg))
+	resp := toKioskoConfigResponse(cfg)
+	c.JSON(http.StatusOK, resp)
+
+	// Notificar al kiosko conectado por SSE
+	if data, err := json.Marshal(resp); err == nil {
+		h.cfgHubs.get(cfg.KioskoID).Broadcast(data)
+	}
+}
+
+// StreamConfig abre una conexión SSE y emite la config cada vez que el admin la actualiza.
+//
+// @Summary Stream SSE de config del kiosko
+// @Tags kioskos
+// @Produce text/event-stream
+// @Param id path int true "ID del kiosko"
+// @Success 200
+// @Router /kioskos/{id}/config/stream [get]
+func (h *Handler) StreamConfig(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	hub := h.cfgHubs.get(uint(id))
+	ch := hub.Subscribe()
+	defer hub.Unsubscribe(ch)
+
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case data, ok := <-ch:
+			if !ok {
+				return false
+			}
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			return true
+		case <-c.Request.Context().Done():
+			return false
+		}
+	})
 }

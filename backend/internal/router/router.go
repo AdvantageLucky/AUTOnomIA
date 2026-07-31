@@ -78,6 +78,7 @@ func registerAdminRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	kioskoRepo := kiosko.NewRepository(db)
 	kioskoHandler := kiosko.NewHandler(kioskoRepo)
+	sesionRepo := auth.NewSesionRepository(db)
 
 	a := rg.Group("/kioskos")
 	a.Use(auth.RequireAdmin(jwtSecret))
@@ -89,6 +90,13 @@ func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 		a.DELETE("/:id", kioskoHandler.DeleteKiosko)
 		a.GET("/:id/config", kioskoHandler.GetConfig)
 		a.PATCH("/:id/config", kioskoHandler.PatchConfig)
+	}
+
+	// el kiosko se suscribe al stream SSE de su propia config
+	k := rg.Group("/kioskos/:id/config")
+	k.Use(auth.RequireKiosko(sesionRepo))
+	{
+		k.GET("/stream", kioskoHandler.StreamConfig)
 	}
 }
 
