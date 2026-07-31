@@ -9,6 +9,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/domain/auth"
 	"kigo-autonomia-backend/internal/domain/destinos"
+	"kigo-autonomia-backend/internal/domain/invitaciones"
 	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/domain/visitas"
@@ -34,6 +35,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerVisitaRoutes(api, db, cfg, hub)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret)
+	registerInvitacionesRoutes(api, db, cfg.JWTSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	r.Static("/admin", "./web/admin")
@@ -143,6 +145,29 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 	a.Use(auth.RequireAdmin(jwtSecret))
 	{
 		a.POST("/", destinoHandler.CrearDestino)
+	}
+}
+
+func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+	invRepo := invitaciones.NewRepository(db)
+	invHandler := invitaciones.NewHandler(invRepo)
+	sesionRepo := auth.NewSesionRepository(db)
+
+	// app residente: crea, lista y revoca sus invitaciones
+	r := rg.Group("/residentes/me/invitaciones")
+	r.Use(auth.RequireResidente(jwtSecret))
+	{
+		r.POST("/", invHandler.CrearInvitacion)
+		r.GET("/", invHandler.ListarInvitaciones)
+		r.DELETE("/:id", invHandler.RevocarInvitacion)
+	}
+
+	// kiosko: valida un token y registra su uso
+	k := rg.Group("/kioskos/:id/invitaciones")
+	k.Use(auth.RequireKiosko(sesionRepo))
+	{
+		k.GET("/validar", invHandler.ValidarInvitacion)
+		k.POST("/:token/usar", invHandler.UsarInvitacion)
 	}
 }
 
