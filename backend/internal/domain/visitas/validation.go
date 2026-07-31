@@ -7,18 +7,21 @@ import (
 )
 
 // validarCamposCondicionales valida los campos opcionales de VisitaRequest
-// según el TipoVisitante y la configuración del kiosko.
-// Devuelve un mensaje de error listo para enviar al cliente, o "" si todo está bien.
+// segun el TipoVisitante y la configuración del kiosko, despues
+// devuelve un mensaje de error listo para enviar al cliente, o "" si todo esta bien
 func validarCamposCondicionales(req VisitaRequest, cfg *kiosko.KioskoConfig) string {
 	var reqIne, reqRostro, reqPlaca bool
 
 	switch req.TipoVisitante {
+
+	// en el caso SinInvitacion siempre se pedira
+	// ine para asegurar busquedas en visitas
 	case TipoSinInvitacion:
-		reqIne = cfg.FotoIneVisitante
+		reqIne = true
 		reqRostro = cfg.FotoRostroVisitante
 		reqPlaca = cfg.FotoPlacaVisitante
 	case TipoConInvitacion:
-		reqIne = cfg.FotoIneInvitado
+		reqIne = cfg.IneObligatorioInvitado
 		reqRostro = cfg.FotoRostroInvitado
 		reqPlaca = cfg.FotoPlacaInvitado
 	}

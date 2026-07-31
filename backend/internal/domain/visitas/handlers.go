@@ -48,8 +48,8 @@ type Handler struct {
 	sseHub     SseHub
 }
 
-func NewHandler(repo *Repository, uploadsDir string, llmUrl string, hub SseHub) *Handler {
-	return &Handler{repo: repo, uploadsDir: uploadsDir, llmURL: llmUrl, sseHub: hub}
+func NewHandler(repo *Repository, uploadsDir string, llmURL string, hub SseHub) *Handler {
+	return &Handler{repo: repo, uploadsDir: uploadsDir, llmURL: llmURL, sseHub: hub}
 }
 
 func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
@@ -102,7 +102,10 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 
 	cfg, err := h.repo.GetKioskoConfig(uint(kioskoID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo obtener la configuracion del kiosko"})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "no se pudo obtener la configuracion del kiosko"},
+		)
 		return
 	}
 

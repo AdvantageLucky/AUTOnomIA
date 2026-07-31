@@ -323,7 +323,7 @@
     es.onmessage = e => {
       try {
         const v = JSON.parse(e.data);
-        const nombre = v.nombre || "Nuevo visitante";
+        const nombre = v.titular || "Nuevo visitante";
         mostrarToast(`Nueva solicitud: ${nombre}`);
         if (document.getElementById("screen-solicitudes")?.classList.contains("active")) {
           loadSolicitudes();
@@ -481,7 +481,11 @@
     showApp();
     aplicarRol(state.rol);
     initSSE(token);
-    navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard");
+    if (state.rol !== 'vigilante' && state.accesosById.size === 0) {
+      showOnboarding();
+    } else {
+      navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard");
+    }
   }
 
   async function preloadAccesos() {
@@ -575,7 +579,7 @@
   function renderDashRow(v, i) {
     return `<div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*40}ms" data-id="${v.id}">
       <div>
-        <div class="row-name">${esc(v.nombre)}</div>
+        <div class="row-name">${esc(v.titular)}</div>
         <div class="row-sub">${esc(v.casa_destino || "")}</div>
       </div>
       <div class="row-date">${fmtDateShort(v.created_at)}</div>
@@ -644,7 +648,7 @@
   function renderVisRow(v, i) {
     const acceso = state.accesosById.get(v.kiosko_id);
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
-      <div><div class="row-name">${esc(v.nombre)}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
+      <div><div class="row-name">${esc(v.titular)}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
@@ -690,7 +694,7 @@
             <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
             ${v.intervenida ? `<span class="badge badge--intervenida">Revisada por IA</span>` : ""}
           </div>
-          <div class="detalle-nombre">${esc(v.nombre)}</div>
+          <div class="detalle-nombre">${esc(v.titular)}</div>
           <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${fmtDate(v.created_at)}</div>
           <div class="detalle-campos">
             <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp || "—")}</div></div>
@@ -765,7 +769,7 @@
       return `<div class="exp-row${esCurrent ? " exp-row--current" : ""}" style="animation-delay:${i*25}ms" data-id="${v.id}">
         <div class="exp-marker"><div class="exp-dot"></div></div>
         <div class="exp-info">
-          <div class="exp-nombre">${esc(v.nombre)}</div>
+          <div class="exp-nombre">${esc(v.titular)}</div>
           <div class="exp-meta">${meta}</div>
         </div>
         <div class="exp-right">
@@ -853,7 +857,7 @@
       <div class="sol-card-left">
         <div class="feed-dot"></div>
         <div>
-          <div class="row-name">${esc(v.nombre)}</div>
+          <div class="row-name">${esc(v.titular)}</div>
           <div class="row-sub">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${esc(v.casa_destino || "sin destino")} · <span class="feed-elapsed">${fmtElapsed(v.created_at)}</span></div>
           ${v.motivo_visita ? `<div class="row-sub" style="margin-top:2px;font-style:italic">"${esc(v.motivo_visita)}"</div>` : ""}
         </div>
@@ -1062,7 +1066,7 @@
     container.innerHTML = visitas.map((v, i) => `
       <div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*30}ms" data-id="${v.id}">
         <div>
-          <div class="row-name">${esc(v.nombre)}</div>
+          <div class="row-name">${esc(v.titular)}</div>
           <div class="row-sub">${esc(v.motivo_visita || v.casa_destino || "—")}</div>
         </div>
         <div class="row-date">${fmtDate(v.created_at)}</div>
@@ -1131,11 +1135,13 @@
       const a = state.accesosById.get(accesoId);
       document.getElementById("modal-acceso-title").textContent = lang === "en" ? "Edit entry" : "Editar acceso";
       document.getElementById("acceso-nombre").value    = a?.nombre    || "";
+      document.getElementById("acceso-tipo").value      = a?.tipo      || "PEATONAL";
       document.getElementById("acceso-ubicacion").value = a?.ubicacion || "";
       document.getElementById("acceso-clave-hint").hidden = true;
     } else {
       document.getElementById("modal-acceso-title").textContent = t("modal_new_acceso");
       document.getElementById("acceso-nombre").value    = "";
+      document.getElementById("acceso-tipo").value      = "PEATONAL";
       document.getElementById("acceso-ubicacion").value = "";
       document.getElementById("acceso-clave-hint").hidden = false;
     }
@@ -1150,6 +1156,7 @@
   document.getElementById("acceso-form").addEventListener("submit", async e => {
     e.preventDefault();
     const nombre    = document.getElementById("acceso-nombre").value;
+    const tipo      = document.getElementById("acceso-tipo").value;
     const ubicacion = document.getElementById("acceso-ubicacion").value;
     const errEl     = document.getElementById("acceso-form-error");
 
@@ -1157,7 +1164,7 @@
     const endpoint = isNew ? "/kioskos/" : `/kioskos/${state.editingAccesoId}`;
     const method   = isNew ? "POST" : "PATCH";
 
-    const res = await api(endpoint, { method, body: JSON.stringify({ nombre, ubicacion }) });
+    const res = await api(endpoint, { method, body: JSON.stringify({ nombre, tipo, ubicacion }) });
     if (!res) return;
 
     if (!res.ok) {
@@ -1250,18 +1257,36 @@
     }
 
     const cfg = await res.json();
+    const acceso = state.accesosById.get(accesoId);
+    const esPeatonal = acceso?.tipo === "PEATONAL";
+
+    // badge de tipo
+    const tipoBadge = document.getElementById("cfg-tipo-badge");
+    if (tipoBadge) {
+      tipoBadge.textContent = acceso?.tipo || "—";
+      tipoBadge.style.background = esPeatonal ? "#1e3a2f" : "#1e2d3a";
+      tipoBadge.style.color      = esPeatonal ? "#4ade80" : "#60a5fa";
+    }
+
     document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
     document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
-    document.getElementById("cfg-ine-visitante").checked    = !!cfg.foto_ine_visitante;
     document.getElementById("cfg-rostro-visitante").checked = !!cfg.foto_rostro_visitante;
-    document.getElementById("cfg-placa-visitante").checked  = !!cfg.foto_placa_visitante;
+    document.getElementById("cfg-placa-visitante").checked  = esPeatonal ? false : !!cfg.foto_placa_visitante;
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
-    document.getElementById("cfg-placa-invitado").checked   = !!cfg.foto_placa_invitado;
+    document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
     document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_min ?? 5;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
+
+    // deshabilitar y ocultar toggles de placa en kioskos peatonales
+    const rowPlacaVis = document.getElementById("cfg-row-placa-visitante");
+    const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
+    if (rowPlacaVis) rowPlacaVis.style.opacity = esPeatonal ? "0.35" : "1";
+    if (rowPlacaInv) rowPlacaInv.style.opacity = esPeatonal ? "0.35" : "1";
+    document.getElementById("cfg-placa-visitante").disabled = esPeatonal;
+    document.getElementById("cfg-placa-invitado").disabled  = esPeatonal;
 
     document.getElementById("cfg-error").hidden   = true;
     document.getElementById("cfg-success").hidden = true;
@@ -1277,18 +1302,17 @@
     okEl.hidden  = true;
 
     const payload = {
-      color_kiosko:         document.getElementById("cfg-color").value,
-      idioma_kiosko:        document.getElementById("cfg-idioma").value,
-      mensaje_bienvenida:   document.getElementById("cfg-mensaje").value,
-      foto_ine_visitante:   document.getElementById("cfg-ine-visitante").checked,
-      foto_rostro_visitante:document.getElementById("cfg-rostro-visitante").checked,
-      foto_placa_visitante: document.getElementById("cfg-placa-visitante").checked,
-      foto_ine_invitado:    document.getElementById("cfg-ine-invitado").checked,
-      foto_rostro_invitado: document.getElementById("cfg-rostro-invitado").checked,
-      foto_placa_invitado:  document.getElementById("cfg-placa-invitado").checked,
-      tiempo_espera_min:    parseInt(document.getElementById("cfg-tiempo-espera").value) || 0,
-      horario_inicio:       document.getElementById("cfg-horario-inicio").value,
-      horario_fin:          document.getElementById("cfg-horario-fin").value,
+      color_kiosko:          document.getElementById("cfg-color").value,
+      idioma_kiosko:         document.getElementById("cfg-idioma").value,
+      mensaje_bienvenida:    document.getElementById("cfg-mensaje").value,
+      foto_rostro_visitante: document.getElementById("cfg-rostro-visitante").checked,
+      foto_placa_visitante:  document.getElementById("cfg-placa-visitante").checked,
+      foto_ine_invitado:     document.getElementById("cfg-ine-invitado").checked,
+      foto_rostro_invitado:  document.getElementById("cfg-rostro-invitado").checked,
+      foto_placa_invitado:   document.getElementById("cfg-placa-invitado").checked,
+      tiempo_espera_min:     parseInt(document.getElementById("cfg-tiempo-espera").value) || 0,
+      horario_inicio:        document.getElementById("cfg-horario-inicio").value,
+      horario_fin:           document.getElementById("cfg-horario-fin").value,
     };
 
     const res = await api(`/kioskos/${cfgAccesoId}/config`, {
@@ -1441,6 +1465,257 @@
     state.admin = { ...state.admin, ...payload };
     okEl.hidden = false;
     await loadAdminData();
+  });
+
+  /* ─── Metro canvas animation ─────────────── */
+  (function initMetroAnimation() {
+    const canvas = document.getElementById('metro-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const STATION_DEFS = [
+      { rx:0.14, ry:0.30, shape:'circle',  label:'E. Principal' },
+      { rx:0.48, ry:0.18, shape:'square',  label:'Acc. Norte'   },
+      { rx:0.80, ry:0.36, shape:'circle',  label:'Caseta Veh.'  },
+      { rx:0.28, ry:0.68, shape:'diamond', label:'E. Lateral'   },
+      { rx:0.66, ry:0.72, shape:'square',  label:'Acc. Sur'     },
+    ];
+    const LINE_DEFS = [
+      { color:'#FF542F', path:[0,1,2], w:4.5 },
+      { color:'#4A9EFF', path:[0,3,4], w:4.5 },
+      { color:'#a78bfa', path:[1,3,4,2], w:3  },
+    ];
+    const FAKE_NAMES = [
+      'García L., Marco','Rodríguez P., Ana','Martínez C., Luis',
+      'Hernández R., Sofía','López T., Juan','González V., María',
+      'Sánchez F., Carlos','Ramírez D., Elena','Torres M., José',
+      'Flores J., Laura','Pérez C., Diego','Vargas M., Paula',
+    ];
+    const ESTADO_DIST = ['APROBADO','APROBADO','APROBADO','PENDIENTE','REVISIÓN'];
+
+    let stations = [], visitors = [], pings = [], running = true;
+
+    function resize() {
+      const p = canvas.parentElement.getBoundingClientRect();
+      canvas.width = p.width; canvas.height = p.height;
+      stations = STATION_DEFS.map(d => ({
+        ...d, x: d.rx * canvas.width, y: d.ry * canvas.height, glow: 0,
+      }));
+    }
+
+    function rr(ctx2, x, y, w, h, r) {
+      if (ctx2.roundRect) { ctx2.roundRect(x,y,w,h,r); return; }
+      ctx2.rect(x,y,w,h);
+    }
+
+    function drawStation(s) {
+      const {x, y, shape, glow} = s, r = 11;
+      if (glow > 0) {
+        ctx.save();
+        ctx.globalAlpha = glow * 0.45;
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath(); ctx.arc(x, y, r + glow*22, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.fillStyle   = 'rgba(255,255,255,0.08)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth   = 2;
+      ctx.beginPath();
+      if (shape === 'circle') {
+        ctx.arc(x, y, r, 0, Math.PI*2);
+      } else if (shape === 'square') {
+        rr(ctx, x-r, y-r, r*2, r*2, 3);
+      } else {
+        ctx.moveTo(x, y-r*1.4); ctx.lineTo(x+r*1.2, y);
+        ctx.lineTo(x, y+r*1.4); ctx.lineTo(x-r*1.2, y); ctx.closePath();
+      }
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.font = '10px system-ui,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.label, x, y + r + 14);
+      ctx.restore();
+    }
+
+    function drawLine(l) {
+      ctx.save();
+      ctx.strokeStyle = l.color + '50';
+      ctx.lineWidth = l.w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      l.path.forEach((si, i) => {
+        const st = stations[si];
+        if (i===0) ctx.moveTo(st.x, st.y); else ctx.lineTo(st.x, st.y);
+      });
+      ctx.stroke(); ctx.restore();
+    }
+
+    function drawVisitor(v) {
+      const fr = stations[v.from], to = stations[v.to];
+      const x = fr.x + (to.x-fr.x)*v.t, y = fr.y + (to.y-fr.y)*v.t;
+      const c = LINE_DEFS[v.li].color;
+      ctx.save();
+      ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPing(p) {
+      ctx.save(); ctx.globalAlpha = p.a;
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+
+    function spawnVisitor() {
+      const li = Math.floor(Math.random() * LINE_DEFS.length);
+      const path = LINE_DEFS[li].path;
+      const fi = Math.floor(Math.random() * (path.length-1));
+      visitors.push({ li, from:path[fi], to:path[fi+1], t:0,
+        speed: 0.0035 + Math.random()*0.002 });
+    }
+
+    function spawnHeroCard(linColor, accesoLabel) {
+      const feed = document.getElementById('hero-feed');
+      if (!feed) return;
+      const name   = FAKE_NAMES[Math.floor(Math.random()*FAKE_NAMES.length)];
+      const estado = ESTADO_DIST[Math.floor(Math.random()*ESTADO_DIST.length)];
+      const init2  = name.replace(/[,. ]+/g,'').slice(0,2).toUpperCase();
+      const bcls   = estado==='APROBADO'?'badge--aprobado':estado==='PENDIENTE'?'badge--pendiente':'badge--revision';
+      const card   = document.createElement('div');
+      card.className = 'hero-card';
+      card.innerHTML = `
+        <div class="hero-card-avatar" style="background:${linColor}20;border-color:${linColor}55;color:${linColor}">${init2}</div>
+        <div class="hero-card-info">
+          <div class="hero-card-name">${esc(name)}</div>
+          <div class="hero-card-meta">${esc(accesoLabel)} · ahora</div>
+        </div>
+        <span class="badge ${bcls}">${estado}</span>`;
+      feed.insertBefore(card, feed.firstChild);
+      while (feed.children.length > 3) feed.removeChild(feed.lastChild);
+      setTimeout(() => {
+        card.style.opacity = '0'; card.style.transform = 'translateY(-8px)';
+        setTimeout(() => card.remove(), 400);
+      }, 7000);
+    }
+
+    let lastSpawn = 0; const SPAWN_MS = 2200;
+    let lastT = 0;
+
+    function tick(now) {
+      if (!running) return;
+      const dt = Math.min(now - lastT, 80); lastT = now;
+
+      const p = canvas.parentElement.getBoundingClientRect();
+      if (Math.abs(canvas.width-p.width)>2) resize();
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      LINE_DEFS.forEach(drawLine);
+
+      visitors = visitors.filter(v => {
+        v.t += v.speed * dt / 16;
+        if (v.t >= 1) {
+          const st = stations[v.to];
+          st.glow = 1;
+          pings.push({x:st.x, y:st.y, r:12, a:0.85});
+          spawnHeroCard(LINE_DEFS[v.li].color, st.label);
+          return false;
+        }
+        drawVisitor(v); return true;
+      });
+
+      stations.forEach(s => {
+        if (s.glow>0) s.glow = Math.max(0, s.glow - 0.018*dt/16);
+        drawStation(s);
+      });
+
+      pings = pings.filter(p2 => {
+        p2.r += 0.6*dt/16; p2.a -= 0.022*dt/16;
+        if (p2.a<=0) return false;
+        drawPing(p2); return true;
+      });
+
+      if (now - lastSpawn > SPAWN_MS) { spawnVisitor(); lastSpawn = now; }
+      requestAnimationFrame(tick);
+    }
+
+    resize();
+    for (let i=0;i<2;i++) spawnVisitor();
+    requestAnimationFrame(now => { lastT=now; tick(now); });
+
+    // Pausar cuando el login desaparece para no desperdiciar CPU
+    const obs = new MutationObserver(() => {
+      const hidden = document.getElementById('screen-login')?.hidden;
+      running = !hidden;
+      if (!hidden) requestAnimationFrame(now => { lastT=now; tick(now); });
+    });
+    const loginScreen = document.getElementById('screen-login');
+    if (loginScreen) obs.observe(loginScreen, {attributes:true, attributeFilter:['hidden']});
+  })();
+
+  /* ─── Onboarding first-run ───────────────── */
+  let obStep = 1;
+
+  function showOnboarding() {
+    obStep = 1;
+    document.getElementById('onboarding-overlay').hidden = false;
+    setObStep(1);
+  }
+
+  function setObStep(n) {
+    [1,2,3].forEach(i => {
+      document.getElementById(`ob-step-${i}`)?.classList.toggle('active', i===n);
+      const dot = document.getElementById(`ob-dot-${i}`);
+      if (dot) {
+        dot.classList.toggle('active', i===n);
+        dot.classList.toggle('done',   i<n);
+      }
+    });
+    [1,2].forEach(i => {
+      document.getElementById(`ob-line-${i}`)?.classList.toggle('done', i<n);
+    });
+    obStep = n;
+  }
+
+  document.getElementById('ob-btn-1')?.addEventListener('click', () => setObStep(2));
+
+  document.getElementById('ob-acceso-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl = document.getElementById('ob-form-error');
+    errEl.hidden = true;
+    const nombre = document.getElementById('ob-nombre').value.trim();
+    const tipo   = document.getElementById('ob-tipo').value;
+    const ubicacion = document.getElementById('ob-ubicacion').value.trim();
+
+    const res = await api('/kioskos/', { method:'POST', body:JSON.stringify({nombre,tipo,ubicacion}) });
+    if (!res) return;
+    if (!res.ok) {
+      const d = await res.json();
+      errEl.textContent = d.error || 'Error al crear acceso';
+      errEl.hidden = false;
+      return;
+    }
+    const data = await res.json();
+    state.accesosById.set(data.id, data);
+    document.getElementById('ob-clave-reveal').textContent = data.clave_kiosko || '—';
+    document.getElementById('ob-btn-copy').dataset.val = data.clave_kiosko || '';
+    setObStep(3);
+  });
+
+  document.getElementById('ob-btn-copy')?.addEventListener('click', function() {
+    const v = this.dataset.val;
+    if (!v) return;
+    navigator.clipboard.writeText(v).then(() => {
+      this.textContent = '¡Copiado!';
+      setTimeout(() => { this.textContent = 'Copiar'; }, 2000);
+    });
+  });
+
+  document.getElementById('ob-btn-done')?.addEventListener('click', () => {
+    document.getElementById('onboarding-overlay').hidden = true;
+    navTo('accesos');
   });
 
   /* ─── Init ───────────────────────────────── */

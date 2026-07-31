@@ -55,6 +55,8 @@
   </div>
 
   <div class="login-hero">
+    <canvas id="metro-canvas" aria-hidden="true"></canvas>
+    <div id="hero-feed" class="hero-feed" aria-hidden="true"></div>
     <div class="login-hero-bg" aria-hidden="true">AUTOnomIA</div>
     <div class="login-hero-content">
       <div class="hero-badge">
@@ -63,6 +65,60 @@
       </div>
       <h2 data-i18n="hero_title">Quién entró,<br>cuándo y por dónde.</h2>
       <p data-i18n="hero_sub">Auto-registro de visitantes para comunidades cerradas. Supervisa bitácoras, verifica visitas y gestiona tus entradas desde un solo lugar.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ONBOARDING ===================== -->
+<div id="onboarding-overlay" class="onboarding-overlay" hidden>
+  <div class="onboarding-box">
+    <div class="ob-steps-bar">
+      <div class="ob-step-dot active" id="ob-dot-1">1</div>
+      <div class="ob-step-line" id="ob-line-1"></div>
+      <div class="ob-step-dot" id="ob-dot-2">2</div>
+      <div class="ob-step-line" id="ob-line-2"></div>
+      <div class="ob-step-dot" id="ob-dot-3">3</div>
+    </div>
+
+    <!-- Paso 1: Bienvenida -->
+    <div id="ob-step-1" class="ob-step active">
+      <div class="ob-icon">🚀</div>
+      <div class="ob-title">Bienvenido a AUTOnomIA</div>
+      <div class="ob-sub">Configura tu primer acceso en menos de un minuto y tu comunidad estará lista para recibir visitantes con registro automático por IA.</div>
+      <button class="btn-primary btn-block" id="ob-btn-1">Comenzar configuración →</button>
+    </div>
+
+    <!-- Paso 2: Crear primer acceso -->
+    <div id="ob-step-2" class="ob-step">
+      <div class="ob-icon">🚪</div>
+      <div class="ob-title">Crea tu primer acceso</div>
+      <div class="ob-sub">Dale un nombre a tu kiosko y elige si controla una entrada peatonal o vehicular.</div>
+      <form id="ob-acceso-form">
+        <div class="form-group"><label>Nombre del acceso</label><input id="ob-nombre" type="text" required placeholder="Ej. Entrada Principal"></div>
+        <div class="form-group">
+          <label>Tipo de kiosko</label>
+          <select id="ob-tipo" class="search-select" style="width:100%">
+            <option value="PEATONAL">🚶 Peatonal</option>
+            <option value="VEHICULAR">🚗 Vehicular</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Ubicación (opcional)</label><input id="ob-ubicacion" type="text" placeholder="Ej. Calle Principal s/n"></div>
+        <div id="ob-form-error" class="form-error" hidden></div>
+        <button type="submit" class="btn-primary btn-block">Crear acceso →</button>
+      </form>
+    </div>
+
+    <!-- Paso 3: Clave generada -->
+    <div id="ob-step-3" class="ob-step">
+      <div class="ob-icon">🔑</div>
+      <div class="ob-title">¡Acceso creado!</div>
+      <div class="ob-sub">Copia esta clave y configúrala en la app del kiosko. <strong>No se mostrará de nuevo.</strong></div>
+      <div class="reveal-box" style="margin-bottom:24px">
+        <div class="reveal-label">Clave de kiosko</div>
+        <div class="reveal-key" id="ob-clave-reveal">—</div>
+        <button class="btn-copy" id="ob-btn-copy" data-val="">Copiar</button>
+      </div>
+      <button class="btn-primary btn-block" id="ob-btn-done">¡Listo, empezar a usar →</button>
     </div>
   </div>
 </div>
@@ -342,6 +398,16 @@
 
         <div id="cfg-form-wrap" hidden>
 
+          <div class="config-section" style="padding-bottom:12px">
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Tipo de kiosko</div>
+                <div class="toggle-sub">Definido al crear el acceso, no editable aquí</div>
+              </div>
+              <span id="cfg-tipo-badge" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#23272f;color:#ccc">—</span>
+            </div>
+          </div>
+
           <div class="config-section">
             <div class="config-section-title">Apariencia e idioma</div>
 
@@ -377,19 +443,8 @@
           </div>
 
           <div class="config-section">
-            <div class="config-section-title">Requerimientos para visitantes directos</div>
-            <div class="config-section-sub">Personas que llegan sin invitación previa</div>
-
-            <div class="toggle-row">
-              <div>
-                <div class="toggle-label">Captura de INE</div>
-                <div class="toggle-sub">OCR de credencial para extraer CURP y nombre</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="cfg-ine-visitante">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+            <div class="config-section-title">Visitante Sin Invitación</div>
+            <div class="config-section-sub">Personas que llegan sin invitación previa. La captura de INE es requerida por lo menos.</div>
 
             <div class="toggle-row">
               <div>
@@ -402,7 +457,7 @@
               </label>
             </div>
 
-            <div class="toggle-row">
+            <div class="toggle-row" id="cfg-row-placa-visitante">
               <div>
                 <div class="toggle-label">Foto de placa vehicular</div>
                 <div class="toggle-sub">Registro de matrícula si llega en vehículo</div>
@@ -415,13 +470,13 @@
           </div>
 
           <div class="config-section">
-            <div class="config-section-title">Requerimientos para invitados con QR</div>
-            <div class="config-section-sub">Personas con invitación generada por un residente</div>
+            <div class="config-section-title">Visitante Con Invitación</div>
+            <div class="config-section-sub">Personas con invitación QR generada por un residente</div>
 
             <div class="toggle-row">
               <div>
-                <div class="toggle-label">Captura de INE</div>
-                <div class="toggle-sub">Verificar identidad incluso con QR válido</div>
+                <div class="toggle-label">INE obligatoria</div>
+                <div class="toggle-sub">Verificar identidad con credencial incluso si el QR es válido</div>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="cfg-ine-invitado">
@@ -440,7 +495,7 @@
               </label>
             </div>
 
-            <div class="toggle-row">
+            <div class="toggle-row" id="cfg-row-placa-invitado">
               <div>
                 <div class="toggle-label">Foto de placa vehicular</div>
                 <div class="toggle-sub">Registro de matrícula si llega en vehículo</div>
@@ -596,6 +651,12 @@
       <div class="modal-sub" data-i18n="modal_acceso_sub">Define el nombre y ubicación de la entrada.</div>
       <form id="acceso-form">
         <div class="form-group"><label data-i18n="name">Nombre</label><input id="acceso-nombre" type="text" required placeholder="Entrada A"></div>
+        <div class="form-group"><label>Tipo de kiosko</label>
+          <select id="acceso-tipo" class="search-select" style="width:100%" required>
+            <option value="PEATONAL">Peatonal</option>
+            <option value="VEHICULAR">Vehicular</option>
+          </select>
+        </div>
         <div class="form-group"><label data-i18n="location">Ubicación</label><input id="acceso-ubicacion" type="text" placeholder="Calle Principal"></div>
         <div class="form-hint" id="acceso-clave-hint" data-i18n="acceso_key_hint">La clave de kiosko se genera automáticamente al crear el acceso.</div>
         <div id="acceso-form-error" class="form-error" hidden></div>
