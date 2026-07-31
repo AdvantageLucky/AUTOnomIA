@@ -14,11 +14,16 @@ package visitas
 import "gorm.io/gorm"
 
 type (
+	TipoVisitante string
 	TipoDocumento string
 	EstadoVisita  string
 )
 
 const (
+	// TipoVisitante
+	TipoConInvitacion TipoVisitante = "INVITADO"
+	TipoSinInvitacion TipoVisitante = "VISITANTE"
+
 	// TipoDocumento
 	DocumentoINE       TipoDocumento = "INE"
 	DocumentoPasaporte TipoDocumento = "PASAPORTE"
@@ -35,7 +40,8 @@ const (
 type Visita struct {
 	gorm.Model
 	Titular          string        `gorm:"not null"`
-	TipoDocumento    TipoDocumento `gorm:"not null"`
+	TipoVisitante    TipoVisitante `gorm:"not null;default:'VISITANTE'"`
+	TipoDocumento    TipoDocumento `gorm:"not null;default:''"`
 	ClaveLector      string        `gorm:"not null"`
 	Curp             string        `gorm:"not null"`
 	FotoDocumentoURL string        `gorm:"not null"`

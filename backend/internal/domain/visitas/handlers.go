@@ -100,24 +100,41 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		return
 	}
 
-	fotoDocumentoURL, err := guardarFotoVisitante(c, req.FotoDocumento, h.uploadsDir)
+	cfg, err := h.repo.GetKioskoConfig(uint(kioskoID))
 	if err != nil {
-		if errors.Is(err, errFormatoFotoInvalido) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_documento: " + err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo obtener la configuracion del kiosko"})
 		return
 	}
 
-	fotoRostroURL, err := guardarFotoVisitante(c, req.FotoRostro, h.uploadsDir)
-	if err != nil {
-		if errors.Is(err, errFormatoFotoInvalido) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_rostro: " + err.Error()})
+	if errMsg := validarCamposCondicionales(req, cfg); errMsg != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errMsg})
+		return
+	}
+
+	var fotoDocumentoURL string
+	if req.FotoDocumento != nil {
+		fotoDocumentoURL, err = guardarFotoVisitante(c, req.FotoDocumento, h.uploadsDir)
+		if err != nil {
+			if errors.Is(err, errFormatoFotoInvalido) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_documento: " + err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	}
+
+	var fotoRostroURL string
+	if req.FotoRostro != nil {
+		fotoRostroURL, err = guardarFotoVisitante(c, req.FotoRostro, h.uploadsDir)
+		if err != nil {
+			if errors.Is(err, errFormatoFotoInvalido) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_rostro: " + err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	var fotoPlacaURL string
@@ -135,6 +152,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 
 	v := &Visita{
 		Titular:          strings.ToUpper(strings.TrimSpace(req.Titular)),
+		TipoVisitante:    req.TipoVisitante,
 		TipoDocumento:    req.TipoDocumento,
 		ClaveLector:      strings.ToUpper(strings.TrimSpace(req.ClaveLector)),
 		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
