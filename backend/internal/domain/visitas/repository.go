@@ -1,9 +1,3 @@
-/*
-Package visitas
-Repositorio relacionado con modelo Visita
-
-Operaciones CRUD en DB relacionadas solo con el dominio visitas
-*/
 package visitas
 
 import (
@@ -26,7 +20,6 @@ func (r *Repository) Create(v *Visita) error {
 	return r.db.Create(v).Error
 }
 
-// joinVisitasDeAdmin arma el join contra accesos para acotar visitas al adminID dueño de esos accesos.
 // Los métodos que escanean a Visita deben encadenar Select("visitas.*") para evitar que las columnas
 // id/created_at del join corrompan el resultado.
 func (r *Repository) joinVisitasDeAdmin(adminID uint) *gorm.DB {

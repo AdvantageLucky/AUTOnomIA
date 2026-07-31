@@ -1,1 +1,1 @@
-ALTER TABLE visitas RENAME COLUMN titular to nombre;
+ALTER TABLE visitas RENAME COLUMN nombre TO titular;

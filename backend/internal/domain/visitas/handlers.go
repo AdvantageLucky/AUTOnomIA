@@ -1,21 +1,3 @@
-/*
-Package visitas
-
-Handlers relacionados con el dominio visitas.
-Hace uso del repository relacionado a visitas.
-
-Hay dos grupos de endpoints con autenticacion distinta:
-
- 1. Registro desde kiosko: POST /accesos/:id/visitas — autenticado con sesion de kiosko (RequireAcceso)
-    Recibe multipart/form-data con datos del visitante y fotos (documento, rostro, placa opcional),
-
-    guarda las fotos en disco via guardarFotoVisitante (ver storage.go) y crea la Visita en PENDIENTE
-
- 2. Consulta y gestion del admin: GET/PATCH /visitas — autenticado con JWT de admin (RequireAdmin)
-    listado paginado con filtros, detalle, historial por CURP y aprobacion/rechazo manual
-
-Documentado con swag
-*/
 package visitas
 
 import (
@@ -24,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -213,7 +196,9 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 
 		if nuevoEstado != EstadoPendiente {
-			_ = h.repo.ActualizarEstadoConScore(visitaCopy.ID, nuevoEstado, false)
+			if err := h.repo.ActualizarEstadoConScore(visitaCopy.ID, nuevoEstado, false); err != nil {
+				log.Printf("ActualizarEstadoConScore visita %d: %v", visitaCopy.ID, err)
+			}
 		}
 
 		if h.sseHub != nil && (nuevoEstado == EstadoRevision || nuevoEstado == EstadoPendiente) {
@@ -320,7 +305,7 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 	}
 	if tipoStr := c.Query("tipo_documento"); tipoStr != "" {
 		tipo := TipoDocumento(tipoStr)
-		if tipo != DocumentoINE && tipo != DocumentoPasaporte && tipo != DocumentoLicencia {
+		if tipo != DocumentoINE && tipo != DocumentoPasaporte && tipo != DocumentoLicencia && tipo != DocumentoQR && tipo != DocumentoPIN {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "tipo_documento invalido"})
 			return
 		}
