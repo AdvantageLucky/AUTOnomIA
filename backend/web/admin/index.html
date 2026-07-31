@@ -55,8 +55,31 @@
   </div>
 
   <div class="login-hero">
-    <canvas id="metro-canvas" aria-hidden="true"></canvas>
-    <div id="hero-feed" class="hero-feed" aria-hidden="true"></div>
+    <div id="hero-anim" aria-hidden="true">
+      <div class="hero-top">
+        <div class="hero-live-pill">
+          <span class="hero-dot"></span>
+          En vivo · kigo check-in
+        </div>
+        <div class="hero-anim-stats">
+          <div class="has-item">
+            <div class="has-val" id="has-visitas">0</div>
+            <div class="has-label">visitas hoy</div>
+          </div>
+          <div class="has-sep"></div>
+          <div class="has-item">
+            <div class="has-val has-val--green" id="has-aprobadas">0</div>
+            <div class="has-label">aprobadas</div>
+          </div>
+          <div class="has-sep"></div>
+          <div class="has-item">
+            <div class="has-val has-val--amber" id="has-pendientes">0</div>
+            <div class="has-label">pendientes</div>
+          </div>
+        </div>
+      </div>
+      <div id="hero-feed" class="hero-feed"></div>
+    </div>
     <div class="login-hero-bg" aria-hidden="true">AUTOnomIA</div>
     <div class="login-hero-content">
       <div class="hero-badge">
@@ -82,24 +105,28 @@
 
     <!-- Paso 1: Bienvenida -->
     <div id="ob-step-1" class="ob-step active">
-      <div class="ob-icon">🚀</div>
+      <div class="ob-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
       <div class="ob-title">Bienvenido a AUTOnomIA</div>
-      <div class="ob-sub">Configura tu primer acceso en menos de un minuto y tu comunidad estará lista para recibir visitantes con registro automático por IA.</div>
-      <button class="btn-primary btn-block" id="ob-btn-1">Comenzar configuración →</button>
+      <div class="ob-sub">Activa tu primer punto de acceso y tu comunidad estará lista para recibir visitantes con registro automático por IA.</div>
+      <button class="btn-primary btn-block" id="ob-btn-1">Iniciar configuración →</button>
     </div>
 
     <!-- Paso 2: Crear primer acceso -->
     <div id="ob-step-2" class="ob-step">
-      <div class="ob-icon">🚪</div>
-      <div class="ob-title">Crea tu primer acceso</div>
-      <div class="ob-sub">Dale un nombre a tu kiosko y elige si controla una entrada peatonal o vehicular.</div>
+      <div class="ob-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6m-3-3v6"/></svg>
+      </div>
+      <div class="ob-title">Registra tu primer acceso</div>
+      <div class="ob-sub">Define el punto de entrada y el tipo de kiosko. Podrás añadir más desde la sección Accesos.</div>
       <form id="ob-acceso-form">
         <div class="form-group"><label>Nombre del acceso</label><input id="ob-nombre" type="text" required placeholder="Ej. Entrada Principal"></div>
         <div class="form-group">
           <label>Tipo de kiosko</label>
           <select id="ob-tipo" class="search-select" style="width:100%">
-            <option value="PEATONAL">🚶 Peatonal</option>
-            <option value="VEHICULAR">🚗 Vehicular</option>
+            <option value="PEATONAL">Peatonal</option>
+            <option value="VEHICULAR">Vehicular</option>
           </select>
         </div>
         <div class="form-group"><label>Ubicación (opcional)</label><input id="ob-ubicacion" type="text" placeholder="Ej. Calle Principal s/n"></div>
@@ -108,17 +135,33 @@
       </form>
     </div>
 
-    <!-- Paso 3: Clave generada -->
+    <!-- Paso 3: Credenciales generadas -->
     <div id="ob-step-3" class="ob-step">
-      <div class="ob-icon">🔑</div>
-      <div class="ob-title">¡Acceso creado!</div>
-      <div class="ob-sub">Copia esta clave y configúrala en la app del kiosko. <strong>No se mostrará de nuevo.</strong></div>
-      <div class="reveal-box" style="margin-bottom:24px">
-        <div class="reveal-label">Clave de kiosko</div>
-        <div class="reveal-key" id="ob-clave-reveal">—</div>
-        <button class="btn-copy" id="ob-btn-copy" data-val="">Copiar</button>
+      <div class="ob-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
       </div>
-      <button class="btn-primary btn-block" id="ob-btn-done">¡Listo, empezar a usar →</button>
+      <div class="ob-title">Acceso registrado</div>
+      <div class="ob-sub">Guarda estos datos en la app del kiosko. <strong>La clave no se volverá a mostrar.</strong></div>
+      <div class="reveal-box" style="margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
+          <div>
+            <div class="reveal-label">ID del kiosko</div>
+            <div class="reveal-value" id="ob-id-reveal">—</div>
+          </div>
+          <div>
+            <div class="reveal-label">Clave de kiosko</div>
+            <div class="reveal-value" id="ob-clave-reveal">—</div>
+          </div>
+        </div>
+        <button class="btn-copy" id="ob-btn-copy" data-val="">Copiar clave</button>
+      </div>
+      <div class="ob-next-steps">
+        <div class="ob-next-label">¿Qué sigue?</div>
+        <button class="ob-next-btn" id="ob-goto-destinos">Añadir destinos y casas</button>
+        <button class="ob-next-btn" id="ob-goto-equipo">Crear vigilantes de seguridad</button>
+        <button class="ob-next-btn" id="ob-goto-config">Configurar parámetros del kiosko</button>
+      </div>
+      <button class="btn-ghost btn-block" id="ob-btn-done" style="margin-top:12px">Ir al panel →</button>
     </div>
   </div>
 </div>
@@ -139,7 +182,7 @@
       <button class="nav-btn" data-nav="solicitudes">Solicitudes</button>
       <button class="nav-btn" data-nav="residentes">Residentes</button>
       <button class="nav-btn" data-nav="accesos" data-i18n="nav_accesos">Accesos</button>
-      <button class="nav-btn" data-nav="configuracion">Configuración</button>
+      <button class="nav-btn" data-nav="destinos">Destinos</button>
       <button class="nav-btn" data-nav="equipo">Equipo</button>
       <button class="nav-btn" data-nav="perfil" data-i18n="nav_perfil">Perfil</button>
     </nav>
@@ -374,6 +417,46 @@
       </div>
       <div class="screen-body screen-body--medium">
         <div id="accesos-list"></div>
+      </div>
+    </section>
+
+    <!-- DESTINOS -->
+    <section id="screen-destinos" class="screen" hidden>
+      <div class="screen-header">
+        <div>
+          <div class="screen-title">Destinos</div>
+          <div class="screen-sub">Lugares y casas a los que pueden dirigirse los visitantes</div>
+        </div>
+        <button class="btn-primary" id="btn-nuevo-destino"><span class="plus">+</span> Nuevo destino</button>
+      </div>
+      <div class="screen-body screen-body--narrow">
+        <div class="panel panel-padded" style="margin-bottom:16px">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Kiosko</label>
+            <select id="dest-acceso-select" class="search-select" style="width:100%">
+              <option value="">— Selecciona un acceso —</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="dest-list-wrap" hidden>
+          <div id="dest-loading" class="loading-state" hidden>
+            <div class="spinner"></div>
+            <div class="loading-text">Cargando destinos…</div>
+          </div>
+          <div id="dest-empty" class="empty-state" hidden>
+            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg></div>
+            <div class="empty-title">Sin destinos registrados</div>
+            <div class="empty-text">Crea el primer destino para que los visitantes puedan indicar su lugar de visita.</div>
+          </div>
+          <div id="dest-rows"></div>
+        </div>
+
+        <div id="dest-idle" class="empty-state">
+          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg></div>
+          <div class="empty-title">Selecciona un kiosko</div>
+          <div class="empty-text">Elige un acceso del menú de arriba para ver y gestionar sus destinos.</div>
+        </div>
       </div>
     </section>
 
@@ -711,6 +794,22 @@
       <div class="modal-actions">
         <button type="button" class="btn-cancel" id="vig-cancel">Cancelar</button>
         <button type="submit" class="btn-primary">Crear vigilante</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="modal-destino" class="modal-overlay" hidden>
+  <div class="modal-box">
+    <div class="modal-title">Nuevo destino</div>
+    <div class="modal-sub">Lugar o casa al que puede dirigirse el visitante.</div>
+    <form id="destino-form">
+      <div class="form-group"><label>Lugar / Casa</label><input id="dest-nombre" type="text" required placeholder="Ej. Casa 15, Salón de eventos"></div>
+      <div class="form-group"><label>Titular / Residente</label><input id="dest-titular" type="text" required placeholder="Nombre del residente o responsable"></div>
+      <div id="dest-form-error" class="form-error" hidden></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="dest-cancel">Cancelar</button>
+        <button type="submit" class="btn-primary">Crear destino</button>
       </div>
     </form>
   </div>
