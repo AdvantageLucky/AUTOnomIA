@@ -248,7 +248,7 @@
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado" };
 
   const RUTAS_POR_ROL = {
-    admin:     ["dashboard","visitas","detalle","solicitudes","residentes","residente-detalle","accesos","configuracion","equipo","perfil"],
+    admin:     ["dashboard","visitas","detalle","solicitudes","residentes","residente-detalle","accesos","destinos","configuracion","equipo","perfil"],
     vigilante: ["solicitudes","perfil"],
   };
 
@@ -395,6 +395,7 @@
     if (screen === "solicitudes")       startSolPolling();
     if (screen === "residentes")        loadResidentes();
     if (screen === "accesos")           loadAccesos();
+    if (screen === "destinos")          loadDestinosSection();
     if (screen === "configuracion")     loadConfigAccesos();
     if (screen === "equipo")            loadEquipo();
     if (screen === "perfil")            loadPerfil();
@@ -412,6 +413,11 @@
     loginMode = loginMode === "login" ? "register" : "login";
     const isReg = loginMode === "register";
     document.getElementById("login-submit").textContent = isReg ? (lang === "en" ? "Create account" : "Crear cuenta") : t("login_btn");
+    document.querySelector("#login-toggle-mode").previousElementSibling.textContent =
+      isReg ? (lang === "en" ? "Already have an account?" : "¿Ya tienes cuenta?") : t("no_account");
+    document.getElementById("login-toggle-mode").textContent =
+      isReg ? (lang === "en" ? "Sign in" : "Iniciar sesión") : t("create_account");
+    document.getElementById("login-error").hidden = true;
   });
 
   document.getElementById("login-form").addEventListener("submit", async e => {
@@ -434,7 +440,14 @@
       });
 
       const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || "Error"; errEl.hidden = false; return; }
+      if (!res.ok) {
+        let msg = data.error || "Error";
+        if (msg.includes("duplicate key") || msg.includes("idx_admins_correo") || msg.includes("23505"))
+          msg = lang === "en" ? "An account with this email already exists." : "Ya existe una cuenta con este correo electrónico.";
+        errEl.textContent = msg;
+        errEl.hidden = false;
+        return;
+      }
 
       setToken(data.access_token);
       const claims = decodeJWT(data.access_token);
@@ -478,6 +491,7 @@
     const token = getToken();
     state.rol = getRolFromToken(token);
     await Promise.all([loadAdminData(), preloadAccesos()]);
+    if (!state.admin) { clearToken(); showLogin(); applyI18n(); return; }
     showApp();
     aplicarRol(state.rol);
     initSSE(token);
@@ -1102,18 +1116,24 @@
         <div class="acceso-info">
           <div class="acceso-nombre">${esc(a.nombre)}</div>
           ${a.ubicacion ? `<div class="acceso-ubi">${esc(a.ubicacion)}</div>` : ""}
-          <div class="acceso-id">ID ${a.id}</div>
+          <div class="acceso-id">ID ${a.id} · ${esc(a.tipo || "—")}</div>
         </div>
         <div class="acceso-actions">
-          <button class="btn-ghost" data-edit-acceso="${a.id}">
+          <button class="btn-ghost" data-cfg-acceso="${a.id}" title="Configuración">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button class="btn-ghost" data-edit-acceso="${a.id}" title="Editar">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l3 3-9 9H3v-3z"/></svg>
           </button>
-          <button class="btn-ghost" data-del-acceso="${a.id}" style="color:var(--red)">
+          <button class="btn-ghost" data-del-acceso="${a.id}" style="color:var(--red)" title="Eliminar">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
           </button>
         </div>
       </div>`).join("");
 
+    container.querySelectorAll("[data-cfg-acceso]").forEach(btn => {
+      btn.addEventListener("click", () => openConfigParaAcceso(parseInt(btn.dataset.cfgAcceso)));
+    });
     container.querySelectorAll("[data-edit-acceso]").forEach(btn => {
       btn.addEventListener("click", () => openAccesoModal(parseInt(btn.dataset.editAcceso)));
     });
@@ -1216,6 +1236,21 @@
 
   /* ─── Configuración ─────────────────────── */
   let cfgAccesoId = null;
+
+  async function openConfigParaAcceso(accesoId) {
+    // Mostrar screen-configuracion sin pasar por navTo (que requeriría la ruta en RUTAS_POR_ROL)
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const screenEl = document.getElementById('screen-configuracion');
+    if (screenEl) { screenEl.hidden = false; screenEl.classList.add('active'); }
+    stopSolPolling();
+
+    await loadConfigAccesos();
+    const select = document.getElementById('cfg-acceso-select');
+    if (select) select.value = accesoId;
+    cfgAccesoId = accesoId;
+    await loadConfig(accesoId);
+  }
 
   async function loadConfigAccesos() {
     const select = document.getElementById("cfg-acceso-select");
@@ -1467,192 +1502,88 @@
     await loadAdminData();
   });
 
-  /* ─── Metro canvas animation ─────────────── */
-  (function initMetroAnimation() {
-    const canvas = document.getElementById('metro-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+  /* ─── Hero anim (live access feed) ──────── */
+  (function initHeroAnim() {
+    const feed = document.getElementById('hero-feed');
+    if (!feed) return;
 
-    const STATION_DEFS = [
-      { rx:0.14, ry:0.30, shape:'circle',  label:'E. Principal' },
-      { rx:0.48, ry:0.18, shape:'square',  label:'Acc. Norte'   },
-      { rx:0.80, ry:0.36, shape:'circle',  label:'Caseta Veh.'  },
-      { rx:0.28, ry:0.68, shape:'diamond', label:'E. Lateral'   },
-      { rx:0.66, ry:0.72, shape:'square',  label:'Acc. Sur'     },
-    ];
-    const LINE_DEFS = [
-      { color:'#FF542F', path:[0,1,2], w:4.5 },
-      { color:'#4A9EFF', path:[0,3,4], w:4.5 },
-      { color:'#a78bfa', path:[1,3,4,2], w:3  },
-    ];
-    const FAKE_NAMES = [
+    const COLORS   = ['#FF542F','#4A9EFF','#a78bfa','#34d399'];
+    const ACCESOS  = ['E. Principal','Acc. Norte','Caseta Veh.','E. Lateral','Acc. Sur'];
+    const NOMBRES  = [
       'García L., Marco','Rodríguez P., Ana','Martínez C., Luis',
       'Hernández R., Sofía','López T., Juan','González V., María',
       'Sánchez F., Carlos','Ramírez D., Elena','Torres M., José',
       'Flores J., Laura','Pérez C., Diego','Vargas M., Paula',
     ];
-    const ESTADO_DIST = ['APROBADO','APROBADO','APROBADO','PENDIENTE','REVISIÓN'];
+    const ESTADOS  = ['APROBADO','APROBADO','APROBADO','PENDIENTE','REVISIÓN'];
 
-    let stations = [], visitors = [], pings = [], running = true;
+    let running = true, spawnId = null;
 
-    function resize() {
-      const p = canvas.parentElement.getBoundingClientRect();
-      canvas.width = p.width; canvas.height = p.height;
-      stations = STATION_DEFS.map(d => ({
-        ...d, x: d.rx * canvas.width, y: d.ry * canvas.height, glow: 0,
-      }));
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function collapseCard(card, onDone) {
+      card.style.animation = 'none';
+      card.classList.add('leaving');
+      setTimeout(onDone, 400);
     }
 
-    function rr(ctx2, x, y, w, h, r) {
-      if (ctx2.roundRect) { ctx2.roundRect(x,y,w,h,r); return; }
-      ctx2.rect(x,y,w,h);
-    }
-
-    function drawStation(s) {
-      const {x, y, shape, glow} = s, r = 11;
-      if (glow > 0) {
-        ctx.save();
-        ctx.globalAlpha = glow * 0.45;
-        ctx.fillStyle = '#4ade80';
-        ctx.beginPath(); ctx.arc(x, y, r + glow*22, 0, Math.PI*2); ctx.fill();
-        ctx.restore();
-      }
-      ctx.save();
-      ctx.fillStyle   = 'rgba(255,255,255,0.08)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-      ctx.lineWidth   = 2;
-      ctx.beginPath();
-      if (shape === 'circle') {
-        ctx.arc(x, y, r, 0, Math.PI*2);
-      } else if (shape === 'square') {
-        rr(ctx, x-r, y-r, r*2, r*2, 3);
-      } else {
-        ctx.moveTo(x, y-r*1.4); ctx.lineTo(x+r*1.2, y);
-        ctx.lineTo(x, y+r*1.4); ctx.lineTo(x-r*1.2, y); ctx.closePath();
-      }
-      ctx.fill(); ctx.stroke();
-      ctx.restore();
-      ctx.save();
-      ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      ctx.font = '10px system-ui,sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(s.label, x, y + r + 14);
-      ctx.restore();
-    }
-
-    function drawLine(l) {
-      ctx.save();
-      ctx.strokeStyle = l.color + '50';
-      ctx.lineWidth = l.w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath();
-      l.path.forEach((si, i) => {
-        const st = stations[si];
-        if (i===0) ctx.moveTo(st.x, st.y); else ctx.lineTo(st.x, st.y);
-      });
-      ctx.stroke(); ctx.restore();
-    }
-
-    function drawVisitor(v) {
-      const fr = stations[v.from], to = stations[v.to];
-      const x = fr.x + (to.x-fr.x)*v.t, y = fr.y + (to.y-fr.y)*v.t;
-      const c = LINE_DEFS[v.li].color;
-      ctx.save();
-      ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
-    }
-
-    function drawPing(p) {
-      ctx.save(); ctx.globalAlpha = p.a;
-      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.stroke();
-      ctx.restore();
-    }
-
-    function spawnVisitor() {
-      const li = Math.floor(Math.random() * LINE_DEFS.length);
-      const path = LINE_DEFS[li].path;
-      const fi = Math.floor(Math.random() * (path.length-1));
-      visitors.push({ li, from:path[fi], to:path[fi+1], t:0,
-        speed: 0.0035 + Math.random()*0.002 });
-    }
-
-    function spawnHeroCard(linColor, accesoLabel) {
-      const feed = document.getElementById('hero-feed');
-      if (!feed) return;
-      const name   = FAKE_NAMES[Math.floor(Math.random()*FAKE_NAMES.length)];
-      const estado = ESTADO_DIST[Math.floor(Math.random()*ESTADO_DIST.length)];
+    function spawnCard() {
+      const name   = pick(NOMBRES);
+      const color  = pick(COLORS);
+      const acceso = pick(ACCESOS);
+      const estado = pick(ESTADOS);
       const init2  = name.replace(/[,. ]+/g,'').slice(0,2).toUpperCase();
       const bcls   = estado==='APROBADO'?'badge--aprobado':estado==='PENDIENTE'?'badge--pendiente':'badge--revision';
       const card   = document.createElement('div');
       card.className = 'hero-card';
       card.innerHTML = `
-        <div class="hero-card-avatar" style="background:${linColor}20;border-color:${linColor}55;color:${linColor}">${init2}</div>
+        <div class="hero-card-avatar" style="background:${color}20;border-color:${color}55;color:${color}">${init2}</div>
         <div class="hero-card-info">
           <div class="hero-card-name">${esc(name)}</div>
-          <div class="hero-card-meta">${esc(accesoLabel)} · ahora</div>
+          <div class="hero-card-meta">${esc(acceso)} · ahora</div>
         </div>
         <span class="badge ${bcls}">${estado}</span>`;
       feed.insertBefore(card, feed.firstChild);
-      while (feed.children.length > 3) feed.removeChild(feed.lastChild);
-      setTimeout(() => {
-        card.style.opacity = '0'; card.style.transform = 'translateY(-8px)';
-        setTimeout(() => card.remove(), 400);
-      }, 7000);
+      if (feed.children.length > 3) {
+        const oldest = feed.lastElementChild;
+        collapseCard(oldest, () => oldest.remove());
+      }
+      setTimeout(() => collapseCard(card, () => card.remove()), 6000);
     }
 
-    let lastSpawn = 0; const SPAWN_MS = 2200;
-    let lastT = 0;
-
-    function tick(now) {
-      if (!running) return;
-      const dt = Math.min(now - lastT, 80); lastT = now;
-
-      const p = canvas.parentElement.getBoundingClientRect();
-      if (Math.abs(canvas.width-p.width)>2) resize();
-
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      LINE_DEFS.forEach(drawLine);
-
-      visitors = visitors.filter(v => {
-        v.t += v.speed * dt / 16;
-        if (v.t >= 1) {
-          const st = stations[v.to];
-          st.glow = 1;
-          pings.push({x:st.x, y:st.y, r:12, a:0.85});
-          spawnHeroCard(LINE_DEFS[v.li].color, st.label);
-          return false;
-        }
-        drawVisitor(v); return true;
-      });
-
-      stations.forEach(s => {
-        if (s.glow>0) s.glow = Math.max(0, s.glow - 0.018*dt/16);
-        drawStation(s);
-      });
-
-      pings = pings.filter(p2 => {
-        p2.r += 0.6*dt/16; p2.a -= 0.022*dt/16;
-        if (p2.a<=0) return false;
-        drawPing(p2); return true;
-      });
-
-      if (now - lastSpawn > SPAWN_MS) { spawnVisitor(); lastSpawn = now; }
-      requestAnimationFrame(tick);
+    function animCount(el, target, ms) {
+      if (!el) return;
+      const start = performance.now();
+      function frame(now) {
+        const t = Math.min((now - start) / ms, 1);
+        el.textContent = Math.round((1 - Math.pow(1-t, 3)) * target);
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
     }
 
-    resize();
-    for (let i=0;i<2;i++) spawnVisitor();
-    requestAnimationFrame(now => { lastT=now; tick(now); });
+    function start() {
+      if (spawnId) return;
+      for (let i = 0; i < 2; i++) spawnCard();
+      spawnId = setInterval(() => { if (running) spawnCard(); }, 2200);
+      animCount(document.getElementById('has-visitas'),   247, 1400);
+      animCount(document.getElementById('has-aprobadas'), 183, 1400);
+      animCount(document.getElementById('has-pendientes'), 12, 1000);
+    }
 
-    // Pausar cuando el login desaparece para no desperdiciar CPU
-    const obs = new MutationObserver(() => {
-      const hidden = document.getElementById('screen-login')?.hidden;
-      running = !hidden;
-      if (!hidden) requestAnimationFrame(now => { lastT=now; tick(now); });
-    });
+    function stop() {
+      clearInterval(spawnId); spawnId = null; running = false;
+    }
+
+    start();
+
     const loginScreen = document.getElementById('screen-login');
-    if (loginScreen) obs.observe(loginScreen, {attributes:true, attributeFilter:['hidden']});
+    if (loginScreen) {
+      new MutationObserver(() => {
+        if (loginScreen.hidden) { stop(); }
+        else { running = true; start(); }
+      }).observe(loginScreen, { attributes: true, attributeFilter: ['hidden'] });
+    }
   })();
 
   /* ─── Onboarding first-run ───────────────── */
@@ -1699,8 +1630,9 @@
     }
     const data = await res.json();
     state.accesosById.set(data.id, data);
+    document.getElementById('ob-id-reveal').textContent    = data.id    || '—';
     document.getElementById('ob-clave-reveal').textContent = data.clave_kiosko || '—';
-    document.getElementById('ob-btn-copy').dataset.val = data.clave_kiosko || '';
+    document.getElementById('ob-btn-copy').dataset.val     = data.clave_kiosko || '';
     setObStep(3);
   });
 
@@ -1715,7 +1647,124 @@
 
   document.getElementById('ob-btn-done')?.addEventListener('click', () => {
     document.getElementById('onboarding-overlay').hidden = true;
-    navTo('accesos');
+    navTo('dashboard');
+  });
+
+  ['ob-goto-destinos','ob-goto-equipo','ob-goto-config'].forEach((id, i) => {
+    const dest = ['destinos','equipo','configuracion'][i];
+    document.getElementById(id)?.addEventListener('click', () => {
+      document.getElementById('onboarding-overlay').hidden = true;
+      navTo(dest);
+    });
+  });
+
+  /* ─── Destinos ───────────────────────────── */
+  let destCurrentKioskoId = null;
+
+  async function loadDestinosSection() {
+    const sel = document.getElementById('dest-acceso-select');
+    if (!sel) return;
+    if (state.accesosById.size === 0) await preloadAccesos();
+    sel.innerHTML = '<option value="">— Selecciona un acceso —</option>';
+    state.accesosById.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = `${a.nombre}${a.ubicacion ? ` (${a.ubicacion})` : ''}`;
+      sel.appendChild(opt);
+    });
+    if (destCurrentKioskoId) {
+      sel.value = destCurrentKioskoId;
+      loadDestinos(destCurrentKioskoId);
+    } else {
+      document.getElementById('dest-list-wrap').hidden = true;
+      document.getElementById('dest-idle').hidden = false;
+    }
+  }
+
+  async function loadDestinos(kioskoId) {
+    destCurrentKioskoId = kioskoId;
+    const rowsEl  = document.getElementById('dest-rows');
+    const emptyEl = document.getElementById('dest-empty');
+    const loadEl  = document.getElementById('dest-loading');
+    const wrap    = document.getElementById('dest-list-wrap');
+    const idleEl  = document.getElementById('dest-idle');
+    if (!rowsEl) return;
+
+    rowsEl.innerHTML = ''; emptyEl.hidden = true;
+    wrap.hidden = false; idleEl.hidden = true; loadEl.hidden = false;
+
+    const res = await api(`/kioskos/${kioskoId}/destinos`);
+    loadEl.hidden = true;
+    if (!res || !res.ok) { mostrarToast('Error al cargar destinos', 'err'); return; }
+
+    const items = await res.json();
+    if (!items.length) { emptyEl.hidden = false; return; }
+
+    rowsEl.innerHTML = items.map(d => `
+      <div class="equipo-row" id="dest-row-${d.id}">
+        <div class="equipo-info">
+          <div class="equipo-name">${esc(d.nombre)}</div>
+          <div class="equipo-sub">${esc(d.titular)}</div>
+        </div>
+        <button class="btn-ghost" style="color:var(--red)" data-del-dest="${d.id}" title="Eliminar destino">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
+        </button>
+      </div>`).join('');
+
+    rowsEl.querySelectorAll('[data-del-dest]').forEach(btn => {
+      btn.addEventListener('click', () => deleteDestino(+btn.dataset.delDest, kioskoId));
+    });
+  }
+
+  async function deleteDestino(id, kioskoId) {
+    if (!confirm('¿Eliminar este destino?')) return;
+    const res = await api(`/kioskos/${kioskoId}/destinos/${id}`, { method: 'DELETE' });
+    if (res && res.ok) {
+      document.getElementById(`dest-row-${id}`)?.remove();
+      if (!document.getElementById('dest-rows').children.length)
+        document.getElementById('dest-empty').hidden = false;
+    } else {
+      mostrarToast('No se pudo eliminar el destino', 'err');
+    }
+  }
+
+  document.getElementById('dest-acceso-select')?.addEventListener('change', e => {
+    const id = e.target.value;
+    if (id) loadDestinos(id);
+    else {
+      document.getElementById('dest-list-wrap').hidden = true;
+      document.getElementById('dest-idle').hidden = false;
+      destCurrentKioskoId = null;
+    }
+  });
+
+  document.getElementById('btn-nuevo-destino')?.addEventListener('click', () => {
+    document.getElementById('modal-destino').hidden = false;
+  });
+  document.getElementById('dest-cancel')?.addEventListener('click', () => {
+    document.getElementById('modal-destino').hidden = true;
+  });
+
+  document.getElementById('destino-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const nombre   = document.getElementById('dest-nombre').value.trim();
+    const titular  = document.getElementById('dest-titular').value.trim();
+    const errEl    = document.getElementById('dest-form-error');
+    errEl.hidden   = true;
+    if (!destCurrentKioskoId) return;
+
+    const res = await api(`/kioskos/${destCurrentKioskoId}/destinos/`, {
+      method: 'POST', body: JSON.stringify({ nombre, titular }),
+    });
+    if (!res) return;
+    if (!res.ok) {
+      const d = await res.json();
+      errEl.textContent = d.error || 'Error al crear destino';
+      errEl.hidden = false; return;
+    }
+    document.getElementById('modal-destino').hidden = true;
+    document.getElementById('destino-form').reset();
+    loadDestinos(destCurrentKioskoId);
   });
 
   /* ─── Init ───────────────────────────────── */
