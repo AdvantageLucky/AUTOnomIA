@@ -13,9 +13,17 @@ package kiosko
 
 import "gorm.io/gorm"
 
+type TipoKiosko string
+
+const (
+	KioskoVehicular TipoKiosko = "VEHICULAR"
+	KioskoPeatonal  TipoKiosko = "PEATONAL"
+)
+
 type Kiosko struct {
 	gorm.Model
-	Nombre      string `gorm:"not null"`
+	Nombre      string     `gorm:"not null"`
+	Tipo        TipoKiosko `gorm:"not null"`
 	Ubicacion   string
 	ClaveKiosko string `gorm:"not null" json:"-"` // hash bcrypt de la credencial con la que el kiosko inicia sesion (ver internal/domain/auth/)
 	AdminID     uint   `gorm:"not null"`
@@ -36,8 +44,8 @@ type KioskoConfig struct {
 	FotoRostroVisitante bool `gorm:"not null;default:true"`
 
 	// Bitacora para visitantes con invitacion
-	FotoPlacaInvitado          bool `gorm:"not null;default:false"`
-	FotoRostroInvitado         bool `gorm:"not null;default:false"`
+	FotoPlacaInvitado      bool `gorm:"not null;default:false"`
+	FotoRostroInvitado     bool `gorm:"not null;default:false"`
 	IneObligatorioInvitado bool `gorm:"not null;default:false"`
 
 	// Comportamiento de solicitudes

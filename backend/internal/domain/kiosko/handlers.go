@@ -66,6 +66,7 @@ func (h *Handler) RegisterKiosko(c *gin.Context) {
 	// creamos el kiosko y retornamos
 	a := &Kiosko{
 		Nombre:      req.Nombre,
+		Tipo:        req.Tipo,
 		Ubicacion:   req.Ubicacion,
 		ClaveKiosko: string(hash),
 		AdminID:     adminID,
@@ -183,6 +184,7 @@ func (h *Handler) PatchKiosko(c *gin.Context) {
 	}
 
 	a.Nombre = req.Nombre
+	a.Tipo = req.Tipo
 	a.Ubicacion = req.Ubicacion
 
 	if err := h.repo.Update(a, adminID); err != nil {
@@ -282,7 +284,8 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	if _, err = h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+	kiosko, err := h.repo.FindByIDAndAdminID(uint(id), adminID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
@@ -291,6 +294,26 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if err = c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// al patchear la configuracion del kiosko, si este es de tipo peatonal entonces
+	// se sobreescribe la configuracion de placa visitante para no pedir placa.
+	// En UI esta parte se oculta pero este es un doble filtro a la request
+	if kiosko.Tipo == KioskoPeatonal {
+		if req.FotoPlacaVisitante != nil && *req.FotoPlacaVisitante {
+			c.JSON(
+				http.StatusBadRequest,
+				gin.H{"error": "foto_placa_visitante no aplica a kioskos peatonales"},
+			)
+			return
+		}
+		if req.FotoPlacaInvitado != nil && *req.FotoPlacaInvitado {
+			c.JSON(
+				http.StatusBadRequest,
+				gin.H{"error": "foto_placa_invitado no aplica a kioskos peatonales"},
+			)
+			return
+		}
 	}
 
 	cfg, err := h.repo.FindConfigByKioskoID(uint(id))
