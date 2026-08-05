@@ -26,13 +26,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"kigo-autonomia-backend/internal/domain/admin"
-	"kigo-autonomia-backend/internal/domain/kiosko"
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"kigo-autonomia-backend/internal/domain/admin"
+	"kigo-autonomia-backend/internal/domain/kiosko"
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -118,7 +119,7 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 		tokenHeader := c.GetHeader("Authorization")
 		if after, ok := strings.CutPrefix(tokenHeader, "Bearer "); ok {
 			t := after
-			_, rolSolicitante, e := ParseAdminToken(t, h.jwtSecret)
+			_, rolSolicitante, _, e := ParseAdminToken(t, h.jwtSecret) // <-- Ajuste aquí (ignorar tenant_id)
 			if e == nil && rolSolicitante == "admin" {
 				rol = "vigilante"
 			}
@@ -126,6 +127,7 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 	}
 
 	a := &admin.Admin{
+		TenantID:        1, // <-- ASIGNAMOS TENANT POR DEFECTO AL REGISTRAR
 		Correo:          req.Correo,
 		Password:        string(hash),
 		Rol:             rol,
@@ -138,7 +140,7 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, a.Rol, h.jwtSecret)
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret) // <-- Pasamos el TenantID
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -179,7 +181,7 @@ func (h *Handler) LoginAdminWithMailAndPassword(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, a.Rol, h.jwtSecret)
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret) // <-- Pasamos el TenantID
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -234,7 +236,7 @@ func (h *Handler) LoginWithGoogle(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, a.Rol, h.jwtSecret)
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret) // <-- Pasamos el TenantID
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -290,22 +292,19 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 		return
 	}
 
-	// password inutilizable: satisface el not null de DB pero imposible de adivinar
 	randBytes := make([]byte, 32)
 	if _, err = rand.Read(randBytes); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	hash, err := bcrypt.GenerateFromPassword(
-		[]byte(hex.EncodeToString(randBytes)),
-		bcrypt.DefaultCost,
-	)
+	hash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(randBytes)), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	a := &admin.Admin{
+		TenantID: 1, // <-- ASIGNAMOS TENANT POR DEFECTO
 		Correo:   tokenInfo.Email,
 		Password: string(hash),
 	}
@@ -314,7 +313,7 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, a.Rol, h.jwtSecret)
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret) // <-- Pasamos el TenantID
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -351,10 +350,7 @@ func (h *Handler) LoginKiosko(c *gin.Context) {
 		return
 	}
 
-	if err = bcrypt.CompareHashAndPassword(
-		[]byte(a.ClaveKiosko),
-		[]byte(req.ClaveKiosko),
-	); err != nil {
+	if err = bcrypt.CompareHashAndPassword([]byte(a.ClaveKiosko), []byte(req.ClaveKiosko)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "kiosko o clave invalidos"})
 		return
 	}
@@ -365,7 +361,11 @@ func (h *Handler) LoginKiosko(c *gin.Context) {
 		return
 	}
 
-	sesion := &SesionKiosko{KioskoID: a.ID, Token: token}
+	sesion := &SesionKiosko{
+		KioskoID: a.ID,
+		Token:    token,
+		TenantID: a.TenantID, // <-- GUARDAMOS EL TENANTID EN LA SESIÓN
+	}
 	if err := h.sesionRepo.Create(sesion); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -44,27 +44,9 @@ func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
 	return true
 }
 
-// RegisterVisita registra una nueva visita desde el kiosko
-//
-// @Summary Registrar visita (kiosko)
-// @Description Registra a un visitante y crea una solicitud de acceso en estado PENDIENTE
-// @Tags visitas
-// @Accept multipart/form-data
-// @Produce json
-// @Param id path int true "ID del kiosko"
-// @Param titular formData string true "Nombre completo del visitante titular"
-// @Param tipo_documento formData string true "INE, PASAPORTE o LICENCIA"
-// @Param curp formData string true "CURP (18 caracteres)"
-// @Param motivo_visita formData string true "Motivo de la visita"
-// @Param casa_destino formData string true "Casa o departamento que visita"
-// @Param placa formData string false "Placa del vehículo (opcional)"
-// @Param foto_documento formData file true "Foto del documento, jpg o png"
-// @Param foto_rostro formData file true "Foto del rostro, jpg o png"
-// @Success 201 {object} VisitaResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /kioskos/{id}/visitas [post]
 func (h *Handler) RegisterVisita(c *gin.Context) {
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
 	kioskoIDStr := c.Param("id")
 	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
 	if err != nil {
@@ -82,7 +64,9 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		return
 	}
 
-	cfg, err := h.repo.GetKioskoConfig(uint(kioskoID))
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	cfg, err := repoCtx.GetKioskoConfig(uint(kioskoID))
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
@@ -136,6 +120,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}
 
 	v := &Visita{
+		TenantID:         tenantID,
 		Titular:          strings.ToUpper(strings.TrimSpace(req.Titular)),
 		TipoVisitante:    req.TipoVisitante,
 		TipoDocumento:    req.TipoDocumento,
@@ -150,25 +135,29 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		KioskoID:         uint(kioskoID),
 	}
 
-	if err := h.repo.Create(v); err != nil {
+	if err := repoCtx.Create(v); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, toVisitaResponse(*v))
 
-	// Análisis asíncrono — no bloquea la respuesta al kiosko
+	// Análisis asíncrono
 	visitaCopy := *v
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		cfg, err := h.repo.GetKioskoConfig(visitaCopy.KioskoID)
+		// Propagamos el tenantID al contexto de la goroutine para que las consultas tengan acceso a la misma data
+		asyncCtx := context.WithValue(ctx, ctxkeys.TenantID, tenantID)
+		asyncRepo := h.repo.WithContext(asyncCtx)
+
+		cfg, err := asyncRepo.GetKioskoConfig(visitaCopy.KioskoID)
 		if err != nil {
 			return
 		}
 
-		historial, err := h.repo.HistorialPorCURP(visitaCopy.Curp)
+		historial, err := asyncRepo.HistorialPorCURP(visitaCopy.Curp)
 		if err != nil {
 			return
 		}
@@ -194,7 +183,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 
 		if nuevoEstado != EstadoPendiente {
-			if err := h.repo.ActualizarEstadoConScore(visitaCopy.ID, nuevoEstado, false); err != nil {
+			if err := asyncRepo.ActualizarEstadoConScore(visitaCopy.ID, nuevoEstado, false); err != nil {
 				log.Printf("ActualizarEstadoConScore visita %d: %v", visitaCopy.ID, err)
 			}
 		}
@@ -208,15 +197,13 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}()
 }
 
-// aplicarExpiracionSiVencida mueve una visita PENDIENTE a REVISION cuando supera
-// el tiempo de espera configurado para su kiosko (TiempoEsperaMin, 10 min si no
-// hay config), para que nunca se quede colgada esperando una respuesta que no llega.
-func (h *Handler) aplicarExpiracionSiVencida(v *Visita) {
+// aplicarExpiracionSiVencida requiere un repoCtx configurado para operar.
+func (h *Handler) aplicarExpiracionSiVencida(repoCtx *Repository, v *Visita) {
 	if v.Estado != EstadoPendiente {
 		return
 	}
 
-	cfg, err := h.repo.GetKioskoConfig(v.KioskoID)
+	cfg, err := repoCtx.GetKioskoConfig(v.KioskoID)
 	if err != nil {
 		return
 	}
@@ -231,7 +218,7 @@ func (h *Handler) aplicarExpiracionSiVencida(v *Visita) {
 		return
 	}
 
-	if err := h.repo.UpdateEstado(v.ID, EstadoRevision); err != nil {
+	if err := repoCtx.UpdateEstado(v.ID, EstadoRevision); err != nil {
 		return
 	}
 	v.Estado = EstadoRevision
@@ -243,17 +230,6 @@ func (h *Handler) aplicarExpiracionSiVencida(v *Visita) {
 	}
 }
 
-// GetVisitaEstado devuelve el estado actual de una visita para el kiosko que la creo
-//
-// @Summary Consultar estado de visita (kiosko)
-// @Description Usado por el kiosko para hacer polling del estado mientras espera aprobacion
-// @Tags visitas
-// @Produce json
-// @Param id path int true "ID del kiosko"
-// @Param visitaId path int true "ID de la visita"
-// @Success 200 {object} VisitaResponse
-// @Failure 404 {object} map[string]string
-// @Router /kioskos/{id}/visitas/{visitaId} [get]
 func (h *Handler) GetVisitaEstado(c *gin.Context) {
 	kioskoIDStr := c.Param("id")
 	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
@@ -272,26 +248,19 @@ func (h *Handler) GetVisitaEstado(c *gin.Context) {
 		return
 	}
 
-	v, err := h.repo.FindByIDAndKioskoID(uint(visitaID), uint(kioskoID))
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	v, err := repoCtx.FindByIDAndKioskoID(uint(visitaID), uint(kioskoID))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
 		return
 	}
 
-	h.aplicarExpiracionSiVencida(v)
+	h.aplicarExpiracionSiVencida(repoCtx, v)
 
 	c.JSON(http.StatusOK, toVisitaResponse(*v))
 }
 
-// GetVisitaByID obtiene el detalle de una visita (dashboard admin)
-//
-// @Summary Obtener visita (dashboard)
-// @Tags visitas
-// @Produce json
-// @Param id path int true "ID de la visita"
-// @Success 200 {object} VisitaResponse
-// @Failure 404 {object} map[string]string
-// @Router /visitas/{id} [get]
 func (h *Handler) GetVisitaByID(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
@@ -302,30 +271,19 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 		return
 	}
 
-	v, err := h.repo.FindByIDAndAdminID(uint(id), adminID)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	v, err := repoCtx.FindByIDAndAdminID(uint(id), adminID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
 		return
 	}
 
-	h.aplicarExpiracionSiVencida(v)
+	h.aplicarExpiracionSiVencida(repoCtx, v)
 
 	c.JSON(http.StatusOK, toVisitaResponse(*v))
 }
 
-// ListarVisitas lista paginado las visitas del admin (dashboard)
-//
-// @Summary Listar visitas del admin (dashboard)
-// @Tags visitas
-// @Produce json
-// @Param page query int false "Página (default 1)"
-// @Param page_size query int false "Tamaño (default 20, max 100)"
-// @Param kiosko_id query int false "Filtrar por kiosko"
-// @Param tipo_documento query string false "INE, PASAPORTE o LICENCIA"
-// @Param estado query string false "PENDIENTE, APROBADO o RECHAZADO"
-// @Param q query string false "Búsqueda parcial por titular, CURP o clave"
-// @Success 200 {object} VisitasPaginadasResponse
-// @Router /visitas [get]
 func (h *Handler) ListarVisitas(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 	page, pageSize := parsePagination(c)
@@ -358,7 +316,9 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 	}
 	filtros.Q = strings.TrimSpace(c.Query("q"))
 
-	list, total, err := h.repo.FindAllByAdminID(adminID, filtros, page, pageSize)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	list, total, err := repoCtx.FindAllByAdminID(adminID, filtros, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -366,7 +326,7 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 
 	items := make([]VisitaListItemResponse, 0, len(list))
 	for i := range list {
-		h.aplicarExpiracionSiVencida(&list[i])
+		h.aplicarExpiracionSiVencida(repoCtx, &list[i])
 		items = append(items, toVisitaListItemResponse(list[i]))
 	}
 
@@ -378,7 +338,6 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 	})
 }
 
-// ActualizarEstado cambia el estado de una visita (aprobacion/rechazo manual desde el dashboard)
 func (h *Handler) ActualizarEstado(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
@@ -388,7 +347,9 @@ func (h *Handler) ActualizarEstado(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	if _, err := repoCtx.FindByIDAndAdminID(uint(id), adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
 		return
 	}
@@ -407,7 +368,7 @@ func (h *Handler) ActualizarEstado(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.UpdateEstado(uint(id), estado); err != nil {
+	if err := repoCtx.UpdateEstado(uint(id), estado); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -415,13 +376,6 @@ func (h *Handler) ActualizarEstado(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"estado": string(estado)})
 }
 
-// StreamSolicitudes abre una conexión SSE y envía nuevas visitas al cliente
-//
-// @Summary Stream SSE de solicitudes
-// @Tags visitas
-// @Produce text/event-stream
-// @Success 200
-// @Router /kioskos/solicitudes/stream [get]
 func (h *Handler) StreamSolicitudes(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
@@ -445,15 +399,11 @@ func (h *Handler) StreamSolicitudes(c *gin.Context) {
 	})
 }
 
-// ListarReportes devuelve los ultimos 7 reportes de IA
-//
-// @Summary Listar reportes de IA
-// @Tags visitas
-// @Produce json
-// @Success 200
-// @Router /visitas/reportes [get]
 func (h *Handler) ListarReportes(c *gin.Context) {
-	repo := &reporteRepository{db: h.repo.db}
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	// Validamos que el db base use el scope por tenant al acceder a reportes_ia
+	repo := &reporteRepository{db: repoCtx.db.Scopes(ByTenant)}
 	reportes, err := repo.ultimos(7)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error obteniendo reportes"})
@@ -462,14 +412,6 @@ func (h *Handler) ListarReportes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"reportes": reportes})
 }
 
-// HistorialVisita historial de visitas por CURP (dashboard)
-//
-// @Summary Historial de visitas por CURP
-// @Tags visitas
-// @Produce json
-// @Param curp query string true "CURP"
-// @Success 200 {object} HistorialVisitaResponse
-// @Router /visitas/buscar [get]
 func (h *Handler) HistorialVisita(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
@@ -479,7 +421,9 @@ func (h *Handler) HistorialVisita(c *gin.Context) {
 		return
 	}
 
-	list, err := h.repo.FindByCurpAndAdminID(curp, adminID)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	list, err := repoCtx.FindByCurpAndAdminID(curp, adminID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
