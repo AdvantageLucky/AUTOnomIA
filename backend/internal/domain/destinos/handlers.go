@@ -1,9 +1,10 @@
 package destinos
 
 import (
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"net/http"
 	"strconv"
+
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,15 +17,6 @@ func NewHandler(repo *Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
-// ListarDestinosPorAcceso devuelve los destinos del kiosko autenticado
-//
-// @Summary Listar destinos (kiosko)
-// @Description Devuelve todos los destinos del kiosko, incluyendo el titular de cada uno para verificación de IA
-// @Tags destinos
-// @Produce json
-// @Param id path int true "ID del kiosko"
-// @Success 200 {array} DestinoKioskoResponse
-// @Router /kioskos/{id}/destinos [get]
 func (h *Handler) ListarDestinosPorAcceso(c *gin.Context) {
 	kioskoIDStr := c.Param("id")
 	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
@@ -33,14 +25,15 @@ func (h *Handler) ListarDestinosPorAcceso(c *gin.Context) {
 		return
 	}
 
-	// verifica que la sesion de kiosko corresponda al kiosko de la URL
 	sesionKioskoID := c.MustGet(ctxkeys.KioskoID).(uint)
 	if sesionKioskoID != uint(kioskoID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "la sesion no corresponde a este kiosko"})
 		return
 	}
 
-	list, err := h.repo.FindByKioskoID(uint(kioskoID))
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	list, err := repoCtx.FindByKioskoID(uint(kioskoID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -54,14 +47,6 @@ func (h *Handler) ListarDestinosPorAcceso(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
-// ListarDestinosPorAdmin devuelve los destinos de un kiosko (admin dashboard, JWT)
-//
-// @Summary Listar destinos (admin)
-// @Tags destinos
-// @Produce json
-// @Param id path int true "ID del kiosko"
-// @Success 200 {array} DestinoKioskoResponse
-// @Router /kioskos/{id}/destinos [get]
 func (h *Handler) ListarDestinosPorAdmin(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
@@ -72,12 +57,14 @@ func (h *Handler) ListarDestinosPorAdmin(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	if err := repoCtx.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
-	list, err := h.repo.FindByKioskoID(uint(kioskoID))
+	list, err := repoCtx.FindByKioskoID(uint(kioskoID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -91,18 +78,9 @@ func (h *Handler) ListarDestinosPorAdmin(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
-// CrearDestino crea un destino (admin dashboard)
-//
-// @Summary Crear destino (admin)
-// @Tags destinos
-// @Accept json
-// @Produce json
-// @Param id path int true "ID del kiosko"
-// @Param body body DestinoAdminRequest true "Datos del destino"
-// @Success 201 {object} DestinoKioskoResponse
-// @Router /kioskos/{id}/destinos [post]
 func (h *Handler) CrearDestino(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint) // <-- EXTRAEMOS TENANT DEL CONTEXTO
 
 	kioskoIDStr := c.Param("id")
 	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
@@ -111,7 +89,9 @@ func (h *Handler) CrearDestino(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	if err := repoCtx.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
@@ -123,12 +103,13 @@ func (h *Handler) CrearDestino(c *gin.Context) {
 	}
 
 	d := &Destino{
+		TenantID: tenantID, // <-- ASIGNAMOS TENANT PARA CUMPLIR LA REGLA NOT NULL
 		Nombre:   req.Nombre,
 		Titular:  req.Titular,
 		KioskoID: uint(kioskoID),
 	}
 
-	if err := h.repo.Create(d); err != nil {
+	if err := repoCtx.Create(d); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -136,14 +117,6 @@ func (h *Handler) CrearDestino(c *gin.Context) {
 	c.JSON(http.StatusCreated, toDestinoKioskoResponse(*d))
 }
 
-// EliminarDestino elimina un destino del kiosko (admin dashboard)
-//
-// @Summary Eliminar destino (admin)
-// @Tags destinos
-// @Param id  path int true "ID del kiosko"
-// @Param did path int true "ID del destino"
-// @Success 204
-// @Router /kioskos/{id}/destinos/{did} [delete]
 func (h *Handler) EliminarDestino(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
@@ -154,7 +127,9 @@ func (h *Handler) EliminarDestino(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	if err := repoCtx.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
@@ -166,7 +141,7 @@ func (h *Handler) EliminarDestino(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Delete(uint(destinoID), uint(kioskoID)); err != nil {
+	if err := repoCtx.Delete(uint(destinoID), uint(kioskoID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
