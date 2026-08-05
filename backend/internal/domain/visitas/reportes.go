@@ -11,7 +11,7 @@ import (
 )
 
 type ReporteIA struct {
-	ID            uint      `gorm:"primaryKey"`
+	ID            uint `gorm:"primaryKey"`
 	CreatedAt     time.Time
 	PeriodoInicio time.Time `gorm:"not null"`
 	PeriodoFin    time.Time `gorm:"not null"`
@@ -35,7 +35,7 @@ func (r *reporteRepository) ultimos(n int) ([]ReporteIA, error) {
 
 // IniciarAgenteReportes lanza la goroutine del agente de reportes con ticker de 12h.
 // Debe llamarse una sola vez al iniciar el servidor.
-func IniciarAgenteReportes(db *gorm.DB, llmUrl string) {
+func IniciarAgenteReportes(db *gorm.DB, llmURL string) {
 	repo := &reporteRepository{db: db}
 	visitaRepo := NewRepository(db)
 
@@ -43,12 +43,12 @@ func IniciarAgenteReportes(db *gorm.DB, llmUrl string) {
 		ticker := time.NewTicker(12 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			generarReporte(repo, visitaRepo, llmUrl)
+			generarReporte(repo, visitaRepo, llmURL)
 		}
 	}()
 }
 
-func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmUrl string) {
+func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmURL string) {
 	fin := time.Now()
 	inicio := fin.Add(-12 * time.Hour)
 
@@ -68,7 +68,7 @@ func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmUrl stri
 	defer cancel()
 
 	sc := ScoreContexto{VecesVisitado: datos.TotalVisitas}
-	texto, err := GenerarResumen(ctx, llmUrl, sc)
+	texto, err := GenerarResumen(ctx, llmURL, sc)
 	if err != nil {
 		log.Printf("[agente-reportes] error LLM: %v", err)
 		texto = resumirDatosTexto(datos)

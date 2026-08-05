@@ -14,18 +14,17 @@ class _SplashViewState extends State<SplashView> {
   @override
   void initState() {
     super.initState();
-    // Ejecutar la comprobación de sesión al cargar la pantalla
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthViewModel>().checkSession().then((_) {
-        if (mounted) {
-          final auth = context.read<AuthViewModel>();
-          // Navegación fluida según el estado de la sesión
-          Navigator.pushReplacementNamed(
-            context, 
-            auth.isLoggedIn ? '/dashboard' : '/login'
-          );
-        }
-      });
+    // El AuthViewModel carga la sesión en su constructor; esperamos un frame
+    // para que el estado inicial esté listo antes de navegar.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Pequeña pausa para que el ChangeNotifier termine de cargarse
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      final auth = context.read<AuthViewModel>();
+      Navigator.pushReplacementNamed(
+        context,
+        auth.isLoggedIn ? '/dashboard' : '/login',
+      );
     });
   }
 
@@ -35,27 +34,22 @@ class _SplashViewState extends State<SplashView> {
       body: Center(
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0.0, end: 1.0),
-          duration: const Duration(milliseconds: 1200),
+          duration: const Duration(milliseconds: 900),
           curve: Curves.easeOutBack,
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: Opacity(
-                opacity: value,
-                child: child,
-              ),
-            );
-          },
+          builder: (context, value, child) => Transform.scale(
+            scale: value,
+            child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
+          ),
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.qr_code_scanner, size: 90, color: AppTheme.primaryOrange),
               SizedBox(height: 20),
               Text(
-                'KIGO USER',
+                'KIGO RESIDENTE',
                 style: TextStyle(
-                  fontSize: 28, 
-                  fontWeight: FontWeight.bold, 
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
                   letterSpacing: 4,
                   color: Colors.white,
                 ),

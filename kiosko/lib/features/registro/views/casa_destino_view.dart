@@ -1,4 +1,3 @@
-/* VISTA PARA SELECCIONAR LA CASA/DESTINO DE LA VISITA (datos reales via API) */
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -38,7 +37,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudo cargar la lista de casas. Verifica tu conexión.';
+        _error = 'No se pudo cargar la lista de casas. Verifica la conexión.';
         _isLoading = false;
       });
     }

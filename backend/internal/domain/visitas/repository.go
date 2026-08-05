@@ -1,9 +1,3 @@
-/*
-Package visitas
-Repositorio relacionado con modelo Visita
-
-Operaciones CRUD en DB relacionadas solo con el dominio visitas
-*/
 package visitas
 
 import (
@@ -26,7 +20,6 @@ func (r *Repository) Create(v *Visita) error {
 	return r.db.Create(v).Error
 }
 
-// joinVisitasDeAdmin arma el join contra accesos para acotar visitas al adminID dueño de esos accesos.
 // Los métodos que escanean a Visita deben encadenar Select("visitas.*") para evitar que las columnas
 // id/created_at del join corrompan el resultado.
 func (r *Repository) joinVisitasDeAdmin(adminID uint) *gorm.DB {
@@ -40,7 +33,7 @@ type VisitaFiltros struct {
 	KioskoID      *uint
 	TipoDocumento *TipoDocumento
 	Estado        *EstadoVisita
-	Q             string // ILIKE parcial sobre nombre, curp y clave_lector
+	Q             string // ILIKE parcial sobre titular y curp
 }
 
 func (r *Repository) FindAllByAdminID(
@@ -62,7 +55,7 @@ func (r *Repository) FindAllByAdminID(
 		if filtros.Q != "" {
 			like := "%" + filtros.Q + "%"
 			q = q.Where(
-				`(visitas.nombre ILIKE ? OR visitas.curp ILIKE ?
+				`(visitas.titular ILIKE ? OR visitas.curp ILIKE ?
 				  OR visitas.casa_destino ILIKE ? OR visitas.placa ILIKE ?)`,
 				like, like, like, like,
 			)
@@ -157,7 +150,11 @@ func (r *Repository) HistorialPorCURP(curp string) ([]Visita, error) {
 }
 
 // ActualizarEstadoConScore actualiza estado e intervenida de una visita
-func (r *Repository) ActualizarEstadoConScore(id uint, estado EstadoVisita, intervenida bool) error {
+func (r *Repository) ActualizarEstadoConScore(
+	id uint,
+	estado EstadoVisita,
+	intervenida bool,
+) error {
 	return r.db.Model(&Visita{}).Where("id = ?", id).Updates(map[string]any{
 		"estado":      estado,
 		"intervenida": intervenida,

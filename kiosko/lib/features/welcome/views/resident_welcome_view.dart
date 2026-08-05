@@ -113,17 +113,30 @@ class ResidentWelcomeView extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
-        const Text(
-          'Residente',
-          style: TextStyle(
-            color: Color(0xFF8A8585),
-            fontSize: 18,
-            letterSpacing: 4,
-            fontWeight: FontWeight.w500,
+        Text(
+          viewModel.nombre,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
           ),
         ),
+
+        if (viewModel.casaDestino.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            viewModel.casaDestino,
+            style: const TextStyle(
+              color: Color(0xFF8A8585),
+              fontSize: 18,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
 
       ],
     );

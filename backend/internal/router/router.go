@@ -1,7 +1,3 @@
-/*
-Package router
-Inicializacion y registro de rutas (apps)
-*/
 package router
 
 import (
@@ -9,6 +5,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/domain/auth"
 	"kigo-autonomia-backend/internal/domain/destinos"
+	"kigo-autonomia-backend/internal/domain/invitaciones"
 	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/domain/visitas"
@@ -34,6 +31,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerVisitaRoutes(api, db, cfg, hub)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret)
+	registerInvitacionesRoutes(api, db, cfg.JWTSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
@@ -86,6 +84,7 @@ func registerAdminRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	kioskoRepo := kiosko.NewRepository(db)
 	kioskoHandler := kiosko.NewHandler(kioskoRepo)
+	sesionRepo := auth.NewSesionRepository(db)
 
 	a := rg.Group("/kioskos")
 	a.Use(auth.RequireAdmin(jwtSecret))
@@ -97,6 +96,13 @@ func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 		a.DELETE("/:id", kioskoHandler.DeleteKiosko)
 		a.GET("/:id/config", kioskoHandler.GetConfig)
 		a.PATCH("/:id/config", kioskoHandler.PatchConfig)
+	}
+
+	// el kiosko se suscribe al stream SSE de su propia config
+	k := rg.Group("/kioskos/:id/config")
+	k.Use(auth.RequireKiosko(sesionRepo))
+	{
+		k.GET("/stream", kioskoHandler.StreamConfig)
 	}
 }
 
@@ -148,11 +154,37 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 		k.GET("/", destinoHandler.ListarDestinosPorAcceso)
 	}
 
-	// admin: crea destinos para sus kioskos
+	// admin: lista (sin slash), crea y elimina destinos
+	// GET sin slash evita conflicto con el GET del kiosko que usa path con slash
 	a := rg.Group("/kioskos/:id/destinos")
 	a.Use(auth.RequireAdmin(jwtSecret))
 	{
+		a.GET("", destinoHandler.ListarDestinosPorAdmin)
 		a.POST("/", destinoHandler.CrearDestino)
+		a.DELETE("/:did", destinoHandler.EliminarDestino)
+	}
+}
+
+func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+	invRepo := invitaciones.NewRepository(db)
+	invHandler := invitaciones.NewHandler(invRepo, db)
+	sesionRepo := auth.NewSesionRepository(db)
+
+	// app residente: crea, lista y revoca sus invitaciones
+	r := rg.Group("/residentes/me/invitaciones")
+	r.Use(auth.RequireResidente(jwtSecret))
+	{
+		r.POST("/", invHandler.CrearInvitacion)
+		r.GET("/", invHandler.ListarInvitaciones)
+		r.DELETE("/:id", invHandler.RevocarInvitacion)
+	}
+
+	// kiosko: valida un token y registra su uso
+	k := rg.Group("/kioskos/:id/invitaciones")
+	k.Use(auth.RequireKiosko(sesionRepo))
+	{
+		k.GET("/validar", invHandler.ValidarInvitacion)
+		k.POST("/:token/usar", invHandler.UsarInvitacion)
 	}
 }
 
@@ -160,7 +192,8 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 // autenticados para la app del residente y el dashboard admin.
 func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	residenteRepo := residente.NewRepository(db)
-	residenteHandler := residente.NewHandler(residenteRepo, jwtSecret)
+	destinoRepo := destinos.NewRepository(db)
+	residenteHandler := residente.NewHandler(residenteRepo, destinoRepo, jwtSecret, db)
 
 	// login público
 	rg.POST("/auth/residente/login", residenteHandler.LoginResidente)
@@ -170,6 +203,14 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string)
 	r.Use(auth.RequireResidente(jwtSecret))
 	{
 		r.GET("/me", residenteHandler.GetMe)
+	}
+
+	// kiosko: valida PIN de residente usando la sesión del kiosko
+	sesionRepo := auth.NewSesionRepository(db)
+	kPin := rg.Group("/kioskos/:id/residentes")
+	kPin.Use(auth.RequireKiosko(sesionRepo))
+	{
+		kPin.POST("/login", residenteHandler.LoginResidenteDesdeKiosko)
 	}
 
 	// admin: crea residentes y los lista por kiosko
