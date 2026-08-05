@@ -13,6 +13,7 @@ import "gorm.io/gorm"
 // que lleguen a su casa/departamento a través del kiosko.
 type Residente struct {
 	gorm.Model
+	TenantID        uint   `gorm:"column:tenant_id;not null;index"`
 	Nombre          string `gorm:"not null"`
 	ApellidoPaterno string `gorm:"not null"`
 	ApellidoMaterno string `gorm:"not null"`

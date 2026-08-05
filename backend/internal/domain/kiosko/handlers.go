@@ -71,6 +71,7 @@ func NewHandler(repo *Repository) *Handler {
 // @Router /kioskos [post]
 func (h *Handler) RegisterKiosko(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint) // <-- Extraído del middleware
 
 	var req RegisterKioskoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -78,22 +79,20 @@ func (h *Handler) RegisterKiosko(c *gin.Context) {
 		return
 	}
 
-	// generamos la clave kiosko aleatoria
 	claveKiosko, err := generateClaveKiosko()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// hasheamos con salt la clave
 	hash, err := bcrypt.GenerateFromPassword([]byte(claveKiosko), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// creamos el kiosko y retornamos
 	a := &Kiosko{
+		TenantID:    tenantID, // <-- Asignado explícitamente para cumplir la regla multi-tenant
 		Nombre:      req.Nombre,
 		Tipo:        req.Tipo,
 		Ubicacion:   req.Ubicacion,
@@ -101,7 +100,7 @@ func (h *Handler) RegisterKiosko(c *gin.Context) {
 		AdminID:     adminID,
 	}
 
-	if err := h.repo.Create(a); err != nil {
+	if err := h.repo.WithContext(c.Request.Context()).Create(a); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -135,7 +134,7 @@ func (h *Handler) GetKioskoByID(c *gin.Context) {
 		return
 	}
 
-	a, err := h.repo.FindByIDAndAdminID(uint(id), adminID)
+	a, err := h.repo.WithContext(c.Request.Context()).FindByIDAndAdminID(uint(id), adminID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
@@ -158,7 +157,7 @@ func (h *Handler) GetKioskoByID(c *gin.Context) {
 func (h *Handler) GetAllKioskos(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
-	kioskos, err := h.repo.FindAllByAdminID(adminID)
+	kioskos, err := h.repo.WithContext(c.Request.Context()).FindAllByAdminID(adminID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -172,7 +171,7 @@ func (h *Handler) GetAllKioskos(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-// PatchKiosko modifica el nombre o ubicacion de un kiosko (la clave de kiosko no se toca aqui)
+// PatchKiosko modifica el nombre o ubicacion de un kiosko
 // Request: id uint (URL Param) y RegisterKioskoRequest
 // Response: KioskoResponse
 //
@@ -204,9 +203,9 @@ func (h *Handler) PatchKiosko(c *gin.Context) {
 		return
 	}
 
-	// cargamos el kiosko existente para conservar su ClaveKiosko: Update hace un Save() de
-	// fila completa, y RegisterKioskoRequest ya no trae clave_kiosko (la genera el servidor una sola vez)
-	a, err := h.repo.FindByIDAndAdminID(uint(id), adminID)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	a, err := repoCtx.FindByIDAndAdminID(uint(id), adminID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
@@ -216,7 +215,7 @@ func (h *Handler) PatchKiosko(c *gin.Context) {
 	a.Tipo = req.Tipo
 	a.Ubicacion = req.Ubicacion
 
-	if err := h.repo.Update(a, adminID); err != nil {
+	if err := repoCtx.Update(a, adminID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -247,7 +246,7 @@ func (h *Handler) DeleteKiosko(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Delete(uint(id), adminID); err != nil {
+	if err := h.repo.WithContext(c.Request.Context()).Delete(uint(id), adminID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -276,12 +275,14 @@ func (h *Handler) GetConfig(c *gin.Context) {
 		return
 	}
 
-	if _, err = h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	if _, err = repoCtx.FindByIDAndAdminID(uint(id), adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
-	cfg, err := h.repo.FindConfigByKioskoID(uint(id))
+	cfg, err := repoCtx.FindConfigByKioskoID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -313,7 +314,9 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	kiosko, err := h.repo.FindByIDAndAdminID(uint(id), adminID)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	kiosko, err := repoCtx.FindByIDAndAdminID(uint(id), adminID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
@@ -325,27 +328,18 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	// al patchear la configuracion del kiosko, si este es de tipo peatonal entonces
-	// se sobreescribe la configuracion de placa visitante para no pedir placa.
-	// En UI esta parte se oculta pero este es un doble filtro a la request
 	if kiosko.Tipo == KioskoPeatonal {
 		if req.FotoPlacaVisitante != nil && *req.FotoPlacaVisitante {
-			c.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": "foto_placa_visitante no aplica a kioskos peatonales"},
-			)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_placa_visitante no aplica a kioskos peatonales"})
 			return
 		}
 		if req.FotoPlacaInvitado != nil && *req.FotoPlacaInvitado {
-			c.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": "foto_placa_invitado no aplica a kioskos peatonales"},
-			)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_placa_invitado no aplica a kioskos peatonales"})
 			return
 		}
 	}
 
-	cfg, err := h.repo.FindConfigByKioskoID(uint(id))
+	cfg, err := repoCtx.FindConfigByKioskoID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -391,7 +385,7 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		cfg.UmbralConfianzaVisitas = *req.UmbralConfianzaVisitas
 	}
 
-	if err := h.repo.UpdateConfig(cfg); err != nil {
+	if err := repoCtx.UpdateConfig(cfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -399,7 +393,6 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	resp := toKioskoConfigResponse(cfg)
 	c.JSON(http.StatusOK, resp)
 
-	// Notificar al kiosko conectado por SSE
 	if data, err := json.Marshal(resp); err == nil {
 		h.cfgHubs.get(cfg.KioskoID).Broadcast(data)
 	}

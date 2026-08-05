@@ -17,6 +17,7 @@ import "gorm.io/gorm"
 
 type SesionKiosko struct {
 	gorm.Model
+	TenantID uint   `gorm:"column:tenant_id;not null;index"`
 	KioskoID uint   `gorm:"not null;index"`
 	Token    string `gorm:"not null;uniqueIndex"`
 	Revocada bool   `gorm:"not null;default:false"`

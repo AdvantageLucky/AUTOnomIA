@@ -31,17 +31,6 @@ func NewHandler(repo *Repository, destinoRepo destinoFinder, jwtSecret string, d
 	return &Handler{repo: repo, destinoRepo: destinoRepo, jwtSecret: jwtSecret, db: db}
 }
 
-
-
-// LoginResidente autentica a un residente con kiosko_id + casa_destino + pin
-//
-// @Summary Login del residente
-// @Tags residente
-// @Accept json
-// @Produce json
-// @Param body body LoginResidenteRequest true "Credenciales"
-// @Success 200 {object} auth.JWTResponse
-// @Router /auth/residente/login [post]
 func (h *Handler) LoginResidente(c *gin.Context) {
 	var req LoginResidenteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -49,7 +38,9 @@ func (h *Handler) LoginResidente(c *gin.Context) {
 		return
 	}
 
-	res, err := h.repo.FindByCasaAndKiosko(req.CasaDestino, req.KioskoID)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	res, err := repoCtx.FindByCasaAndKiosko(req.CasaDestino, req.KioskoID)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "residente no encontrado"})
 		return
@@ -60,7 +51,7 @@ func (h *Handler) LoginResidente(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateResidenteToken(res.ID, h.jwtSecret)
+	token, err := auth.GenerateResidenteToken(res.ID, res.TenantID, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -69,17 +60,12 @@ func (h *Handler) LoginResidente(c *gin.Context) {
 	c.JSON(http.StatusOK, auth.JWTResponse{AccessToken: token})
 }
 
-// GetMe devuelve el perfil del residente autenticado, incluyendo destino_id si existe
-//
-// @Summary Perfil del residente
-// @Tags residente
-// @Produce json
-// @Success 200 {object} ResidenteResponse
-// @Router /residentes/me [get]
 func (h *Handler) GetMe(c *gin.Context) {
 	residenteID := c.MustGet(ctxkeys.ResidenteID).(uint)
 
-	res, err := h.repo.FindByID(residenteID)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	res, err := repoCtx.FindByID(residenteID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "residente no encontrado"})
 		return
@@ -95,17 +81,9 @@ func (h *Handler) GetMe(c *gin.Context) {
 	c.JSON(http.StatusOK, toResidenteResponse(*res, destinoID))
 }
 
-// CrearResidente crea un residente (admin dashboard)
-//
-// @Summary Crear residente (admin)
-// @Tags residente
-// @Accept json
-// @Produce json
-// @Param body body CrearResidenteRequest true "Datos del residente"
-// @Success 201 {object} ResidenteResponse
-// @Router /residentes [post]
 func (h *Handler) CrearResidente(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
 
 	var req CrearResidenteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -113,7 +91,9 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.VerificarOwnershipKiosko(req.KioskoID, adminID); err != nil {
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	if err := repoCtx.VerificarOwnershipKiosko(req.KioskoID, adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
@@ -125,6 +105,7 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 	}
 
 	res := &Residente{
+		TenantID:        tenantID,
 		Nombre:          req.Nombre,
 		ApellidoPaterno: req.ApellidoPaterno,
 		ApellidoMaterno: req.ApellidoMaterno,
@@ -134,7 +115,7 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 		KioskoID:        req.KioskoID,
 	}
 
-	if err := h.repo.Create(res); err != nil {
+	if err := repoCtx.Create(res); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -142,8 +123,6 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 	c.JSON(http.StatusCreated, toResidenteResponse(*res, nil))
 }
 
-// LoginResidenteDesdeKiosko valida el PIN de un residente desde el kiosko autenticado.
-// Protegido por RequireKiosko: el kiosko ya está autenticado con su sesión.
 func (h *Handler) LoginResidenteDesdeKiosko(c *gin.Context) {
 	kioskoIDStr := c.Param("id")
 	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
@@ -166,13 +145,16 @@ func (h *Handler) LoginResidenteDesdeKiosko(c *gin.Context) {
 		return
 	}
 
-	res, err := h.repo.FindPorPin(uint(kioskoID), req.Pin)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	res, err := repoCtx.FindPorPin(uint(kioskoID), req.Pin)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "PIN incorrecto"})
 		return
 	}
 
 	v := &visitas.Visita{
+		TenantID:      res.TenantID,
 		Titular:       res.Nombre + " " + res.ApellidoPaterno,
 		TipoVisitante: visitas.TipoResidente,
 		TipoDocumento: visitas.DocumentoPIN,
@@ -181,7 +163,9 @@ func (h *Handler) LoginResidenteDesdeKiosko(c *gin.Context) {
 		Estado:        visitas.EstadoAprobado,
 		KioskoID:      uint(kioskoID),
 	}
-	if err := h.db.Create(v).Error; err != nil {
+
+	// Acoplamos también el contexto en la db de visitas al crearla
+	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
 		log.Printf("LoginResidenteDesdeKiosko: error registrando visita: %v", err)
 	}
 
@@ -191,14 +175,6 @@ func (h *Handler) LoginResidenteDesdeKiosko(c *gin.Context) {
 	})
 }
 
-// ListarResidentesPorAcceso lista residentes de un kiosko (admin dashboard)
-//
-// @Summary Listar residentes de un kiosko (admin)
-// @Tags residente
-// @Produce json
-// @Param id path int true "ID del kiosko"
-// @Success 200 {array} ResidenteResponse
-// @Router /kioskos/{id}/residentes [get]
 func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
@@ -209,12 +185,14 @@ func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.VerificarOwnershipKiosko(uint(kioskoID), adminID); err != nil {
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	if err := repoCtx.VerificarOwnershipKiosko(uint(kioskoID), adminID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
 
-	list, err := h.repo.FindByKioskoID(uint(kioskoID))
+	list, err := repoCtx.FindByKioskoID(uint(kioskoID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -228,11 +206,12 @@ func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
-// ListarResidentesAdmin lista todos los residentes de todos los kioskos del admin
 func (h *Handler) ListarResidentesAdmin(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
 
-	list, err := h.repo.FindAllByAdminID(adminID)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	list, err := repoCtx.FindAllByAdminID(adminID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
