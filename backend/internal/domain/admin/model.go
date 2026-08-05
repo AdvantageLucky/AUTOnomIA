@@ -11,6 +11,7 @@ import "gorm.io/gorm"
 
 type Admin struct {
 	gorm.Model
+	TenantID        uint `gorm:"column:tenant_id;not null;index"` // enlace a centros habitacionales
 	Nombre          string
 	ApellidoPaterno string
 	ApellidoMaterno string

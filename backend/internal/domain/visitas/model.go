@@ -30,6 +30,7 @@ const (
 
 type Visita struct {
 	gorm.Model
+	TenantID        uint   `gorm:"column:tenant_id;not null;index"`
 	Titular          string        `gorm:"not null"`
 	TipoVisitante    TipoVisitante `gorm:"not null;default:'VISITANTE'"`
 	TipoDocumento    TipoDocumento `gorm:"not null;default:''"`

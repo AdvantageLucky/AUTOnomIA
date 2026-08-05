@@ -9,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RequireAdmin valida el JWT del header "Authorization: Bearer <token>" y mete el admin_id
-// y admin_rol en el contexto de gin
+// RequireAdmin valida el JWT del header "Authorization: Bearer <token>" y mete el admin_id,
+// admin_rol y tenant_id en el contexto de gin
 func RequireAdmin(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := bearerToken(c)
@@ -19,7 +19,8 @@ func RequireAdmin(secret string) gin.HandlerFunc {
 			return
 		}
 
-		adminID, rol, err := ParseAdminToken(token, secret)
+		// Extraemos también el tenantID del JWT
+		adminID, rol, tenantID, err := ParseAdminToken(token, secret)
 		if err != nil {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
@@ -30,6 +31,7 @@ func RequireAdmin(secret string) gin.HandlerFunc {
 
 		c.Set(ctxkeys.AdminID, adminID)
 		c.Set(ctxkeys.AdminRol, rol)
+		c.Set(ctxkeys.TenantID, tenantID) // <-- NUEVO: Inyección del TenantID
 		c.Next()
 	}
 }
@@ -49,9 +51,7 @@ func RequireAdminRole(roles ...string) gin.HandlerFunc {
 	}
 }
 
-// RequireKiosko valida la sesion persistida del kiosko (header "Authorization: Bearer <token>")
-// contra sesionRepo y mete el kiosko_id de esa sesion en el contexto de gin (ctxkeys.KioskoID),
-// para las rutas de registro/consulta de visitantes anidadas bajo /kioskos/:id/visitas.
+// RequireKiosko valida la sesion persistida del kiosko y mete el kiosko_id y tenant_id en el contexto
 func RequireKiosko(sesionRepo *SesionRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := bearerToken(c)
@@ -70,11 +70,12 @@ func RequireKiosko(sesionRepo *SesionRepository) gin.HandlerFunc {
 		}
 
 		c.Set(ctxkeys.KioskoID, sesion.KioskoID)
+		c.Set(ctxkeys.TenantID, sesion.TenantID) // <-- NUEVO: Inyección del TenantID de la BD
 		c.Next()
 	}
 }
 
-// RequireResidente valida el JWT del residente y mete el residente_id en el contexto
+// RequireResidente valida el JWT del residente y mete el residente_id y tenant_id en el contexto
 func RequireResidente(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := bearerToken(c)
@@ -83,7 +84,8 @@ func RequireResidente(secret string) gin.HandlerFunc {
 			return
 		}
 
-		residenteID, err := ParseResidenteToken(token, secret)
+		// Extraemos también el tenantID del JWT
+		residenteID, tenantID, err := ParseResidenteToken(token, secret)
 		if err != nil {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
@@ -93,6 +95,7 @@ func RequireResidente(secret string) gin.HandlerFunc {
 		}
 
 		c.Set(ctxkeys.ResidenteID, residenteID)
+		c.Set(ctxkeys.TenantID, tenantID) // <-- NUEVO: Inyección del TenantID
 		c.Next()
 	}
 }
