@@ -24,8 +24,7 @@ class DetectorServicio {
       final modelo = UserRegistrationModel();
       modelo.pathFotoIne    = pathImagen;
       modelo.curp           = _extraerCurp(textoPlano, lineas);
-      modelo.claveElector   = _extraerClave(textoPlano, lineas);
-      modelo.nombreCompleto = _extraerNombre(lineas, modelo.curp, modelo.claveElector);
+      modelo.nombreCompleto = _extraerNombre(lineas, modelo.curp);
 
       return modelo;
 
@@ -111,81 +110,9 @@ class DetectorServicio {
   }
 
   // ---------------------------------------------------------------------------
-  // Clave de elector: 18 chars — 6 letras | 6 dígitos | H/M | 5 dígitos
-  // ---------------------------------------------------------------------------
-  String? _extraerClave(String textoPlano, List<String> lineas) {
-    // 1. Texto plano directo
-    final result = _buscarClaveEnToken(textoPlano);
-    if (result != null) return result;
-
-    // 2. Línea a línea
-    for (final linea in lineas) {
-      final r = _buscarClaveEnToken(_colapsar(linea));
-      if (r != null) return r;
-    }
-
-    // 3. Cerca de "CLAVE" / "ELECTOR": concatenar ventana de líneas adyacentes
-    for (int i = 0; i < lineas.length; i++) {
-      if (!lineas[i].contains('CLAVE') && !lineas[i].contains('ELECTOR')) continue;
-      // Concatenar hasta 5 líneas alrededor de la etiqueta
-      for (int ventana = 2; ventana <= 5; ventana++) {
-        for (int inicio = i - 1; inicio <= i + 1; inicio++) {
-          if (inicio < 0) continue;
-          final fin = inicio + ventana;
-          if (fin > lineas.length) continue;
-          final concatenado = _colapsar(lineas.sublist(inicio, fin).join(' '));
-          final r = _buscarClaveEnToken(concatenado);
-          if (r != null) return r;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  String? _buscarClaveEnToken(String token) {
-    for (int k = 0; k + 18 <= token.length; k++) {
-      final c = _reconstruirClave(token.substring(k, k + 18));
-      if (c != null) return c;
-    }
-    return null;
-  }
-
-  String? _reconstruirClave(String token) {
-    if (token.length < 18) return null;
-    final buf = StringBuffer();
-    for (int i = 0; i < 18; i++) {
-      final c = token[i];
-      if (i < 6) {
-        // Zona alfabética: 0→O, 1→I
-        buf.write(c == '0' ? 'O' : c == '1' ? 'I' : c);
-      } else if (i >= 6 && i <= 11) {
-        // Zona numérica: O→0, I→1
-        buf.write(c == 'O' ? '0' : c == 'I' ? '1' : c);
-      } else if (i == 12) {
-        // El OCR frecuentemente confunde H con N, y M con N o W
-        if (c == 'H' || c == 'M') {
-          buf.write(c);
-        } else if (c == 'N' || c == 'K') {
-          buf.write('H'); // corrección de confusión común
-        } else if (c == 'W') {
-          buf.write('M'); // corrección de confusión común
-        } else {
-          return null;
-        }
-      } else {
-        // Zona numérica final: O→0, I→1
-        buf.write(c == 'O' ? '0' : c == 'I' ? '1' : c);
-      }
-    }
-    final r = buf.toString();
-    return RegExp(r'^[A-Z]{6}\d{6}[HM]\d{5}$').hasMatch(r) ? r : null;
-  }
-
-  // ---------------------------------------------------------------------------
   // Nombre: busca cerca de "NOMBRE" / "APELLIDOS" / "APELLIDO PATERNO"
   // ---------------------------------------------------------------------------
-  String? _extraerNombre(List<String> lineas, String? curp, String? clave) {
+  String? _extraerNombre(List<String> lineas, String? curp) {
     final filtros = {
       'DOMICILIO', 'CALLE', 'AVENIDA', 'AV', 'COL', 'COLONIA',
       'MUNICIPIO', 'ESTADO', 'CP', 'NUM', 'NUMERO', 'INTERIOR',

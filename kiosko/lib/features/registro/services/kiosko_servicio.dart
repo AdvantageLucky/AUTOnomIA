@@ -32,7 +32,6 @@ class KioskoServicio {
 
   Future<Map<String, dynamic>> registrarVisitante({
     required String nombre,
-    required String claveElector,
     required String curp,
     required String motivoVisita,
     required String casaDestino,
@@ -43,7 +42,6 @@ class KioskoServicio {
     await _ensureLogin();
     return _enviarRegistro(
       nombre: nombre,
-      claveElector: claveElector,
       curp: curp,
       motivoVisita: motivoVisita,
       casaDestino: casaDestino,
@@ -83,7 +81,6 @@ class KioskoServicio {
 
   Future<Map<String, dynamic>> _enviarRegistro({
     required String nombre,
-    required String claveElector,
     required String curp,
     required String motivoVisita,
     required String casaDestino,
@@ -97,7 +94,6 @@ class KioskoServicio {
       ..headers['Authorization'] = 'Bearer $_sessionToken'
       ..fields['nombre'] = nombre
       ..fields['tipo_documento'] = 'INE'
-      ..fields['clave_lector'] = claveElector
       ..fields['curp'] = curp
       ..fields['motivo_visita'] = motivoVisita
       ..fields['casa_destino'] = casaDestino
@@ -128,7 +124,6 @@ class KioskoServicio {
       await _ensureLogin();
       return _enviarRegistro(
         nombre: nombre,
-        claveElector: claveElector,
         curp: curp,
         motivoVisita: motivoVisita,
         casaDestino: casaDestino,

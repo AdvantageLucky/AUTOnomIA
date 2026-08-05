@@ -7,14 +7,43 @@ void main() {
   //es para poder comunicarnos con el sistema nativo antes de lanzar la app
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Activa el modo inmersivo/Pantalla completa
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  _activarModoInmersivo();
 
   runApp(const KigoApp());
 }
 
-class KigoApp extends StatelessWidget {
+// Oculta barra de estado y de navegación. Se vuelve a invocar en cada resume
+// porque Android suele soltar el modo inmersivo al volver de segundo plano.
+void _activarModoInmersivo() {
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+}
+
+class KigoApp extends StatefulWidget {
   const KigoApp({super.key});
+
+  @override
+  State<KigoApp> createState() => _KigoAppState();
+}
+
+class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _activarModoInmersivo();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

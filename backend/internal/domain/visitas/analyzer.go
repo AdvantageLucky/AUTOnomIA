@@ -2,14 +2,10 @@ package visitas
 
 import (
 	"regexp"
-	"strings"
 	"time"
 )
 
-var (
-	reCURP         = regexp.MustCompile(`^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9]{2}$`)
-	reClaveElector = regexp.MustCompile(`^[A-Z]{6}[0-9]{8}[HM][0-9]{3}$`)
-)
+var reCURP = regexp.MustCompile(`^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9]{2}$`)
 
 // ScoreContexto es el resultado del análisis de una visita.
 // Los campos booleanos son anomalías detectadas. ResumenTexto lo rellena el cliente LLM.
@@ -31,7 +27,7 @@ type ScoreContexto struct {
 func AnalizarVisita(historial []Visita, nueva Visita, umbral int) ScoreContexto {
 	sc := ScoreContexto{
 		VecesVisitado: len(historial),
-		OCRSospechoso: validarOCR(nueva.Curp, nueva.ClaveLector, nueva.Nombre),
+		OCRSospechoso: validarOCR(nueva.Curp),
 	}
 
 	if len(historial) == 0 {
@@ -59,20 +55,8 @@ func AnalizarVisita(historial []Visita, nueva Visita, umbral int) ScoreContexto 
 	return sc
 }
 
-func validarOCR(curp, clave, nombre string) bool {
-	if !reCURP.MatchString(curp) {
-		return true
-	}
-	if len(clave) > 0 && !reClaveElector.MatchString(clave) {
-		return true
-	}
-	if nombre != "" && len(curp) >= 1 {
-		partes := strings.Fields(nombre)
-		if len(partes) > 0 && strings.ToUpper(string(partes[0][0])) != string(curp[0]) {
-			return true
-		}
-	}
-	return false
+func validarOCR(curp string) bool {
+	return !reCURP.MatchString(curp)
 }
 
 func placaDiferente(historial []Visita, placaNueva string) bool {

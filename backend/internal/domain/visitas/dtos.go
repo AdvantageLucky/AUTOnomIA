@@ -15,7 +15,6 @@ import (
 type VisitaRequest struct {
 	Nombre        string                `form:"nombre"         binding:"required"`
 	TipoDocumento TipoDocumento         `form:"tipo_documento" binding:"required,oneof=INE PASAPORTE LICENCIA"`
-	ClaveLector   string                `form:"clave_lector"   binding:"required"`
 	Curp          string                `form:"curp"           binding:"required,len=18"`
 	MotivoVisita  string                `form:"motivo_visita"  binding:"required"`
 	CasaDestino   string                `form:"casa_destino"   binding:"required"`
@@ -30,7 +29,6 @@ type VisitaResponse struct {
 	ID               uint          `json:"id"`
 	Nombre           string        `json:"nombre"`
 	TipoDocumento    TipoDocumento `json:"tipo_documento"`
-	ClaveLector      string        `json:"clave_lector"`
 	Curp             string        `json:"curp"`
 	FotoDocumentoURL string        `json:"foto_documento_url"`
 	FotoRostroURL    string        `json:"foto_rostro_url"`
@@ -78,7 +76,6 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		ID:               v.ID,
 		Nombre:           v.Nombre,
 		TipoDocumento:    v.TipoDocumento,
-		ClaveLector:      v.ClaveLector,
 		Curp:             v.Curp,
 		FotoDocumentoURL: v.FotoDocumentoURL,
 		FotoRostroURL:    v.FotoRostroURL,

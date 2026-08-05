@@ -36,7 +36,17 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerResidenteRoutes(api, db, cfg.JWTSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	r.Static("/admin", "./web/admin")
+
+	// El dashboard admin se edita seguido en desarrollo; sin esto el navegador
+	// cachea app.js/styles.css con heurísticas propias y los cambios no se ven
+	// aunque el archivo en disco ya esté actualizado.
+	adminAssets := r.Group("/admin")
+	adminAssets.Use(func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store")
+		c.Next()
+	})
+	adminAssets.Static("/", "./web/admin")
+
 	r.Static("/uploads/visitantes", cfg.UploadsDir)
 
 	return r

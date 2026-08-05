@@ -59,14 +59,9 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       return;
     }
 
-    final claveElector = (data.claveElector != null && data.claveElector!.isNotEmpty)
-        ? data.claveElector!
-        : 'NO_DISPONIBLE';
-
     try {
       final respuesta = await _kioskoServicio.registrarVisitante(
         nombre: data.nombreCompleto ?? 'Visitante',
-        claveElector: claveElector,
         curp: data.curp!,
         motivoVisita: data.motivoVisita ?? 'No especificado',
         casaDestino: data.casaDestino ?? 'No especificado',
@@ -111,14 +106,19 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       if (!mounted) return;
 
       final nuevoEstado = respuesta['estado'] as String? ?? _estado;
+      final yaEstabaEnRevision = _estado == 'REVISION';
       setState(() => _estado = nuevoEstado);
 
-      if (nuevoEstado == 'APROBADO' || nuevoEstado == 'RECHAZADO') {
+      if (nuevoEstado == 'APROBADO' || nuevoEstado == 'RECHAZADO' || nuevoEstado == 'REVISION') {
         _pollTimer?.cancel();
         // El kiosko se queda mostrando el resultado un minuto y regresa solo
         // a la bienvenida, para quedar listo para el siguiente visitante.
         _regresoTimer?.cancel();
         _regresoTimer = Timer(const Duration(minutes: 1), _regresarABienvenida);
+
+        if (nuevoEstado == 'REVISION' && !yaEstabaEnRevision) {
+          _mostrarDialogoRevision();
+        }
       }
     } catch (e) {
       // Fallas transitorias de red durante el polling se ignoran: el siguiente
@@ -127,11 +127,48 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     }
   }
 
-  bool get _esperandoAprobacion => _estado == 'PENDIENTE' || _estado == 'REVISION';
+  bool get _esperandoAprobacion => _estado == 'PENDIENTE';
 
   void _regresarABienvenida() {
     if (!mounted) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  void _mostrarDialogoRevision() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF211D1D),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF542F), size: 32),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Pasó a revisión manual',
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'La solicitud pasó el tiempo límite de respuesta, tu solicitud pasó a '
+          'revisión manual. Un vigilante te atenderá en breve.',
+          style: TextStyle(color: Color(0xFFC5BFBF), fontSize: 18, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Entendido',
+              style: TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -214,6 +251,26 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           const SizedBox(height: 10),
           const Text(
             'Un residente o administrador debe autorizar tu acceso',
+            style: TextStyle(color: Color(0xFF999494), fontSize: 17, fontWeight: FontWeight.w400),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
+
+    if (_estado == 'REVISION') {
+      return const Column(
+        children: [
+          Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF542F), size: 80),
+          SizedBox(height: 18),
+          Text(
+            'En revisión manual',
+            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Un vigilante revisará tu acceso en breve',
             style: TextStyle(color: Color(0xFF999494), fontSize: 17, fontWeight: FontWeight.w400),
             textAlign: TextAlign.center,
           ),
