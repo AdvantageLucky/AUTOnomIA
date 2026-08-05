@@ -1,109 +1,104 @@
-import 'dart:math';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
+import '../utils/constants.dart';
 
 class AuthViewModel extends ChangeNotifier {
   bool _isAuthenticated = false;
-  String _currentUserName = '';
-  String _userPin = '';
-  bool _rememberMe = false;
+  String _nombre = '';
+  String _casaDestino = '';
+  int _kioskoId = 0;
+  int? _destinoId;
+  bool _isLoading = false;
+  String? _error;
 
   bool get isAuthenticated => _isAuthenticated;
-  bool get isLoggedIn => _isAuthenticated; 
-  String get currentUserName => _currentUserName;
-  String get userPin => _userPin;
-  bool get rememberMe => _rememberMe;
-
-  static const String _pinStorageKey = 'kigo_user_pin';
-  static const String _sessionKey = 'kigo_session_active';
-  static const String _rememberMeKey = 'kigo_remember_me';
+  bool get isLoggedIn => _isAuthenticated;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  String get nombre => _nombre;
+  String get casaDestino => _casaDestino;
+  int get kioskoId => _kioskoId;
+  int? get destinoId => _destinoId;
 
   AuthViewModel() {
-    _loadInitialData();
+    _checkSession();
   }
 
-  Future<void> _loadInitialData() async {
+  Future<void> _checkSession() async {
     final prefs = await SharedPreferences.getInstance();
-    _userPin = prefs.getString(_pinStorageKey) ?? '';
-    _rememberMe = prefs.getBool(_rememberMeKey) ?? false;
+    final jwt = prefs.getString(AppConstants.prefsJwt);
+    if (jwt == null) return;
+
+    ApiService().setJwt(jwt);
+    _nombre = prefs.getString(AppConstants.prefsNombre) ?? '';
+    _casaDestino = prefs.getString(AppConstants.prefsCasaDestino) ?? '';
+    _kioskoId = prefs.getInt(AppConstants.prefsKioskoId) ?? 0;
+    _destinoId = prefs.getInt(AppConstants.prefsDestinoId);
+    _isAuthenticated = true;
     notifyListeners();
   }
 
-  Future<void> checkSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bool sessionActive = prefs.getBool(_sessionKey) ?? false;
-    final bool remember = prefs.getBool(_rememberMeKey) ?? false;
-
-    if (sessionActive && remember) {
-      _isAuthenticated = true;
-      _currentUserName = 'Iván';
-    } else {
-      _isAuthenticated = false;
-    }
+  Future<bool> login(int kioskoId, String casaDestino, String pin) async {
+    _isLoading = true;
+    _error = null;
     notifyListeners();
-  }
 
-  void toggleRememberMe([bool? value]) {
-    _rememberMe = value ?? !_rememberMe;
-    _saveRememberMeOption();
-    notifyListeners();
-  }
+    try {
+      final data = await ApiService().post('/auth/residente/login', {
+        'kiosko_id': kioskoId,
+        'casa_destino': casaDestino,
+        'pin': pin,
+      });
 
-  Future<void> _saveRememberMeOption() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_rememberMeKey, _rememberMe);
-  }
+      final jwt = data['access_token'] as String;
+      ApiService().setJwt(jwt);
 
-  Future<bool> login(String email, String password) async {
-    if (email == 'ivan@kigo.com' || email.contains('ivan')) {
-      _isAuthenticated = true;
-      _currentUserName = 'Iván';
-      
+      // Cargar perfil para obtener nombre y destino_id
+      final perfil = await ApiService().get('/residentes/me');
+      _nombre = '${perfil['nombre']} ${perfil['apellido_paterno']}';
+      _casaDestino = perfil['casa_destino'] as String;
+      _kioskoId = (perfil['kiosko_id'] as int?) ?? kioskoId;
+      _destinoId = perfil['destino_id'] as int?;
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_sessionKey, true);
+      await prefs.setString(AppConstants.prefsJwt, jwt);
+      await prefs.setString(AppConstants.prefsNombre, _nombre);
+      await prefs.setString(AppConstants.prefsCasaDestino, _casaDestino);
+      await prefs.setInt(AppConstants.prefsKioskoId, _kioskoId);
+      if (_destinoId != null) await prefs.setInt(AppConstants.prefsDestinoId, _destinoId!);
 
+      _isAuthenticated = true;
+      _isLoading = false;
       notifyListeners();
       return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'No se pudo conectar al servidor';
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
-    return false;
   }
 
-  void logout() {
+  Future<void> logout() async {
     _isAuthenticated = false;
-    _currentUserName = '';
-    
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setBool(_sessionKey, false);
-    });
+    _nombre = '';
+    _casaDestino = '';
+    _kioskoId = 0;
+    _destinoId = null;
+    ApiService().clearJwt();
 
-    notifyListeners();
-  }
-
-  // ESTE ES EL MÉTODO QUE BUSCA EL DASHBOARD
-  Future<String> generateUniquePin() async {
-    if (_userPin.isNotEmpty) return _userPin;
-
-    final random = Random();
-    String newPin;
-    bool isUnique = false;
-
-    final List<String> existingUserPins = ['12345', '54321', '00000', '99999'];
-
-    do {
-      int number = 10000 + random.nextInt(90000);
-      newPin = number.toString();
-      
-      if (!existingUserPins.contains(newPin)) {
-        isUnique = true;
-      }
-    } while (!isUnique);
-
-    _userPin = newPin;
-    
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_pinStorageKey, _userPin);
-    
+    await prefs.remove(AppConstants.prefsJwt);
+    await prefs.remove(AppConstants.prefsNombre);
+    await prefs.remove(AppConstants.prefsCasaDestino);
+    await prefs.remove(AppConstants.prefsKioskoId);
+    await prefs.remove(AppConstants.prefsDestinoId);
     notifyListeners();
-    return _userPin;
   }
 }

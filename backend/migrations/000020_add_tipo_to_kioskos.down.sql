@@ -1,0 +1,1 @@
+ALTER TABLE kioskos DROP COLUMN tipo;

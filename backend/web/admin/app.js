@@ -250,7 +250,7 @@
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado", REVISION: "badge--revision" };
 
   const RUTAS_POR_ROL = {
-    admin:     ["dashboard","visitas","detalle","solicitudes","residentes","residente-detalle","accesos","configuracion","equipo","perfil"],
+    admin:     ["dashboard","visitas","detalle","solicitudes","residentes","residente-detalle","accesos","destinos","configuracion","equipo","perfil"],
     vigilante: ["solicitudes","perfil"],
   };
 
@@ -325,7 +325,7 @@
     es.onmessage = e => {
       try {
         const v = JSON.parse(e.data);
-        const nombre = v.nombre || "Nuevo visitante";
+        const nombre = v.titular || "Nuevo visitante";
         if (v.estado === "REVISION") {
           mostrarToast(`⚠ Requiere revisión manual: ${nombre}`, "revision");
         } else {
@@ -399,6 +399,7 @@
     if (screen === "solicitudes")       startSolPolling();
     if (screen === "residentes")        loadResidentes();
     if (screen === "accesos")           loadAccesos();
+    if (screen === "destinos")          loadDestinosSection();
     if (screen === "configuracion")     loadConfigAccesos();
     if (screen === "equipo")            loadEquipo();
     if (screen === "perfil")            loadPerfil();
@@ -416,6 +417,11 @@
     loginMode = loginMode === "login" ? "register" : "login";
     const isReg = loginMode === "register";
     document.getElementById("login-submit").textContent = isReg ? (lang === "en" ? "Create account" : "Crear cuenta") : t("login_btn");
+    document.querySelector("#login-toggle-mode").previousElementSibling.textContent =
+      isReg ? (lang === "en" ? "Already have an account?" : "¿Ya tienes cuenta?") : t("no_account");
+    document.getElementById("login-toggle-mode").textContent =
+      isReg ? (lang === "en" ? "Sign in" : "Iniciar sesión") : t("create_account");
+    document.getElementById("login-error").hidden = true;
   });
 
   document.getElementById("login-form").addEventListener("submit", async e => {
@@ -438,7 +444,14 @@
       });
 
       const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || "Error"; errEl.hidden = false; return; }
+      if (!res.ok) {
+        let msg = data.error || "Error";
+        if (msg.includes("duplicate key") || msg.includes("idx_admins_correo") || msg.includes("23505"))
+          msg = lang === "en" ? "An account with this email already exists." : "Ya existe una cuenta con este correo electrónico.";
+        errEl.textContent = msg;
+        errEl.hidden = false;
+        return;
+      }
 
       setToken(data.access_token);
       const claims = decodeJWT(data.access_token);
@@ -482,11 +495,16 @@
     const token = getToken();
     state.rol = getRolFromToken(token);
     await Promise.all([loadAdminData(), preloadAccesos()]);
+    if (!state.admin) { clearToken(); showLogin(); applyI18n(); return; }
     showApp();
     aplicarRol(state.rol);
     initSSE(token);
     loadSolicitudes(); // siembra el badge de nav aunque no aterrices en Solicitudes
-    navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard");
+    if (state.rol !== 'vigilante' && state.accesosById.size === 0) {
+      showOnboarding();
+    } else {
+      navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard");
+    }
   }
 
   async function preloadAccesos() {
@@ -580,7 +598,7 @@
   function renderDashRow(v, i) {
     return `<div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*40}ms" data-id="${v.id}">
       <div>
-        <div class="row-name">${esc(v.nombre)}</div>
+        <div class="row-name">${esc(v.titular)}</div>
         <div class="row-sub">${esc(v.casa_destino || "")}</div>
       </div>
       <div class="row-date">${fmtDateShort(v.created_at)}</div>
@@ -649,7 +667,7 @@
   function renderVisRow(v, i) {
     const acceso = state.accesosById.get(v.kiosko_id);
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
-      <div><div class="row-name">${esc(v.nombre)}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
+      <div><div class="row-name">${esc(v.titular)}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
@@ -695,7 +713,7 @@
             <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
             ${v.intervenida ? `<span class="badge badge--intervenida">Revisada por IA</span>` : ""}
           </div>
-          <div class="detalle-nombre">${esc(v.nombre)}</div>
+          <div class="detalle-nombre">${esc(v.titular)}</div>
           <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${fmtDate(v.created_at)}</div>
           <div class="detalle-campos">
             <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp || "—")}</div></div>
@@ -769,7 +787,7 @@
       return `<div class="exp-row${esCurrent ? " exp-row--current" : ""}" style="animation-delay:${i*25}ms" data-id="${v.id}">
         <div class="exp-marker"><div class="exp-dot"></div></div>
         <div class="exp-info">
-          <div class="exp-nombre">${esc(v.nombre)}</div>
+          <div class="exp-nombre">${esc(v.titular)}</div>
           <div class="exp-meta">${meta}</div>
         </div>
         <div class="exp-right">
@@ -877,7 +895,7 @@
       <div class="sol-card-left">
         <div class="feed-dot"></div>
         <div>
-          <div class="row-name">${esc(v.nombre)} <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
+          <div class="row-name">${esc(v.titular)} <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
           <div class="row-sub">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${esc(v.casa_destino || "sin destino")} · <span class="feed-elapsed">${fmtElapsed(v.created_at)}</span></div>
           ${v.motivo_visita ? `<div class="row-sub" style="margin-top:2px;font-style:italic">"${esc(v.motivo_visita)}"</div>` : ""}
         </div>
@@ -1086,7 +1104,7 @@
     container.innerHTML = visitas.map((v, i) => `
       <div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*30}ms" data-id="${v.id}">
         <div>
-          <div class="row-name">${esc(v.nombre)}</div>
+          <div class="row-name">${esc(v.titular)}</div>
           <div class="row-sub">${esc(v.motivo_visita || v.casa_destino || "—")}</div>
         </div>
         <div class="row-date">${fmtDate(v.created_at)}</div>
@@ -1122,18 +1140,24 @@
         <div class="acceso-info">
           <div class="acceso-nombre">${esc(a.nombre)}</div>
           ${a.ubicacion ? `<div class="acceso-ubi">${esc(a.ubicacion)}</div>` : ""}
-          <div class="acceso-id">ID ${a.id}</div>
+          <div class="acceso-id">ID ${a.id} · ${esc(a.tipo || "—")}</div>
         </div>
         <div class="acceso-actions">
-          <button class="btn-ghost" data-edit-acceso="${a.id}">
+          <button class="btn-ghost" data-cfg-acceso="${a.id}" title="Configuración">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button class="btn-ghost" data-edit-acceso="${a.id}" title="Editar">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l3 3-9 9H3v-3z"/></svg>
           </button>
-          <button class="btn-ghost" data-del-acceso="${a.id}" style="color:var(--red)">
+          <button class="btn-ghost" data-del-acceso="${a.id}" style="color:var(--red)" title="Eliminar">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
           </button>
         </div>
       </div>`).join("");
 
+    container.querySelectorAll("[data-cfg-acceso]").forEach(btn => {
+      btn.addEventListener("click", () => openConfigParaAcceso(parseInt(btn.dataset.cfgAcceso)));
+    });
     container.querySelectorAll("[data-edit-acceso]").forEach(btn => {
       btn.addEventListener("click", () => openAccesoModal(parseInt(btn.dataset.editAcceso)));
     });
@@ -1155,11 +1179,13 @@
       const a = state.accesosById.get(accesoId);
       document.getElementById("modal-acceso-title").textContent = lang === "en" ? "Edit entry" : "Editar acceso";
       document.getElementById("acceso-nombre").value    = a?.nombre    || "";
+      document.getElementById("acceso-tipo").value      = a?.tipo      || "PEATONAL";
       document.getElementById("acceso-ubicacion").value = a?.ubicacion || "";
       document.getElementById("acceso-clave-hint").hidden = true;
     } else {
       document.getElementById("modal-acceso-title").textContent = t("modal_new_acceso");
       document.getElementById("acceso-nombre").value    = "";
+      document.getElementById("acceso-tipo").value      = "PEATONAL";
       document.getElementById("acceso-ubicacion").value = "";
       document.getElementById("acceso-clave-hint").hidden = false;
     }
@@ -1174,6 +1200,7 @@
   document.getElementById("acceso-form").addEventListener("submit", async e => {
     e.preventDefault();
     const nombre    = document.getElementById("acceso-nombre").value;
+    const tipo      = document.getElementById("acceso-tipo").value;
     const ubicacion = document.getElementById("acceso-ubicacion").value;
     const errEl     = document.getElementById("acceso-form-error");
 
@@ -1181,7 +1208,7 @@
     const endpoint = isNew ? "/kioskos/" : `/kioskos/${state.editingAccesoId}`;
     const method   = isNew ? "POST" : "PATCH";
 
-    const res = await api(endpoint, { method, body: JSON.stringify({ nombre, ubicacion }) });
+    const res = await api(endpoint, { method, body: JSON.stringify({ nombre, tipo, ubicacion }) });
     if (!res) return;
 
     if (!res.ok) {
@@ -1234,6 +1261,21 @@
   /* ─── Configuración ─────────────────────── */
   let cfgAccesoId = null;
 
+  async function openConfigParaAcceso(accesoId) {
+    // Mostrar screen-configuracion sin pasar por navTo (que requeriría la ruta en RUTAS_POR_ROL)
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const screenEl = document.getElementById('screen-configuracion');
+    if (screenEl) { screenEl.hidden = false; screenEl.classList.add('active'); }
+    stopSolPolling();
+
+    await loadConfigAccesos();
+    const select = document.getElementById('cfg-acceso-select');
+    if (select) select.value = accesoId;
+    cfgAccesoId = accesoId;
+    await loadConfig(accesoId);
+  }
+
   async function loadConfigAccesos() {
     const select = document.getElementById("cfg-acceso-select");
     if (!select) return;
@@ -1274,18 +1316,36 @@
     }
 
     const cfg = await res.json();
+    const acceso = state.accesosById.get(accesoId);
+    const esPeatonal = acceso?.tipo === "PEATONAL";
+
+    // badge de tipo
+    const tipoBadge = document.getElementById("cfg-tipo-badge");
+    if (tipoBadge) {
+      tipoBadge.textContent = acceso?.tipo || "—";
+      tipoBadge.style.background = esPeatonal ? "#1e3a2f" : "#1e2d3a";
+      tipoBadge.style.color      = esPeatonal ? "#4ade80" : "#60a5fa";
+    }
+
     document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
     document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
-    document.getElementById("cfg-ine-visitante").checked    = !!cfg.foto_ine_visitante;
     document.getElementById("cfg-rostro-visitante").checked = !!cfg.foto_rostro_visitante;
-    document.getElementById("cfg-placa-visitante").checked  = !!cfg.foto_placa_visitante;
+    document.getElementById("cfg-placa-visitante").checked  = esPeatonal ? false : !!cfg.foto_placa_visitante;
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
-    document.getElementById("cfg-placa-invitado").checked   = !!cfg.foto_placa_invitado;
+    document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
     document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_min ?? 5;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
+
+    // deshabilitar y ocultar toggles de placa en kioskos peatonales
+    const rowPlacaVis = document.getElementById("cfg-row-placa-visitante");
+    const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
+    if (rowPlacaVis) rowPlacaVis.style.opacity = esPeatonal ? "0.35" : "1";
+    if (rowPlacaInv) rowPlacaInv.style.opacity = esPeatonal ? "0.35" : "1";
+    document.getElementById("cfg-placa-visitante").disabled = esPeatonal;
+    document.getElementById("cfg-placa-invitado").disabled  = esPeatonal;
 
     document.getElementById("cfg-error").hidden   = true;
     document.getElementById("cfg-success").hidden = true;
@@ -1301,18 +1361,17 @@
     okEl.hidden  = true;
 
     const payload = {
-      color_kiosko:         document.getElementById("cfg-color").value,
-      idioma_kiosko:        document.getElementById("cfg-idioma").value,
-      mensaje_bienvenida:   document.getElementById("cfg-mensaje").value,
-      foto_ine_visitante:   document.getElementById("cfg-ine-visitante").checked,
-      foto_rostro_visitante:document.getElementById("cfg-rostro-visitante").checked,
-      foto_placa_visitante: document.getElementById("cfg-placa-visitante").checked,
-      foto_ine_invitado:    document.getElementById("cfg-ine-invitado").checked,
-      foto_rostro_invitado: document.getElementById("cfg-rostro-invitado").checked,
-      foto_placa_invitado:  document.getElementById("cfg-placa-invitado").checked,
-      tiempo_espera_min:    parseInt(document.getElementById("cfg-tiempo-espera").value) || 0,
-      horario_inicio:       document.getElementById("cfg-horario-inicio").value,
-      horario_fin:          document.getElementById("cfg-horario-fin").value,
+      color_kiosko:          document.getElementById("cfg-color").value,
+      idioma_kiosko:         document.getElementById("cfg-idioma").value,
+      mensaje_bienvenida:    document.getElementById("cfg-mensaje").value,
+      foto_rostro_visitante: document.getElementById("cfg-rostro-visitante").checked,
+      foto_placa_visitante:  document.getElementById("cfg-placa-visitante").checked,
+      foto_ine_invitado:     document.getElementById("cfg-ine-invitado").checked,
+      foto_rostro_invitado:  document.getElementById("cfg-rostro-invitado").checked,
+      foto_placa_invitado:   document.getElementById("cfg-placa-invitado").checked,
+      tiempo_espera_min:     parseInt(document.getElementById("cfg-tiempo-espera").value) || 0,
+      horario_inicio:        document.getElementById("cfg-horario-inicio").value,
+      horario_fin:           document.getElementById("cfg-horario-fin").value,
     };
 
     const res = await api(`/kioskos/${cfgAccesoId}/config`, {
@@ -1465,6 +1524,271 @@
     state.admin = { ...state.admin, ...payload };
     okEl.hidden = false;
     await loadAdminData();
+  });
+
+  /* ─── Hero anim (live access feed) ──────── */
+  (function initHeroAnim() {
+    const feed = document.getElementById('hero-feed');
+    if (!feed) return;
+
+    const COLORS   = ['#FF542F','#4A9EFF','#a78bfa','#34d399'];
+    const ACCESOS  = ['E. Principal','Acc. Norte','Caseta Veh.','E. Lateral','Acc. Sur'];
+    const NOMBRES  = [
+      'García L., Marco','Rodríguez P., Ana','Martínez C., Luis',
+      'Hernández R., Sofía','López T., Juan','González V., María',
+      'Sánchez F., Carlos','Ramírez D., Elena','Torres M., José',
+      'Flores J., Laura','Pérez C., Diego','Vargas M., Paula',
+    ];
+    const ESTADOS  = ['APROBADO','APROBADO','APROBADO','PENDIENTE','REVISIÓN'];
+
+    let running = true, spawnId = null;
+
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function collapseCard(card, onDone) {
+      card.style.animation = 'none';
+      card.classList.add('leaving');
+      setTimeout(onDone, 400);
+    }
+
+    function spawnCard() {
+      const name   = pick(NOMBRES);
+      const color  = pick(COLORS);
+      const acceso = pick(ACCESOS);
+      const estado = pick(ESTADOS);
+      const init2  = name.replace(/[,. ]+/g,'').slice(0,2).toUpperCase();
+      const bcls   = estado==='APROBADO'?'badge--aprobado':estado==='PENDIENTE'?'badge--pendiente':'badge--revision';
+      const card   = document.createElement('div');
+      card.className = 'hero-card';
+      card.innerHTML = `
+        <div class="hero-card-avatar" style="background:${color}20;border-color:${color}55;color:${color}">${init2}</div>
+        <div class="hero-card-info">
+          <div class="hero-card-name">${esc(name)}</div>
+          <div class="hero-card-meta">${esc(acceso)} · ahora</div>
+        </div>
+        <span class="badge ${bcls}">${estado}</span>`;
+      feed.insertBefore(card, feed.firstChild);
+      if (feed.children.length > 3) {
+        const oldest = feed.lastElementChild;
+        collapseCard(oldest, () => oldest.remove());
+      }
+      setTimeout(() => collapseCard(card, () => card.remove()), 6000);
+    }
+
+    function animCount(el, target, ms) {
+      if (!el) return;
+      const start = performance.now();
+      function frame(now) {
+        const t = Math.min((now - start) / ms, 1);
+        el.textContent = Math.round((1 - Math.pow(1-t, 3)) * target);
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function start() {
+      if (spawnId) return;
+      for (let i = 0; i < 2; i++) spawnCard();
+      spawnId = setInterval(() => { if (running) spawnCard(); }, 2200);
+      animCount(document.getElementById('has-visitas'),   247, 1400);
+      animCount(document.getElementById('has-aprobadas'), 183, 1400);
+      animCount(document.getElementById('has-pendientes'), 12, 1000);
+    }
+
+    function stop() {
+      clearInterval(spawnId); spawnId = null; running = false;
+    }
+
+    start();
+
+    const loginScreen = document.getElementById('screen-login');
+    if (loginScreen) {
+      new MutationObserver(() => {
+        if (loginScreen.hidden) { stop(); }
+        else { running = true; start(); }
+      }).observe(loginScreen, { attributes: true, attributeFilter: ['hidden'] });
+    }
+  })();
+
+  /* ─── Onboarding first-run ───────────────── */
+  let obStep = 1;
+
+  function showOnboarding() {
+    obStep = 1;
+    document.getElementById('onboarding-overlay').hidden = false;
+    setObStep(1);
+  }
+
+  function setObStep(n) {
+    [1,2,3].forEach(i => {
+      document.getElementById(`ob-step-${i}`)?.classList.toggle('active', i===n);
+      const dot = document.getElementById(`ob-dot-${i}`);
+      if (dot) {
+        dot.classList.toggle('active', i===n);
+        dot.classList.toggle('done',   i<n);
+      }
+    });
+    [1,2].forEach(i => {
+      document.getElementById(`ob-line-${i}`)?.classList.toggle('done', i<n);
+    });
+    obStep = n;
+  }
+
+  document.getElementById('ob-btn-1')?.addEventListener('click', () => setObStep(2));
+
+  document.getElementById('ob-acceso-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl = document.getElementById('ob-form-error');
+    errEl.hidden = true;
+    const nombre = document.getElementById('ob-nombre').value.trim();
+    const tipo   = document.getElementById('ob-tipo').value;
+    const ubicacion = document.getElementById('ob-ubicacion').value.trim();
+
+    const res = await api('/kioskos/', { method:'POST', body:JSON.stringify({nombre,tipo,ubicacion}) });
+    if (!res) return;
+    if (!res.ok) {
+      const d = await res.json();
+      errEl.textContent = d.error || 'Error al crear acceso';
+      errEl.hidden = false;
+      return;
+    }
+    const data = await res.json();
+    state.accesosById.set(data.id, data);
+    document.getElementById('ob-id-reveal').textContent    = data.id    || '—';
+    document.getElementById('ob-clave-reveal').textContent = data.clave_kiosko || '—';
+    document.getElementById('ob-btn-copy').dataset.val     = data.clave_kiosko || '';
+    setObStep(3);
+  });
+
+  document.getElementById('ob-btn-copy')?.addEventListener('click', function() {
+    const v = this.dataset.val;
+    if (!v) return;
+    navigator.clipboard.writeText(v).then(() => {
+      this.textContent = '¡Copiado!';
+      setTimeout(() => { this.textContent = 'Copiar'; }, 2000);
+    });
+  });
+
+  document.getElementById('ob-btn-done')?.addEventListener('click', () => {
+    document.getElementById('onboarding-overlay').hidden = true;
+    navTo('dashboard');
+  });
+
+  ['ob-goto-destinos','ob-goto-equipo','ob-goto-config'].forEach((id, i) => {
+    const dest = ['destinos','equipo','configuracion'][i];
+    document.getElementById(id)?.addEventListener('click', () => {
+      document.getElementById('onboarding-overlay').hidden = true;
+      navTo(dest);
+    });
+  });
+
+  /* ─── Destinos ───────────────────────────── */
+  let destCurrentKioskoId = null;
+
+  async function loadDestinosSection() {
+    const sel = document.getElementById('dest-acceso-select');
+    if (!sel) return;
+    if (state.accesosById.size === 0) await preloadAccesos();
+    sel.innerHTML = '<option value="">— Selecciona un acceso —</option>';
+    state.accesosById.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = `${a.nombre}${a.ubicacion ? ` (${a.ubicacion})` : ''}`;
+      sel.appendChild(opt);
+    });
+    if (destCurrentKioskoId) {
+      sel.value = destCurrentKioskoId;
+      loadDestinos(destCurrentKioskoId);
+    } else {
+      document.getElementById('dest-list-wrap').hidden = true;
+      document.getElementById('dest-idle').hidden = false;
+    }
+  }
+
+  async function loadDestinos(kioskoId) {
+    destCurrentKioskoId = kioskoId;
+    const rowsEl  = document.getElementById('dest-rows');
+    const emptyEl = document.getElementById('dest-empty');
+    const loadEl  = document.getElementById('dest-loading');
+    const wrap    = document.getElementById('dest-list-wrap');
+    const idleEl  = document.getElementById('dest-idle');
+    if (!rowsEl) return;
+
+    rowsEl.innerHTML = ''; emptyEl.hidden = true;
+    wrap.hidden = false; idleEl.hidden = true; loadEl.hidden = false;
+
+    const res = await api(`/kioskos/${kioskoId}/destinos`);
+    loadEl.hidden = true;
+    if (!res || !res.ok) { mostrarToast('Error al cargar destinos', 'err'); return; }
+
+    const items = await res.json();
+    if (!items.length) { emptyEl.hidden = false; return; }
+
+    rowsEl.innerHTML = items.map(d => `
+      <div class="equipo-row" id="dest-row-${d.id}">
+        <div class="equipo-info">
+          <div class="equipo-name">${esc(d.nombre)}</div>
+          <div class="equipo-sub">${esc(d.titular)}</div>
+        </div>
+        <button class="btn-ghost" style="color:var(--red)" data-del-dest="${d.id}" title="Eliminar destino">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
+        </button>
+      </div>`).join('');
+
+    rowsEl.querySelectorAll('[data-del-dest]').forEach(btn => {
+      btn.addEventListener('click', () => deleteDestino(+btn.dataset.delDest, kioskoId));
+    });
+  }
+
+  async function deleteDestino(id, kioskoId) {
+    if (!confirm('¿Eliminar este destino?')) return;
+    const res = await api(`/kioskos/${kioskoId}/destinos/${id}`, { method: 'DELETE' });
+    if (res && res.ok) {
+      document.getElementById(`dest-row-${id}`)?.remove();
+      if (!document.getElementById('dest-rows').children.length)
+        document.getElementById('dest-empty').hidden = false;
+    } else {
+      mostrarToast('No se pudo eliminar el destino', 'err');
+    }
+  }
+
+  document.getElementById('dest-acceso-select')?.addEventListener('change', e => {
+    const id = e.target.value;
+    if (id) loadDestinos(id);
+    else {
+      document.getElementById('dest-list-wrap').hidden = true;
+      document.getElementById('dest-idle').hidden = false;
+      destCurrentKioskoId = null;
+    }
+  });
+
+  document.getElementById('btn-nuevo-destino')?.addEventListener('click', () => {
+    document.getElementById('modal-destino').hidden = false;
+  });
+  document.getElementById('dest-cancel')?.addEventListener('click', () => {
+    document.getElementById('modal-destino').hidden = true;
+  });
+
+  document.getElementById('destino-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const nombre   = document.getElementById('dest-nombre').value.trim();
+    const titular  = document.getElementById('dest-titular').value.trim();
+    const errEl    = document.getElementById('dest-form-error');
+    errEl.hidden   = true;
+    if (!destCurrentKioskoId) return;
+
+    const res = await api(`/kioskos/${destCurrentKioskoId}/destinos/`, {
+      method: 'POST', body: JSON.stringify({ nombre, titular }),
+    });
+    if (!res) return;
+    if (!res.ok) {
+      const d = await res.json();
+      errEl.textContent = d.error || 'Error al crear destino';
+      errEl.hidden = false; return;
+    }
+    document.getElementById('modal-destino').hidden = true;
+    document.getElementById('destino-form').reset();
+    loadDestinos(destCurrentKioskoId);
   });
 
   /* ─── Init ───────────────────────────────── */

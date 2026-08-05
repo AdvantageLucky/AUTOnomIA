@@ -1,7 +1,14 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart' show Share, XFile;
 import '../theme/app_theme.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/invitation_viewmodel.dart';
 import '../models/invitation_model.dart';
 
@@ -13,196 +20,306 @@ class GenerateQrView extends StatefulWidget {
 }
 
 class _GenerateQrViewState extends State<GenerateQrView> {
+  final _titularCtrl = TextEditingController();
+  final _maxUsosCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _companyController = TextEditingController();
-  final _reasonController = TextEditingController();
-  final _timeController = TextEditingController(text: "12:00");
-  final _durationController = TextEditingController(text: "3");
-  final DateTime _selectedDate = DateTime.now();
+  final _qrKey = GlobalKey();
+
+  String _tipo = 'PERSONAL';
+  // Por seguridad, la expiración por defecto es 24 horas.
+  DateTime _expiresAt = DateTime.now().add(const Duration(hours: 24));
+  bool _isLoading = false;
+  bool _isSharing = false;
+  InvitationModel? _creada;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _companyController.dispose();
-    _reasonController.dispose();
-    _timeController.dispose();
-    _durationController.dispose();
+    _titularCtrl.dispose();
+    _maxUsosCtrl.dispose();
     super.dispose();
   }
 
-  void _generate() {
-    if (_formKey.currentState!.validate()) {
-      final invitation = context.read<InvitationViewModel>().createInvitation(
-        name: _nameController.text,
-        company: _companyController.text,
-        reason: _reasonController.text,
-        date: _selectedDate,
-        time: _timeController.text,
-        duration: int.parse(_durationController.text),
-      );
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expiresAt,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(primary: AppTheme.primaryOrange),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _expiresAt = picked);
+  }
 
-      _showQrDialog(invitation);
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    final authVM = context.read<AuthViewModel>();
+    final destinoId = authVM.destinoId;
+    if (destinoId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se encontró el destino de tu casa. Cierra sesión e ingresa de nuevo.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final invVM = context.read<InvitationViewModel>();
+    final inv = await invVM.createInvitation(
+      titular: _titularCtrl.text.trim(),
+      tipo: _tipo,
+      destinoId: destinoId,
+      maxUsos: _maxUsosCtrl.text.isEmpty ? null : int.tryParse(_maxUsosCtrl.text),
+      expiresAt: _expiresAt,
+    );
+    setState(() {
+      _isLoading = false;
+      _creada = inv;
+    });
+    if (inv == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(invVM.error ?? 'No se pudo crear la invitación'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
-  void _showQrDialog(InvitationModel invitation) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        content: SizedBox(
-          width: 280, // Forzar un ancho fijo para el diálogo en Web
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              const Text('Invitación Creada', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20)),
-              const SizedBox(height: 12),
-              Text(invitation.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryOrange)),
-              const SizedBox(height: 8),
-              const Text('Código de Acceso QR generado:', style: TextStyle(color: AppTheme.textGrey, fontSize: 12)),
-              const SizedBox(height: 16),
-              Container(
-                width: 220,
-                height: 220,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: QrImageView(
-                      data: invitation.id,
-                      version: QrVersions.auto,
-                      size: 200.0,
-                      gapless: false,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SelectableText(
-                'ID: ${invitation.id.substring(0, 8)}...',
-                style: const TextStyle(fontFamily: 'monospace', color: AppTheme.textGrey),
-              ),
-            ],
+  Future<void> _shareQr() async {
+    setState(() => _isSharing = true);
+    try {
+      final boundary = _qrKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+
+      final tmpDir = await getTemporaryDirectory();
+      final file = File('${tmpDir.path}/kigo_invitacion.png');
+      await file.writeAsBytes(byteData.buffer.asUint8List());
+
+      final titular = _creada?.titular ?? 'invitado';
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Tu pase de acceso Kigo para "$titular". Muestra este código QR al llegar.',
+      );
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('GENERAR INVITACIÓN'),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: _creada != null ? _buildSuccess(isDark, textColor) : _buildForm(isDark, textColor),
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('ENTENDIDO', style: TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.bold)),
-          )
+      ),
+    );
+  }
+
+  Widget _buildForm(bool isDark, Color textColor) {
+    final dateStr = '${_expiresAt.day}/${_expiresAt.month}/${_expiresAt.year}';
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _titularCtrl,
+            style: TextStyle(color: textColor),
+            textCapitalization: TextCapitalization.words,
+            decoration: _inputDeco(
+              label: 'Nombre del visitante o grupo',
+              icon: Icons.person_outline,
+              isDark: isDark,
+            ),
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: _tipo,
+            dropdownColor: isDark ? AppTheme.surfaceDark : Colors.white,
+            style: TextStyle(color: textColor),
+            decoration: _inputDeco(
+              label: 'Tipo de invitación',
+              icon: Icons.group_outlined,
+              isDark: isDark,
+            ),
+            items: const [
+              DropdownMenuItem(value: 'PERSONAL', child: Text('Personal (una persona)')),
+              DropdownMenuItem(value: 'GRUPAL', child: Text('Grupal (varias personas)')),
+            ],
+            onChanged: (v) => setState(() => _tipo = v!),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _maxUsosCtrl,
+            style: TextStyle(color: textColor),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: _inputDeco(
+              label: 'Límite de usos (vacío = sin límite)',
+              icon: Icons.repeat_outlined,
+              isDark: isDark,
+            ),
+          ),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: _pickDate,
+            borderRadius: BorderRadius.circular(12),
+            child: InputDecorator(
+              decoration: _inputDeco(
+                label: 'Fecha de expiración',
+                icon: Icons.calendar_today_outlined,
+                isDark: isDark,
+              ),
+              child: Text(dateStr, style: TextStyle(color: textColor)),
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryOrange,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: _isLoading ? null : _submit,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                  )
+                : const Icon(Icons.qr_code_2, color: Colors.white),
+            label: const Text(
+              'GENERAR CÓDIGO QR',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+            ),
+          ),
         ],
       ),
     );
   }
-  
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('GENERAR INVITACIÓN')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 450),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: _nameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Nombre del Visitante',
-                      prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryOrange),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    validator: (value) => value!.isEmpty ? 'Ingresa un nombre' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _companyController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Empresa / Procedencia',
-                      prefixIcon: const Icon(Icons.business_outlined, color: AppTheme.primaryOrange),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    validator: (value) => value!.isEmpty ? 'Ingresa la procedencia' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _reasonController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Motivo de Visita',
-                      prefixIcon: const Icon(Icons.info_outline, color: AppTheme.primaryOrange),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    validator: (value) => value!.isEmpty ? 'Ingresa un motivo' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _timeController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: 'Hora de Entrada',
-                            prefixIcon: const Icon(Icons.access_time, color: AppTheme.primaryOrange),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          validator: (value) => value!.isEmpty ? 'Obligatorio' : null,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _durationController,
-                          style: const TextStyle(color: Colors.white),
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Duración (Horas)',
-                            prefixIcon: const Icon(Icons.timelapse, color: AppTheme.primaryOrange),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          validator: (value) => value!.isEmpty ? 'Obligatorio' : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _generate,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.qr_code),
-                        SizedBox(width: 8),
-                        Text('GENERAR CÓDIGO QR'),
-                      ],
-                    ),
-                  ),
-                ],
+  Widget _buildSuccess(bool isDark, Color textColor) {
+    final token = _creada!.token ?? '';
+    return Column(
+      children: [
+        const Icon(Icons.check_circle_outline, color: AppTheme.primaryOrange, size: 56),
+        const SizedBox(height: 12),
+        Text(
+          '¡Invitación creada!',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor),
+        ),
+        const SizedBox(height: 4),
+        Text(_creada!.titular, style: const TextStyle(color: AppTheme.textGrey)),
+        const SizedBox(height: 24),
+        if (token.isNotEmpty) ...[
+          RepaintBoundary(
+            key: _qrKey,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: QrImageView(
+                data: token,
+                version: QrVersions.auto,
+                size: 220,
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF25D366),
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: _isSharing ? null : _shareQr,
+            icon: _isSharing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Icon(Icons.share_rounded, color: Colors.white),
+            label: const Text(
+              'COMPARTIR (WhatsApp / etc.)',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryOrange,
+            minimumSize: const Size(double.infinity, 48),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: () => Navigator.pushReplacementNamed(context, '/my_invitations'),
+          child: const Text(
+            'VER MIS INVITACIONES',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
         ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: () => setState(() => _creada = null),
+          child: const Text('Crear otra', style: TextStyle(color: AppTheme.primaryOrange)),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _inputDeco({
+    required String label,
+    required IconData icon,
+    required bool isDark,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: isDark ? AppTheme.textGrey : Colors.black54),
+      floatingLabelStyle: const TextStyle(color: AppTheme.primaryOrange),
+      prefixIcon: Icon(icon, color: AppTheme.primaryOrange),
+      filled: true,
+      fillColor: isDark ? AppTheme.surfaceDark : Colors.grey.shade100,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppTheme.primaryOrange),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent),
       ),
     );
   }

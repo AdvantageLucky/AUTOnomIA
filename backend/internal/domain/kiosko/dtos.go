@@ -9,19 +9,21 @@ package kiosko
 
 // RegisterKioskoRequest DTO para dar de alta o modificar un kiosko
 type RegisterKioskoRequest struct {
-	Nombre    string `json:"nombre"    binding:"required"`
-	Ubicacion string `json:"ubicacion"`
+	Nombre    string     `json:"nombre"    binding:"required"`
+	Ubicacion string     `json:"ubicacion"`
+	Tipo      TipoKiosko `json:"tipo"      binding:"required,oneof=PEATONAL VEHICULAR"`
 }
 
 // KioskoResponse DTO para devolver info de un kiosko despues de ser creado/modificado
 // ClaveKiosko solo viaja en la respuesta de RegisterKiosko (texto plano, una sola vez); en cualquier
 // otra respuesta queda vacio y se omite del JSON, porque el servidor solo guarda su hash bcrypt
 type KioskoResponse struct {
-	ID          uint   `json:"id"`
-	Nombre      string `json:"nombre"`
-	Ubicacion   string `json:"ubicacion"`
-	AdminID     uint   `json:"usuario_id"`
-	ClaveKiosko string `json:"clave_kiosko,omitempty"`
+	ID          uint       `json:"id"`
+	Nombre      string     `json:"nombre"`
+	Tipo        TipoKiosko `json:"tipo"`
+	Ubicacion   string     `json:"ubicacion"`
+	AdminID     uint       `json:"usuario_id"`
+	ClaveKiosko string     `json:"clave_kiosko,omitempty"`
 }
 
 // KioskoConfigRequest DTO para actualizar la config de un kiosko
@@ -30,10 +32,9 @@ type KioskoConfigRequest struct {
 	IdiomaKiosko           *string `json:"idioma_kiosko"`
 	FotoPlacaVisitante     *bool   `json:"foto_placa_visitante"`
 	FotoRostroVisitante    *bool   `json:"foto_rostro_visitante"`
-	FotoIneVisitante       *bool   `json:"foto_ine_visitante"`
 	FotoPlacaInvitado      *bool   `json:"foto_placa_invitado"`
 	FotoRostroInvitado     *bool   `json:"foto_rostro_invitado"`
-	FotoIneInvitado        *bool   `json:"foto_ine_invitado"`
+	IneObligatorioInvitado *bool   `json:"foto_ine_invitado"`
 	TiempoEsperaMin        *int    `json:"tiempo_espera_min"`
 	HorarioInicio          *string `json:"horario_inicio"`
 	HorarioFin             *string `json:"horario_fin"`
@@ -49,10 +50,9 @@ type KioskoConfigResponse struct {
 	IdiomaKiosko           string `json:"idioma_kiosko"`
 	FotoPlacaVisitante     bool   `json:"foto_placa_visitante"`
 	FotoRostroVisitante    bool   `json:"foto_rostro_visitante"`
-	FotoIneVisitante       bool   `json:"foto_ine_visitante"`
 	FotoPlacaInvitado      bool   `json:"foto_placa_invitado"`
 	FotoRostroInvitado     bool   `json:"foto_rostro_invitado"`
-	FotoIneInvitado        bool   `json:"foto_ine_invitado"`
+	IneObligatorioInvitado bool   `json:"foto_ine_invitado"`
 	TiempoEsperaMin        int    `json:"tiempo_espera_min"`
 	HorarioInicio          string `json:"horario_inicio"`
 	HorarioFin             string `json:"horario_fin"`
@@ -67,6 +67,7 @@ func toKioskoResponse(a *Kiosko) KioskoResponse {
 		ID:        a.ID,
 		Nombre:    a.Nombre,
 		Ubicacion: a.Ubicacion,
+		Tipo:      a.Tipo,
 		AdminID:   a.AdminID,
 	}
 }
@@ -74,15 +75,19 @@ func toKioskoResponse(a *Kiosko) KioskoResponse {
 // helper func para convertir un KioskoConfig (DB Model) a DTO Response
 func toKioskoConfigResponse(cfg *KioskoConfig) KioskoConfigResponse {
 	return KioskoConfigResponse{
-		KioskoID:               cfg.KioskoID,
-		ColorKiosko:            cfg.ColorKiosko,
-		IdiomaKiosko:           cfg.IdiomaKiosko,
-		FotoPlacaVisitante:     cfg.FotoPlacaVisitante,
-		FotoRostroVisitante:    cfg.FotoRostroVisitante,
-		FotoIneVisitante:       cfg.FotoIneVisitante,
+		KioskoID:     cfg.KioskoID,
+		ColorKiosko:  cfg.ColorKiosko,
+		IdiomaKiosko: cfg.IdiomaKiosko,
+
+		// SinInvitacion
+		FotoPlacaVisitante:  cfg.FotoPlacaVisitante,
+		FotoRostroVisitante: cfg.FotoRostroVisitante,
+
+		// ConInvitacion
 		FotoPlacaInvitado:      cfg.FotoPlacaInvitado,
 		FotoRostroInvitado:     cfg.FotoRostroInvitado,
-		FotoIneInvitado:        cfg.FotoIneInvitado,
+		IneObligatorioInvitado: cfg.IneObligatorioInvitado,
+
 		TiempoEsperaMin:        cfg.TiempoEsperaMin,
 		HorarioInicio:          cfg.HorarioInicio,
 		HorarioFin:             cfg.HorarioFin,

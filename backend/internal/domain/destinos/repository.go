@@ -1,9 +1,3 @@
-/*
-Package destinos
-Repositorio relacionado con la tabla destinos
-
-Funciones CRUD relacionadas solo con el dominio destinos, es decir operaciones CRUD en tabla destinos
-*/
 package destinos
 
 import "gorm.io/gorm"
@@ -31,6 +25,25 @@ func (r *Repository) FindByKioskoID(kioskoID uint) ([]Destino, error) {
 		return nil, err
 	}
 	return list, nil
+}
+
+// FindByNombreAndKioskoID busca el ID de un destino por nombre exacto y kiosko
+func (r *Repository) FindByNombreAndKioskoID(nombre string, kioskoID uint) (uint, error) {
+	var d Destino
+	if err := r.db.Where("nombre = ? AND kiosko_id = ?", nombre, kioskoID).First(&d).Error; err != nil {
+		return 0, err
+	}
+	return d.ID, nil
+}
+
+// VerificarOwnershipAdmin verifica que el kiosko pertenezca al admin antes de operar sobre sus destinos.
+func (r *Repository) VerificarOwnershipAdmin(kioskoID, adminID uint) error {
+	var count int64
+	r.db.Table("kioskos").Where("id = ? AND admin_id = ?", kioskoID, adminID).Count(&count)
+	if count == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // Delete elimina un destino por su id

@@ -9,20 +9,50 @@ Documentado con swag
 package kiosko
 
 import (
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"sync"
+
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
+	"kigo-autonomia-backend/internal/platform/sse"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
+// configHubRegistry mantiene un hub SSE por kiosko para emitir cambios de config en tiempo real.
+type configHubRegistry struct {
+	mu   sync.RWMutex
+	hubs map[uint]*sse.Hub
+}
+
+func (r *configHubRegistry) get(kioskoID uint) *sse.Hub {
+	r.mu.RLock()
+	h, ok := r.hubs[kioskoID]
+	r.mu.RUnlock()
+	if ok {
+		return h
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if h, ok = r.hubs[kioskoID]; ok {
+		return h
+	}
+	h = sse.NewHub()
+	r.hubs[kioskoID] = h
+	return h
+}
+
 type Handler struct {
-	repo *Repository
+	repo    *Repository
+	cfgHubs *configHubRegistry
 }
 
 func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo}
+	return &Handler{repo: repo, cfgHubs: &configHubRegistry{hubs: make(map[uint]*sse.Hub)}}
 }
 
 // RegisterKiosko crea un nuevo Kiosko del Admin, generando su clave de kiosko
@@ -65,6 +95,7 @@ func (h *Handler) RegisterKiosko(c *gin.Context) {
 	// creamos el kiosko y retornamos
 	a := &Kiosko{
 		Nombre:      req.Nombre,
+		Tipo:        req.Tipo,
 		Ubicacion:   req.Ubicacion,
 		ClaveKiosko: string(hash),
 		AdminID:     adminID,
@@ -182,6 +213,7 @@ func (h *Handler) PatchKiosko(c *gin.Context) {
 	}
 
 	a.Nombre = req.Nombre
+	a.Tipo = req.Tipo
 	a.Ubicacion = req.Ubicacion
 
 	if err := h.repo.Update(a, adminID); err != nil {
@@ -281,7 +313,8 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	if _, err = h.repo.FindByIDAndAdminID(uint(id), adminID); err != nil {
+	kiosko, err := h.repo.FindByIDAndAdminID(uint(id), adminID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
@@ -290,6 +323,26 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if err = c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// al patchear la configuracion del kiosko, si este es de tipo peatonal entonces
+	// se sobreescribe la configuracion de placa visitante para no pedir placa.
+	// En UI esta parte se oculta pero este es un doble filtro a la request
+	if kiosko.Tipo == KioskoPeatonal {
+		if req.FotoPlacaVisitante != nil && *req.FotoPlacaVisitante {
+			c.JSON(
+				http.StatusBadRequest,
+				gin.H{"error": "foto_placa_visitante no aplica a kioskos peatonales"},
+			)
+			return
+		}
+		if req.FotoPlacaInvitado != nil && *req.FotoPlacaInvitado {
+			c.JSON(
+				http.StatusBadRequest,
+				gin.H{"error": "foto_placa_invitado no aplica a kioskos peatonales"},
+			)
+			return
+		}
 	}
 
 	cfg, err := h.repo.FindConfigByKioskoID(uint(id))
@@ -310,17 +363,14 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.FotoRostroVisitante != nil {
 		cfg.FotoRostroVisitante = *req.FotoRostroVisitante
 	}
-	if req.FotoIneVisitante != nil {
-		cfg.FotoIneVisitante = *req.FotoIneVisitante
-	}
 	if req.FotoPlacaInvitado != nil {
 		cfg.FotoPlacaInvitado = *req.FotoPlacaInvitado
 	}
 	if req.FotoRostroInvitado != nil {
 		cfg.FotoRostroInvitado = *req.FotoRostroInvitado
 	}
-	if req.FotoIneInvitado != nil {
-		cfg.FotoIneInvitado = *req.FotoIneInvitado
+	if req.IneObligatorioInvitado != nil {
+		cfg.IneObligatorioInvitado = *req.IneObligatorioInvitado
 	}
 	if req.TiempoEsperaMin != nil {
 		cfg.TiempoEsperaMin = *req.TiempoEsperaMin
@@ -346,5 +396,49 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg))
+	resp := toKioskoConfigResponse(cfg)
+	c.JSON(http.StatusOK, resp)
+
+	// Notificar al kiosko conectado por SSE
+	if data, err := json.Marshal(resp); err == nil {
+		h.cfgHubs.get(cfg.KioskoID).Broadcast(data)
+	}
+}
+
+// StreamConfig abre una conexión SSE y emite la config cada vez que el admin la actualiza.
+//
+// @Summary Stream SSE de config del kiosko
+// @Tags kioskos
+// @Produce text/event-stream
+// @Param id path int true "ID del kiosko"
+// @Success 200
+// @Router /kioskos/{id}/config/stream [get]
+func (h *Handler) StreamConfig(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	hub := h.cfgHubs.get(uint(id))
+	ch := hub.Subscribe()
+	defer hub.Unsubscribe(ch)
+
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case data, ok := <-ch:
+			if !ok {
+				return false
+			}
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			return true
+		case <-c.Request.Context().Done():
+			return false
+		}
+	})
 }

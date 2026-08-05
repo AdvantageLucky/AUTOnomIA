@@ -13,9 +13,17 @@ package kiosko
 
 import "gorm.io/gorm"
 
+type TipoKiosko string
+
+const (
+	KioskoVehicular TipoKiosko = "VEHICULAR"
+	KioskoPeatonal  TipoKiosko = "PEATONAL"
+)
+
 type Kiosko struct {
 	gorm.Model
-	Nombre      string `gorm:"not null"`
+	Nombre      string     `gorm:"not null"`
+	Tipo        TipoKiosko `gorm:"not null"`
 	Ubicacion   string
 	ClaveKiosko string `gorm:"not null" json:"-"` // hash bcrypt de la credencial con la que el kiosko inicia sesion (ver internal/domain/auth/)
 	AdminID     uint   `gorm:"not null"`
@@ -30,14 +38,15 @@ type KioskoConfig struct {
 	IdiomaKiosko string `gorm:"not null;default:'es'"`     // "es" | "en"
 
 	// Bitacora para visitantes sin invitacion
+	// la ine siempre sera requerida en el caso de sin invitacion
+	// para asegurar busquedas sobre nombre, curp, etc
 	FotoPlacaVisitante  bool `gorm:"not null;default:false"`
 	FotoRostroVisitante bool `gorm:"not null;default:true"`
-	FotoIneVisitante    bool `gorm:"not null;default:true"`
 
 	// Bitacora para visitantes con invitacion
-	FotoPlacaInvitado  bool `gorm:"not null;default:false"`
-	FotoRostroInvitado bool `gorm:"not null;default:false"`
-	FotoIneInvitado    bool `gorm:"not null;default:false"`
+	FotoPlacaInvitado      bool `gorm:"not null;default:false"`
+	FotoRostroInvitado     bool `gorm:"not null;default:false"`
+	IneObligatorioInvitado bool `gorm:"not null;default:false"`
 
 	// Comportamiento de solicitudes
 	TiempoEsperaMin   int    `gorm:"not null;default:5"` // minutos antes de auto-rechazar

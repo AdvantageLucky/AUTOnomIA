@@ -8,7 +8,7 @@ import (
 )
 
 func TestAnalizarVisita_PrimeraVisita(t *testing.T) {
-	nueva := Visita{Nombre: "García Juan", Curp: "GARJ900101HMCRNA01"}
+	nueva := Visita{Titular: "García Juan", Curp: "GARJ900101HMCRNA01"}
 	sc := AnalizarVisita(nil, nueva, 5)
 
 	if sc.VecesVisitado != 0 {
@@ -46,7 +46,7 @@ func TestAnalizarVisita_AnomaliaMatricula(t *testing.T) {
 }
 
 func TestAnalizarVisita_OCRSospechoso_CURPInvalida(t *testing.T) {
-	nueva := Visita{Nombre: "García Juan", Curp: "INVALIDA"}
+	nueva := Visita{Titular: "García Juan", Curp: "INVALIDA"}
 	sc := AnalizarVisita(nil, nueva, 5)
 
 	if !sc.OCRSospechoso {

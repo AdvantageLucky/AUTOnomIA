@@ -1,21 +1,3 @@
-/*
-Package visitas
-
-Handlers relacionados con el dominio visitas.
-Hace uso del repository relacionado a visitas.
-
-Hay dos grupos de endpoints con autenticacion distinta:
-
- 1. Registro desde kiosko: POST /accesos/:id/visitas — autenticado con sesion de kiosko (RequireAcceso)
-    Recibe multipart/form-data con datos del visitante y fotos (documento, rostro, placa opcional),
-
-    guarda las fotos en disco via guardarFotoVisitante (ver storage.go) y crea la Visita en PENDIENTE
-
- 2. Consulta y gestion del admin: GET/PATCH /visitas — autenticado con JWT de admin (RequireAdmin)
-    listado paginado con filtros, detalle, historial por CURP y aprobacion/rechazo manual
-
-Documentado con swag
-*/
 package visitas
 
 import (
@@ -24,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -44,12 +27,12 @@ type SseHub interface {
 type Handler struct {
 	repo       *Repository
 	uploadsDir string
-	llmUrl     string
+	llmURL     string
 	sseHub     SseHub
 }
 
-func NewHandler(repo *Repository, uploadsDir string, llmUrl string, hub SseHub) *Handler {
-	return &Handler{repo: repo, uploadsDir: uploadsDir, llmUrl: llmUrl, sseHub: hub}
+func NewHandler(repo *Repository, uploadsDir string, llmURL string, hub SseHub) *Handler {
+	return &Handler{repo: repo, uploadsDir: uploadsDir, llmURL: llmURL, sseHub: hub}
 }
 
 func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
@@ -69,7 +52,7 @@ func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
 // @Accept multipart/form-data
 // @Produce json
 // @Param id path int true "ID del kiosko"
-// @Param nombre formData string true "Nombre completo del visitante"
+// @Param titular formData string true "Nombre completo del visitante titular"
 // @Param tipo_documento formData string true "INE, PASAPORTE o LICENCIA"
 // @Param curp formData string true "CURP (18 caracteres)"
 // @Param motivo_visita formData string true "Motivo de la visita"
@@ -99,24 +82,44 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		return
 	}
 
-	fotoDocumentoURL, err := guardarFotoVisitante(c, req.FotoDocumento, h.uploadsDir)
+	cfg, err := h.repo.GetKioskoConfig(uint(kioskoID))
 	if err != nil {
-		if errors.Is(err, errFormatoFotoInvalido) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_documento: " + err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "no se pudo obtener la configuracion del kiosko"},
+		)
 		return
 	}
 
-	fotoRostroURL, err := guardarFotoVisitante(c, req.FotoRostro, h.uploadsDir)
-	if err != nil {
-		if errors.Is(err, errFormatoFotoInvalido) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_rostro: " + err.Error()})
+	if errMsg := validarCamposCondicionales(req, cfg); errMsg != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errMsg})
+		return
+	}
+
+	var fotoDocumentoURL string
+	if req.FotoDocumento != nil {
+		fotoDocumentoURL, err = guardarFotoVisitante(c, req.FotoDocumento, h.uploadsDir)
+		if err != nil {
+			if errors.Is(err, errFormatoFotoInvalido) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_documento: " + err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	}
+
+	var fotoRostroURL string
+	if req.FotoRostro != nil {
+		fotoRostroURL, err = guardarFotoVisitante(c, req.FotoRostro, h.uploadsDir)
+		if err != nil {
+			if errors.Is(err, errFormatoFotoInvalido) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_rostro: " + err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	var fotoPlacaURL string
@@ -133,7 +136,8 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}
 
 	v := &Visita{
-		Nombre:           strings.ToUpper(strings.TrimSpace(req.Nombre)),
+		Titular:          strings.ToUpper(strings.TrimSpace(req.Titular)),
+		TipoVisitante:    req.TipoVisitante,
 		TipoDocumento:    req.TipoDocumento,
 		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
 		FotoDocumentoURL: fotoDocumentoURL,
@@ -143,7 +147,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		CasaDestino:      strings.ToUpper(strings.TrimSpace(req.CasaDestino)),
 		Placa:            strings.ToUpper(strings.TrimSpace(req.Placa)),
 		Estado:           EstadoPendiente,
-		KioskoID: uint(kioskoID),
+		KioskoID:         uint(kioskoID),
 	}
 
 	if err := h.repo.Create(v); err != nil {
@@ -176,7 +180,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 
 		sc := AnalizarVisita(historialPrevio, visitaCopy, cfg.UmbralConfianzaVisitas)
-		resumen, _ := GenerarResumen(ctx, h.llmUrl, sc)
+		resumen, _ := GenerarResumen(ctx, h.llmURL, sc)
 		sc.ResumenTexto = resumen
 
 		tieneAnomalias := sc.AnomaliaMatricula || sc.CambioModalidad || sc.HorarioInusual ||
@@ -190,7 +194,9 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 
 		if nuevoEstado != EstadoPendiente {
-			_ = h.repo.ActualizarEstadoConScore(visitaCopy.ID, nuevoEstado, false)
+			if err := h.repo.ActualizarEstadoConScore(visitaCopy.ID, nuevoEstado, false); err != nil {
+				log.Printf("ActualizarEstadoConScore visita %d: %v", visitaCopy.ID, err)
+			}
 		}
 
 		if h.sseHub != nil && (nuevoEstado == EstadoRevision || nuevoEstado == EstadoPendiente) {
@@ -317,7 +323,7 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 // @Param kiosko_id query int false "Filtrar por kiosko"
 // @Param tipo_documento query string false "INE, PASAPORTE o LICENCIA"
 // @Param estado query string false "PENDIENTE, APROBADO o RECHAZADO"
-// @Param q query string false "Búsqueda parcial por nombre, CURP o clave"
+// @Param q query string false "Búsqueda parcial por titular, CURP o clave"
 // @Success 200 {object} VisitasPaginadasResponse
 // @Router /visitas [get]
 func (h *Handler) ListarVisitas(c *gin.Context) {
@@ -336,7 +342,7 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 	}
 	if tipoStr := c.Query("tipo_documento"); tipoStr != "" {
 		tipo := TipoDocumento(tipoStr)
-		if tipo != DocumentoINE && tipo != DocumentoPasaporte && tipo != DocumentoLicencia {
+		if tipo != DocumentoINE && tipo != DocumentoPasaporte && tipo != DocumentoLicencia && tipo != DocumentoQR && tipo != DocumentoPIN {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "tipo_documento invalido"})
 			return
 		}
