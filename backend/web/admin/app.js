@@ -48,6 +48,7 @@
       pendiente: "Pendiente",
       aprobado: "Aprobado",
       rechazado: "Rechazado",
+      revision: "Revisión",
       col_visitor: "VISITANTE",
       col_doc: "DOCUMENTO",
       col_access: "ACCESO",
@@ -138,6 +139,7 @@
       pendiente: "Pending",
       aprobado: "Approved",
       rechazado: "Rejected",
+      revision: "Under review",
       col_visitor: "VISITOR",
       col_doc: "DOCUMENT",
       col_access: "ENTRY",
@@ -245,7 +247,7 @@
   const MESES_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   const TIPO_BADGE  = { INE: "badge--ine", PASAPORTE: "badge--pasaporte", LICENCIA: "badge--licencia" };
-  const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado" };
+  const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado", REVISION: "badge--revision" };
 
   const RUTAS_POR_ROL = {
     admin:     ["dashboard","visitas","detalle","solicitudes","residentes","residente-detalle","accesos","configuracion","equipo","perfil"],
@@ -324,10 +326,12 @@
       try {
         const v = JSON.parse(e.data);
         const nombre = v.nombre || "Nuevo visitante";
-        mostrarToast(`Nueva solicitud: ${nombre}`);
-        if (document.getElementById("screen-solicitudes")?.classList.contains("active")) {
-          loadSolicitudes();
+        if (v.estado === "REVISION") {
+          mostrarToast(`⚠ Requiere revisión manual: ${nombre}`, "revision");
+        } else {
+          mostrarToast(`Nueva solicitud: ${nombre}`);
         }
+        loadSolicitudes();
       } catch { /* ignorar mensajes malformados */ }
     };
   }
@@ -481,6 +485,7 @@
     showApp();
     aplicarRol(state.rol);
     initSSE(token);
+    loadSolicitudes(); // siembra el badge de nav aunque no aterrices en Solicitudes
     navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard");
   }
 
@@ -584,7 +589,7 @@
   }
 
   function estadoLabel(e) {
-    const map = { PENDIENTE: t("pendiente"), APROBADO: t("aprobado"), RECHAZADO: t("rechazado") };
+    const map = { PENDIENTE: t("pendiente"), APROBADO: t("aprobado"), RECHAZADO: t("rechazado"), REVISION: t("revision") };
     return map[e] || e;
   }
 
@@ -697,7 +702,6 @@
             <div><div class="campo-label">${t("motivo")}</div><div class="campo-value">${esc(v.motivo_visita || "—")}</div></div>
             <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
             <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
-            <div><div class="campo-label">Clave lector</div><div class="campo-value campo-mono">${esc(v.clave_lector || "—")}</div></div>
           </div>
         </div>
       </div>
@@ -801,23 +805,43 @@
     }
   }
 
+  function updateNavBadge(count) {
+    const badge = document.getElementById("nav-badge-solicitudes");
+    if (!badge) return;
+    badge.textContent = count > 99 ? "99+" : String(count);
+    badge.hidden = count <= 0;
+  }
+
+  function updateNavAlert(activo) {
+    const navBtn = document.querySelector('.nav-btn[data-nav="solicitudes"]');
+    if (navBtn) navBtn.classList.toggle("nav-btn--alert", activo);
+  }
+
   async function loadSolicitudes() {
-    const res = await api("/visitas/?estado=PENDIENTE&page_size=50");
+    const [resPend, resRev] = await Promise.all([
+      api("/visitas/?estado=PENDIENTE&page_size=50"),
+      api("/visitas/?estado=REVISION&page_size=50"),
+    ]);
     const now = new Date();
     const timeStr = `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}`;
     const lastEl = document.getElementById("sol-last-update");
     if (lastEl) lastEl.textContent = timeStr;
 
-    if (!res || !res.ok) {
+    if (!resPend || !resPend.ok || !resRev || !resRev.ok) {
       showSolState("error");
       return;
     }
 
-    const data = await res.json();
-    const visitas = data.visitas || [];
+    const dataPend = await resPend.json();
+    const dataRev = await resRev.json();
+    const revisionCount = (dataRev.visitas || []).length;
+    const visitas = [...(dataPend.visitas || []), ...(dataRev.visitas || [])]
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     const countEl = document.getElementById("sol-count");
     if (countEl) countEl.textContent = visitas.length || "0";
+    updateNavBadge(visitas.length);
+    updateNavAlert(revisionCount > 0);
 
     if (visitas.length === 0) {
       showSolState("empty");
@@ -853,7 +877,7 @@
       <div class="sol-card-left">
         <div class="feed-dot"></div>
         <div>
-          <div class="row-name">${esc(v.nombre)}</div>
+          <div class="row-name">${esc(v.nombre)} <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
           <div class="row-sub">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${esc(v.casa_destino || "sin destino")} · <span class="feed-elapsed">${fmtElapsed(v.created_at)}</span></div>
           ${v.motivo_visita ? `<div class="row-sub" style="margin-top:2px;font-style:italic">"${esc(v.motivo_visita)}"</div>` : ""}
         </div>

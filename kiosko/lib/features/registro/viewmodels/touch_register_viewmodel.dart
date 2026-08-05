@@ -79,10 +79,9 @@ class TouchRegisterViewModel extends ChangeNotifier {
     try {
       final datosExtraidos = await _detectorServicio.analizarIne(pathFoto);
 
-      if (datosExtraidos != null && (datosExtraidos.curp != null || datosExtraidos.claveElector != null)) {
+      if (datosExtraidos != null && datosExtraidos.curp != null) {
         // Guardamos de forma limpia los datos procesados en local en nuestro modelo
         registrationData.curp = datosExtraidos.curp;
-        registrationData.claveElector = datosExtraidos.claveElector;
         registrationData.nombreCompleto = datosExtraidos.nombreCompleto;
         registrationData.pathFotoIne = datosExtraidos.pathFotoIne;
 

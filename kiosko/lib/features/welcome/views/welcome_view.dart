@@ -1,9 +1,13 @@
 /* VISTA PRINCIPAL DE BIENVENIDA */
+import 'dart:async';
+
 import 'package:kigo_kiosco/features/registro/views/touch_register_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/visitor_type_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/resident_pin_view.dart';
+import 'package:kigo_kiosco/features/welcome/views/operator_exit_pin_view.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/visitor_type_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
+import 'package:kigo_kiosco/features/welcome/viewmodels/operator_exit_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
 
@@ -22,6 +26,7 @@ class WelcomeView extends StatefulWidget {
 
 class _WelcomeViewState extends State<WelcomeView> {
   String? _presionadoId;
+  Timer? _salidaOperadorTimer;
 
   @override
   void initState() {
@@ -32,6 +37,7 @@ class _WelcomeViewState extends State<WelcomeView> {
   @override
   void dispose() {
     widget.viewModel.removeListener(_updateView);
+    _salidaOperadorTimer?.cancel();
     super.dispose();
   }
 
@@ -39,29 +45,54 @@ class _WelcomeViewState extends State<WelcomeView> {
     setState(() {});
   }
 
+  // Mantener presionada la pantalla de bienvenida 5s abre el PIN de
+  // operador para salir del modo kiosko; un toque normal nunca llega a los 5s.
+  void _iniciarConteoSalidaOperador() {
+    _salidaOperadorTimer?.cancel();
+    _salidaOperadorTimer = Timer(const Duration(seconds: 5), _abrirSalidaOperador);
+  }
+
+  void _cancelarConteoSalidaOperador() {
+    _salidaOperadorTimer?.cancel();
+    _salidaOperadorTimer = null;
+  }
+
+  void _abrirSalidaOperador() {
+    _salidaOperadorTimer = null;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => OperatorExitPinView(viewModel: OperatorExitViewModel()),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF171313),
-      body: SizedBox.expand(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-          child: Column(
-            children: [
-              _buildHeader(),
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => _iniciarConteoSalidaOperador(),
+        onTapUp: (_) => _cancelarConteoSalidaOperador(),
+        onTapCancel: _cancelarConteoSalidaOperador,
+        child: SizedBox.expand(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+            child: Column(
+              children: [
+                _buildHeader(),
 
-              const Spacer(),
+                const Spacer(),
 
-              _buildWelcomeText(),
+                _buildWelcomeText(),
 
-              const SizedBox(height: 56),
+                const SizedBox(height: 56),
 
-              _buildBotones(context),
+                _buildBotones(context),
 
-              const Spacer(),
+                const Spacer(),
 
-              _buildFooter(),
-            ],
+                _buildFooter(),
+              ],
+            ),
           ),
         ),
       ),

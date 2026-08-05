@@ -35,7 +35,6 @@ type Visita struct {
 	gorm.Model
 	Nombre           string        `gorm:"not null"`
 	TipoDocumento    TipoDocumento `gorm:"not null"`
-	ClaveLector      string        `gorm:"not null"`
 	Curp             string        `gorm:"not null"`
 	FotoDocumentoURL string        `gorm:"not null"`
 	FotoRostroURL    string        `gorm:"not null"`

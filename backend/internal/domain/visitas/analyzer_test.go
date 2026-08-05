@@ -8,7 +8,7 @@ import (
 )
 
 func TestAnalizarVisita_PrimeraVisita(t *testing.T) {
-	nueva := Visita{Nombre: "García Juan", Curp: "GARJ900101HMCRNA01", ClaveLector: "GARJUA12345678H123"}
+	nueva := Visita{Nombre: "García Juan", Curp: "GARJ900101HMCRNA01"}
 	sc := AnalizarVisita(nil, nueva, 5)
 
 	if sc.VecesVisitado != 0 {
@@ -24,7 +24,7 @@ func TestAnalizarVisita_AltaConfianza(t *testing.T) {
 	for i := range historial {
 		historial[i] = Visita{Estado: EstadoAprobado, Placa: "ABC123"}
 	}
-	nueva := Visita{Placa: "ABC123", Curp: "GARJ900101HMCRNA01", ClaveLector: "GARJUA12345678H123"}
+	nueva := Visita{Placa: "ABC123", Curp: "GARJ900101HMCRNA01"}
 	sc := AnalizarVisita(historial, nueva, 5)
 
 	if !sc.Confiable {
@@ -37,7 +37,7 @@ func TestAnalizarVisita_AnomaliaMatricula(t *testing.T) {
 		{Placa: "ABC123", Estado: EstadoAprobado},
 		{Placa: "ABC123", Estado: EstadoAprobado},
 	}
-	nueva := Visita{Placa: "XYZ999", Curp: "GARJ900101HMCRNA01", ClaveLector: "GARJUA12345678H123"}
+	nueva := Visita{Placa: "XYZ999", Curp: "GARJ900101HMCRNA01"}
 	sc := AnalizarVisita(historial, nueva, 5)
 
 	if !sc.AnomaliaMatricula {
@@ -46,7 +46,7 @@ func TestAnalizarVisita_AnomaliaMatricula(t *testing.T) {
 }
 
 func TestAnalizarVisita_OCRSospechoso_CURPInvalida(t *testing.T) {
-	nueva := Visita{Nombre: "García Juan", Curp: "INVALIDA", ClaveLector: "GARJUA12345678H123"}
+	nueva := Visita{Nombre: "García Juan", Curp: "INVALIDA"}
 	sc := AnalizarVisita(nil, nueva, 5)
 
 	if !sc.OCRSospechoso {
@@ -62,7 +62,7 @@ func TestAnalizarVisita_HorarioInusual(t *testing.T) {
 		{Estado: EstadoAprobado, Model: gorm.Model{CreatedAt: manana}},
 	}
 	noche := time.Date(2026, 1, 2, 23, 0, 0, 0, time.UTC)
-	nueva := Visita{Curp: "GARJ900101HMCRNA01", ClaveLector: "GARJUA12345678H123", Model: gorm.Model{CreatedAt: noche}}
+	nueva := Visita{Curp: "GARJ900101HMCRNA01", Model: gorm.Model{CreatedAt: noche}}
 	sc := AnalizarVisita(historial, nueva, 5)
 
 	if !sc.HorarioInusual {

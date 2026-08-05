@@ -4,8 +4,7 @@ class UserRegistrationModel {
   // Datos extraídos del INE mediante el OCR local
   String? nombreCompleto;
   String? curp;
-  String? claveElector;
-  
+
   // Rutas de los archivos temporales de las fotos guardadas en el teléfono
   String? pathFotoIne;
   String? pathFotoRostro;
@@ -20,7 +19,6 @@ class UserRegistrationModel {
   UserRegistrationModel({
     this.nombreCompleto,
     this.curp,
-    this.claveElector,
     this.pathFotoIne,
     this.pathFotoRostro,
     this.motivoVisita,
@@ -32,7 +30,6 @@ class UserRegistrationModel {
   void clear() {
     nombreCompleto = null;
     curp = null;
-    claveElector = null;
     pathFotoIne = null;
     pathFotoRostro = null;
     motivoVisita = null;
@@ -41,5 +38,5 @@ class UserRegistrationModel {
   }
 
   // Método para verificar si el paso del INE ya tiene los datos mínimos
-  bool get tieneDatosIne => curp != null && claveElector != null;
+  bool get tieneDatosIne => curp != null;
 }

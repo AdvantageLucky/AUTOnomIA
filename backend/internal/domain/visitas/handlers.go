@@ -71,7 +71,6 @@ func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
 // @Param id path int true "ID del kiosko"
 // @Param nombre formData string true "Nombre completo del visitante"
 // @Param tipo_documento formData string true "INE, PASAPORTE o LICENCIA"
-// @Param clave_lector formData string true "Clave leida del documento"
 // @Param curp formData string true "CURP (18 caracteres)"
 // @Param motivo_visita formData string true "Motivo de la visita"
 // @Param casa_destino formData string true "Casa o departamento que visita"
@@ -136,7 +135,6 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	v := &Visita{
 		Nombre:           strings.ToUpper(strings.TrimSpace(req.Nombre)),
 		TipoDocumento:    req.TipoDocumento,
-		ClaveLector:      strings.ToUpper(strings.TrimSpace(req.ClaveLector)),
 		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
 		FotoDocumentoURL: fotoDocumentoURL,
 		FotoRostroURL:    fotoRostroURL,
@@ -204,6 +202,41 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}()
 }
 
+// aplicarExpiracionSiVencida mueve una visita PENDIENTE a REVISION cuando supera
+// el tiempo de espera configurado para su kiosko (TiempoEsperaMin, 10 min si no
+// hay config), para que nunca se quede colgada esperando una respuesta que no llega.
+func (h *Handler) aplicarExpiracionSiVencida(v *Visita) {
+	if v.Estado != EstadoPendiente {
+		return
+	}
+
+	cfg, err := h.repo.GetKioskoConfig(v.KioskoID)
+	if err != nil {
+		return
+	}
+
+	tiempoEsperaMin := cfg.TiempoEsperaMin
+	if tiempoEsperaMin <= 0 {
+		tiempoEsperaMin = 10
+	}
+
+	limite := v.CreatedAt.Add(time.Duration(tiempoEsperaMin) * time.Minute)
+	if time.Now().Before(limite) {
+		return
+	}
+
+	if err := h.repo.UpdateEstado(v.ID, EstadoRevision); err != nil {
+		return
+	}
+	v.Estado = EstadoRevision
+
+	if h.sseHub != nil {
+		if jsonData, err := json.Marshal(toVisitaResponse(*v)); err == nil {
+			h.sseHub.Broadcast(jsonData)
+		}
+	}
+}
+
 // GetVisitaEstado devuelve el estado actual de una visita para el kiosko que la creo
 //
 // @Summary Consultar estado de visita (kiosko)
@@ -239,6 +272,8 @@ func (h *Handler) GetVisitaEstado(c *gin.Context) {
 		return
 	}
 
+	h.aplicarExpiracionSiVencida(v)
+
 	c.JSON(http.StatusOK, toVisitaResponse(*v))
 }
 
@@ -266,6 +301,8 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
 		return
 	}
+
+	h.aplicarExpiracionSiVencida(v)
 
 	c.JSON(http.StatusOK, toVisitaResponse(*v))
 }
@@ -307,7 +344,7 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 	}
 	if estadoStr := c.Query("estado"); estadoStr != "" {
 		estado := EstadoVisita(estadoStr)
-		if estado != EstadoPendiente && estado != EstadoAprobado && estado != EstadoRechazado {
+		if estado != EstadoPendiente && estado != EstadoAprobado && estado != EstadoRechazado && estado != EstadoRevision {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "estado invalido"})
 			return
 		}
@@ -322,8 +359,9 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 	}
 
 	items := make([]VisitaListItemResponse, 0, len(list))
-	for _, v := range list {
-		items = append(items, toVisitaListItemResponse(v))
+	for i := range list {
+		h.aplicarExpiracionSiVencida(&list[i])
+		items = append(items, toVisitaListItemResponse(list[i]))
 	}
 
 	c.JSON(http.StatusOK, VisitasPaginadasResponse{

@@ -1,0 +1,2 @@
+ALTER TABLE visitas ADD COLUMN clave_lector TEXT NOT NULL DEFAULT '';
+ALTER TABLE visitas ALTER COLUMN clave_lector DROP DEFAULT;
