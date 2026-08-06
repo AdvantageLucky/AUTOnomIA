@@ -22,6 +22,7 @@ const (
 
 type Kiosko struct {
 	gorm.Model
+	TenantID        uint   `gorm:"column:tenant_id;not null;index"`
 	Nombre      string     `gorm:"not null"`
 	Tipo        TipoKiosko `gorm:"not null"`
 	Ubicacion   string

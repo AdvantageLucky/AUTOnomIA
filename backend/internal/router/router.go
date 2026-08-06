@@ -8,6 +8,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/invitaciones"
 	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/domain/tenant" // <-- Nuevo import issue 21
 	"kigo-autonomia-backend/internal/domain/visitas"
 	"kigo-autonomia-backend/internal/platform/sse"
 
@@ -32,6 +33,8 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret)
 	registerInvitacionesRoutes(api, db, cfg.JWTSecret)
+	// <-- Nueva Linea de issue 21
+	registerTenantRoutes(api, db)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
@@ -225,5 +228,18 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string)
 	{
 		adminR.POST("/", residenteHandler.CrearResidente)
 		adminR.GET("/", residenteHandler.ListarResidentesAdmin)
+	}
+}
+
+// registerTenantRoutes registra las rutas para la gestión de fraccionamientos (tenants).
+// Por ahora están desprotegidas para facilitar las pruebas locales.
+func registerTenantRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+	tenantRepo := tenant.NewRepository(db)
+	tenantHandler := tenant.NewHandler(tenantRepo)
+
+	t := rg.Group("/tenants")
+	{
+		t.POST("/", tenantHandler.CreateTenant)
+		t.GET("/:id", tenantHandler.GetTenant)
 	}
 }
