@@ -37,7 +37,7 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
           // ↓↓↓ Edita aquí el texto del aviso de consentimiento ↓↓↓
           child: const Text(
             'Estas a punto de confiarnos datos sencibles para acceder a las instalaciones. '
-            'La imagen será capturada de forma local en este dispositivo, únicamente'
+            'La imagen será capturada de forma local en este dispositivo únicamente'
             'para validar tu identidad. Mantendremos y cuidaremos tus datos durante '
             '/// para después eliminarlos. \n\n'
             '¿Aceptas el uso de tus datos para este fin?',
