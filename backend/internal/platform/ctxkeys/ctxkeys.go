@@ -17,4 +17,5 @@ const (
 	AdminRol    = "admin_rol"
 	KioskoID    = "kiosko_id"
 	ResidenteID = "residente_id"
+	TenantID    = "tenant_id" // <-- NUEVO: Llave para aislar consultas por fraccionamiento
 )

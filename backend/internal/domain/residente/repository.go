@@ -1,7 +1,10 @@
 package residente
 
 import (
+	"context"
 	"errors"
+
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -15,6 +18,19 @@ func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
+// WithContext retorna una instancia del repositorio vinculada al contexto HTTP de la petición
+func (r *Repository) WithContext(ctx context.Context) *Repository {
+	return &Repository{db: r.db.WithContext(ctx)}
+}
+
+// ByTenant es un GORM Scope que aísla las consultas usando el tenant_id del contexto
+func ByTenant(db *gorm.DB) *gorm.DB {
+	if tenantID, ok := db.Statement.Context.Value(ctxkeys.TenantID).(uint); ok && tenantID > 0 {
+		return db.Where("tenant_id = ?", tenantID)
+	}
+	return db
+}
+
 func (r *Repository) Create(res *Residente) error {
 	return r.db.Create(res).Error
 }
@@ -22,7 +38,7 @@ func (r *Repository) Create(res *Residente) error {
 // FindByCasaAndKiosko busca al residente de una casa en un kiosko específico, usado para el login
 func (r *Repository) FindByCasaAndKiosko(casaDestino string, kioskoID uint) (*Residente, error) {
 	var res Residente
-	if err := r.db.
+	if err := r.db.Scopes(ByTenant).
 		Where("casa_destino = ? AND kiosko_id = ?", casaDestino, kioskoID).
 		First(&res).Error; err != nil {
 		return nil, err
@@ -32,7 +48,7 @@ func (r *Repository) FindByCasaAndKiosko(casaDestino string, kioskoID uint) (*Re
 
 func (r *Repository) FindByID(id uint) (*Residente, error) {
 	var res Residente
-	if err := r.db.First(&res, id).Error; err != nil {
+	if err := r.db.Scopes(ByTenant).First(&res, id).Error; err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -40,7 +56,7 @@ func (r *Repository) FindByID(id uint) (*Residente, error) {
 
 func (r *Repository) FindByKioskoID(kioskoID uint) ([]Residente, error) {
 	var list []Residente
-	if err := r.db.Where("kiosko_id = ?", kioskoID).Find(&list).Error; err != nil {
+	if err := r.db.Scopes(ByTenant).Where("kiosko_id = ?", kioskoID).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
@@ -50,7 +66,7 @@ func (r *Repository) FindByKioskoID(kioskoID uint) ([]Residente, error) {
 // Evita importar el paquete kiosko desde este dominio.
 func (r *Repository) VerificarOwnershipKiosko(kioskoID, adminID uint) error {
 	var count int64
-	r.db.Table("kioskos").
+	r.db.Scopes(ByTenant).Table("kioskos").
 		Where("id = ? AND admin_id = ? AND deleted_at IS NULL", kioskoID, adminID).
 		Count(&count)
 	if count == 0 {
@@ -63,7 +79,7 @@ func (r *Repository) VerificarOwnershipKiosko(kioskoID, adminID uint) error {
 // Itera sobre todos los residentes del kiosko para no exponer timing differences por bcrypt.
 func (r *Repository) FindPorPin(kioskoID uint, pin string) (*Residente, error) {
 	var list []Residente
-	if err := r.db.Where("kiosko_id = ?", kioskoID).Find(&list).Error; err != nil {
+	if err := r.db.Scopes(ByTenant).Where("kiosko_id = ?", kioskoID).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	for i := range list {
@@ -78,7 +94,7 @@ func (r *Repository) FindPorPin(kioskoID uint, pin string) (*Residente, error) {
 // Requiere join con kioskos para acotar por admin_id (ver ADR-0015).
 func (r *Repository) FindAllByAdminID(adminID uint) ([]Residente, error) {
 	var list []Residente
-	if err := r.db.
+	if err := r.db.Scopes(ByTenant).
 		Joins("JOIN kioskos ON kioskos.id = residentes.kiosko_id").
 		Where("kioskos.admin_id = ? AND kioskos.deleted_at IS NULL", adminID).
 		Find(&list).Error; err != nil {
