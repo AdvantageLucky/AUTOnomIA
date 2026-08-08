@@ -25,8 +25,10 @@ type ResidenteResponse struct {
 	ApellidoMaterno string    `json:"apellido_materno"`
 	CasaDestino     string    `json:"casa_destino"`
 	Telefono        string    `json:"telefono"`
-	KioskoID        uint      `json:"kiosko_id"`
+	KioskoID        *uint     `json:"kiosko_id"`
 	DestinoID       *uint     `json:"destino_id"`
+	Status          string    `json:"status"`
+	FotoCaraUrl     string    `json:"foto_cara_url,omitempty"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 
@@ -40,6 +42,8 @@ func toResidenteResponse(r Residente, destinoID *uint) ResidenteResponse {
 		Telefono:        r.Telefono,
 		KioskoID:        r.KioskoID,
 		DestinoID:       destinoID,
+		Status:          r.Status,
+		FotoCaraUrl:     r.FotoCaraUrl,
 		CreatedAt:       r.CreatedAt,
 	}
 }

@@ -2,11 +2,12 @@ package destinos
 
 import (
 	"context"
-
-	"kigo-autonomia-backend/internal/platform/ctxkeys"
+	"errors"
 
 	"gorm.io/gorm"
 )
+
+var ErrTenantNoResuelto = errors.New("tenant_id no resuelto en el contexto")
 
 type Repository struct {
 	db *gorm.DB
@@ -16,53 +17,41 @@ func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-// WithContext retorna una instancia del repositorio vinculada al contexto HTTP
 func (r *Repository) WithContext(ctx context.Context) *Repository {
 	return &Repository{db: r.db.WithContext(ctx)}
-}
-
-// ByTenant aisla las consultas usando el tenant_id inyectado en el contexto
-func ByTenant(db *gorm.DB) *gorm.DB {
-	if tenantID, ok := db.Statement.Context.Value(ctxkeys.TenantID).(uint); ok && tenantID > 0 {
-		return db.Where("tenant_id = ?", tenantID)
-	}
-	return db
 }
 
 func (r *Repository) Create(d *Destino) error {
 	return r.db.Create(d).Error
 }
 
-func (r *Repository) FindByKioskoID(kioskoID uint) ([]Destino, error) {
+func (r *Repository) FindByTenantID(tenantID uint) ([]Destino, error) {
+	if tenantID == 0 {
+		return nil, ErrTenantNoResuelto
+	}
 	var list []Destino
-	if err := r.db.Scopes(ByTenant).Where("kiosko_id = ?", kioskoID).
-		Order("nombre ASC").
-		Find(&list).
-		Error; err != nil {
+	if err := r.db.Where("tenant_id = ?", tenantID).Order("nombre ASC").Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
 }
 
-func (r *Repository) FindByNombreAndKioskoID(nombre string, kioskoID uint) (uint, error) {
+func (r *Repository) FindByNombreAndTenantID(nombre string, tenantID uint) (uint, error) {
+	if tenantID == 0 {
+		return 0, ErrTenantNoResuelto
+	}
 	var d Destino
-	if err := r.db.Scopes(ByTenant).Where("nombre = ? AND kiosko_id = ?", nombre, kioskoID).First(&d).Error; err != nil {
+	if err := r.db.Where("nombre = ? AND tenant_id = ?", nombre, tenantID).First(&d).Error; err != nil {
 		return 0, err
 	}
 	return d.ID, nil
 }
 
-func (r *Repository) VerificarOwnershipAdmin(kioskoID, adminID uint) error {
-	var count int64
-	r.db.Scopes(ByTenant).Table("kioskos").Where("id = ? AND admin_id = ?", kioskoID, adminID).Count(&count)
-	if count == 0 {
-		return gorm.ErrRecordNotFound
+func (r *Repository) Delete(id, tenantID uint) error {
+	if tenantID == 0 {
+		return ErrTenantNoResuelto
 	}
-	return nil
-}
-
-func (r *Repository) Delete(id, kioskoID uint) error {
-	result := r.db.Scopes(ByTenant).Where("id = ? AND kiosko_id = ?", id, kioskoID).Delete(&Destino{})
+	result := r.db.Where("id = ? AND tenant_id = ?", id, tenantID).Delete(&Destino{})
 	if result.Error != nil {
 		return result.Error
 	}

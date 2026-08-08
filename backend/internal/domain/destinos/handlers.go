@@ -17,6 +17,16 @@ func NewHandler(repo *Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
+func tenantFromCtx(c *gin.Context) (uint, bool) {
+	v, exists := c.Get(ctxkeys.TenantID)
+	if !exists {
+		return 0, false
+	}
+	id, ok := v.(uint)
+	return id, ok && id > 0
+}
+
+// ListarDestinosPorAcceso — kiosko: lista todos los destinos del tenant
 func (h *Handler) ListarDestinosPorAcceso(c *gin.Context) {
 	kioskoIDStr := c.Param("id")
 	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
@@ -31,68 +41,51 @@ func (h *Handler) ListarDestinosPorAcceso(c *gin.Context) {
 		return
 	}
 
-	repoCtx := h.repo.WithContext(c.Request.Context())
+	tenantID, ok := tenantFromCtx(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tenant no resuelto"})
+		return
+	}
 
-	list, err := repoCtx.FindByKioskoID(uint(kioskoID))
+	list, err := h.repo.WithContext(c.Request.Context()).FindByTenantID(tenantID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	items := make([]DestinoKioskoResponse, 0, len(list))
+	items := make([]DestinoResponse, 0, len(list))
 	for _, d := range list {
-		items = append(items, toDestinoKioskoResponse(d))
+		items = append(items, toDestinoResponse(d))
 	}
-
 	c.JSON(http.StatusOK, items)
 }
 
-func (h *Handler) ListarDestinosPorAdmin(c *gin.Context) {
-	adminID := c.MustGet(ctxkeys.AdminID).(uint)
-
-	kioskoIDStr := c.Param("id")
-	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
+// ListarDestinos — admin: lista todos los destinos del tenant
+func (h *Handler) ListarDestinos(c *gin.Context) {
+	tenantID, ok := tenantFromCtx(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tenant no resuelto"})
 		return
 	}
 
-	repoCtx := h.repo.WithContext(c.Request.Context())
-
-	if err := repoCtx.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
-		return
-	}
-
-	list, err := repoCtx.FindByKioskoID(uint(kioskoID))
+	list, err := h.repo.WithContext(c.Request.Context()).FindByTenantID(tenantID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	items := make([]DestinoKioskoResponse, 0, len(list))
+	items := make([]DestinoResponse, 0, len(list))
 	for _, d := range list {
-		items = append(items, toDestinoKioskoResponse(d))
+		items = append(items, toDestinoResponse(d))
 	}
-
 	c.JSON(http.StatusOK, items)
 }
 
+// CrearDestino — admin: crea un destino a nivel del tenant
 func (h *Handler) CrearDestino(c *gin.Context) {
-	adminID := c.MustGet(ctxkeys.AdminID).(uint)
-	tenantID := c.MustGet(ctxkeys.TenantID).(uint) // <-- EXTRAEMOS TENANT DEL CONTEXTO
-
-	kioskoIDStr := c.Param("id")
-	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
-		return
-	}
-
-	repoCtx := h.repo.WithContext(c.Request.Context())
-
-	if err := repoCtx.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
+	tenantID, ok := tenantFromCtx(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tenant no resuelto"})
 		return
 	}
 
@@ -103,45 +96,35 @@ func (h *Handler) CrearDestino(c *gin.Context) {
 	}
 
 	d := &Destino{
-		TenantID: tenantID, // <-- ASIGNAMOS TENANT PARA CUMPLIR LA REGLA NOT NULL
+		TenantID: tenantID,
 		Nombre:   req.Nombre,
 		Titular:  req.Titular,
-		KioskoID: uint(kioskoID),
 	}
 
-	if err := repoCtx.Create(d); err != nil {
+	if err := h.repo.WithContext(c.Request.Context()).Create(d); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, toDestinoKioskoResponse(*d))
+	c.JSON(http.StatusCreated, toDestinoResponse(*d))
 }
 
+// EliminarDestino — admin: elimina un destino del tenant
 func (h *Handler) EliminarDestino(c *gin.Context) {
-	adminID := c.MustGet(ctxkeys.AdminID).(uint)
-
-	kioskoIDStr := c.Param("id")
-	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
+	tenantID, ok := tenantFromCtx(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tenant no resuelto"})
 		return
 	}
 
-	repoCtx := h.repo.WithContext(c.Request.Context())
-
-	if err := repoCtx.VerificarOwnershipAdmin(uint(kioskoID), adminID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
-		return
-	}
-
-	destinoIDStr := c.Param("did")
+	destinoIDStr := c.Param("id")
 	destinoID, err := strconv.ParseUint(destinoIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de destino invalido"})
 		return
 	}
 
-	if err := repoCtx.Delete(uint(destinoID), uint(kioskoID)); err != nil {
+	if err := h.repo.WithContext(c.Request.Context()).Delete(uint(destinoID), tenantID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

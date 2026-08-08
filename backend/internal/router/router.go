@@ -26,12 +26,12 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	hub := sse.NewHub()
 	visitas.IniciarAgenteReportes(db, cfg.LLMUrl)
 
-	registerAuthRoutes(api, db, cfg.JWTSecret)
+	registerAuthRoutes(api, db, cfg.JWTSecret, cfg.PublicURL)
 	registerAdminRoutes(api, db, cfg.JWTSecret)
 	registerKioskoRoutes(api, db, cfg.JWTSecret)
 	registerVisitaRoutes(api, db, cfg, hub)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
-	registerResidenteRoutes(api, db, cfg.JWTSecret)
+	registerResidenteRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
 	registerInvitacionesRoutes(api, db, cfg.JWTSecret)
 	// <-- Nueva Linea de issue 21
 	registerTenantRoutes(api, db)
@@ -49,15 +49,18 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	adminAssets.Static("/", "./web/admin")
 
 	r.Static("/uploads/visitantes", cfg.UploadsDir)
+	r.Static("/uploads/caras", cfg.UploadsDir+"/caras")
 
 	return r
 }
 
-func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, publicURL string) {
 	adminRepo := admin.NewRepository(db)
 	kioskoRepo := kiosko.NewRepository(db)
 	sesionRepo := auth.NewSesionRepository(db)
 	authHandler := auth.NewHandler(adminRepo, kioskoRepo, sesionRepo, jwtSecret)
+	deviceRepo := auth.NewDeviceRepository(db)
+	deviceHandler := auth.NewDeviceHandler(deviceRepo, sesionRepo, kioskoRepo, publicURL)
 
 	g := rg.Group("/auth")
 	{
@@ -67,6 +70,16 @@ func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 		g.POST("/google/sign-in", authHandler.RegisterWithGoogle)
 		g.POST("/kiosko/login", authHandler.LoginKiosko)
 		g.POST("/kiosko/:id/revocar", auth.RequireAdmin(jwtSecret), authHandler.RevocarSesionKiosko)
+		g.POST("/device/authorize", deviceHandler.SolicitarCodigo)
+		g.POST("/device/token", deviceHandler.ObtenerToken)
+	}
+
+	d := rg.Group("/device")
+	d.Use(auth.RequireAdmin(jwtSecret))
+	{
+		d.GET("/validar", deviceHandler.ValidarCodigo)
+		d.GET("/pending", deviceHandler.ListarPendientes)
+		d.POST("/:user_code/aprobar", deviceHandler.AprobarDispositivo)
 	}
 }
 
@@ -150,21 +163,20 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 	destinoHandler := destinos.NewHandler(destinoRepo)
 	sesionRepo := auth.NewSesionRepository(db)
 
-	// kiosko: solo lee destinos de su kiosko
+	// kiosko: lista todos los destinos del tenant (ruta legacy mantenida para la app)
 	k := rg.Group("/kioskos/:id/destinos")
 	k.Use(auth.RequireKiosko(sesionRepo))
 	{
 		k.GET("/", destinoHandler.ListarDestinosPorAcceso)
 	}
 
-	// admin: lista (sin slash), crea y elimina destinos
-	// GET sin slash evita conflicto con el GET del kiosko que usa path con slash
-	a := rg.Group("/kioskos/:id/destinos")
+	// admin: CRUD de destinos a nivel del tenant
+	a := rg.Group("/destinos")
 	a.Use(auth.RequireAdmin(jwtSecret))
 	{
-		a.GET("", destinoHandler.ListarDestinosPorAdmin)
+		a.GET("/", destinoHandler.ListarDestinos)
 		a.POST("/", destinoHandler.CrearDestino)
-		a.DELETE("/:did", destinoHandler.EliminarDestino)
+		a.DELETE("/:id", destinoHandler.EliminarDestino)
 	}
 }
 
@@ -191,12 +203,17 @@ func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret stri
 	}
 }
 
-// registerResidenteRoutes registra rutas de residente: login (público) y endpoints
-// autenticados para la app del residente y el dashboard admin.
-func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+// registerResidenteRoutes registra rutas de residente: auto-registro público, login, y
+// endpoints autenticados para la app del residente y el dashboard admin.
+func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string, uploadsDir string) {
 	residenteRepo := residente.NewRepository(db)
 	destinoRepo := destinos.NewRepository(db)
-	residenteHandler := residente.NewHandler(residenteRepo, destinoRepo, jwtSecret, db)
+	residenteHandler := residente.NewHandler(residenteRepo, destinoRepo, jwtSecret, db, uploadsDir)
+
+	// público: búsqueda de centro, auto-registro y consulta de estado
+	rg.GET("/centros/buscar", residenteHandler.BuscarCentro)
+	rg.POST("/centros/:codigo/residentes/auto-registro", residenteHandler.AutoRegistrar)
+	rg.GET("/centros/:codigo/residentes/estado", residenteHandler.ConsultarEstado)
 
 	// login público
 	rg.POST("/auth/residente/login", residenteHandler.LoginResidente)
@@ -228,6 +245,9 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string)
 	{
 		adminR.POST("/", residenteHandler.CrearResidente)
 		adminR.GET("/", residenteHandler.ListarResidentesAdmin)
+		adminR.GET("/pendientes", residenteHandler.ListarPendientes)
+		adminR.POST("/:id/aprobar", residenteHandler.AprobarResidente)
+		adminR.POST("/:id/rechazar", residenteHandler.RechazarResidente)
 	}
 }
 
@@ -241,5 +261,6 @@ func registerTenantRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	{
 		t.POST("/", tenantHandler.CreateTenant)
 		t.GET("/:id", tenantHandler.GetTenant)
+		t.PATCH("/:id", tenantHandler.PatchTenant)
 	}
 }

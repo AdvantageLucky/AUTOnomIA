@@ -1,0 +1,1 @@
+ALTER TABLE destinos ALTER COLUMN kiosko_id DROP NOT NULL;

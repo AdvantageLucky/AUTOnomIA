@@ -30,6 +30,7 @@ type Config struct {
 	JWTSecret  string
 	UploadsDir string
 	LLMUrl     string
+	PublicURL  string
 }
 
 func Load() (*Config, error) {
@@ -44,6 +45,7 @@ func Load() (*Config, error) {
 		JWTSecret:  getEnv("JWT_SECRET", "dev-secret-change-me"),
 		UploadsDir: getEnv("UPLOADS_DIR", "./web/uploads/visitantes"),
 		LLMUrl:     getEnv("LLM_URL", "http://localhost:8081"),
+		PublicURL:  getEnv("PUBLIC_URL", "http://localhost:8080"),
 	}
 
 	return cfg, nil

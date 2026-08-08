@@ -9,6 +9,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
   <script src="https://accounts.google.com/gsi/client" async></script>
+  <style>
+    /* ── Tab bar ── */
+    .tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:0;padding:0}
+    .tab-bar-inner{display:flex;gap:0;max-width:1100px;margin-left:auto;margin-right:auto;padding:0 32px}
+    .tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:10px 18px;cursor:pointer;color:var(--text-2);font-size:14px;font-family:inherit;transition:color .15s,border-color .15s}
+    .tab-btn.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+    .tab-badge{display:inline-block;margin-left:6px;background:var(--brand);color:#fff;border-radius:10px;padding:0 6px;font-size:11px;vertical-align:middle}
+    /* ── Tab action row ── */
+    .tab-actions{display:flex;justify-content:flex-end;margin-bottom:16px}
+    @media(max-width:900px){.tab-bar{padding:0 16px}}
+    /* ── Profile ball ── */
+    .nav-btn--profile{width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;font-size:13px;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:none;cursor:pointer;margin-left:4px}
+    .profile-dropdown{position:fixed;top:54px;right:12px;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.35);width:260px}
+    .pd-header{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface);border-radius:12px 12px 0 0}
+    .pd-name{font-weight:700;font-size:15px;color:var(--text)}
+    .pd-email{font-size:12px;color:var(--text-2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .pd-body{padding:8px 10px;background:var(--surface);border-radius:0 0 12px 12px}
+    .pd-row{display:flex;align-items:center;justify-content:space-between;padding:7px 6px;font-size:13px;color:var(--text)}
+    .pd-sep{border:none;border-top:1px solid var(--border);margin:6px 0}
+    .pd-link{display:block;width:100%;text-align:left;background:none;border:none;padding:9px 6px;cursor:pointer;font-size:13px;color:var(--text);border-radius:6px;font-family:inherit}
+    .pd-link:hover{background:var(--surface-2)}
+    .pd-link--danger{color:#e53e3e}
+  </style>
 </head>
 <body>
 
@@ -99,69 +122,64 @@
       <div class="ob-step-dot active" id="ob-dot-1">1</div>
       <div class="ob-step-line" id="ob-line-1"></div>
       <div class="ob-step-dot" id="ob-dot-2">2</div>
-      <div class="ob-step-line" id="ob-line-2"></div>
-      <div class="ob-step-dot" id="ob-dot-3">3</div>
     </div>
 
-    <!-- Paso 1: Bienvenida -->
+    <!-- Paso 1: Configurar instalación -->
     <div id="ob-step-1" class="ob-step active">
       <div class="ob-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </div>
-      <div class="ob-title">Bienvenido a AUTOnomIA</div>
-      <div class="ob-sub">Activa tu primer punto de acceso y tu comunidad estará lista para recibir visitantes con registro automático por IA.</div>
-      <button class="btn-primary btn-block" id="ob-btn-1">Iniciar configuración →</button>
-    </div>
-
-    <!-- Paso 2: Crear primer acceso -->
-    <div id="ob-step-2" class="ob-step">
-      <div class="ob-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6m-3-3v6"/></svg>
-      </div>
-      <div class="ob-title">Registra tu primer acceso</div>
-      <div class="ob-sub">Define el punto de entrada y el tipo de kiosko. Podrás añadir más desde la sección Accesos.</div>
-      <form id="ob-acceso-form">
-        <div class="form-group"><label>Nombre del acceso</label><input id="ob-nombre" type="text" required placeholder="Ej. Entrada Principal"></div>
+      <div class="ob-title">Configura tu instalación</div>
+      <div class="ob-sub">Define cómo se llama tu comunidad o edificio. Esto aparecerá en la app del residente.</div>
+      <form id="ob-inst-form">
         <div class="form-group">
-          <label>Tipo de kiosko</label>
-          <select id="ob-tipo" class="search-select" style="width:100%">
-            <option value="PEATONAL">Peatonal</option>
-            <option value="VEHICULAR">Vehicular</option>
+          <label>Nombre</label>
+          <input id="ob-inst-nombre" type="text" required placeholder="Ej. Residencial Las Palmas">
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="ob-inst-tipo" style="width:100%">
+            <option value="habitacional">Habitacional</option>
+            <option value="comercial">Comercial</option>
+            <option value="educativo">Educativo</option>
+            <option value="salud">Salud</option>
+            <option value="industrial">Industrial</option>
+            <option value="mixto">Mixto</option>
+            <option value="otro">Otro</option>
           </select>
         </div>
-        <div class="form-group"><label>Ubicación (opcional)</label><input id="ob-ubicacion" type="text" placeholder="Ej. Calle Principal s/n"></div>
-        <div id="ob-form-error" class="form-error" hidden></div>
-        <button type="submit" class="btn-primary btn-block">Crear acceso →</button>
+        <div class="form-group">
+          <label>Código público <span style="color:var(--text-3);font-weight:400">(opcional)</span></label>
+          <input id="ob-inst-codigo" type="text" placeholder="Ej. FEPRO-2026" style="text-transform:uppercase">
+          <div class="form-hint">Los residentes usarán este código para unirse desde la app.</div>
+        </div>
+        <div id="ob-inst-error" class="form-error" hidden></div>
+        <button type="submit" class="btn-primary btn-block">Siguiente →</button>
       </form>
     </div>
 
-    <!-- Paso 3: Credenciales generadas -->
-    <div id="ob-step-3" class="ob-step">
+    <!-- Paso 2: Agregar vigilante (opcional) -->
+    <div id="ob-step-2" class="ob-step">
       <div class="ob-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M19 8v6m-3-3h6"/></svg>
       </div>
-      <div class="ob-title">Acceso registrado</div>
-      <div class="ob-sub">Guarda estos datos en la app del kiosko. <strong>La clave no se volverá a mostrar.</strong></div>
-      <div class="reveal-box" style="margin-bottom:16px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
-          <div>
-            <div class="reveal-label">ID del kiosko</div>
-            <div class="reveal-value" id="ob-id-reveal">—</div>
-          </div>
-          <div>
-            <div class="reveal-label">Clave de kiosko</div>
-            <div class="reveal-value" id="ob-clave-reveal">—</div>
-          </div>
-        </div>
-        <button class="btn-copy" id="ob-btn-copy" data-val="">Copiar clave</button>
+      <div class="ob-title">Agrega a tu equipo</div>
+      <div class="ob-sub">Crea una cuenta de vigilante para monitorear solicitudes. Puedes hacerlo después desde la sección Kioskos → Equipo.</div>
+      <div class="form-group">
+        <label>Nombre</label>
+        <input id="ob-vig-nombre" type="text" placeholder="Juan Pérez">
       </div>
-      <div class="ob-next-steps">
-        <div class="ob-next-label">¿Qué sigue?</div>
-        <button class="ob-next-btn" id="ob-goto-destinos">Añadir destinos y casas</button>
-        <button class="ob-next-btn" id="ob-goto-equipo">Crear vigilantes de seguridad</button>
-        <button class="ob-next-btn" id="ob-goto-config">Configurar parámetros del kiosko</button>
+      <div class="form-group">
+        <label>Correo</label>
+        <input id="ob-vig-correo" type="email" placeholder="vigilante@ejemplo.com">
       </div>
-      <button class="btn-ghost btn-block" id="ob-btn-done" style="margin-top:12px">Ir al panel →</button>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input id="ob-vig-password" type="password" placeholder="••••••••" minlength="6">
+      </div>
+      <div id="ob-vig-error" class="form-error" hidden></div>
+      <button class="btn-primary btn-block" id="ob-vig-crear">Crear vigilante</button>
+      <button class="btn-ghost btn-block" id="ob-vig-saltar" style="margin-top:8px">Saltar por ahora →</button>
     </div>
   </div>
 </div>
@@ -177,25 +195,48 @@
     </div>
 
     <nav class="topbar-nav">
-      <button class="nav-btn" data-nav="dashboard" data-i18n="nav_dashboard">Inicio</button>
+      <button class="nav-btn" data-nav="dashboard" data-i18n="nav_inicio">Inicio</button>
+      <button class="nav-btn" data-nav="solicitudes"><span data-i18n="nav_solicitudes">Solicitudes</span><span class="nav-badge" id="nav-badge-solicitudes" hidden>0</span></button>
       <button class="nav-btn" data-nav="visitas" data-i18n="nav_visitas">Visitas</button>
-      <button class="nav-btn" data-nav="solicitudes">Solicitudes<span class="nav-badge" id="nav-badge-solicitudes" hidden>0</span></button>
-      <button class="nav-btn" data-nav="residentes">Residentes</button>
-      <button class="nav-btn" data-nav="accesos" data-i18n="nav_accesos">Accesos</button>
-      <button class="nav-btn" data-nav="destinos">Destinos</button>
-      <button class="nav-btn" data-nav="equipo">Equipo</button>
-      <button class="nav-btn" data-nav="perfil" data-i18n="nav_perfil">Perfil</button>
+      <button class="nav-btn" data-nav="residentes" data-i18n="nav_residentes">Residentes</button>
+      <button class="nav-btn" data-nav="kioskos" data-i18n="nav_kioskos">Kioskos</button>
+      <button class="nav-btn" data-nav="instalacion" data-i18n="nav_instalacion">Instalación</button>
     </nav>
 
     <div class="topbar-end">
-      <div class="sse-dot" id="sse-dot" title="Stream desconectado"></div>
-      <div class="avatar" id="sidebar-avatar">··</div>
-      <span class="topbar-username" id="sidebar-user-name">—</span>
-      <button id="btn-logout" title="Cerrar sesión" class="icon-btn">
-        <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><line x1="11" y1="9" x2="16" y2="9"/><polyline points="13.5,6.5 16,9 13.5,11.5"/></svg>
+      <button class="nav-btn nav-btn--profile" id="nav-profile-btn" title="Perfil">
+        <span id="nav-profile-initials">?</span>
       </button>
     </div>
   </header>
+
+  <!-- Dropdown de perfil -->
+  <div id="profile-dropdown" class="profile-dropdown" hidden>
+    <div class="pd-header">
+      <div class="pd-name" id="pd-name">—</div>
+      <div class="pd-email" id="pd-email">—</div>
+    </div>
+    <div class="pd-body">
+      <div class="pd-row">
+        <span>Apariencia</span>
+        <button class="pref-toggle" id="pd-btn-theme">
+          <svg id="pd-icon-theme-dark" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M15.5 11A7 7 0 1 1 7 2.5 5.5 5.5 0 0 0 15.5 11z"/></svg>
+          <svg id="pd-icon-theme-light" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" hidden><circle cx="9" cy="9" r="3.5"/><line x1="9" y1="1" x2="9" y2="3"/><line x1="9" y1="15" x2="9" y2="17"/><line x1="1" y1="9" x2="3" y2="9"/><line x1="15" y1="9" x2="17" y2="9"/></svg>
+          <span id="pd-label-theme">Oscuro</span>
+        </button>
+      </div>
+      <div class="pd-row">
+        <span>Idioma</span>
+        <button class="pref-toggle" id="pd-btn-lang">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="7"/><line x1="9" y1="2" x2="9" y2="16"/><path d="M2 9h14"/></svg>
+          <span id="pd-label-lang">ES</span>
+        </button>
+      </div>
+      <hr class="pd-sep">
+      <button class="pd-link" id="pd-perfil-btn">Mi perfil</button>
+      <button class="pd-link pd-link--danger" id="pd-logout-btn">Cerrar sesión</button>
+    </div>
+  </div>
 
   <!-- MAIN -->
   <main class="main">
@@ -335,8 +376,8 @@
     <section id="screen-solicitudes" class="screen" hidden>
       <div class="screen-header">
         <div>
-          <div class="screen-title">Solicitudes</div>
-          <div class="screen-sub">Accesos pendientes de aprobación</div>
+          <div class="screen-title" data-i18n="sol_title">Solicitudes</div>
+          <div class="screen-sub" data-i18n="sol_sub">Accesos pendientes de aprobación</div>
         </div>
         <div class="sol-meta">
           <span class="sol-badge" id="sol-count">—</span>
@@ -364,32 +405,58 @@
       </div>
     </section>
 
-    <!-- RESIDENTES -->
+    <!-- RESIDENTES (multi-tab) -->
     <section id="screen-residentes" class="screen" hidden>
       <div class="screen-header">
         <div>
-          <div class="screen-title">Residentes</div>
-          <div class="screen-sub">Vecinos registrados en tus comunidades</div>
+          <div class="screen-title" data-i18n="res_title">Residentes</div>
+          <div class="screen-sub">Personas registradas en la instalación</div>
         </div>
         <button class="btn-primary" id="btn-nuevo-residente"><span class="plus">+</span> Nuevo residente</button>
       </div>
-      <div class="screen-body">
-        <div class="search-row">
-          <div class="search-wrap">
-            <svg class="search-icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
-            <input id="res-search" type="text" placeholder="Buscar por nombre o casa…">
+
+      <div class="tab-bar">
+        <div class="tab-bar-inner">
+          <button class="tab-btn active" data-tab="res-activos" data-i18n="tab_activos">Activos</button>
+          <button class="tab-btn" data-tab="res-solicitudes"><span data-i18n="tab_solicitudes">Solicitudes</span><span class="tab-badge" id="tab-badge-res-sol" hidden>0</span></button>
+        </div>
+      </div>
+
+      <!-- Tab: activos -->
+      <div id="res-activos">
+        <div class="screen-body">
+          <div class="search-row">
+            <div class="search-wrap">
+              <svg class="search-icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
+              <input id="res-search" type="text" placeholder="Buscar por nombre o casa…">
+            </div>
           </div>
+          <div id="res-loading" class="loading-state" hidden>
+            <div class="spinner"></div>
+            <div class="loading-text">Cargando residentes…</div>
+          </div>
+          <div id="res-empty" class="empty-state" hidden>
+            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
+            <div class="empty-title">Sin residentes registrados</div>
+            <div class="empty-text">Crea el primer residente para que pueda usar la app y generar invitaciones.</div>
+          </div>
+          <div id="res-grid" class="residente-grid"></div>
         </div>
-        <div id="res-loading" class="loading-state" hidden>
-          <div class="spinner"></div>
-          <div class="loading-text">Cargando residentes…</div>
+      </div>
+
+      <!-- Tab: solicitudes de auto-registro -->
+      <div id="res-solicitudes" hidden>
+        <div class="screen-body">
+          <div id="resp-loading" class="loading-state" hidden>
+            <div class="spinner"></div>
+            <div class="loading-text">Cargando solicitudes…</div>
+          </div>
+          <div id="resp-empty" class="empty-state" hidden>
+            <div class="empty-title">Sin solicitudes pendientes</div>
+            <div class="empty-text">Cuando un residente se auto-registre, aparecerá aquí para tu aprobación.</div>
+          </div>
+          <div id="resp-rows"></div>
         </div>
-        <div id="res-empty" class="empty-state" hidden>
-          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
-          <div class="empty-title">Sin residentes registrados</div>
-          <div class="empty-text">Crea el primer residente para que pueda usar la app y generar invitaciones.</div>
-        </div>
-        <div id="res-grid" class="residente-grid"></div>
       </div>
     </section>
 
@@ -406,58 +473,49 @@
       <div class="screen-body screen-body--narrow" id="residente-detalle-body"></div>
     </section>
 
-    <!-- ACCESOS -->
-    <section id="screen-accesos" class="screen" hidden>
+    <!-- KIOSKOS (multi-tab: lista · activar · equipo) -->
+    <section id="screen-kioskos" class="screen" hidden>
       <div class="screen-header">
         <div>
-          <div class="screen-title" data-i18n="nav_accesos">Accesos</div>
-          <div class="screen-sub" data-i18n="accesos_sub">Entradas y casetas de tu comunidad</div>
+          <div class="screen-title" data-i18n="kio_title">Kioskos</div>
+          <div class="screen-sub">Puntos de acceso y su configuración</div>
         </div>
-        <button class="btn-primary" id="btn-nuevo-acceso"><span class="plus">+</span> <span data-i18n="new_acceso">Nuevo acceso</span></button>
+        <button class="btn-primary" id="btn-nuevo-acceso"><span class="plus">+</span> Nuevo kiosko</button>
       </div>
-      <div class="screen-body screen-body--medium">
-        <div id="accesos-list"></div>
-      </div>
-    </section>
 
-    <!-- DESTINOS -->
-    <section id="screen-destinos" class="screen" hidden>
-      <div class="screen-header">
-        <div>
-          <div class="screen-title">Destinos</div>
-          <div class="screen-sub">Lugares y casas a los que pueden dirigirse los visitantes</div>
+      <div class="tab-bar">
+        <div class="tab-bar-inner">
+          <button class="tab-btn active" data-tab="kio-lista" data-i18n="tab_lista">Mis kioskos</button>
+          <button class="tab-btn" data-tab="kio-equipo" data-i18n="tab_equipo">Equipo</button>
         </div>
-        <button class="btn-primary" id="btn-nuevo-destino"><span class="plus">+</span> Nuevo destino</button>
       </div>
-      <div class="screen-body screen-body--narrow">
-        <div class="panel panel-padded" style="margin-bottom:16px">
-          <div class="form-group" style="margin-bottom:0">
-            <label>Kiosko</label>
-            <select id="dest-acceso-select" class="search-select" style="width:100%">
-              <option value="">— Selecciona un acceso —</option>
-            </select>
+
+      <!-- Tab: lista de kioskos -->
+      <div id="kio-lista">
+        <div class="screen-body">
+          <div id="accesos-list"></div>
+        </div>
+      </div>
+
+      <!-- Tab: equipo (vigilantes) -->
+      <div id="kio-equipo" hidden>
+        <div class="screen-body">
+          <div class="tab-actions">
+            <button class="btn-primary" id="btn-nuevo-vigilante"><span class="plus">+</span> Nuevo vigilante</button>
           </div>
-        </div>
-
-        <div id="dest-list-wrap" hidden>
-          <div id="dest-loading" class="loading-state" hidden>
+          <div id="equipo-loading" class="loading-state" hidden>
             <div class="spinner"></div>
-            <div class="loading-text">Cargando destinos…</div>
+            <div class="loading-text">Cargando equipo…</div>
           </div>
-          <div id="dest-empty" class="empty-state" hidden>
-            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg></div>
-            <div class="empty-title">Sin destinos registrados</div>
-            <div class="empty-text">Crea el primer destino para que los visitantes puedan indicar su lugar de visita.</div>
+          <div id="equipo-empty" class="empty-state" hidden>
+            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="5.5" r="2.8"/><path d="M1 14c0-3.3 2.5-5.5 5-5.5s5 2.2 5 5.5"/><circle cx="13" cy="5.5" r="2.2"/><path d="M13 9c1.8.3 3.5 2 3.5 5"/></svg></div>
+            <div class="empty-title">Sin vigilantes registrados</div>
+            <div class="empty-text">Crea el primer vigilante para que pueda monitorear solicitudes en tiempo real.</div>
           </div>
-          <div id="dest-rows"></div>
-        </div>
-
-        <div id="dest-idle" class="empty-state">
-          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg></div>
-          <div class="empty-title">Selecciona un kiosko</div>
-          <div class="empty-text">Elige un acceso del menú de arriba para ver y gestionar sus destinos.</div>
+          <div id="equipo-rows"></div>
         </div>
       </div>
+
     </section>
 
     <!-- CONFIGURACIÓN -->
@@ -635,26 +693,84 @@
       </div>
     </section>
 
-    <!-- EQUIPO -->
-    <section id="screen-equipo" class="screen" hidden>
+    <!-- INSTALACIÓN (multi-tab: unidades · configuración) -->
+    <section id="screen-instalacion" class="screen" hidden>
       <div class="screen-header">
         <div>
-          <div class="screen-title">Equipo</div>
-          <div class="screen-sub">Administradores y vigilantes</div>
+          <div class="screen-title" data-i18n="inst_title">Instalación</div>
+          <div class="screen-sub" data-i18n="inst_sub">Destinos de visita y configuración general</div>
         </div>
-        <button class="btn-primary" id="btn-nuevo-vigilante"><span class="plus">+</span> Nuevo vigilante</button>
       </div>
-      <div class="screen-body screen-body--medium">
-        <div id="equipo-loading" class="loading-state" hidden>
-          <div class="spinner"></div>
-          <div class="loading-text">Cargando equipo…</div>
+
+      <div class="tab-bar">
+        <div class="tab-bar-inner">
+          <button class="tab-btn active" data-tab="inst-unidades" data-i18n="tab_destinos">Destinos</button>
+          <button class="tab-btn" data-tab="inst-config" data-i18n="tab_config">Configuración</button>
         </div>
-        <div id="equipo-empty" class="empty-state" hidden>
-          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="5.5" r="2.8"/><path d="M1 14c0-3.3 2.5-5.5 5-5.5s5 2.2 5 5.5"/><circle cx="13" cy="5.5" r="2.2"/><path d="M13 9c1.8.3 3.5 2 3.5 5"/></svg></div>
-          <div class="empty-title">Sin vigilantes registrados</div>
-          <div class="empty-text">Crea el primer vigilante para que pueda monitorear solicitudes en tiempo real.</div>
+      </div>
+
+      <!-- Tab: destinos del tenant -->
+      <div id="inst-unidades">
+        <div class="screen-body">
+          <div class="tab-actions">
+            <button class="btn-primary" id="btn-nuevo-destino"><span class="plus">+</span> Nuevo destino</button>
+          </div>
+          <div id="dest-loading" class="loading-state" hidden>
+            <div class="spinner"></div>
+            <div class="loading-text">Cargando destinos…</div>
+          </div>
+          <div id="dest-empty" class="empty-state" hidden>
+            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg></div>
+            <div class="empty-title">Sin destinos registrados</div>
+            <div class="empty-text">Crea el primer destino para que los visitantes puedan indicar a dónde van.</div>
+          </div>
+          <div id="dest-rows"></div>
         </div>
-        <div id="equipo-rows"></div>
+      </div>
+
+      <!-- Tab: configuración del centro -->
+      <div id="inst-config" hidden>
+        <div class="screen-body screen-body--narrow">
+          <div class="panel panel-padded">
+            <div class="form-section-title" style="margin-top:0">Información de la instalación</div>
+            <form id="inst-config-form">
+              <div class="form-group">
+                <label>Nombre</label>
+                <input id="inst-nombre" type="text" placeholder="Ej. Residencial Las Palmas" required>
+              </div>
+              <div class="form-group">
+                <label>Tipo de instalación</label>
+                <select id="inst-tipo">
+                  <option value="habitacional">Habitacional (residencial, condo, fraccionamiento)</option>
+                  <option value="comercial">Comercial (centro comercial, oficinas, plaza)</option>
+                  <option value="educativo">Educativo (escuela, universidad, campus)</option>
+                  <option value="salud">Salud (hospital, clínica, consultorio)</option>
+                  <option value="industrial">Industrial (parque, bodega, planta)</option>
+                  <option value="mixto">Mixto (uso mixto)</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Dirección</label>
+                <input id="inst-direccion" type="text" placeholder="Calle, número, colonia">
+              </div>
+              <div class="form-group">
+                <label>Código público</label>
+                <input id="inst-codigo" type="text" placeholder="Ej. FEPRO-2026" style="text-transform:uppercase">
+                <div class="form-hint">Código que los residentes escriben en la app para unirse a esta instalación.</div>
+              </div>
+              <div class="form-group">
+                <label>Descripción</label>
+                <textarea id="inst-descripcion" rows="3" placeholder="Descripción breve de la instalación…"></textarea>
+              </div>
+              <div id="inst-config-error" class="form-error" hidden></div>
+              <div id="inst-config-ok" class="form-success" hidden>Configuración guardada.</div>
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Guardar cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -727,41 +843,104 @@
 </div>
 
 <!-- MODALES -->
-<div id="modal-acceso" class="modal-overlay" hidden>
+<!-- Modal: wizard de nuevo kiosko (3 pasos) -->
+<div id="modal-nuevo-kiosko" class="modal-overlay" hidden>
   <div class="modal-box">
-    <div id="acceso-form-view">
-      <div class="modal-title" id="modal-acceso-title" data-i18n="modal_new_acceso">Nuevo acceso</div>
-      <div class="modal-sub" data-i18n="modal_acceso_sub">Define el nombre y ubicación de la entrada.</div>
-      <form id="acceso-form">
-        <div class="form-group"><label data-i18n="name">Nombre</label><input id="acceso-nombre" type="text" required placeholder="Entrada A"></div>
-        <div class="form-group"><label>Tipo de kiosko</label>
-          <select id="acceso-tipo" class="search-select" style="width:100%" required>
+    <div class="ob-steps-bar" style="margin-bottom:20px">
+      <div class="ob-step-dot active" id="nk-dot-1">1</div>
+      <div class="ob-step-line" id="nk-line-1"></div>
+      <div class="ob-step-dot" id="nk-dot-2">2</div>
+      <div class="ob-step-line" id="nk-line-2"></div>
+      <div class="ob-step-dot" id="nk-dot-3">3</div>
+    </div>
+
+    <!-- Paso 1: Código de dispositivo -->
+    <div id="nk-step-1">
+      <div class="modal-title">Activar kiosko</div>
+      <div class="modal-sub">Abre la app en el dispositivo del kiosko — mostrará un código de activación. Escríbelo aquí.</div>
+      <div class="form-group" style="margin-top:20px">
+        <label>Código del kiosko</label>
+        <input id="nk-code" placeholder="XXXX-XXXX" maxlength="9" autocomplete="off"
+               style="font-family:monospace;font-size:22px;letter-spacing:5px;text-transform:uppercase;text-align:center">
+      </div>
+      <div id="nk-code-error" class="form-error" hidden></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="nk-cancel-1">Cancelar</button>
+        <button type="button" class="btn-primary" id="nk-verificar">Verificar código</button>
+      </div>
+    </div>
+
+    <!-- Paso 2: Datos del kiosko -->
+    <div id="nk-step-2" hidden>
+      <div class="modal-title">Configurar kiosko</div>
+      <div class="modal-sub">Código verificado. Define los datos de este punto de acceso.</div>
+      <form id="nk-form" style="margin-top:16px">
+        <div class="form-group">
+          <label>Nombre del acceso</label>
+          <input id="nk-nombre" type="text" required placeholder="Entrada Principal">
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="nk-tipo" style="width:100%">
             <option value="PEATONAL">Peatonal</option>
             <option value="VEHICULAR">Vehicular</option>
           </select>
         </div>
-        <div class="form-group"><label data-i18n="location">Ubicación</label><input id="acceso-ubicacion" type="text" placeholder="Calle Principal"></div>
-        <div class="form-hint" id="acceso-clave-hint" data-i18n="acceso_key_hint">La clave de kiosko se genera automáticamente al crear el acceso.</div>
-        <div id="acceso-form-error" class="form-error" hidden></div>
+        <div class="form-group">
+          <label>Ubicación <span style="color:var(--text-3);font-weight:400">(opcional)</span></label>
+          <input id="nk-ubicacion" type="text" placeholder="Calle Principal s/n">
+        </div>
+        <div id="nk-form-error" class="form-error" hidden></div>
         <div class="modal-actions">
-          <button type="button" class="btn-cancel" id="acceso-cancel" data-i18n="cancel">Cancelar</button>
-          <button type="submit" class="btn-primary" data-i18n="save">Guardar</button>
+          <button type="button" class="btn-cancel" id="nk-back-2">← Atrás</button>
+          <button type="submit" class="btn-primary">Crear kiosko</button>
         </div>
       </form>
     </div>
-    <div id="acceso-reveal-view" hidden>
-      <div class="modal-title" data-i18n="acceso_created">Acceso creado</div>
-      <div class="modal-sub" data-i18n="acceso_created_sub">Copia esta clave ahora y configúrala en el kiosko. No se mostrará de nuevo.</div>
-      <div class="reveal-box">
-        <div class="reveal-label" data-i18n="access_id">ID del acceso</div>
-        <div class="reveal-value" id="reveal-acceso-id"></div>
-        <div class="reveal-label" style="margin-top:12px" data-i18n="kiosk_key">Clave de kiosko</div>
-        <div class="reveal-value" id="reveal-clave"></div>
+
+    <!-- Paso 3: Kiosko registrado -->
+    <div id="nk-step-3" hidden>
+      <div class="modal-title">¡Kiosko registrado!</div>
+      <div class="modal-sub">El dispositivo está activado y listo. <strong>Copia la clave antes de cerrar.</strong></div>
+      <div class="reveal-box" style="margin-top:20px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
+          <div>
+            <div class="reveal-label">ID del acceso</div>
+            <div class="reveal-value" id="nk-reveal-id">—</div>
+          </div>
+          <div>
+            <div class="reveal-label">Clave de kiosko</div>
+            <div class="reveal-value" id="nk-reveal-clave">—</div>
+          </div>
+        </div>
+        <button class="btn-copy" id="nk-btn-copy" data-val="">Copiar clave</button>
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn-primary" id="acceso-reveal-done" data-i18n="copied">Listo, ya la copié</button>
+        <button type="button" class="btn-primary" id="nk-done">Listo, ya la copié</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="modal-acceso" class="modal-overlay" hidden>
+  <div class="modal-box">
+    <div class="modal-title">Editar kiosko</div>
+    <div class="modal-sub">Actualiza el nombre, tipo o ubicación de este punto de acceso.</div>
+    <form id="acceso-form" style="margin-top:16px">
+      <div class="form-group"><label>Nombre</label><input id="acceso-nombre" type="text" required placeholder="Entrada A"></div>
+      <div class="form-group"><label>Tipo</label>
+        <select id="acceso-tipo" style="width:100%" required>
+          <option value="PEATONAL">Peatonal</option>
+          <option value="VEHICULAR">Vehicular</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ubicación</label><input id="acceso-ubicacion" type="text" placeholder="Calle Principal"></div>
+      <div id="acceso-form-error" class="form-error" hidden></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="acceso-cancel">Cancelar</button>
+        <button type="submit" class="btn-primary">Guardar cambios</button>
+      </div>
+    </form>
   </div>
 </div>
 

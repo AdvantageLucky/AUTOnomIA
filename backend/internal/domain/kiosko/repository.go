@@ -28,9 +28,14 @@ func (r *Repository) WithContext(ctx context.Context) *Repository {
 	return &Repository{db: r.db.WithContext(ctx)}
 }
 
-// ByTenant es un GORM Scope que aísla las consultas usando el tenant_id del contexto
+// ByTenant es un GORM Scope que aísla las consultas usando el tenant_id del contexto.
+// Califica la columna con el nombre de tabla cuando está disponible para evitar
+// ambigüedad en consultas con JOIN contra otras tablas que también tienen tenant_id.
 func ByTenant(db *gorm.DB) *gorm.DB {
 	if tenantID, ok := db.Statement.Context.Value(ctxkeys.TenantID).(uint); ok && tenantID > 0 {
+		if table := db.Statement.Table; table != "" {
+			return db.Where(table+".tenant_id = ?", tenantID)
+		}
 		return db.Where("tenant_id = ?", tenantID)
 	}
 	return db

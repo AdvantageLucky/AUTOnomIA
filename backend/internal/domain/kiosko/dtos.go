@@ -39,8 +39,9 @@ type KioskoConfigRequest struct {
 	HorarioInicio          *string `json:"horario_inicio"`
 	HorarioFin             *string `json:"horario_fin"`
 	MensajeBienvenida      *string `json:"mensaje_bienvenida"`
-	AutoPassHabilitado     *bool   `json:"auto_pass_habilitado"`
-	UmbralConfianzaVisitas *int    `json:"umbral_confianza_visitas"`
+	AutoPassHabilitado     *bool    `json:"auto_pass_habilitado"`
+	UmbralConfianzaVisitas *int     `json:"umbral_confianza_visitas"`
+	UmbralSimilitudCara    *float64 `json:"umbral_similitud_cara"`
 }
 
 // KioskoConfigResponse DTO de respuesta de la config del kiosko
@@ -57,8 +58,9 @@ type KioskoConfigResponse struct {
 	HorarioInicio          string `json:"horario_inicio"`
 	HorarioFin             string `json:"horario_fin"`
 	MensajeBienvenida      string `json:"mensaje_bienvenida"`
-	AutoPassHabilitado     bool   `json:"auto_pass_habilitado"`
-	UmbralConfianzaVisitas int    `json:"umbral_confianza_visitas"`
+	AutoPassHabilitado     bool    `json:"auto_pass_habilitado"`
+	UmbralConfianzaVisitas int     `json:"umbral_confianza_visitas"`
+	UmbralSimilitudCara    float64 `json:"umbral_similitud_cara"`
 }
 
 // helper func para convertir un Kiosko (DB Model) a DTO Reponse
@@ -94,5 +96,6 @@ func toKioskoConfigResponse(cfg *KioskoConfig) KioskoConfigResponse {
 		MensajeBienvenida:      cfg.MensajeBienvenida,
 		AutoPassHabilitado:     cfg.AutoPassHabilitado,
 		UmbralConfianzaVisitas: cfg.UmbralConfianzaVisitas,
+		UmbralSimilitudCara:    cfg.UmbralSimilitudCara,
 	}
 }
