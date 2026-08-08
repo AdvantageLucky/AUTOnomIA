@@ -9,6 +9,7 @@ import (
 type Repository interface {
 	Create(tenant *CentroHabitacional) error
 	FindByID(id uint) (*CentroHabitacional, error)
+	Update(id uint, fields map[string]any) error
 }
 
 type repository struct {
@@ -33,4 +34,8 @@ func (r *repository) FindByID(id uint) (*CentroHabitacional, error) {
 		return nil, err
 	}
 	return &tenant, nil
+}
+
+func (r *repository) Update(id uint, fields map[string]any) error {
+	return r.db.Model(&CentroHabitacional{}).Where("id = ?", id).Updates(fields).Error
 }

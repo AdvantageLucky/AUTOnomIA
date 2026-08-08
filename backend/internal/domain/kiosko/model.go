@@ -56,8 +56,9 @@ type KioskoConfig struct {
 	MensajeBienvenida string
 
 	// Configuracion de IA
-	AutoPassHabilitado     bool `gorm:"not null;default:true"`
-	UmbralConfianzaVisitas int  `gorm:"not null;default:5"`
+	AutoPassHabilitado     bool    `gorm:"not null;default:true"`
+	UmbralConfianzaVisitas int     `gorm:"not null;default:5"`
+	UmbralSimilitudCara    float64 `gorm:"not null;default:0.70"` // similitud mínima para reconocimiento facial
 }
 
 func (Kiosko) TableName() string       { return "kioskos" }

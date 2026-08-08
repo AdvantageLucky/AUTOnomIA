@@ -384,6 +384,9 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.UmbralConfianzaVisitas != nil {
 		cfg.UmbralConfianzaVisitas = *req.UmbralConfianzaVisitas
 	}
+	if req.UmbralSimilitudCara != nil {
+		cfg.UmbralSimilitudCara = *req.UmbralSimilitudCara
+	}
 
 	if err := repoCtx.UpdateConfig(cfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

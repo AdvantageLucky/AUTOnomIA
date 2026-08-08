@@ -95,6 +95,30 @@
       no_placa: "Sin placa",
       visits: n => `${n} visita${n !== 1 ? "s" : ""} registrada${n !== 1 ? "s" : ""}`,
       hello: name => `Hola, ${name}`,
+      nav_inicio: "Inicio",
+      nav_solicitudes: "Solicitudes",
+      nav_residentes: "Residentes",
+      nav_kioskos: "Kioskos",
+      nav_instalacion: "Instalación",
+      tab_activos: "Activos",
+      tab_solicitudes: "Solicitudes",
+      tab_lista: "Lista",
+      tab_equipo: "Equipo",
+      tab_destinos: "Destinos",
+      tab_config: "Configuración",
+      nuevo_kiosko: "+ Nuevo kiosko",
+      nuevo_destino: "+ Nuevo destino",
+      nuevo_residente: "+ Nuevo residente",
+      res_title: "Residentes",
+      kio_title: "Kioskos",
+      inst_title: "Instalación",
+      inst_sub: "Destinos de visita y configuración general",
+      sol_title: "Solicitudes de acceso",
+      sol_sub: "Visitantes pendientes de aprobación",
+      approbar: "Aprobar",
+      rechazar: "Rechazar",
+      sin_solicitudes: "Sin solicitudes pendientes",
+      sin_solicitudes_text: "Cuando alguien solicite acceso, aparecerá aquí.",
     },
     en: {
       brand_sub: "Access control",
@@ -186,6 +210,30 @@
       no_placa: "No plate",
       visits: n => `${n} visit${n !== 1 ? "s" : ""} recorded`,
       hello: name => `Hello, ${name}`,
+      nav_inicio: "Home",
+      nav_solicitudes: "Requests",
+      nav_residentes: "Residents",
+      nav_kioskos: "Kiosks",
+      nav_instalacion: "Installation",
+      tab_activos: "Active",
+      tab_solicitudes: "Requests",
+      tab_lista: "List",
+      tab_equipo: "Staff",
+      tab_destinos: "Destinations",
+      tab_config: "Settings",
+      nuevo_kiosko: "+ New kiosk",
+      nuevo_destino: "+ New destination",
+      nuevo_residente: "+ New resident",
+      res_title: "Residents",
+      kio_title: "Kiosks",
+      inst_title: "Installation",
+      inst_sub: "Visit destinations and general settings",
+      sol_title: "Access requests",
+      sol_sub: "Visitors pending approval",
+      approbar: "Approve",
+      rechazar: "Reject",
+      sin_solicitudes: "No pending requests",
+      sin_solicitudes_text: "When someone requests access, they'll appear here.",
     },
   };
 
@@ -250,7 +298,7 @@
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado", REVISION: "badge--revision" };
 
   const RUTAS_POR_ROL = {
-    admin:     ["dashboard","visitas","detalle","solicitudes","residentes","residente-detalle","accesos","destinos","configuracion","equipo","perfil"],
+    admin:     ["dashboard","solicitudes","visitas","detalle","residentes","residente-detalle","kioskos","configuracion","instalacion","perfil"],
     vigilante: ["solicitudes","perfil"],
   };
 
@@ -394,15 +442,14 @@
     document.querySelectorAll(`[data-nav="${screen}"]`).forEach(b => b.classList.add("active"));
 
     stopSolPolling();
-    if (screen === "dashboard")         loadDashboard();
-    if (screen === "visitas")           loadVisitas(1);
-    if (screen === "solicitudes")       startSolPolling();
-    if (screen === "residentes")        loadResidentes();
-    if (screen === "accesos")           loadAccesos();
-    if (screen === "destinos")          loadDestinosSection();
-    if (screen === "configuracion")     loadConfigAccesos();
-    if (screen === "equipo")            loadEquipo();
-    if (screen === "perfil")            loadPerfil();
+    if (screen === "dashboard")     loadDashboard();
+    if (screen === "visitas")       loadVisitas(1);
+    if (screen === "solicitudes")   startSolPolling();
+    if (screen === "residentes")    { loadResidentes(); loadResidentesPendientesBadge(); }
+    if (screen === "kioskos")       loadAccesos();
+    if (screen === "instalacion")   { loadDestinosSection(); }
+    if (screen === "configuracion") loadConfigAccesos();
+    if (screen === "perfil")        loadPerfil();
   }
 
   document.addEventListener("click", e => {
@@ -455,7 +502,8 @@
 
       setToken(data.access_token);
       const claims = decodeJWT(data.access_token);
-      state.adminId = claims?.admin_id;
+      state.adminId  = claims?.admin_id;
+      state.tenantId = claims?.tenant_id;
       await bootstrapApp();
     } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
     finally  { btn.disabled = false; }
@@ -481,7 +529,8 @@
           if (!res.ok) { errEl.textContent = data.error || "Google login fallido"; errEl.hidden = false; return; }
           setToken(data.access_token);
           const claims = decodeJWT(data.access_token);
-          state.adminId = claims?.admin_id;
+          state.adminId  = claims?.admin_id;
+          state.tenantId = claims?.tenant_id;
           await bootstrapApp();
         } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
       },
@@ -529,23 +578,105 @@
 
     const initials = state.admin
       ? ((state.admin.nombre?.[0] || "") + (state.admin.apellido_paterno?.[0] || ""))
-      : "";
+        || (state.admin.correo?.[0] || "")
+      : (decodeJWT(getToken())?.correo?.[0] || "");
 
-    document.getElementById("sidebar-user-name").textContent = nombre;
-    document.getElementById("sidebar-avatar").textContent = initials || "·";
+    document.getElementById("nav-profile-initials").textContent = (initials || "?").toUpperCase();
+    document.getElementById("pd-name").textContent  = nombre;
+    document.getElementById("pd-email").textContent = state.admin?.correo || decodeJWT(getToken())?.correo || "";
     document.getElementById("perfil-avatar").textContent = initials || "·";
     document.getElementById("perfil-nombre-completo").textContent = nombre;
     document.getElementById("dash-greeting").textContent = STRINGS[lang].hello(state.admin?.nombre || nombre);
   }
 
   /* ─── Logout ─────────────────────────────── */
-  document.getElementById("btn-logout").addEventListener("click", () => {
+  function logout() {
     if (state.sseSource) { state.sseSource.close(); state.sseSource = null; }
     clearToken();
     state.adminId = null;
     state.admin = null;
     state.rol = "admin";
     showLogin();
+  }
+  document.getElementById("pd-logout-btn")?.addEventListener("click", logout);
+
+  /* ─── Profile ball dropdown ──────────────── */
+  const profileBtn = document.getElementById("nav-profile-btn");
+  const profileDd  = document.getElementById("profile-dropdown");
+  profileBtn?.addEventListener("click", e => {
+    e.stopPropagation();
+    if (profileDd) profileDd.hidden = !profileDd.hidden;
+  });
+  document.addEventListener("click", () => { if (profileDd) profileDd.hidden = true; });
+  document.getElementById("pd-perfil-btn")?.addEventListener("click", () => {
+    if (profileDd) profileDd.hidden = true;
+    navTo("perfil");
+  });
+  document.getElementById("pd-btn-theme")?.addEventListener("click", () => {
+    const cur = document.documentElement.dataset.theme;
+    setTheme(cur === "dark" ? "light" : "dark");
+    syncPdTheme();
+  });
+  document.getElementById("pd-btn-lang")?.addEventListener("click", () => {
+    lang = lang === "es" ? "en" : "es";
+    localStorage.setItem("autonomia_lang", lang);
+    applyI18n();
+    document.getElementById("pd-label-lang").textContent = lang === "es" ? "EN" : "ES";
+  });
+  function syncPdTheme() {
+    const dark = document.documentElement.dataset.theme === "dark";
+    const dkIcon = document.getElementById("pd-icon-theme-dark");
+    const ltIcon = document.getElementById("pd-icon-theme-light");
+    const lbl    = document.getElementById("pd-label-theme");
+    if (dkIcon) dkIcon.hidden = !dark;
+    if (ltIcon) ltIcon.hidden = dark;
+    if (lbl)    lbl.textContent = dark ? "Claro" : "Oscuro";
+  }
+  syncPdTheme();
+
+  /* ─── Tabs genéricos ────────────────────── */
+  function switchTab(sectionId, tabId, onActivate) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    section.querySelectorAll('.tab-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.tab === tabId)
+    );
+    // Los paneles tienen IDs que coinciden con los valores data-tab de los botones
+    section.querySelectorAll('.tab-btn').forEach(b => {
+      const panel = document.getElementById(b.dataset.tab);
+      if (panel) panel.hidden = b.dataset.tab !== tabId;
+    });
+    if (onActivate) onActivate();
+  }
+
+  document.querySelectorAll('#screen-kioskos .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      switchTab('screen-kioskos', tab,
+        tab === 'kio-lista'   ? loadAccesos :
+        tab === 'kio-equipo'  ? loadEquipo : null
+      );
+    });
+  });
+
+  document.querySelectorAll('#screen-residentes .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      switchTab('screen-residentes', tab,
+        tab === 'res-activos'     ? loadResidentes :
+        tab === 'res-solicitudes' ? loadResidentesPendientes : null
+      );
+    });
+  });
+
+  document.querySelectorAll('#screen-instalacion .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      switchTab('screen-instalacion', tab,
+        tab === 'inst-unidades' ? loadDestinosSection :
+        tab === 'inst-config'   ? loadInstalacionConfig : null
+      );
+    });
   });
 
   /* ─── Dashboard ─────────────────────────── */
@@ -1166,29 +1297,138 @@
     });
   }
 
-  document.getElementById("btn-nuevo-acceso").addEventListener("click", () => openAccesoModal(null));
+  document.getElementById("btn-nuevo-acceso").addEventListener("click", () => openNuevoKioskoWizard());
 
-  function openAccesoModal(accesoId) {
-    state.editingAccesoId = accesoId;
-    const formView = document.getElementById("acceso-form-view");
-    const revView  = document.getElementById("acceso-reveal-view");
-    formView.hidden = false;
-    revView.hidden  = true;
+  /* ─── Wizard: nuevo kiosko ───────────────── */
+  let nkPendingCode = '';
 
-    if (accesoId) {
-      const a = state.accesosById.get(accesoId);
-      document.getElementById("modal-acceso-title").textContent = lang === "en" ? "Edit entry" : "Editar acceso";
-      document.getElementById("acceso-nombre").value    = a?.nombre    || "";
-      document.getElementById("acceso-tipo").value      = a?.tipo      || "PEATONAL";
-      document.getElementById("acceso-ubicacion").value = a?.ubicacion || "";
-      document.getElementById("acceso-clave-hint").hidden = true;
-    } else {
-      document.getElementById("modal-acceso-title").textContent = t("modal_new_acceso");
-      document.getElementById("acceso-nombre").value    = "";
-      document.getElementById("acceso-tipo").value      = "PEATONAL";
-      document.getElementById("acceso-ubicacion").value = "";
-      document.getElementById("acceso-clave-hint").hidden = false;
+  function setNkStep(n) {
+    [1,2,3].forEach(i => {
+      const step = document.getElementById(`nk-step-${i}`);
+      if (step) step.hidden = i !== n;
+      const dot = document.getElementById(`nk-dot-${i}`);
+      if (dot) {
+        dot.classList.toggle('active', i===n);
+        dot.classList.toggle('done',   i<n);
+      }
+    });
+    [1,2].forEach(i => {
+      document.getElementById(`nk-line-${i}`)?.classList.toggle('done', i<n);
+    });
+  }
+
+  function openNuevoKioskoWizard() {
+    nkPendingCode = '';
+    document.getElementById('nk-code').value = '';
+    document.getElementById('nk-code-error').hidden = true;
+    document.getElementById('nk-nombre').value = '';
+    document.getElementById('nk-tipo').value = 'PEATONAL';
+    document.getElementById('nk-ubicacion').value = '';
+    document.getElementById('nk-form-error').hidden = true;
+    setNkStep(1);
+    document.getElementById('modal-nuevo-kiosko').hidden = false;
+  }
+
+  function cerrarNuevoKioskoWizard() {
+    document.getElementById('modal-nuevo-kiosko').hidden = true;
+  }
+
+  document.getElementById('nk-cancel-1')?.addEventListener('click', cerrarNuevoKioskoWizard);
+  document.getElementById('nk-back-2')?.addEventListener('click', () => setNkStep(1));
+
+  document.getElementById('nk-verificar')?.addEventListener('click', async () => {
+    const code  = document.getElementById('nk-code').value.trim().toUpperCase();
+    const errEl = document.getElementById('nk-code-error');
+    errEl.hidden = true;
+    if (!code || code.length < 9) {
+      errEl.textContent = 'Ingresa el código con formato XXXX-XXXX';
+      errEl.hidden = false;
+      return;
     }
+    const res = await api(`/device/validar?user_code=${encodeURIComponent(code)}`);
+    if (!res) return;
+    if (!res.ok) {
+      errEl.textContent = 'Código inválido o ya utilizado';
+      errEl.hidden = false;
+      return;
+    }
+    const d = await res.json();
+    if (!d.valid) {
+      errEl.textContent = 'El código no está activo o ya expiró';
+      errEl.hidden = false;
+      return;
+    }
+    nkPendingCode = d.user_code || code;
+    setNkStep(2);
+  });
+
+  document.getElementById('nk-code')?.addEventListener('input', e => {
+    let v = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    if (v.length > 4) v = v.slice(0, 4) + '-' + v.slice(4, 8);
+    e.target.value = v;
+  });
+
+  document.getElementById('nk-code')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('nk-verificar')?.click();
+  });
+
+  document.getElementById('nk-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl = document.getElementById('nk-form-error');
+    errEl.hidden = true;
+
+    const nombre    = document.getElementById('nk-nombre').value.trim();
+    const tipo      = document.getElementById('nk-tipo').value;
+    const ubicacion = document.getElementById('nk-ubicacion').value.trim();
+
+    const resKiosko = await api('/kioskos/', { method: 'POST', body: JSON.stringify({ nombre, tipo, ubicacion }) });
+    if (!resKiosko) return;
+    if (!resKiosko.ok) {
+      const d = await resKiosko.json();
+      errEl.textContent = d.error || 'Error al crear kiosko';
+      errEl.hidden = false;
+      return;
+    }
+    const kiosko = await resKiosko.json();
+    state.accesosById.set(kiosko.id, kiosko);
+
+    const resAprobar = await api(`/device/${encodeURIComponent(nkPendingCode)}/aprobar`, {
+      method: 'POST', body: JSON.stringify({ kiosko_id: kiosko.id, clave_kiosko: kiosko.clave_kiosko || '' }),
+    });
+    if (!resAprobar || !resAprobar.ok) {
+      errEl.textContent = 'Kiosko creado pero no se pudo vincular al dispositivo';
+      errEl.hidden = false;
+      return;
+    }
+
+    document.getElementById('nk-reveal-id').textContent    = kiosko.id || '—';
+    document.getElementById('nk-reveal-clave').textContent = kiosko.clave_kiosko || '—';
+    document.getElementById('nk-btn-copy').dataset.val     = kiosko.clave_kiosko || '';
+    setNkStep(3);
+    loadAccesos();
+  });
+
+  document.getElementById('nk-btn-copy')?.addEventListener('click', function() {
+    const v = this.dataset.val;
+    if (!v) return;
+    navigator.clipboard.writeText(v).then(() => {
+      this.textContent = '¡Copiado!';
+      setTimeout(() => { this.textContent = 'Copiar clave'; }, 2000);
+    });
+  });
+
+  document.getElementById('nk-done')?.addEventListener('click', () => {
+    cerrarNuevoKioskoWizard();
+  });
+
+  /* ─── Modal: editar kiosko ───────────────── */
+  function openAccesoModal(accesoId) {
+    if (!accesoId) return;
+    state.editingAccesoId = accesoId;
+    const a = state.accesosById.get(accesoId);
+    document.getElementById("acceso-nombre").value    = a?.nombre    || "";
+    document.getElementById("acceso-tipo").value      = a?.tipo      || "PEATONAL";
+    document.getElementById("acceso-ubicacion").value = a?.ubicacion || "";
     document.getElementById("acceso-form-error").hidden = true;
     document.getElementById("modal-acceso").hidden = false;
   }
@@ -1199,40 +1439,24 @@
 
   document.getElementById("acceso-form").addEventListener("submit", async e => {
     e.preventDefault();
-    const nombre    = document.getElementById("acceso-nombre").value;
-    const tipo      = document.getElementById("acceso-tipo").value;
-    const ubicacion = document.getElementById("acceso-ubicacion").value;
-    const errEl     = document.getElementById("acceso-form-error");
-
-    const isNew    = state.editingAccesoId === null;
-    const endpoint = isNew ? "/kioskos/" : `/kioskos/${state.editingAccesoId}`;
-    const method   = isNew ? "POST" : "PATCH";
-
-    const res = await api(endpoint, { method, body: JSON.stringify({ nombre, tipo, ubicacion }) });
+    const errEl = document.getElementById("acceso-form-error");
+    errEl.hidden = true;
+    const body = {
+      nombre:    document.getElementById("acceso-nombre").value.trim(),
+      tipo:      document.getElementById("acceso-tipo").value,
+      ubicacion: document.getElementById("acceso-ubicacion").value.trim(),
+    };
+    const res = await api(`/kioskos/${state.editingAccesoId}`, { method: "PATCH", body: JSON.stringify(body) });
     if (!res) return;
-
     if (!res.ok) {
       const data = await res.json();
       errEl.textContent = data.error || "Error";
       errEl.hidden = false;
       return;
     }
-
-    const created = await res.json();
     document.getElementById("modal-acceso").hidden = true;
     await loadAccesos();
-
-    if (isNew) {
-      document.getElementById("reveal-acceso-id").textContent = created.id;
-      document.getElementById("reveal-clave").textContent     = created.clave_kiosko || "—";
-      document.getElementById("acceso-form-view").hidden  = true;
-      document.getElementById("acceso-reveal-view").hidden = false;
-      document.getElementById("modal-acceso").hidden = false;
-    }
-  });
-
-  document.getElementById("acceso-reveal-done").addEventListener("click", () => {
-    document.getElementById("modal-acceso").hidden = true;
+    mostrarToast("Kiosko actualizado", "ok");
   });
 
   function openDeleteModal(accesoId) {
@@ -1613,14 +1837,23 @@
   /* ─── Onboarding first-run ───────────────── */
   let obStep = 1;
 
-  function showOnboarding() {
+  async function showOnboarding() {
     obStep = 1;
     document.getElementById('onboarding-overlay').hidden = false;
     setObStep(1);
+    // precargar datos actuales del tenant
+    const res = await fetch(`/api/v1/tenants/${state.tenantId || 1}`);
+    if (res.ok) {
+      const d = await res.json();
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+      set('ob-inst-nombre', d.nombre);
+      set('ob-inst-tipo',   d.tipo || 'habitacional');
+      set('ob-inst-codigo', d.codigo);
+    }
   }
 
   function setObStep(n) {
-    [1,2,3].forEach(i => {
+    [1,2].forEach(i => {
       document.getElementById(`ob-step-${i}`)?.classList.toggle('active', i===n);
       const dot = document.getElementById(`ob-dot-${i}`);
       if (dot) {
@@ -1628,96 +1861,80 @@
         dot.classList.toggle('done',   i<n);
       }
     });
-    [1,2].forEach(i => {
-      document.getElementById(`ob-line-${i}`)?.classList.toggle('done', i<n);
-    });
+    document.getElementById('ob-line-1')?.classList.toggle('done', n>1);
     obStep = n;
   }
 
-  document.getElementById('ob-btn-1')?.addEventListener('click', () => setObStep(2));
-
-  document.getElementById('ob-acceso-form')?.addEventListener('submit', async e => {
+  document.getElementById('ob-inst-form')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const errEl = document.getElementById('ob-form-error');
+    const errEl = document.getElementById('ob-inst-error');
     errEl.hidden = true;
-    const nombre = document.getElementById('ob-nombre').value.trim();
-    const tipo   = document.getElementById('ob-tipo').value;
-    const ubicacion = document.getElementById('ob-ubicacion').value.trim();
-
-    const res = await api('/kioskos/', { method:'POST', body:JSON.stringify({nombre,tipo,ubicacion}) });
+    const body = {
+      nombre: document.getElementById('ob-inst-nombre').value.trim(),
+      tipo:   document.getElementById('ob-inst-tipo').value,
+      codigo: document.getElementById('ob-inst-codigo').value.trim().toUpperCase() || undefined,
+    };
+    const res = await api(`/tenants/${state.tenantId || 1}`, { method: 'PATCH', body: JSON.stringify(body) });
     if (!res) return;
     if (!res.ok) {
       const d = await res.json();
-      errEl.textContent = d.error || 'Error al crear acceso';
+      errEl.textContent = d.error || 'Error al guardar';
       errEl.hidden = false;
       return;
     }
-    const data = await res.json();
-    state.accesosById.set(data.id, data);
-    document.getElementById('ob-id-reveal').textContent    = data.id    || '—';
-    document.getElementById('ob-clave-reveal').textContent = data.clave_kiosko || '—';
-    document.getElementById('ob-btn-copy').dataset.val     = data.clave_kiosko || '';
-    setObStep(3);
+    setObStep(2);
   });
 
-  document.getElementById('ob-btn-copy')?.addEventListener('click', function() {
-    const v = this.dataset.val;
-    if (!v) return;
-    navigator.clipboard.writeText(v).then(() => {
-      this.textContent = '¡Copiado!';
-      setTimeout(() => { this.textContent = 'Copiar'; }, 2000);
-    });
+  document.getElementById('ob-vig-crear')?.addEventListener('click', async () => {
+    const errEl = document.getElementById('ob-vig-error');
+    errEl.hidden = true;
+    const payload = {
+      nombre:           document.getElementById('ob-vig-nombre').value.trim(),
+      apellido_paterno: '',
+      correo:           document.getElementById('ob-vig-correo').value.trim(),
+      password:         document.getElementById('ob-vig-password').value,
+      rol:              'vigilante',
+    };
+    if (!payload.correo || !payload.password) {
+      errEl.textContent = 'Correo y contraseña son obligatorios';
+      errEl.hidden = false;
+      return;
+    }
+    const res = await api('/auth/sign-in', { method: 'POST', body: JSON.stringify(payload) });
+    if (!res) return;
+    if (!res.ok) {
+      const d = await res.json();
+      errEl.textContent = d.error || 'Error al crear vigilante';
+      errEl.hidden = false;
+      return;
+    }
+    document.getElementById('onboarding-overlay').hidden = true;
+    mostrarToast('Vigilante creado. ¡Todo listo!', 'ok');
+    navTo('dashboard');
   });
 
-  document.getElementById('ob-btn-done')?.addEventListener('click', () => {
+  document.getElementById('ob-vig-saltar')?.addEventListener('click', () => {
     document.getElementById('onboarding-overlay').hidden = true;
     navTo('dashboard');
   });
 
-  ['ob-goto-destinos','ob-goto-equipo','ob-goto-config'].forEach((id, i) => {
-    const dest = ['destinos','equipo','configuracion'][i];
-    document.getElementById(id)?.addEventListener('click', () => {
-      document.getElementById('onboarding-overlay').hidden = true;
-      navTo(dest);
-    });
-  });
-
   /* ─── Destinos ───────────────────────────── */
-  let destCurrentKioskoId = null;
 
   async function loadDestinosSection() {
-    const sel = document.getElementById('dest-acceso-select');
-    if (!sel) return;
-    if (state.accesosById.size === 0) await preloadAccesos();
-    sel.innerHTML = '<option value="">— Selecciona un acceso —</option>';
-    state.accesosById.forEach(a => {
-      const opt = document.createElement('option');
-      opt.value = a.id;
-      opt.textContent = `${a.nombre}${a.ubicacion ? ` (${a.ubicacion})` : ''}`;
-      sel.appendChild(opt);
-    });
-    if (destCurrentKioskoId) {
-      sel.value = destCurrentKioskoId;
-      loadDestinos(destCurrentKioskoId);
-    } else {
-      document.getElementById('dest-list-wrap').hidden = true;
-      document.getElementById('dest-idle').hidden = false;
-    }
+    await loadDestinos();
   }
 
-  async function loadDestinos(kioskoId) {
-    destCurrentKioskoId = kioskoId;
+  async function loadDestinos() {
     const rowsEl  = document.getElementById('dest-rows');
     const emptyEl = document.getElementById('dest-empty');
     const loadEl  = document.getElementById('dest-loading');
-    const wrap    = document.getElementById('dest-list-wrap');
-    const idleEl  = document.getElementById('dest-idle');
     if (!rowsEl) return;
 
-    rowsEl.innerHTML = ''; emptyEl.hidden = true;
-    wrap.hidden = false; idleEl.hidden = true; loadEl.hidden = false;
+    rowsEl.innerHTML = '';
+    emptyEl.hidden = true;
+    loadEl.hidden = false;
 
-    const res = await api(`/kioskos/${kioskoId}/destinos`);
+    const res = await api('/destinos/');
     loadEl.hidden = true;
     if (!res || !res.ok) { mostrarToast('Error al cargar destinos', 'err'); return; }
 
@@ -1736,13 +1953,13 @@
       </div>`).join('');
 
     rowsEl.querySelectorAll('[data-del-dest]').forEach(btn => {
-      btn.addEventListener('click', () => deleteDestino(+btn.dataset.delDest, kioskoId));
+      btn.addEventListener('click', () => deleteDestino(+btn.dataset.delDest));
     });
   }
 
-  async function deleteDestino(id, kioskoId) {
+  async function deleteDestino(id) {
     if (!confirm('¿Eliminar este destino?')) return;
-    const res = await api(`/kioskos/${kioskoId}/destinos/${id}`, { method: 'DELETE' });
+    const res = await api(`/destinos/${id}`, { method: 'DELETE' });
     if (res && res.ok) {
       document.getElementById(`dest-row-${id}`)?.remove();
       if (!document.getElementById('dest-rows').children.length)
@@ -1751,16 +1968,6 @@
       mostrarToast('No se pudo eliminar el destino', 'err');
     }
   }
-
-  document.getElementById('dest-acceso-select')?.addEventListener('change', e => {
-    const id = e.target.value;
-    if (id) loadDestinos(id);
-    else {
-      document.getElementById('dest-list-wrap').hidden = true;
-      document.getElementById('dest-idle').hidden = false;
-      destCurrentKioskoId = null;
-    }
-  });
 
   document.getElementById('btn-nuevo-destino')?.addEventListener('click', () => {
     document.getElementById('modal-destino').hidden = false;
@@ -1775,11 +1982,8 @@
     const titular  = document.getElementById('dest-titular').value.trim();
     const errEl    = document.getElementById('dest-form-error');
     errEl.hidden   = true;
-    if (!destCurrentKioskoId) return;
 
-    const res = await api(`/kioskos/${destCurrentKioskoId}/destinos/`, {
-      method: 'POST', body: JSON.stringify({ nombre, titular }),
-    });
+    const res = await api('/destinos/', { method: 'POST', body: JSON.stringify({ nombre, titular }) });
     if (!res) return;
     if (!res.ok) {
       const d = await res.json();
@@ -1788,8 +1992,110 @@
     }
     document.getElementById('modal-destino').hidden = true;
     document.getElementById('destino-form').reset();
-    loadDestinos(destCurrentKioskoId);
+    loadDestinos();
   });
+
+  /* ─── Instalación config ─────────────────── */
+
+  async function loadInstalacionConfig() {
+    const tenantId = state.tenantId || 1;
+    const res = await api(`/tenants/${tenantId}`);
+    if (!res || !res.ok) return;
+    const d = await res.json();
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('inst-nombre',     d.nombre);
+    set('inst-tipo',       d.tipo);
+    set('inst-direccion',  d.direccion);
+    set('inst-codigo',     d.codigo);
+    set('inst-descripcion', d.descripcion);
+  }
+
+  document.getElementById('inst-config-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const tenantId = state.tenantId || 1;
+    const body = {
+      nombre:      document.getElementById('inst-nombre')?.value.trim(),
+      tipo:        document.getElementById('inst-tipo')?.value,
+      direccion:   document.getElementById('inst-direccion')?.value.trim(),
+      codigo:      document.getElementById('inst-codigo')?.value.trim(),
+      descripcion: document.getElementById('inst-descripcion')?.value.trim(),
+    };
+    const res = await api(`/tenants/${tenantId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res && res.ok) mostrarToast('Instalación actualizada', 'ok');
+    else mostrarToast('Error al guardar', 'err');
+  });
+
+  /* ─── Residentes pendientes ─────────────── */
+
+  async function loadResidentesPendientesBadge() {
+    const res = await api('/residentes/pendientes');
+    if (!res || !res.ok) return;
+    const d = await res.json();
+    const n = (d.residentes || []).length;
+    const badge = document.getElementById('tab-badge-res-sol');
+    if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+  }
+
+  async function loadResidentesPendientes() {
+    const loadEl  = document.getElementById('resp-loading');
+    const emptyEl = document.getElementById('resp-empty');
+    const rowsEl  = document.getElementById('resp-rows');
+    if (!rowsEl) return;
+
+    rowsEl.innerHTML = '';
+    emptyEl.hidden = true;
+    loadEl.hidden = false;
+
+    const res = await api('/residentes/pendientes');
+    loadEl.hidden = true;
+    if (!res || !res.ok) { mostrarToast('Error al cargar residentes pendientes', 'err'); return; }
+
+    const items = await res.json();
+    if (!items.length) { emptyEl.hidden = false; return; }
+
+    rowsEl.innerHTML = items.map(r => {
+      const fecha = new Date(r.created_at).toLocaleDateString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+      const foto  = r.foto_cara_url
+        ? `<img src="${esc(r.foto_cara_url)}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-right:12px" alt="foto">`
+        : `<div style="width:48px;height:48px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:20px">👤</div>`;
+      return `
+        <div class="equipo-row" style="align-items:center">
+          ${foto}
+          <div class="equipo-info" style="flex:1">
+            <div class="equipo-name">${esc(r.nombre)} ${esc(r.apellido_paterno)} ${esc(r.apellido_materno)}</div>
+            <div class="equipo-sub">${esc(r.casa_destino)}${r.telefono ? ' · ' + esc(r.telefono) : ''} · Solicitado: ${fecha}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-primary" data-aprobar-res="${r.id}">Aprobar</button>
+            <button class="btn-ghost" data-rechazar-res="${r.id}" style="color:var(--danger,#e55)">Rechazar</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    rowsEl.querySelectorAll('[data-aprobar-res]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.aprobarRes;
+        const res = await api(`/residentes/${id}/aprobar`, { method: 'POST' });
+        if (res && res.ok) { mostrarToast('Residente aprobado', 'ok'); loadResidentesPendientes(); }
+        else mostrarToast('Error al aprobar', 'err');
+      });
+    });
+
+    rowsEl.querySelectorAll('[data-rechazar-res]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.rechazarRes;
+        if (!confirm('¿Rechazar esta solicitud?')) return;
+        const res = await api(`/residentes/${id}/rechazar`, { method: 'POST' });
+        if (res && res.ok) { mostrarToast('Solicitud rechazada', 'ok'); loadResidentesPendientes(); }
+        else mostrarToast('Error al rechazar', 'err');
+      });
+    });
+  }
+
 
   /* ─── Init ───────────────────────────────── */
   function init() {
@@ -1801,8 +2107,9 @@
       clearToken(); showLogin(); applyI18n(); return;
     }
 
-    state.adminId = claims.admin_id;
-    state.rol = claims.rol || "admin";
+    state.adminId  = claims.admin_id;
+    state.tenantId = claims.tenant_id;
+    state.rol      = claims.rol || "admin";
     bootstrapApp();
   }
 

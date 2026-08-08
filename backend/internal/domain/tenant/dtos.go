@@ -2,16 +2,25 @@ package tenant
 
 import "time"
 
-// CreateTenantRequest define el payload para registrar un nuevo fraccionamiento
 type CreateTenantRequest struct {
 	Nombre    string `json:"nombre" binding:"required"`
 	Direccion string `json:"direccion"`
 }
 
-// TenantResponse es la representación segura que se devuelve al cliente
+type UpdateTenantRequest struct {
+	Nombre      string `json:"nombre"`
+	Direccion   string `json:"direccion"`
+	Codigo      string `json:"codigo"`
+	Tipo        string `json:"tipo"`
+	Descripcion string `json:"descripcion"`
+}
+
 type TenantResponse struct {
-	ID        uint      `json:"id"`
-	Nombre    string    `json:"nombre"`
-	Direccion string    `json:"direccion"`
-	CreatedAt time.Time `json:"created_at"`
+	ID          uint      `json:"id"`
+	Nombre      string    `json:"nombre"`
+	Direccion   string    `json:"direccion"`
+	Codigo      string    `json:"codigo"`
+	Tipo        string    `json:"tipo"`
+	Descripcion string    `json:"descripcion"`
+	CreatedAt   time.Time `json:"created_at"`
 }

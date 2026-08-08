@@ -184,7 +184,8 @@ input, select, textarea {
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]),
-select {
+select,
+textarea {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -197,11 +198,15 @@ select {
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]):focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: var(--brand);
 }
 
-input::placeholder { color: var(--text-2); }
+input::placeholder,
+textarea::placeholder { color: var(--text-2); }
+
+textarea { resize: vertical; }
 
 .form-error {
   font-size: 12.5px;
@@ -649,7 +654,7 @@ input::placeholder { color: var(--text-2); }
   padding: 32px 32px 20px;
   gap: 16px;
   position: relative;
-  max-width: 1164px;
+  max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -694,9 +699,9 @@ input::placeholder { color: var(--text-2); }
   margin-top: 2px;
 }
 
-.screen-body { padding: 0 32px 64px; max-width: 1100px; margin-left: auto; margin-right: auto; }
-.screen-body--narrow { max-width: 600px; }
-.screen-body--medium { max-width: 800px; }
+.screen-body { padding: 20px 32px 64px; max-width: 1100px; margin-left: auto; margin-right: auto; }
+.screen-body--narrow { max-width: 640px; margin-left: auto; margin-right: auto; }
+.screen-body--medium { max-width: 860px; margin-left: auto; margin-right: auto; }
 .screen-inner { padding: 20px 32px 64px; max-width: 1100px; margin-left: auto; margin-right: auto; }
 
 /* ================================================================
@@ -707,7 +712,7 @@ input::placeholder { color: var(--text-2); }
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   padding: 0 32px 20px;
-  max-width: 1164px;
+  max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
 }
