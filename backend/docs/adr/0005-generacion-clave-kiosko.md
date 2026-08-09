@@ -1,7 +1,10 @@
 # 0005 - Generación de clave de Kiosko para registro de Kioskos
 
 ## Status
-Accepted 
+Superseded by [0019](0019-activacion-kiosko-device-authorization-grant.md)
+
+> La `ClaveKiosko` sigue existiendo como credencial interna de re-autenticación del kiosko. Lo que
+> queda reemplazado es su entrega manual: el admin ya no la copia ni la transcribe al dispositivo.
 
 ## Context
 El Administrador debe tener una forma de registrar un Kiosko a su cuenta cuando lo haya adquirido:

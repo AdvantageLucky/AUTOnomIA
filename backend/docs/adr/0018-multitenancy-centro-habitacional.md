@@ -1,7 +1,11 @@
-s# 0016 - Arquitectura Multi-tenant con CentroHabitacional
+# 0018 - Arquitectura Multi-tenant con CentroHabitacional
 
 ## Status
-Proposed
+Accepted — ver [0021](0021-aislamiento-tenant-por-admin-y-scopes-calificados.md) para las
+correcciones de implementación.
+
+> La clave foránea descrita más abajo como `centro_habitacional_id` se implementó finalmente con el
+> nombre **`tenant_id`** (migración `000025`).
 
 ## Context
 Actualmente, la base de datos de AUTOnomIA opera en un modelo de inquilino único (Single-tenant). Las migraciones actuales han creado un esquema plano donde todos los registros de `admins`, `kioskos`, `residentes`, `destinos`, `visitantes` y `visitas` comparten el mismo espacio de datos global. Para escalar la plataforma como SaaS y ofrecerla a múltiples complejos residenciales simultáneamente, es imperativo aislar los datos para garantizar que las operaciones de un complejo no expongan la información de otro.

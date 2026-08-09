@@ -1,7 +1,11 @@
 # 0008 - Autenticación del residente por PIN numérico
 
 ## Status
-Accepted
+Superseded by [0020](0020-auto-registro-residente-por-codigo-instalacion.md)
+
+> El PIN con bcrypt, el JWT de residente y el middleware `RequireResidente` siguen vigentes tal como
+> se describen aquí. Quedan reemplazados el `kiosko_id` como parte de la credencial de login y la
+> regla de que el residente no puede auto-registrarse.
 
 ## Context
 La app residente permite a los residentes del condominio aprobar o rechazar solicitudes de kiosko
