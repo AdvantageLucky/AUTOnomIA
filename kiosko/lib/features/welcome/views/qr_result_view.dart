@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_result_viewmodel.dart';
 
 class QrResultView extends StatefulWidget {
@@ -28,19 +29,23 @@ class _QrResultViewState extends State<QrResultView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF171313),
-      body: SizedBox.expand(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-          child: Column(
-            children: [
-              _buildHeader(),
-              const Spacer(),
-              _buildContent(),
-              const Spacer(),
-              _buildFooter(),
-            ],
-          ),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final vPad = (constraints.maxHeight * 0.06).clamp(16.0, 48.0);
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 34, vertical: vPad),
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  const Spacer(),
+                  _buildContent(),
+                  const Spacer(),
+                  _buildFooter(),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -54,8 +59,8 @@ class _QrResultViewState extends State<QrResultView> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFFFF542F),
-            borderRadius: BorderRadius.circular(14),
+            color: KigoDesign.brand,
+            borderRadius: BorderRadius.circular(KigoDesign.radius),
           ),
           child: const Center(
             child: Text('K', style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.bold)),
@@ -65,9 +70,9 @@ class _QrResultViewState extends State<QrResultView> {
         const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Kigo', style: TextStyle(color: Colors.white, fontSize: 29, fontWeight: FontWeight.w800)),
+            Text('Kigo', style: TextStyle(color: KigoDesign.textPrimary, fontSize: 29, fontWeight: FontWeight.w800)),
             SizedBox(height: 2),
-            Text('SELF CHECK-IN', style: TextStyle(color: Color(0xFF8A8585), fontSize: 14, letterSpacing: 4, fontWeight: FontWeight.w500)),
+            Text('SELF CHECK-IN', style: TextStyle(color: KigoDesign.textSecondary, fontSize: 14, letterSpacing: 4, fontWeight: FontWeight.w500)),
           ],
         ),
       ],
@@ -91,87 +96,93 @@ class _QrResultViewState extends State<QrResultView> {
         SizedBox(
           width: 64,
           height: 64,
-          child: CircularProgressIndicator(color: Color(0xFFFF542F), strokeWidth: 3),
+          child: CircularProgressIndicator(color: KigoDesign.brand, strokeWidth: 3),
         ),
         SizedBox(height: 36),
         Text(
           'Verificando invitación...',
-          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+          style: TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ],
     );
   }
 
   Widget _buildExitoso() {
+    final h = MediaQuery.sizeOf(context).height;
+    final iconSize = (h * 0.14).clamp(70.0, 110.0);
+    final gap = (h * 0.04).clamp(10.0, 36.0);
     return Column(
       children: [
         Container(
-          width: 110,
-          height: 110,
+          width: iconSize,
+          height: iconSize,
           decoration: BoxDecoration(
-            color: const Color(0xFF22C55E).withValues(alpha: 0.12),
+            color: KigoDesign.success.withValues(alpha: 0.12),
             shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.5), width: 2),
+            border: Border.all(color: KigoDesign.success.withValues(alpha: 0.5), width: 2),
           ),
-          child: const Icon(Icons.check_rounded, color: Color(0xFF22C55E), size: 60),
+          child: Icon(Icons.check_rounded, color: KigoDesign.success, size: iconSize * 0.55),
         ),
-        const SizedBox(height: 36),
-        const Text('¡Acceso concedido!', style: TextStyle(color: Colors.white, fontSize: 38, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 14),
+        SizedBox(height: gap),
+        Text('¡Acceso concedido!', style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.048).clamp(22.0, 38.0), fontWeight: FontWeight.w800)),
+        SizedBox(height: gap * 0.4),
         if (widget.viewModel.titular != null)
           Text(
             widget.viewModel.titular!,
-            style: const TextStyle(color: Color(0xFF22C55E), fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: 1),
+            style: const TextStyle(color: KigoDesign.success, fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: 1),
           ),
         if (widget.viewModel.casaDestino != null && widget.viewModel.casaDestino!.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          SizedBox(height: gap * 0.22),
           Text(
             widget.viewModel.casaDestino!,
-            style: const TextStyle(color: Color(0xFF8A8585), fontSize: 16, letterSpacing: 2),
+            style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 16, letterSpacing: 2),
           ),
         ],
-        const SizedBox(height: 40),
+        SizedBox(height: gap),
         const Text(
           'Puedes ingresar al evento.\nBienvenido.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xFF8A8585), fontSize: 17, height: 1.6),
+          style: TextStyle(color: KigoDesign.textSecondary, fontSize: 17, height: 1.6),
         ),
       ],
     );
   }
 
   Widget _buildError() {
+    final h = MediaQuery.sizeOf(context).height;
+    final iconSize = (h * 0.14).clamp(70.0, 110.0);
+    final gap = (h * 0.04).clamp(10.0, 36.0);
     return Column(
       children: [
         Container(
-          width: 110,
-          height: 110,
+          width: iconSize,
+          height: iconSize,
           decoration: BoxDecoration(
-            color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+            color: KigoDesign.error.withValues(alpha: 0.12),
             shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.5), width: 2),
+            border: Border.all(color: KigoDesign.error.withValues(alpha: 0.5), width: 2),
           ),
-          child: const Icon(Icons.close_rounded, color: Color(0xFFEF4444), size: 60),
+          child: Icon(Icons.close_rounded, color: KigoDesign.error, size: iconSize * 0.55),
         ),
-        const SizedBox(height: 36),
-        const Text('Acceso denegado', style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 14),
+        SizedBox(height: gap),
+        Text('Acceso denegado', style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.044).clamp(20.0, 34.0), fontWeight: FontWeight.w800)),
+        SizedBox(height: gap * 0.4),
         Text(
           widget.viewModel.errorMsg ?? 'La invitación no es válida',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFFEF4444), fontSize: 16, height: 1.5),
+          style: const TextStyle(color: KigoDesign.error, fontSize: 16, height: 1.5),
         ),
-        const SizedBox(height: 40),
+        SizedBox(height: gap),
         GestureDetector(
           onTap: () => Navigator.pop(context),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2B2727),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF3D3838)),
+              color: KigoDesign.surface2,
+              borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
+              border: Border.all(color: KigoDesign.border),
             ),
-            child: const Text('Volver a intentar', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            child: const Text('Volver a intentar', style: TextStyle(color: KigoDesign.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
       ],
@@ -181,7 +192,7 @@ class _QrResultViewState extends State<QrResultView> {
   Widget _buildFooter() {
     return const Text(
       'POWERED BY KIGO · FEPRO 2026',
-      style: TextStyle(color: Color(0xFF595252), fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
+      style: TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
     );
   }
 }

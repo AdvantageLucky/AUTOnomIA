@@ -1,3 +1,4 @@
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/modo_kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/operator_exit_viewmodel.dart';
@@ -47,7 +48,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF171313),
+      backgroundColor: KigoDesign.bgDark,
       body: SizedBox.expand(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
@@ -82,12 +83,12 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF2B2727),
+              color: KigoDesign.surface2,
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF8A8585),
+              color: KigoDesign.textSecondary,
               size: 18,
             ),
           ),
@@ -124,7 +125,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
           'Ingresa el PIN para salir del modo kiosko',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Color(0xFF8A8585),
+            color: KigoDesign.textSecondary,
             fontSize: 16,
             letterSpacing: 1,
             fontWeight: FontWeight.w500,
@@ -143,7 +144,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
               height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: lleno ? const Color(0xFFFF542F) : const Color(0xFF2B2727),
+                color: lleno ? const Color(0xFFFF542F) : KigoDesign.surface2,
                 border: Border.all(
                   color: viewModel.pinIncorrecto
                       ? const Color(0xFFFF542F)
@@ -217,7 +218,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
   Widget _buildTecla(String digit) {
     const orange = Color(0xFFFF542F);
     const orangeLight = Color(0xFFFF714D);
-    const gray = Color(0xFF2B2727);
+    const gray = KigoDesign.surface2;
 
     final bool presionado = _presionadoId == digit;
 
@@ -256,7 +257,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
 
   Widget _buildTeclaBorrar() {
     const orange = Color(0xFFFF542F);
-    const gray = Color(0xFF2B2727);
+    const gray = KigoDesign.surface2;
 
     final bool presionado = _presionadoId == 'borrar';
 
@@ -284,7 +285,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
         child: Center(
           child: Icon(
             Icons.backspace_outlined,
-            color: presionado ? orange : const Color(0xFF8A8585),
+            color: presionado ? orange : KigoDesign.textSecondary,
             size: 26,
           ),
         ),
@@ -296,7 +297,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
     return const Text(
       'POWERED BY KIGO · FEPRO 2026',
       style: TextStyle(
-        color: Color(0xFF595252),
+        color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

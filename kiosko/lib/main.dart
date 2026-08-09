@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/features/activacion/views/activacion_view.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/welcome_view.dart';
@@ -61,19 +65,31 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Kigo',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Arial',
-        useMaterial3: true,
-      ),
-      home: Consumer<KioskoConfigNotifier>(
-        builder: (context, cfg, _) {
-          if (cfg.cargando) return const _SplashScreen();
-          return WelcomeView(viewModel: WelcomeViewModel());
-        },
-      ),
+    return Consumer<KioskoConfigNotifier>(
+      builder: (context, cfg, _) {
+        final esClaro = cfg.config.colorTema == KioskoColorTema.claro;
+        final locale = Locale(cfg.config.idioma);
+
+        return MaterialApp(
+          title: 'Kigo',
+          debugShowCheckedModeBanner: false,
+          locale: locale,
+          supportedLocales: const [Locale('es'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: esClaro ? KigoDesign.lightTheme : KigoDesign.darkTheme,
+          home: Builder(builder: (context) {
+            if (cfg.cargando) return const _SplashScreen();
+            if (cfg.necesitaActivacion) {
+              return ActivacionView(onActivado: () => cfg.reinicializar());
+            }
+            return WelcomeView(viewModel: WelcomeViewModel());
+          }),
+        );
+      },
     );
   }
 }
@@ -84,7 +100,6 @@ class _SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF171313),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -92,14 +107,14 @@ class _SplashScreen extends StatelessWidget {
             Text(
               'K',
               style: TextStyle(
-                color: Color(0xFFFF542F),
+                color: KigoDesign.brand,
                 fontSize: 72,
                 fontWeight: FontWeight.w900,
               ),
             ),
             SizedBox(height: 32),
             CircularProgressIndicator(
-              color: Color(0xFFFF542F),
+              color: KigoDesign.brand,
               strokeWidth: 2.5,
             ),
           ],

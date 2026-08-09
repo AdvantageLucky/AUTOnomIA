@@ -1,5 +1,6 @@
 /* VISTA PRINCIPAL DE REGISTRO TÁCTIL */
 
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animation.dart';
@@ -240,14 +241,14 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   Widget build(BuildContext context) {
     // Si el ViewModel no tiene pasos cargados aún, mostramos carga
     if (viewModel.steps.isEmpty) {
-      return const Scaffold(backgroundColor: Color(0xFF171313), body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(backgroundColor: KigoDesign.bgDark, body: Center(child: CircularProgressIndicator()));
     }
 
     final step = viewModel.currentStepData;
 
     return Scaffold(
       //Fondo negro unificado para toda la pantalla
-      backgroundColor: const Color(0xFF171313),
+      backgroundColor: KigoDesign.bgDark,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: _buildVoiceWaveButton(),
       body: SizedBox.expand(
@@ -458,7 +459,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         width: double.infinity,
         height: 62,
         decoration: BoxDecoration(
-          color: const Color(0xFF2B2727),
+          color: KigoDesign.surface2,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: const Color(0xFF393333),
@@ -493,7 +494,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       footerText,
       textAlign: TextAlign.center,
       style: TextStyle(
-        color: Color(0xFF595252),
+        color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

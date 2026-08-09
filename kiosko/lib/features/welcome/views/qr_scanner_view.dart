@@ -1,3 +1,4 @@
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/consent_dialog.dart';
@@ -156,18 +157,18 @@ class _QrScannerViewState extends State<QrScannerView> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                      color: KigoDesign.success.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.5), width: 1.5),
+                      border: Border.all(color: KigoDesign.success.withValues(alpha: 0.5), width: 1.5),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 22),
+                        Icon(Icons.check_circle_rounded, color: KigoDesign.success, size: 22),
                         SizedBox(width: 10),
                         Text(
                           '¡Código detectado!',
-                          style: TextStyle(color: Color(0xFF22C55E), fontSize: 16, fontWeight: FontWeight.w700),
+                          style: TextStyle(color: KigoDesign.success, fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
@@ -302,7 +303,7 @@ class _QrOverlayPainter extends CustomPainter {
     canvas.drawPath(path, overlayPaint);
 
     final cornerPaint = Paint()
-      ..color = scanned ? const Color(0xFF22C55E) : const Color(0xFFFF542F)
+      ..color = scanned ? KigoDesign.success : const Color(0xFFFF542F)
       ..strokeWidth = 3.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;

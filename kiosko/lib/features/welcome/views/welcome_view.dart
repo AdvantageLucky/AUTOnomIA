@@ -4,14 +4,14 @@ import 'dart:math' as math;
 
 import 'package:kigo_kiosco/features/registro/views/touch_register_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/visitor_type_view.dart';
-import 'package:kigo_kiosco/features/welcome/views/resident_pin_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/operator_exit_pin_view.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/visitor_type_viewmodel.dart';
-import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/operator_exit_viewmodel.dart';
+import 'package:kigo_kiosco/features/residente/views/residente_acceso_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
 
 class WelcomeView extends StatefulWidget {
@@ -100,7 +100,6 @@ class _WelcomeViewState extends State<WelcomeView>
     final mensaje = cfg.mensajeBienvenida.trim();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF171313),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapDown: (_) => _iniciarConteoSalidaOperador(),
@@ -150,8 +149,8 @@ class _WelcomeViewState extends State<WelcomeView>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFFF542F).withValues(alpha: 0.30),
-                    const Color(0xFFFF542F).withValues(alpha: 0.0),
+                    KigoDesign.brand.withValues(alpha: 0.30),
+                    KigoDesign.brand.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -161,15 +160,15 @@ class _WelcomeViewState extends State<WelcomeView>
                   height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFFF542F).withValues(alpha: 0.22),
+                    color: KigoDesign.brand.withValues(alpha: 0.22),
                     border: Border.all(
-                      color: const Color(0xFFFF542F).withValues(alpha: 0.65),
+                      color: KigoDesign.brand.withValues(alpha: 0.65),
                       width: 2,
                     ),
                   ),
                   child: const Icon(
                     Icons.waving_hand_rounded,
-                    color: Color(0xFFFF542F),
+                    color: KigoDesign.brand,
                     size: 26,
                   ),
                 ),
@@ -214,7 +213,7 @@ class _WelcomeViewState extends State<WelcomeView>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Color(0xFF6B6464),
+                    color: KigoDesign.textTertiary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 2.5,
@@ -235,7 +234,7 @@ class _WelcomeViewState extends State<WelcomeView>
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: [
             Colors.transparent,
-            const Color(0xFF6B6464).withValues(alpha: 0.5),
+            KigoDesign.textTertiary.withValues(alpha: 0.5),
           ]),
         ),
       );
@@ -257,9 +256,9 @@ class _WelcomeViewState extends State<WelcomeView>
 
   Widget _buildBoton(
       BuildContext context, String id, IconData icono, String label) {
-    const orange = Color(0xFFFF542F);
-    const orangeLight = Color(0xFFFF714D);
-    const gray = Color(0xFF2B2727);
+    const orange = KigoDesign.brand;
+    const orangeLight = KigoDesign.brandHover;
+    const gray = KigoDesign.surface2;
 
     final bool presionado = _presionadoId == id;
 
@@ -276,8 +275,7 @@ class _WelcomeViewState extends State<WelcomeView>
             ));
           } else if (id == 'residente') {
             navigator.push(MaterialPageRoute(
-              builder: (_) =>
-                  ResidentPinView(viewModel: ResidentPinViewModel()),
+              builder: (_) => const ResidenteAccesoView(),
             ));
           } else {
             navigator.push(
@@ -317,7 +315,7 @@ class _WelcomeViewState extends State<WelcomeView>
             Text(
               label,
               style: TextStyle(
-                color: presionado ? Colors.white : const Color(0xFFD0CBCB),
+                color: presionado ? Colors.white : KigoDesign.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1,
@@ -337,8 +335,8 @@ class _WelcomeViewState extends State<WelcomeView>
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFFFF542F),
-            borderRadius: BorderRadius.circular(14),
+            color: KigoDesign.brand,
+            borderRadius: BorderRadius.circular(KigoDesign.radius),
           ),
           child: const Center(
             child: Text('K',
@@ -360,7 +358,7 @@ class _WelcomeViewState extends State<WelcomeView>
             SizedBox(height: 2),
             Text('SELF CHECK-IN',
                 style: TextStyle(
-                    color: Color(0xFF8A8585),
+                    color: KigoDesign.textSecondary,
                     fontSize: 14,
                     letterSpacing: 4,
                     fontWeight: FontWeight.w500)),
@@ -374,7 +372,7 @@ class _WelcomeViewState extends State<WelcomeView>
     return const Text(
       'POWERED BY KIGO · FEPRO 2026',
       style: TextStyle(
-        color: Color(0xFF595252),
+        color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,
@@ -424,14 +422,14 @@ class _ComunidadBadgeState extends State<_ComunidadBadge>
             gradient: LinearGradient(
               begin: Alignment(math.cos(angle), math.sin(angle)),
               end: Alignment(-math.cos(angle), -math.sin(angle)),
-              colors: const [
-                Color(0x22FF542F),
-                Color(0x0AFF8C70),
-                Color(0x22FF542F),
+              colors: [
+                KigoDesign.brand.withValues(alpha: 0.13),
+                KigoDesign.brand.withValues(alpha: 0.04),
+                KigoDesign.brand.withValues(alpha: 0.13),
               ],
             ),
             border: Border.all(
-              color: const Color(0xFFFF542F).withValues(alpha: 0.3),
+              color: KigoDesign.brand.withValues(alpha: 0.3),
               width: 1.2,
             ),
           ),
@@ -446,7 +444,7 @@ class _ComunidadBadgeState extends State<_ComunidadBadge>
             height: 6,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0xFFFF542F),
+              color: KigoDesign.brand,
             ),
           ),
           const SizedBox(width: 10),
@@ -454,7 +452,7 @@ class _ComunidadBadgeState extends State<_ComunidadBadge>
             child: Text(
               widget.mensaje,
               style: const TextStyle(
-                color: Color(0xFFFF9070),
+                color: KigoDesign.brandHover,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
@@ -469,7 +467,7 @@ class _ComunidadBadgeState extends State<_ComunidadBadge>
             height: 6,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0xFFFF542F),
+              color: KigoDesign.brand,
             ),
           ),
         ],

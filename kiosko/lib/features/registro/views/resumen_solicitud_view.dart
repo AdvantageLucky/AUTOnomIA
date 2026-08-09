@@ -1,4 +1,5 @@
 /* VISTA DE RESUMEN Y ESPERA DE APROBACIÓN (reemplaza a confirm_data_view.dart) */
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -175,7 +176,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF171313),
+      backgroundColor: KigoDesign.bgDark,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -322,7 +323,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
                 : Container(
                     width: 140,
                     height: 140,
-                    color: const Color(0xFF2B2727),
+                    color: KigoDesign.surface2,
                     child: const Icon(Icons.person_outline, color: Color(0xFF8F8989), size: 56),
                   ),
           ),

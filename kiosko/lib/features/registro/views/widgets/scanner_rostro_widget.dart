@@ -1,3 +1,4 @@
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'consent_dialog.dart';
@@ -89,7 +90,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
   Widget build(BuildContext context) {
     if (!_isInitialized || _controller == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF171313),
+        backgroundColor: KigoDesign.bgDark,
         body: Center(child: CircularProgressIndicator(color: Color(0xFFFF542F))),
       );
     }
@@ -100,7 +101,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF171313),
+        backgroundColor: KigoDesign.bgDark,
         title: const Text("Apunta a tu rostro", style: TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
