@@ -39,17 +39,19 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(int kioskoId, String casaDestino, String pin) async {
+  Future<bool> login(String codigoInstalacion, String casaDestino, String pin) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final data = await ApiService().post('/auth/residente/login', {
-        'kiosko_id': kioskoId,
-        'casa_destino': casaDestino,
-        'pin': pin,
-      });
+      final data = await ApiService().post(
+        '/centros/${codigoInstalacion.trim().toUpperCase()}/residentes/login',
+        {
+          'casa_destino': casaDestino,
+          'pin': pin,
+        },
+      );
 
       final jwt = data['access_token'] as String;
       ApiService().setJwt(jwt);
@@ -58,7 +60,7 @@ class AuthViewModel extends ChangeNotifier {
       final perfil = await ApiService().get('/residentes/me');
       _nombre = '${perfil['nombre']} ${perfil['apellido_paterno']}';
       _casaDestino = perfil['casa_destino'] as String;
-      _kioskoId = (perfil['kiosko_id'] as int?) ?? kioskoId;
+      _kioskoId = (perfil['kiosko_id'] as int?) ?? 0;
       _destinoId = perfil['destino_id'] as int?;
 
       final prefs = await SharedPreferences.getInstance();

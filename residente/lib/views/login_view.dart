@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
@@ -12,14 +13,14 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  final _kioskoIdCtrl = TextEditingController();
+  final _codigoCtrl = TextEditingController();
   final _casaDestinoCtrl = TextEditingController();
   final _pinCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
-    _kioskoIdCtrl.dispose();
+    _codigoCtrl.dispose();
     _casaDestinoCtrl.dispose();
     _pinCtrl.dispose();
     super.dispose();
@@ -27,11 +28,9 @@ class _LoginViewState extends State<LoginView> {
 
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final kioskoId = int.tryParse(_kioskoIdCtrl.text.trim());
-    if (kioskoId == null) return;
 
     final success = await context.read<AuthViewModel>().login(
-          kioskoId,
+          _codigoCtrl.text.trim(),
           _casaDestinoCtrl.text.trim(),
           _pinCtrl.text.trim(),
         );
@@ -88,7 +87,7 @@ class _LoginViewState extends State<LoginView> {
                   const Icon(Icons.qr_code_scanner, size: 80, color: AppTheme.primaryOrange),
                   const SizedBox(height: 24),
                   Text(
-                    'Iniciar Sesión',
+                    AppLocalizations.t(context, 'login_title'),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -97,7 +96,7 @@ class _LoginViewState extends State<LoginView> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Usa las credenciales que te asignó tu administrador',
+                    AppLocalizations.t(context, 'login_subtitle'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -106,31 +105,27 @@ class _LoginViewState extends State<LoginView> {
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
-                    controller: _kioskoIdCtrl,
+                    controller: _codigoCtrl,
                     style: TextStyle(color: textColor),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    textCapitalization: TextCapitalization.characters,
                     decoration: _inputDeco(
-                      label: 'ID del kiosko',
-                      icon: Icons.router_outlined,
+                      label: AppLocalizations.t(context, 'login_codigo_instalacion'),
+                      icon: Icons.apartment_outlined,
                       isDark: isDark,
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Requerido';
-                      if (int.tryParse(v) == null) return 'Debe ser un número';
-                      return null;
-                    },
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? AppLocalizations.t(context, 'required_field') : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _casaDestinoCtrl,
                     style: TextStyle(color: textColor),
                     decoration: _inputDeco(
-                      label: 'Casa / Departamento',
+                      label: AppLocalizations.t(context, 'login_house'),
                       icon: Icons.home_outlined,
                       isDark: isDark,
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? AppLocalizations.t(context, 'required_field') : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -140,13 +135,13 @@ class _LoginViewState extends State<LoginView> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: _inputDeco(
-                      label: 'PIN (4–6 dígitos)',
+                      label: AppLocalizations.t(context, 'login_pin'),
                       icon: Icons.pin_outlined,
                       isDark: isDark,
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Requerido';
-                      if (v.length < 4 || v.length > 6) return 'El PIN debe tener 4–6 dígitos';
+                      if (v == null || v.isEmpty) return AppLocalizations.t(context, 'required_field');
+                      if (v.length < 4 || v.length > 6) return AppLocalizations.t(context, 'pin_length_error');
                       return null;
                     },
                   ),
@@ -176,14 +171,23 @@ class _LoginViewState extends State<LoginView> {
                               strokeWidth: 2.5,
                             ),
                           )
-                        : const Text(
-                            'ENTRAR',
-                            style: TextStyle(
+                        : Text(
+                            AppLocalizations.t(context, 'login_btn'),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
                             ),
                           ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/registro'),
+                    child: Text(
+                      AppLocalizations.t(context, 'login_register'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: AppTheme.primaryOrange),
+                    ),
                   ),
                 ],
               ),

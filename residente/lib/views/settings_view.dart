@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/settings_viewmodel.dart';
 
@@ -13,7 +14,7 @@ class SettingsView extends StatefulWidget {
 class _SettingsViewState extends State<SettingsView> {
   String _username = 'Iván';
 
-  void _showEditUsernameDialog(BuildContext context, bool isEnglish) {
+  void _showEditUsernameDialog(BuildContext context) {
     final usernameController = TextEditingController(text: _username);
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white;
@@ -24,14 +25,14 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          isEnglish ? 'Username' : 'Nombre de Usuario',
+          AppLocalizations.t(context, 'edit_username_title'),
           style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
         ),
         content: TextField(
           controller: usernameController,
           style: TextStyle(color: textColor),
           decoration: InputDecoration(
-            hintText: isEnglish ? 'Enter your name' : 'Ingresa tu nombre',
+            hintText: AppLocalizations.t(context, 'edit_username_hint'),
             hintStyle: TextStyle(color: isDark ? AppTheme.textGrey : Colors.black45),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: isDark ? AppTheme.textGrey : Colors.black26),
@@ -45,7 +46,7 @@ class _SettingsViewState extends State<SettingsView> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              isEnglish ? 'CANCEL' : 'CANCELAR',
+              AppLocalizations.t(context, 'cancel'),
               style: TextStyle(color: isDark ? AppTheme.textGrey : Colors.black54),
             ),
           ),
@@ -59,7 +60,7 @@ class _SettingsViewState extends State<SettingsView> {
               Navigator.pop(context);
             },
             child: Text(
-              isEnglish ? 'SAVE' : 'GUARDAR',
+              AppLocalizations.t(context, 'save'),
               style: const TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.bold),
             ),
           ),
@@ -103,12 +104,11 @@ class _SettingsViewState extends State<SettingsView> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white;
 
-    final bool isEnglish = settingsViewModel.currentLocale.languageCode == 'en';
-    final String selectedLanguage = isEnglish ? 'English' : 'Español';
+    final String selectedLanguage = settingsViewModel.currentLocale.languageCode == 'en' ? 'English' : 'Español';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEnglish ? 'SETTINGS' : 'CONFIGURACIÓN'),
+        title: Text(AppLocalizations.t(context, 'settings_title')),
         centerTitle: true,
       ),
       body: Center(
@@ -117,30 +117,30 @@ class _SettingsViewState extends State<SettingsView> {
           child: ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              _buildSectionHeader(isEnglish ? 'Account & Profile' : 'Cuenta y Perfil'),
+              _buildSectionHeader(AppLocalizations.t(context, 'section_account')),
               _buildCardGroup([
                 ListTile(
                   leading: const Icon(Icons.person_outline, color: AppTheme.primaryOrange),
                   title: Text(
-                    isEnglish ? 'Display Name' : 'Nombre a mostrar',
+                    AppLocalizations.t(context, 'display_name'),
                     style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(_username, style: const TextStyle(color: AppTheme.textGrey)),
                   trailing: const Icon(Icons.chevron_right, color: AppTheme.textGrey),
-                  onTap: () => _showEditUsernameDialog(context, isEnglish),
+                  onTap: () => _showEditUsernameDialog(context),
                 ),
               ], context),
 
-              _buildSectionHeader(isEnglish ? 'Appearance & Preferences' : 'Apariencia y Preferencias'),
+              _buildSectionHeader(AppLocalizations.t(context, 'section_appearance')),
               _buildCardGroup([
                 SwitchListTile(
                   secondary: const Icon(Icons.dark_mode_outlined, color: AppTheme.primaryOrange),
                   title: Text(
-                    isEnglish ? 'Dark Mode' : 'Modo Oscuro',
+                    AppLocalizations.t(context, 'dark_mode'),
                     style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
-                    isDark ? (isEnglish ? 'Enabled' : 'Activado') : (isEnglish ? 'Disabled' : 'Desactivado'),
+                    AppLocalizations.t(context, isDark ? 'dark_mode_on' : 'dark_mode_off'),
                     style: const TextStyle(color: AppTheme.textGrey),
                   ),
                   value: isDark,
@@ -153,7 +153,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ListTile(
                   leading: const Icon(Icons.language, color: AppTheme.primaryOrange),
                   title: Text(
-                    isEnglish ? 'Language' : 'Idioma',
+                    AppLocalizations.t(context, 'language'),
                     style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(selectedLanguage, style: const TextStyle(color: AppTheme.textGrey)),
@@ -178,12 +178,12 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
               ], context),
 
-              _buildSectionHeader(isEnglish ? 'Information' : 'Información'),
+              _buildSectionHeader(AppLocalizations.t(context, 'section_info')),
               _buildCardGroup([
                 ListTile(
                   leading: const Icon(Icons.info_outline, color: AppTheme.primaryOrange),
                   title: Text(
-                    isEnglish ? 'App Version' : 'Versión de App',
+                    AppLocalizations.t(context, 'app_version'),
                     style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                   ),
                   trailing: const Text('v1.0.0', style: TextStyle(color: AppTheme.textGrey, fontWeight: FontWeight.bold)),
@@ -192,7 +192,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ListTile(
                   leading: const Icon(Icons.shield_outlined, color: AppTheme.primaryOrange),
                   title: Text(
-                    isEnglish ? 'Privacy Policy' : 'Políticas de Privacidad',
+                    AppLocalizations.t(context, 'privacy_policy'),
                     style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                   ),
                   trailing: const Icon(Icons.chevron_right, color: AppTheme.textGrey),
