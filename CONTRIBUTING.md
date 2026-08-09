@@ -7,7 +7,7 @@
 *   **Código Fuente:** Para alinearnos con los estándares de la industria, la nomenclatura de variables, funciones, clases y comentarios internos del código debe escribirse en **inglés**.
 
 ## 🌿 Gestión de Ramas (Branches)
-Nuestra rama principal de desarrollo es `dev`. **Queda estrictamente prohibido realizar *pushes* directos a `dev` o `main`.**
+Nuestra rama principal de desarrollo es `dev`. **Queda estrictamente prohibido realizar *pushes* directos a `main`**: a `main` solo se llega mediante Pull Request desde `dev`.
 
 Para implementar nuevas características, correcciones de errores o tareas de mantenimiento, se debe crear una nueva rama a partir de `dev` siguiendo esta nomenclatura:
 *   `feature/nombre-de-la-funcionalidad` (Ej: `feature/login-residente`)
