@@ -47,12 +47,17 @@ func (r *configHubRegistry) get(kioskoID uint) *sse.Hub {
 }
 
 type Handler struct {
-	repo    *Repository
-	cfgHubs *configHubRegistry
+	repo           *Repository
+	cfgHubs        *configHubRegistry
+	onKioskoDelete func(kioskoID uint) error // revoca sesiones al eliminar
 }
 
-func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo, cfgHubs: &configHubRegistry{hubs: make(map[uint]*sse.Hub)}}
+func NewHandler(repo *Repository, onKioskoDelete func(uint) error) *Handler {
+	return &Handler{
+		repo:           repo,
+		cfgHubs:        &configHubRegistry{hubs: make(map[uint]*sse.Hub)},
+		onKioskoDelete: onKioskoDelete,
+	}
 }
 
 // RegisterKiosko crea un nuevo Kiosko del Admin, generando su clave de kiosko
@@ -251,6 +256,10 @@ func (h *Handler) DeleteKiosko(c *gin.Context) {
 		return
 	}
 
+	if h.onKioskoDelete != nil {
+		_ = h.onKioskoDelete(uint(id))
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "kiosko eliminado correctamente"})
 }
 
@@ -283,6 +292,21 @@ func (h *Handler) GetConfig(c *gin.Context) {
 	}
 
 	cfg, err := repoCtx.FindConfigByKioskoID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg))
+}
+
+// GetConfigDesdeKiosko devuelve la config del kiosko autenticado por su propia sesión
+// (no requiere admin). Usado por la app del kiosko para cargar su configuración inicial.
+func (h *Handler) GetConfigDesdeKiosko(c *gin.Context) {
+	kioskoID := c.MustGet(ctxkeys.KioskoID).(uint)
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	cfg, err := repoCtx.FindConfigByKioskoID(kioskoID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

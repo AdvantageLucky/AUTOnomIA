@@ -28,14 +28,9 @@ func (r *Repository) WithContext(ctx context.Context) *Repository {
 	return &Repository{db: r.db.WithContext(ctx)}
 }
 
-// ByTenant es un GORM Scope que aísla las consultas usando el tenant_id del contexto.
-// Califica la columna con el nombre de tabla cuando está disponible para evitar
-// ambigüedad en consultas con JOIN contra otras tablas que también tienen tenant_id.
+// ByTenant filtra por el tenant del contexto. Para queries sin JOIN.
 func ByTenant(db *gorm.DB) *gorm.DB {
 	if tenantID, ok := db.Statement.Context.Value(ctxkeys.TenantID).(uint); ok && tenantID > 0 {
-		if table := db.Statement.Table; table != "" {
-			return db.Where(table+".tenant_id = ?", tenantID)
-		}
 		return db.Where("tenant_id = ?", tenantID)
 	}
 	return db
@@ -91,13 +86,14 @@ func (r *Repository) Update(a *Kiosko, adminID uint) error {
 // FindConfigByKioskoID devuelve la KioskoConfig del kiosko validando tenant; la crea con defaults si no existe
 func (r *Repository) FindConfigByKioskoID(kioskoID uint) (*KioskoConfig, error) {
 	var cfg KioskoConfig
-	if _, err := r.FindByID(kioskoID); err != nil {
+	k, err := r.FindByID(kioskoID)
+	if err != nil {
 		return nil, err
 	}
 
-	err := r.db.Where("kiosko_id = ?", kioskoID).First(&cfg).Error
+	err = r.db.Where("kiosko_id = ?", kioskoID).First(&cfg).Error
 	if err == gorm.ErrRecordNotFound {
-		cfg = KioskoConfig{KioskoID: kioskoID}
+		cfg = KioskoConfig{KioskoID: kioskoID, TenantID: k.TenantID}
 		if err = r.db.Create(&cfg).Error; err != nil {
 			return nil, err
 		}

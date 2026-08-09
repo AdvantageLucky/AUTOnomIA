@@ -305,6 +305,7 @@
   const state = {
     adminId: null,
     admin: null,
+    tenant: null,
     rol: "admin",
     accesosById: new Map(),
     visPage: 1,
@@ -543,17 +544,24 @@
     if (!state.adminId) return;
     const token = getToken();
     state.rol = getRolFromToken(token);
-    await Promise.all([loadAdminData(), preloadAccesos()]);
+    await Promise.all([loadAdminData(), preloadAccesos(), loadTenantData()]);
     if (!state.admin) { clearToken(); showLogin(); applyI18n(); return; }
     showApp();
     aplicarRol(state.rol);
     initSSE(token);
-    loadSolicitudes(); // siembra el badge de nav aunque no aterrices en Solicitudes
-    if (state.rol !== 'vigilante' && state.accesosById.size === 0) {
+    loadSolicitudes();
+    if (state.rol !== 'vigilante' && !state.tenant?.nombre) {
       showOnboarding();
     } else {
       navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard");
     }
+  }
+
+  async function loadTenantData() {
+    try {
+      const res = await api(`/tenants/${state.tenantId || 1}`);
+      if (res && res.ok) state.tenant = await res.json();
+    } catch { /* continúa con datos parciales */ }
   }
 
   async function preloadAccesos() {
@@ -1401,24 +1409,41 @@
       return;
     }
 
-    document.getElementById('nk-reveal-id').textContent    = kiosko.id || '—';
-    document.getElementById('nk-reveal-clave').textContent = kiosko.clave_kiosko || '—';
-    document.getElementById('nk-btn-copy').dataset.val     = kiosko.clave_kiosko || '';
+    nkNuevoKioskoId = kiosko.id;
     setNkStep(3);
     loadAccesos();
   });
 
-  document.getElementById('nk-btn-copy')?.addEventListener('click', function() {
-    const v = this.dataset.val;
-    if (!v) return;
-    navigator.clipboard.writeText(v).then(() => {
-      this.textContent = '¡Copiado!';
-      setTimeout(() => { this.textContent = 'Copiar clave'; }, 2000);
-    });
-  });
+  let nkNuevoKioskoId = null;
 
-  document.getElementById('nk-done')?.addEventListener('click', () => {
+  async function nkGuardarConfig() {
+    if (!nkNuevoKioskoId) { cerrarNuevoKioskoWizard(); return; }
+    const errEl = document.getElementById('nk-cfg-error');
+    errEl.hidden = true;
+    const payload = {
+      color_kiosko:          document.getElementById('nk-cfg-color').value,
+      idioma_kiosko:         document.getElementById('nk-cfg-idioma').value,
+      foto_rostro_visitante: document.getElementById('nk-cfg-rostro').checked,
+      auto_pass_habilitado:  document.getElementById('nk-cfg-autopass').checked,
+      mensaje_bienvenida:    document.getElementById('nk-cfg-mensaje').value.trim(),
+    };
+    const res = await api(`/kioskos/${nkNuevoKioskoId}/config`, {
+      method: 'PATCH', body: JSON.stringify(payload),
+    });
+    if (!res || !res.ok) {
+      const d = res ? await res.json() : {};
+      errEl.textContent = d.error || 'Error al guardar configuración';
+      errEl.hidden = false;
+      return;
+    }
     cerrarNuevoKioskoWizard();
+    mostrarToast('Kiosko configurado y listo', 'ok');
+  }
+
+  document.getElementById('nk-cfg-guardar')?.addEventListener('click', nkGuardarConfig);
+  document.getElementById('nk-cfg-saltar')?.addEventListener('click', () => {
+    cerrarNuevoKioskoWizard();
+    mostrarToast('Kiosko activado. Configúralo cuando quieras desde Kioskos.', 'ok');
   });
 
   /* ─── Modal: editar kiosko ───────────────── */
@@ -1837,10 +1862,14 @@
   /* ─── Onboarding first-run ───────────────── */
   let obStep = 1;
 
+  let obDestinos = [];
+
   async function showOnboarding() {
     obStep = 1;
+    obDestinos = [];
     document.getElementById('onboarding-overlay').hidden = false;
     setObStep(1);
+    renderObDestinos();
     // precargar datos actuales del tenant
     const res = await fetch(`/api/v1/tenants/${state.tenantId || 1}`);
     if (res.ok) {
@@ -1853,7 +1882,7 @@
   }
 
   function setObStep(n) {
-    [1,2].forEach(i => {
+    [1,2,3].forEach(i => {
       document.getElementById(`ob-step-${i}`)?.classList.toggle('active', i===n);
       const dot = document.getElementById(`ob-dot-${i}`);
       if (dot) {
@@ -1862,6 +1891,7 @@
       }
     });
     document.getElementById('ob-line-1')?.classList.toggle('done', n>1);
+    document.getElementById('ob-line-2')?.classList.toggle('done', n>2);
     obStep = n;
   }
 
@@ -1869,10 +1899,16 @@
     e.preventDefault();
     const errEl = document.getElementById('ob-inst-error');
     errEl.hidden = true;
+    const codigo = document.getElementById('ob-inst-codigo').value.trim().toUpperCase();
+    if (!codigo) {
+      errEl.textContent = 'El código público es obligatorio';
+      errEl.hidden = false;
+      return;
+    }
     const body = {
       nombre: document.getElementById('ob-inst-nombre').value.trim(),
       tipo:   document.getElementById('ob-inst-tipo').value,
-      codigo: document.getElementById('ob-inst-codigo').value.trim().toUpperCase() || undefined,
+      codigo: codigo,
     };
     const res = await api(`/tenants/${state.tenantId || 1}`, { method: 'PATCH', body: JSON.stringify(body) });
     if (!res) return;
@@ -1883,6 +1919,67 @@
       return;
     }
     setObStep(2);
+  });
+
+  function renderObDestinos() {
+    const wrap = document.getElementById('ob-dest-lista');
+    if (!wrap) return;
+    if (obDestinos.length === 0) {
+      wrap.innerHTML = '<div style="font-size:13px;color:var(--text-3);padding:8px 0">Aún no has agregado destinos.</div>';
+      return;
+    }
+    wrap.innerHTML = obDestinos.map(d => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+        <div>
+          <div style="font-size:13px;font-weight:600">${d.nombre}</div>
+          ${d.titular ? `<div style="font-size:12px;color:var(--text-2)">${d.titular}</div>` : ''}
+        </div>
+        <button type="button" class="btn-icon-del" data-id="${d.id}" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:16px">×</button>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('.btn-icon-del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.dataset.id);
+        const res = await api(`/destinos/${id}`, { method: 'DELETE' });
+        if (res && res.ok) {
+          obDestinos = obDestinos.filter(d => d.id !== id);
+          renderObDestinos();
+        }
+      });
+    });
+  }
+
+  document.getElementById('ob-dest-agregar')?.addEventListener('click', async () => {
+    const errEl = document.getElementById('ob-dest-error');
+    errEl.hidden = true;
+    const nombreEl = document.getElementById('ob-dest-nombre');
+    const titularEl = document.getElementById('ob-dest-titular');
+    const nombre = nombreEl.value.trim();
+    const titular = titularEl.value.trim();
+    if (!nombre) {
+      errEl.textContent = 'El nombre del destino es requerido';
+      errEl.hidden = false;
+      return;
+    }
+    const res = await api('/destinos/', {
+      method: 'POST', body: JSON.stringify({ nombre, titular: titular || nombre }),
+    });
+    if (!res || !res.ok) {
+      const d = res ? await res.json() : {};
+      errEl.textContent = d.error || 'Error al agregar destino';
+      errEl.hidden = false;
+      return;
+    }
+    const creado = await res.json();
+    obDestinos.push(creado);
+    nombreEl.value = '';
+    titularEl.value = '';
+    nombreEl.focus();
+    renderObDestinos();
+  });
+
+  document.getElementById('ob-dest-siguiente')?.addEventListener('click', () => {
+    setObStep(3);
   });
 
   document.getElementById('ob-vig-crear')?.addEventListener('click', async () => {

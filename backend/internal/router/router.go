@@ -58,7 +58,8 @@ func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, publicURL s
 	adminRepo := admin.NewRepository(db)
 	kioskoRepo := kiosko.NewRepository(db)
 	sesionRepo := auth.NewSesionRepository(db)
-	authHandler := auth.NewHandler(adminRepo, kioskoRepo, sesionRepo, jwtSecret)
+	tenantRepo := tenant.NewRepository(db)
+	authHandler := auth.NewHandler(adminRepo, kioskoRepo, sesionRepo, tenantRepo, jwtSecret)
 	deviceRepo := auth.NewDeviceRepository(db)
 	deviceHandler := auth.NewDeviceHandler(deviceRepo, sesionRepo, kioskoRepo, publicURL)
 
@@ -99,8 +100,8 @@ func registerAdminRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 
 func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	kioskoRepo := kiosko.NewRepository(db)
-	kioskoHandler := kiosko.NewHandler(kioskoRepo)
 	sesionRepo := auth.NewSesionRepository(db)
+	kioskoHandler := kiosko.NewHandler(kioskoRepo, sesionRepo.RevokeAllByKioskoID)
 
 	a := rg.Group("/kioskos")
 	a.Use(auth.RequireAdmin(jwtSecret))
@@ -114,10 +115,13 @@ func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 		a.PATCH("/:id/config", kioskoHandler.PatchConfig)
 	}
 
-	// el kiosko se suscribe al stream SSE de su propia config
+	// el kiosko consulta y se suscribe al stream de su propia config, autenticado por sesión
 	k := rg.Group("/kioskos/:id/config")
 	k.Use(auth.RequireKiosko(sesionRepo))
 	{
+		// path distinto a "/kioskos/:id/config" (reservado para el admin, autenticado por JWT)
+		// para evitar un conflicto de ruta duplicada en gin con el mismo método y path.
+		k.GET("/mia", kioskoHandler.GetConfigDesdeKiosko)
 		k.GET("/stream", kioskoHandler.StreamConfig)
 	}
 }
@@ -212,8 +216,10 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string,
 
 	// público: búsqueda de centro, auto-registro y consulta de estado
 	rg.GET("/centros/buscar", residenteHandler.BuscarCentro)
+	rg.GET("/centros/:codigo/destinos", residenteHandler.ListarDestinosPublico)
 	rg.POST("/centros/:codigo/residentes/auto-registro", residenteHandler.AutoRegistrar)
 	rg.GET("/centros/:codigo/residentes/estado", residenteHandler.ConsultarEstado)
+	rg.POST("/centros/:codigo/residentes/login", residenteHandler.LoginResidentePublico)
 
 	// login público
 	rg.POST("/auth/residente/login", residenteHandler.LoginResidente)

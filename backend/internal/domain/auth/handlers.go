@@ -33,6 +33,7 @@ import (
 
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/domain/kiosko"
+	"kigo-autonomia-backend/internal/domain/tenant"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
@@ -44,6 +45,7 @@ type Handler struct {
 	adminRepo  *admin.Repository
 	kioskoRepo *kiosko.Repository
 	sesionRepo *SesionRepository
+	tenantRepo tenant.Repository
 	jwtSecret  string
 }
 
@@ -51,12 +53,14 @@ func NewHandler(
 	adminRepo *admin.Repository,
 	kioskoRepo *kiosko.Repository,
 	sesionRepo *SesionRepository,
+	tenantRepo tenant.Repository,
 	jwtSecret string,
 ) *Handler {
 	return &Handler{
 		adminRepo:  adminRepo,
 		kioskoRepo: kioskoRepo,
 		sesionRepo: sesionRepo,
+		tenantRepo: tenantRepo,
 		jwtSecret:  jwtSecret,
 	}
 }
@@ -115,19 +119,30 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 	}
 
 	rol := "admin"
+	var tenantID uint
 	if req.Rol == "vigilante" {
 		tokenHeader := c.GetHeader("Authorization")
 		if after, ok := strings.CutPrefix(tokenHeader, "Bearer "); ok {
-			t := after
-			_, rolSolicitante, _, e := ParseAdminToken(t, h.jwtSecret) // <-- Ajuste aquí (ignorar tenant_id)
+			_, rolSolicitante, tenantSolicitante, e := ParseAdminToken(after, h.jwtSecret)
 			if e == nil && rolSolicitante == "admin" {
 				rol = "vigilante"
+				tenantID = tenantSolicitante // el vigilante se une al tenant del admin que lo crea
 			}
 		}
 	}
 
+	if rol == "admin" {
+		// Cada admin nuevo es dueño de su propia instalación (tenant).
+		nuevoTenant := &tenant.CentroHabitacional{}
+		if err := h.tenantRepo.Create(nuevoTenant); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error creando instalación"})
+			return
+		}
+		tenantID = nuevoTenant.ID
+	}
+
 	a := &admin.Admin{
-		TenantID:        1, // <-- ASIGNAMOS TENANT POR DEFECTO AL REGISTRAR
+		TenantID:        tenantID,
 		Correo:          req.Correo,
 		Password:        string(hash),
 		Rol:             rol,
@@ -303,8 +318,14 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 		return
 	}
 
+	nuevoTenant := &tenant.CentroHabitacional{}
+	if err = h.tenantRepo.Create(nuevoTenant); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error creando instalación"})
+		return
+	}
+
 	a := &admin.Admin{
-		TenantID: 1, // <-- ASIGNAMOS TENANT POR DEFECTO
+		TenantID: nuevoTenant.ID,
 		Correo:   tokenInfo.Email,
 		Password: string(hash),
 	}

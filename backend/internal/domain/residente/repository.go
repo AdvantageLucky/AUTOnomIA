@@ -23,17 +23,23 @@ func (r *Repository) WithContext(ctx context.Context) *Repository {
 	return &Repository{db: r.db.WithContext(ctx)}
 }
 
-// ByTenant es un GORM Scope que aísla las consultas usando el tenant_id del contexto.
-// Califica la columna con el nombre de tabla cuando está disponible para evitar
-// ambigüedad en consultas con JOIN contra otras tablas que también tienen tenant_id.
+// ByTenant filtra por el tenant del contexto. Para queries sin JOIN.
 func ByTenant(db *gorm.DB) *gorm.DB {
 	if tenantID, ok := db.Statement.Context.Value(ctxkeys.TenantID).(uint); ok && tenantID > 0 {
-		if table := db.Statement.Table; table != "" {
-			return db.Where(table+".tenant_id = ?", tenantID)
-		}
 		return db.Where("tenant_id = ?", tenantID)
 	}
 	return db
+}
+
+// ByTenantFor devuelve un scope que califica tenant_id con el nombre de tabla dado.
+// Usar en queries con JOIN para evitar SQLSTATE 42702 (columna ambigua).
+func ByTenantFor(table string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if tenantID, ok := db.Statement.Context.Value(ctxkeys.TenantID).(uint); ok && tenantID > 0 {
+			return db.Where(table+".tenant_id = ?", tenantID)
+		}
+		return db
+	}
 }
 
 func (r *Repository) Create(res *Residente) error {
@@ -124,7 +130,7 @@ func (r *Repository) UpdateStatus(id uint, status string) error {
 // FindAllByAdminID devuelve todos los residentes de todos los kioskos del admin.
 func (r *Repository) FindAllByAdminID(adminID uint) ([]Residente, error) {
 	var list []Residente
-	if err := r.db.Scopes(ByTenant).
+	if err := r.db.Scopes(ByTenantFor("residentes")).
 		Joins("JOIN kioskos ON kioskos.id = residentes.kiosko_id").
 		Where("kioskos.admin_id = ? AND kioskos.deleted_at IS NULL", adminID).
 		Find(&list).Error; err != nil {
