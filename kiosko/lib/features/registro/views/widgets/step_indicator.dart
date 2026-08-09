@@ -1,5 +1,6 @@
 /* PROGRESO DE PASOS REUTILIZABLE */
 
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 
 class StepIndicator extends StatelessWidget {
@@ -28,7 +29,7 @@ class StepIndicator extends StatelessWidget {
           decoration: BoxDecoration(
             color: completed || active
                 ? const Color(0xFFFF542F)
-                : const Color(0xFF2B2727),
+                : KigoDesign.surface2,
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -41,7 +42,7 @@ class StepIndicator extends StatelessWidget {
                 : Text(
                     '${index + 1}',
                     style: TextStyle(
-                      color: active ? Colors.white : const Color(0xFF8A8585),
+                      color: active ? Colors.white : KigoDesign.textSecondary,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),

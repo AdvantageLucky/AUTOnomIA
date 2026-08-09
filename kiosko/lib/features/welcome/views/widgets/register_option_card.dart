@@ -1,4 +1,5 @@
 /* TARJETA DE OPCIÓN DE REGISTRO */
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/models/register_option_model.dart';
 
@@ -18,7 +19,7 @@ class RegisterOptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color orange = const Color(0xFFFF542F);
     final Color orangeLight = const Color(0xFFFF714D);
-    final Color gray = const Color(0xFF2B2727);
+    final Color gray = KigoDesign.surface2;
     final Color iconGray = const Color(0xFF3A2420);
 
     return GestureDetector(

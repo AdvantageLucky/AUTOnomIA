@@ -1,3 +1,4 @@
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
 
@@ -9,7 +10,7 @@ class ResidentWelcomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF171313),
+      backgroundColor: KigoDesign.bgDark,
       body: SizedBox.expand(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
@@ -69,7 +70,7 @@ class ResidentWelcomeView extends StatelessWidget {
             Text(
               'SELF CHECK-IN',
               style: TextStyle(
-                color: Color(0xFF8A8585),
+                color: KigoDesign.textSecondary,
                 fontSize: 14,
                 letterSpacing: 4,
                 fontWeight: FontWeight.w500,
@@ -130,7 +131,7 @@ class ResidentWelcomeView extends StatelessWidget {
           Text(
             viewModel.casaDestino,
             style: const TextStyle(
-              color: Color(0xFF8A8585),
+              color: KigoDesign.textSecondary,
               fontSize: 18,
               letterSpacing: 2,
               fontWeight: FontWeight.w500,
@@ -146,7 +147,7 @@ class ResidentWelcomeView extends StatelessWidget {
     return const Text(
       'POWERED BY KIGO · FEPRO 2026',
       style: TextStyle(
-        color: Color(0xFF595252),
+        color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   provider: ^6.1.2
   record: ^6.1.2
   path_provider: ^2.1.5   # Para acceder al sistema de archivos del dispositivo
@@ -45,6 +47,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_tts: ^4.2.5
   loading_indicator: ^3.1.0
+  flutter_secure_storage: ^9.0.0
+  google_fonts: ^6.2.1
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

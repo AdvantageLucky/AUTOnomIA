@@ -3,6 +3,9 @@
 /// foto_rostro_invitado, foto_ine_invitado (= ine_obligatorio_invitado),
 /// tiempo_espera_min, horario_inicio, horario_fin, mensaje_bienvenida,
 /// auto_pass_habilitado, umbral_confianza_visitas.
+// Paleta de color del kiosko configurada desde el dashboard admin.
+enum KioskoColorTema { oscuro, claro }
+
 class KioskoConfig {
   final bool fotoPlacaVisitante;
   final bool fotoRostroVisitante;
@@ -15,6 +18,8 @@ class KioskoConfig {
   final String mensajeBienvenida;
   final bool autoPassHabilitado;
   final int umbralConfianzaVisitas;
+  final KioskoColorTema colorTema;
+  final String idioma; // 'es' | 'en'
 
   const KioskoConfig({
     required this.fotoPlacaVisitante,
@@ -28,9 +33,12 @@ class KioskoConfig {
     required this.mensajeBienvenida,
     required this.autoPassHabilitado,
     required this.umbralConfianzaVisitas,
+    this.colorTema = KioskoColorTema.oscuro,
+    this.idioma = 'es',
   });
 
   factory KioskoConfig.fromJson(Map<String, dynamic> json) {
+    final colorStr = json['color_kiosko'] as String? ?? 'oscuro';
     return KioskoConfig(
       fotoPlacaVisitante: json['foto_placa_visitante'] as bool? ?? false,
       fotoRostroVisitante: json['foto_rostro_visitante'] as bool? ?? true,
@@ -43,6 +51,8 @@ class KioskoConfig {
       mensajeBienvenida: json['mensaje_bienvenida'] as String? ?? '',
       autoPassHabilitado: json['auto_pass_habilitado'] as bool? ?? false,
       umbralConfianzaVisitas: json['umbral_confianza_visitas'] as int? ?? 80,
+      colorTema: colorStr == 'claro' ? KioskoColorTema.claro : KioskoColorTema.oscuro,
+      idioma: json['idioma_kiosko'] as String? ?? 'es',
     );
   }
 
@@ -58,5 +68,7 @@ class KioskoConfig {
         mensajeBienvenida: '',
         autoPassHabilitado: false,
         umbralConfianzaVisitas: 80,
+        colorTema: KioskoColorTema.oscuro,
+        idioma: 'es',
       );
 }

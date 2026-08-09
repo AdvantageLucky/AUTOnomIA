@@ -1,3 +1,4 @@
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
@@ -32,7 +33,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF171313),
+      backgroundColor: KigoDesign.bgDark,
       body: SizedBox.expand(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
@@ -71,12 +72,12 @@ class _ResidentPinViewState extends State<ResidentPinView> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF2B2727),
+              color: KigoDesign.surface2,
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF8A8585),
+              color: KigoDesign.textSecondary,
               size: 18,
             ),
           ),
@@ -118,7 +119,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
             Text(
               'SELF CHECK-IN',
               style: TextStyle(
-                color: Color(0xFF8A8585),
+                color: KigoDesign.textSecondary,
                 fontSize: 14,
                 letterSpacing: 4,
                 fontWeight: FontWeight.w500,
@@ -143,7 +144,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
         const Text(
           'Ingresa tu número',
           style: TextStyle(
-            color: Color(0xFF8A8585),
+            color: KigoDesign.textSecondary,
             fontSize: 16,
             letterSpacing: 2,
             fontWeight: FontWeight.w500,
@@ -156,7 +157,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
           decoration: BoxDecoration(
-            color: const Color(0xFF2B2727),
+            color: KigoDesign.surface2,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isEmpty
@@ -169,7 +170,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
             isEmpty ? '—' : pin,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isEmpty ? const Color(0xFF595252) : Colors.white,
+              color: isEmpty ? KigoDesign.textTertiary : Colors.white,
               fontSize: 42,
               fontWeight: FontWeight.w700,
               letterSpacing: 8,
@@ -228,7 +229,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
   Widget _buildTecla(String digit) {
     const orange = Color(0xFFFF542F);
     const orangeLight = Color(0xFFFF714D);
-    const gray = Color(0xFF2B2727);
+    const gray = KigoDesign.surface2;
 
     final bool presionado = _presionadoId == digit;
 
@@ -267,7 +268,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
 
   Widget _buildTeclaBorrar() {
     const orange = Color(0xFFFF542F);
-    const gray = Color(0xFF2B2727);
+    const gray = KigoDesign.surface2;
 
     final bool presionado = _presionadoId == 'borrar';
 
@@ -295,7 +296,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
         child: Center(
           child: Icon(
             Icons.backspace_outlined,
-            color: presionado ? orange : const Color(0xFF8A8585),
+            color: presionado ? orange : KigoDesign.textSecondary,
             size: 26,
           ),
         ),
@@ -340,7 +341,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
             width: double.infinity,
             height: 64,
             decoration: BoxDecoration(
-              color: vm.puedeConfirmar ? const Color(0xFFFF542F) : const Color(0xFF2B2727),
+              color: vm.puedeConfirmar ? const Color(0xFFFF542F) : KigoDesign.surface2,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Center(
@@ -353,7 +354,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                   : Text(
                       'CONFIRMAR',
                       style: TextStyle(
-                        color: vm.puedeConfirmar ? Colors.white : const Color(0xFF595252),
+                        color: vm.puedeConfirmar ? Colors.white : KigoDesign.textTertiary,
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 2,
@@ -370,7 +371,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
     return const Text(
       'POWERED BY KIGO · FEPRO 2026',
       style: TextStyle(
-        color: Color(0xFF595252),
+        color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

@@ -1,3 +1,4 @@
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -46,9 +47,9 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF171313),
+      backgroundColor: KigoDesign.bgDark,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF171313),
+        backgroundColor: KigoDesign.bgDark,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
