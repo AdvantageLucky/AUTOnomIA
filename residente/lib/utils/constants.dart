@@ -15,4 +15,10 @@ class AppConstants {
   static const String prefsDestinoId = 'kigo_destino_id';
   static const String prefsNombre = 'kigo_nombre';
   static const String prefsTokenCache = 'kigo_token_cache';
+
+  // Claves de auto-registro pendiente
+  static const String prefsRegistroCodigoCentro = 'registro_codigo_centro';
+  static const String prefsRegistroCasaDestino = 'registro_casa_destino';
+  static const String prefsRegistroPin = 'registro_pin';
+  static const String prefsRegistroConsentTs = 'registro_cara_consent_ts';
 }

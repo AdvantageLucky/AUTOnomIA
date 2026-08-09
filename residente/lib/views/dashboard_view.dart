@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
@@ -15,12 +16,12 @@ class DashboardView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PANEL KIGO'),
+        title: Text(AppLocalizations.t(context, 'dashboard_title')),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: AppTheme.textGrey),
-            tooltip: 'Cerrar sesión',
+            tooltip: AppLocalizations.t(context, 'logout_tooltip'),
             onPressed: () async {
               await authVM.logout();
               if (context.mounted) {
@@ -57,7 +58,7 @@ class DashboardView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Bienvenido, ${authVM.nombre.isNotEmpty ? authVM.nombre : settingsVM.userName}',
+                                '${AppLocalizations.t(context, 'welcome')}, ${authVM.nombre.isNotEmpty ? authVM.nombre : settingsVM.userName}',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -68,7 +69,7 @@ class DashboardView extends StatelessWidget {
                               Text(
                                 authVM.casaDestino.isNotEmpty
                                     ? authVM.casaDestino
-                                    : 'Residencial Kigo / Usuario Activo',
+                                    : AppLocalizations.t(context, 'user_status_default'),
                                 style: const TextStyle(color: AppTheme.textGrey, fontSize: 12),
                               ),
                             ],
@@ -84,7 +85,7 @@ class DashboardView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Acciones Rápidas',
+                  AppLocalizations.t(context, 'quick_actions'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -103,13 +104,13 @@ class DashboardView extends StatelessWidget {
                     _buildActionCard(
                       context,
                       icon: Icons.qr_code_2,
-                      label: 'Crear Invitación',
+                      label: AppLocalizations.t(context, 'create_invitation'),
                       onTap: () => Navigator.pushNamed(context, '/generate'),
                     ),
                     _buildActionCard(
                       context,
                       icon: Icons.email_outlined,
-                      label: 'Mis Invitaciones',
+                      label: AppLocalizations.t(context, 'my_invitations'),
                       onTap: () => Navigator.pushNamed(context, '/my_invitations'),
                     ),
                   ],

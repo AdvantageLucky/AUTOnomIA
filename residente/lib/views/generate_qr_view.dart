@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import '../l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -61,8 +62,8 @@ class _GenerateQrViewState extends State<GenerateQrView> {
     final destinoId = authVM.destinoId;
     if (destinoId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se encontró el destino de tu casa. Cierra sesión e ingresa de nuevo.'),
+        SnackBar(
+          content: Text(AppLocalizations.t(context, 'no_destino_error')),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -85,7 +86,7 @@ class _GenerateQrViewState extends State<GenerateQrView> {
     if (inv == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(invVM.error ?? 'No se pudo crear la invitación'),
+          content: Text(invVM.error ?? AppLocalizations.t(context, 'create_error')),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -122,7 +123,7 @@ class _GenerateQrViewState extends State<GenerateQrView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GENERAR INVITACIÓN'),
+        title: Text(AppLocalizations.t(context, 'generate_qr_title')),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -153,11 +154,11 @@ class _GenerateQrViewState extends State<GenerateQrView> {
             style: TextStyle(color: textColor),
             textCapitalization: TextCapitalization.words,
             decoration: _inputDeco(
-              label: 'Nombre del visitante o grupo',
+              label: AppLocalizations.t(context, 'visitor_name'),
               icon: Icons.person_outline,
               isDark: isDark,
             ),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+            validator: (v) => (v == null || v.trim().isEmpty) ? AppLocalizations.t(context, 'required_field') : null,
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
@@ -165,13 +166,13 @@ class _GenerateQrViewState extends State<GenerateQrView> {
             dropdownColor: isDark ? AppTheme.surfaceDark : Colors.white,
             style: TextStyle(color: textColor),
             decoration: _inputDeco(
-              label: 'Tipo de invitación',
+              label: AppLocalizations.t(context, 'inv_type_label'),
               icon: Icons.group_outlined,
               isDark: isDark,
             ),
-            items: const [
-              DropdownMenuItem(value: 'PERSONAL', child: Text('Personal (una persona)')),
-              DropdownMenuItem(value: 'GRUPAL', child: Text('Grupal (varias personas)')),
+            items: [
+              DropdownMenuItem(value: 'PERSONAL', child: Text(AppLocalizations.t(context, 'inv_personal_option'))),
+              DropdownMenuItem(value: 'GRUPAL', child: Text(AppLocalizations.t(context, 'inv_grupal_option'))),
             ],
             onChanged: (v) => setState(() => _tipo = v!),
           ),
@@ -182,7 +183,7 @@ class _GenerateQrViewState extends State<GenerateQrView> {
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: _inputDeco(
-              label: 'Límite de usos (vacío = sin límite)',
+              label: AppLocalizations.t(context, 'max_uses_label'),
               icon: Icons.repeat_outlined,
               isDark: isDark,
             ),
@@ -193,7 +194,7 @@ class _GenerateQrViewState extends State<GenerateQrView> {
             borderRadius: BorderRadius.circular(12),
             child: InputDecorator(
               decoration: _inputDeco(
-                label: 'Fecha de expiración',
+                label: AppLocalizations.t(context, 'expires_label'),
                 icon: Icons.calendar_today_outlined,
                 isDark: isDark,
               ),
@@ -215,9 +216,9 @@ class _GenerateQrViewState extends State<GenerateQrView> {
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                   )
                 : const Icon(Icons.qr_code_2, color: Colors.white),
-            label: const Text(
-              'GENERAR CÓDIGO QR',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+            label: Text(
+              AppLocalizations.t(context, 'generate_button'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
             ),
           ),
         ],
@@ -232,7 +233,7 @@ class _GenerateQrViewState extends State<GenerateQrView> {
         const Icon(Icons.check_circle_outline, color: AppTheme.primaryOrange, size: 56),
         const SizedBox(height: 12),
         Text(
-          '¡Invitación creada!',
+          AppLocalizations.t(context, 'inv_created_title'),
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor),
         ),
         const SizedBox(height: 4),
@@ -269,9 +270,9 @@ class _GenerateQrViewState extends State<GenerateQrView> {
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
                 : const Icon(Icons.share_rounded, color: Colors.white),
-            label: const Text(
-              'COMPARTIR (WhatsApp / etc.)',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            label: Text(
+              AppLocalizations.t(context, 'share_btn'),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -283,15 +284,15 @@ class _GenerateQrViewState extends State<GenerateQrView> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: () => Navigator.pushReplacementNamed(context, '/my_invitations'),
-          child: const Text(
-            'VER MIS INVITACIONES',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          child: Text(
+            AppLocalizations.t(context, 'view_invitations_btn'),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
         const SizedBox(height: 12),
         TextButton(
           onPressed: () => setState(() => _creada = null),
-          child: const Text('Crear otra', style: TextStyle(color: AppTheme.primaryOrange)),
+          child: Text(AppLocalizations.t(context, 'create_another'), style: const TextStyle(color: AppTheme.primaryOrange)),
         ),
       ],
     );

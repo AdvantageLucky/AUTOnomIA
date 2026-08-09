@@ -12,6 +12,7 @@ import 'views/dashboard_view.dart';
 import 'views/generate_qr_view.dart';
 import 'views/login_view.dart';
 import 'views/my_invitations_view.dart';
+import 'views/registro_view.dart';
 import 'views/settings_view.dart';
 import 'views/splash_view.dart';
 
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
         '/settings': (context) => const SettingsView(),
         '/generate': (context) => const GenerateQrView(),
         '/my_invitations': (context) => const MyInvitationsView(),
+        '/registro': (context) => const RegistroView(),
       },
     );
   }
