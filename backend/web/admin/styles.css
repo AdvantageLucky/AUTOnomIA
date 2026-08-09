@@ -412,22 +412,34 @@ textarea { resize: vertical; }
 
 /* ── Login hero ─────────────────────────────────────────────────── */
 .login-hero {
+  /* El panel hero siempre es oscuro (efecto vidrio), independiente del tema
+     claro/oscuro de la app — evita que los paneles con rgba(255,255,255,..)
+     se vuelvan invisibles sobre un fondo claro. */
+  --bg:        #09090D;
+  --surface:   #0F1018;
+  --surface-2: #141523;
+  --border:    #1E1F2E;
+  --text:      #ECEAF4;
+  --text-2:    #5C5D77;
+  --text-3:    #888AA6;
+
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: 64px;
   background: var(--bg);
+  color: var(--text);
   overflow: hidden;
 }
 
 .login-hero-bg {
   position: absolute;
-  top: -60px;
+  top: 24px;
   right: 0;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 800;
-  font-size: clamp(80px, 12vw, 160px);
+  font-size: clamp(60px, 10vw, 140px);
   letter-spacing: -0.04em;
   color: transparent;
   -webkit-text-stroke: 1px var(--border);

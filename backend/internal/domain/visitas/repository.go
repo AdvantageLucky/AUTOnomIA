@@ -23,17 +23,25 @@ func (r *Repository) WithContext(ctx context.Context) *Repository {
 	return &Repository{db: r.db.WithContext(ctx)}
 }
 
-// ByTenant es un GORM Scope que aísla las consultas usando el tenant_id del contexto.
-// Califica la columna con el nombre de tabla cuando está disponible para evitar
-// ambigüedad en consultas con JOIN contra otras tablas que también tienen tenant_id.
+// ByTenant filtra por el tenant del contexto. Para queries sin JOIN.
 func ByTenant(db *gorm.DB) *gorm.DB {
 	if tenantID, ok := db.Statement.Context.Value(ctxkeys.TenantID).(uint); ok && tenantID > 0 {
-		if table := db.Statement.Table; table != "" {
-			return db.Where(table+".tenant_id = ?", tenantID)
-		}
 		return db.Where("tenant_id = ?", tenantID)
 	}
 	return db
+}
+
+// ByTenantFor devuelve un scope que califica tenant_id con el nombre de tabla dado.
+// Usar en queries con JOIN para evitar SQLSTATE 42702 (columna ambigua).
+// Los scopes se ejecutan antes del parse del modelo, por lo que db.Statement.Table
+// no es confiable — hay que capturar el nombre en la closure.
+func ByTenantFor(table string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if tenantID, ok := db.Statement.Context.Value(ctxkeys.TenantID).(uint); ok && tenantID > 0 {
+			return db.Where(table+".tenant_id = ?", tenantID)
+		}
+		return db
+	}
 }
 
 func (r *Repository) Create(v *Visita) error {
@@ -43,7 +51,7 @@ func (r *Repository) Create(v *Visita) error {
 // Los métodos que escanean a Visita deben encadenar Select("visitas.*") para evitar que las columnas
 // id/created_at del join corrompan el resultado.
 func (r *Repository) joinVisitasDeAdmin(adminID uint) *gorm.DB {
-	return r.db.Scopes(ByTenant).Model(&Visita{}).
+	return r.db.Scopes(ByTenantFor("visitas")).Model(&Visita{}).
 		Joins("JOIN kioskos ON kioskos.id = visitas.kiosko_id").
 		Where("kioskos.admin_id = ?", adminID)
 }

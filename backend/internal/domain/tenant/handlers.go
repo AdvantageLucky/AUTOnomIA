@@ -3,6 +3,7 @@ package tenant
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -77,6 +78,11 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 	fields["descripcion"] = req.Descripcion
 
 	if err := h.repo.Update(id, fields); err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "duplicate key") || strings.Contains(msg, "23505") {
+			c.JSON(http.StatusConflict, gin.H{"error": "Ese código ya está en uso por otra instalación"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error actualizando instalación"})
 		return
 	}

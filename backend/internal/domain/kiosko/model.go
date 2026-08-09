@@ -33,6 +33,7 @@ type Kiosko struct {
 type KioskoConfig struct {
 	gorm.Model
 	KioskoID uint `gorm:"uniqueIndex;not null"`
+	TenantID uint `gorm:"column:tenant_id;not null;index"`
 
 	// Apariencia
 	ColorKiosko  string `gorm:"not null;default:'oscuro'"` // "claro" | "oscuro"

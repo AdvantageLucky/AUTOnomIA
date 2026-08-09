@@ -26,6 +26,7 @@ import (
 // sin importar directamente el package destinos (evita acoplamiento).
 type destinoFinder interface {
 	FindByNombreAndTenantID(nombre string, tenantID uint) (uint, error)
+	ListNombresByTenantID(tenantID uint) ([]string, error)
 }
 
 type Handler struct {
@@ -137,6 +138,45 @@ func (h *Handler) CrearResidente(c *gin.Context) {
 	c.JSON(http.StatusCreated, toResidenteResponse(*res, nil))
 }
 
+// LoginResidentePublico loguea a un residente usando el código de instalación, su casa
+// y PIN — no requiere conocer el kiosko_id. Endpoint público.
+func (h *Handler) LoginResidentePublico(c *gin.Context) {
+	codigo := c.Param("codigo")
+
+	var req struct {
+		CasaDestino string `json:"casa_destino" binding:"required"`
+		Pin         string `json:"pin"          binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "casa_destino y pin son requeridos"})
+		return
+	}
+
+	tenantID, _, _, err := h.repo.BuscarCentroPorCodigo(codigo)
+	if err != nil || tenantID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "centro no encontrado"})
+		return
+	}
+
+	res, err := h.repo.FindPorPinPublico(tenantID, req.CasaDestino, req.Pin)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "credenciales incorrectas"})
+		return
+	}
+	if res.Status != ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tu solicitud aún no ha sido aprobada por el administrador"})
+		return
+	}
+
+	token, err := auth.GenerateResidenteToken(res.ID, res.TenantID, h.jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, auth.JWTResponse{AccessToken: token})
+}
+
 // BuscarCentro devuelve la info básica del centro con el código dado. Endpoint público.
 func (h *Handler) BuscarCentro(c *gin.Context) {
 	codigo := c.Query("codigo")
@@ -157,6 +197,26 @@ func (h *Handler) BuscarCentro(c *gin.Context) {
 		"direccion": direccion,
 		"codigo":    codigo,
 	})
+}
+
+// ListarDestinosPublico devuelve los nombres de los destinos registrados en el centro,
+// para que el residente busque y seleccione su casa al auto-registrarse. Endpoint público.
+func (h *Handler) ListarDestinosPublico(c *gin.Context) {
+	codigo := c.Param("codigo")
+
+	tenantID, _, _, err := h.repo.BuscarCentroPorCodigo(codigo)
+	if err != nil || tenantID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "centro no encontrado"})
+		return
+	}
+
+	nombres, err := h.destinoRepo.ListNombresByTenantID(tenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error listando destinos"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"destinos": nombres})
 }
 
 // AutoRegistrar crea un residente en estado pendiente. Endpoint público (sin auth).

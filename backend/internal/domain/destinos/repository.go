@@ -36,6 +36,22 @@ func (r *Repository) FindByTenantID(tenantID uint) ([]Destino, error) {
 	return list, nil
 }
 
+// ListNombresByTenantID devuelve solo los nombres de los destinos del tenant,
+// usado por el registro público de residentes para ofrecer un selector de casas.
+func (r *Repository) ListNombresByTenantID(tenantID uint) ([]string, error) {
+	if tenantID == 0 {
+		return nil, ErrTenantNoResuelto
+	}
+	var nombres []string
+	if err := r.db.Model(&Destino{}).
+		Where("tenant_id = ?", tenantID).
+		Order("nombre ASC").
+		Pluck("nombre", &nombres).Error; err != nil {
+		return nil, err
+	}
+	return nombres, nil
+}
+
 func (r *Repository) FindByNombreAndTenantID(nombre string, tenantID uint) (uint, error) {
 	if tenantID == 0 {
 		return 0, ErrTenantNoResuelto
