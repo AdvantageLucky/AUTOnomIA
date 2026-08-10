@@ -1,8 +1,17 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
+import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
+import 'package:kigo_kiosco/features/residente/services/reconocimiento_facial_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
+import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/resident_pin_view.dart';
+import 'package:kigo_kiosco/features/welcome/views/resident_welcome_view.dart';
 
 class ResidenteAccesoView extends StatefulWidget {
   const ResidenteAccesoView({super.key});
@@ -18,6 +27,21 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
   bool _consentDado = false;
   bool _verificandoConsent = true;
 
+  CameraController? _cameraController;
+  bool _camaraInicializando = false;
+  String? _camaraError;
+
+  final _faceDetectorServicio = FaceDetectorServicio();
+  final _reconocimientoServicio = ReconocimientoFacialServicio();
+  Timer? _timerVerificacion;
+  bool _verificandoRostro = false;
+
+  // Exigimos 2 coincidencias seguidas contra el mismo residente antes de dar
+  // el acceso por bueno (mitigación básica de falsos positivos/spoofing).
+  String? _ultimoNombreCoincidente;
+  String? _ultimaCasaCoincidente;
+  int _coincidenciasConsecutivas = 0;
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +55,11 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
         _consentDado = ts != null;
         _verificandoConsent = false;
       });
-      if (!_consentDado) _pedirConsent();
+      if (_consentDado) {
+        _iniciarCamara();
+      } else {
+        _pedirConsent();
+      }
     }
   }
 
@@ -44,9 +72,140 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
         value: DateTime.now().toIso8601String(),
       );
       setState(() => _consentDado = true);
+      _iniciarCamara();
     } else {
       Navigator.of(context).pop();
     }
+  }
+
+  // Activa la cámara frontal para mostrar la vista en vivo dentro del círculo
+  Future<void> _iniciarCamara() async {
+    if (_cameraController != null || _camaraInicializando) return;
+    setState(() {
+      _camaraInicializando = true;
+      _camaraError = null;
+    });
+
+    try {
+      final camaras = await availableCameras();
+      if (camaras.isEmpty) {
+        throw CameraException('sin_camara', 'No hay cámaras disponibles');
+      }
+
+      final frontal = camaras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.front,
+        orElse: () => camaras.first,
+      );
+
+      final controller = CameraController(
+        frontal,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      await controller.initialize();
+
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+
+      setState(() {
+        _cameraController = controller;
+        _camaraInicializando = false;
+      });
+
+      _timerVerificacion = Timer.periodic(
+        const Duration(milliseconds: 1500),
+        (_) => _intentarVerificarRostro(),
+      );
+    } catch (e) {
+      debugPrint('Error al inicializar la cámara: $e');
+      if (mounted) {
+        setState(() {
+          _camaraInicializando = false;
+          _camaraError = 'No se pudo activar la cámara';
+        });
+      }
+    }
+  }
+
+  // Toma una foto silenciosa, valida que haya un rostro, calcula su huella
+  // localmente y la manda a comparar contra los residentes del edificio.
+  Future<void> _intentarVerificarRostro() async {
+    if (_verificandoRostro) return;
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized || controller.value.isTakingPicture) {
+      return;
+    }
+
+    _verificandoRostro = true;
+    XFile? foto;
+    try {
+      foto = await controller.takePicture();
+
+      final tieneRostro = await _faceDetectorServicio.tieneRostroValido(foto.path);
+      if (!tieneRostro) {
+        _coincidenciasConsecutivas = 0;
+        return;
+      }
+
+      final embedding = await _reconocimientoServicio.calcularEmbedding(foto.path);
+      if (embedding == null) {
+        _coincidenciasConsecutivas = 0;
+        return;
+      }
+
+      final resultado = await KioskoServicio().verificarRostroResidente(embedding);
+      _registrarCoincidencia(
+        resultado['nombre'] as String?,
+        resultado['casa_destino'] as String?,
+      );
+    } catch (e) {
+      // Sin match, sin red, etc. — seguimos intentando en el siguiente tick;
+      // el acceso por PIN sigue disponible como respaldo en todo momento.
+      _coincidenciasConsecutivas = 0;
+    } finally {
+      _verificandoRostro = false;
+      final rutaFoto = foto?.path;
+      if (rutaFoto != null) {
+        unawaited(Future(() async {
+          try {
+            await File(rutaFoto).delete();
+          } catch (_) {}
+        }));
+      }
+    }
+  }
+
+  void _registrarCoincidencia(String? nombre, String? casaDestino) {
+    if (nombre == _ultimoNombreCoincidente && casaDestino == _ultimaCasaCoincidente) {
+      _coincidenciasConsecutivas++;
+    } else {
+      _ultimoNombreCoincidente = nombre;
+      _ultimaCasaCoincidente = casaDestino;
+      _coincidenciasConsecutivas = 1;
+    }
+
+    if (_coincidenciasConsecutivas >= 2 && mounted) {
+      _timerVerificacion?.cancel();
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => ResidentWelcomeView(
+          viewModel: ResidentWelcomeViewModel(
+            nombre: nombre ?? 'Residente',
+            casaDestino: casaDestino ?? '',
+          ),
+        ),
+      ));
+    }
+  }
+
+  @override
+  void dispose() {
+    _timerVerificacion?.cancel();
+    _reconocimientoServicio.dispose();
+    _cameraController?.dispose();
+    super.dispose();
   }
 
   void _irAlPin() {
@@ -150,49 +309,25 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
             letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 8),
-        const Text(
-          'El sistema verificará tu identidad automáticamente',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: KigoDesign.textSecondary, fontSize: 15),
-        ),
         const SizedBox(height: 40),
 
-        // Marco del área de cara
+        // Marco del área de cara: muestra la vista en vivo de la cámara frontal
         Container(
-          width: 260,
-          height: 260,
+          width: 320,
+          height: 320,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: KigoDesign.surface2,
             border: Border.all(color: const Color(0xFFFF542F).withValues(alpha: 0.35), width: 2.5),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.face_outlined,
-                size: 80,
-                color: const Color(0xFFFF542F).withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Reconocimiento facial\nen configuración',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: KigoDesign.textTertiary,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
+          child: _buildContenidoCamara(),
         ),
 
         const SizedBox(height: 20),
-        const Text(
-          'Próximamente disponible',
-          style: TextStyle(
+        Text(
+          _textoEstadoCamara(),
+          style: const TextStyle(
             color: KigoDesign.textTertiary,
             fontSize: 13,
             letterSpacing: 1.5,
@@ -200,6 +335,44 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
         ),
       ],
     );
+  }
+
+  Widget _buildContenidoCamara() {
+    final controller = _cameraController;
+    if (controller != null && controller.value.isInitialized) {
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: controller.value.previewSize?.height ?? 320,
+          height: controller.value.previewSize?.width ?? 320,
+          child: CameraPreview(controller),
+        ),
+      );
+    }
+
+    if (_camaraError != null) {
+      return Center(
+        child: Icon(
+          Icons.videocam_off_outlined,
+          size: 64,
+          color: const Color(0xFFFF542F).withValues(alpha: 0.5),
+        ),
+      );
+    }
+
+    return const Center(
+      child: CircularProgressIndicator(color: Color(0xFFFF542F), strokeWidth: 2.5),
+    );
+  }
+
+  String _textoEstadoCamara() {
+    if (_cameraController?.value.isInitialized == true) {
+      return 'Detectando rostro automáticamente';
+    }
+    if (_camaraError != null) {
+      return _camaraError!;
+    }
+    return 'Activando cámara...';
   }
 
   Widget _buildPinFallback() {
@@ -272,10 +445,11 @@ Future<bool> _mostrarConsentimientoFacial(BuildContext context) async {
         ],
       ),
       content: const Text(
-        'Su rostro será capturado y comparado localmente contra los registros del '
-        'edificio para verificar su identidad. No se transmiten datos biométricos '
-        'a servidores externos. Si prefiere no usar reconocimiento facial, puede '
-        'ingresar con su PIN.',
+        'Su rostro se analiza en este dispositivo para generar una huella digital '
+        'matemática; la imagen nunca se transmite ni se almacena. Esa huella se '
+        'compara de forma segura contra los residentes registrados del edificio '
+        'para verificar su identidad. Si prefiere no usar reconocimiento facial, '
+        'puede ingresar con su PIN.',
         style: TextStyle(color: Color(0xFFC5BFBF), fontSize: 18, height: 1.6),
       ),
       actions: [
