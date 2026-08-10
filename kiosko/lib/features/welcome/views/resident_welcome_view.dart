@@ -1,11 +1,39 @@
+import 'dart:async';
+
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
 
-class ResidentWelcomeView extends StatelessWidget {
+class ResidentWelcomeView extends StatefulWidget {
   final ResidentWelcomeViewModel viewModel;
 
   const ResidentWelcomeView({super.key, required this.viewModel});
+
+  @override
+  State<ResidentWelcomeView> createState() => _ResidentWelcomeViewState();
+}
+
+class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
+  Timer? _timerRegreso;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tras mostrar la confirmación, regresa sola a la pantalla de bienvenida.
+    _timerRegreso = Timer(const Duration(seconds: 30), () {
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timerRegreso?.cancel();
+    super.dispose();
+  }
+
+  ResidentWelcomeViewModel get viewModel => widget.viewModel;
 
   @override
   Widget build(BuildContext context) {

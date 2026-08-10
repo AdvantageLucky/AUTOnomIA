@@ -268,6 +268,26 @@ class KioskoServicio {
     throw Exception('Error al validar PIN (${response.statusCode})');
   }
 
+  Future<Map<String, dynamic>> verificarRostroResidente(List<double> embedding) async {
+    await _ensureLogin();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/kioskos/$_kioskoId/residentes/verificar-rostro'),
+      headers: {
+        'Authorization': 'Bearer $_sessionToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'embedding': embedding}),
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Rostro no reconocido');
+    }
+    throw Exception('Error al verificar rostro (${response.statusCode})');
+  }
+
   Future<List<Map<String, dynamic>>> obtenerDestinos() async {
     await _ensureLogin();
     final response = await http.get(

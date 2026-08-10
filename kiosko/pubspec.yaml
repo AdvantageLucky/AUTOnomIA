@@ -41,6 +41,8 @@ dependencies:
   google_mlkit_text_recognition: ^0.13.0 # El motor de IA local para leer texto
   google_mlkit_face_detection: ^0.11.0 # Detección de rostros en local
   mobile_scanner: ^5.2.3               # Escaner de QR/códigos de barras
+  tflite_flutter: ^0.12.1              # Motor de inferencia para el modelo de huella facial
+  image: ^4.9.1                        # Recorte/redimensionado del rostro antes de la inferencia
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -72,6 +74,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/models/mobilefacenet.tflite
 
   # To add assets to your application, add an assets section, like this:
   # assets:
