@@ -237,6 +237,7 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string,
 	kPin.Use(auth.RequireKiosko(sesionRepo))
 	{
 		kPin.POST("/login", residenteHandler.LoginResidenteDesdeKiosko)
+		kPin.POST("/verificar-rostro", residenteHandler.VerificarRostroDesdeKiosko)
 	}
 
 	// admin: crea residentes y los lista por kiosko
