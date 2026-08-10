@@ -3,6 +3,7 @@ package residente
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -262,6 +263,18 @@ func (h *Handler) AutoRegistrar(c *gin.Context) {
 		fotoCaraUrl = url
 	}
 
+	// Campo opcional: huella facial (embedding) ya calculada por el cliente que
+	// capturó la foto, enviada como JSON de floats — ej. "[0.12,-0.03,...]".
+	// Sin esto el residente queda registrado pero no participa en el acceso por
+	// rostro hasta que alguien capture su huella.
+	var embedding []float64
+	if raw := strings.TrimSpace(c.PostForm("embedding")); raw != "" {
+		if err := json.Unmarshal([]byte(raw), &embedding); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "embedding inválido"})
+			return
+		}
+	}
+
 	res := &Residente{
 		TenantID:        tenantID,
 		Nombre:          nombreR,
@@ -272,6 +285,7 @@ func (h *Handler) AutoRegistrar(c *gin.Context) {
 		Pin:             string(hash),
 		Status:          ResidenteStatusPendiente,
 		FotoCaraUrl:     fotoCaraUrl,
+		Embedding:       embedding,
 	}
 
 	if err := h.repo.Create(res); err != nil {
@@ -437,6 +451,84 @@ func (h *Handler) LoginResidenteDesdeKiosko(c *gin.Context) {
 		"nombre":       res.Nombre + " " + res.ApellidoPaterno,
 		"casa_destino": res.CasaDestino,
 	})
+}
+
+// VerificarRostroDesdeKiosko compara el embedding de un rostro capturado en vivo
+// por el kiosko contra los residentes activos del tenant. Si el mejor candidato
+// supera el umbral de similitud configurado para ese kiosko, registra el acceso
+// igual que LoginResidenteDesdeKiosko (misma forma de respuesta y misma Visita).
+func (h *Handler) VerificarRostroDesdeKiosko(c *gin.Context) {
+	kioskoIDStr := c.Param("id")
+	kioskoID, err := strconv.ParseUint(kioskoIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
+		return
+	}
+
+	sesionKioskoID := c.MustGet(ctxkeys.KioskoID).(uint)
+	if sesionKioskoID != uint(kioskoID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "sesion no corresponde a este kiosko"})
+		return
+	}
+
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	var req struct {
+		Embedding []float64 `json:"embedding" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.Embedding) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "embedding inválido"})
+		return
+	}
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	candidatos, err := repoCtx.FindActivosConEmbeddingPorTenant(tenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	mejor, score := mejorCoincidencia(candidatos, req.Embedding)
+	if mejor == nil || score < h.umbralSimilitud(uint(kioskoID)) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "rostro no reconocido"})
+		return
+	}
+
+	v := &visitas.Visita{
+		TenantID:      mejor.TenantID,
+		Titular:       mejor.Nombre + " " + mejor.ApellidoPaterno,
+		TipoVisitante: visitas.TipoResidente,
+		TipoDocumento: visitas.DocumentoRostro,
+		MotivoVisita:  "Acceso por Rostro",
+		CasaDestino:   mejor.CasaDestino,
+		Estado:        visitas.EstadoAprobado,
+		KioskoID:      uint(kioskoID),
+	}
+
+	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
+		log.Printf("VerificarRostroDesdeKiosko: error registrando visita: %v", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"nombre":       mejor.Nombre + " " + mejor.ApellidoPaterno,
+		"casa_destino": mejor.CasaDestino,
+	})
+}
+
+// umbralSimilitud devuelve el umbral mínimo de similitud facial configurado
+// para el kiosko dado, o un valor por defecto si no se encuentra su config.
+func (h *Handler) umbralSimilitud(kioskoID uint) float64 {
+	const umbralPorDefecto = 0.70
+
+	var umbral float64
+	row := h.db.Table("kiosko_configs").
+		Select("umbral_similitud_cara").
+		Where("kiosko_id = ?", kioskoID).
+		Row()
+	if err := row.Scan(&umbral); err != nil {
+		return umbralPorDefecto
+	}
+	return umbral
 }
 
 func (h *Handler) ListarResidentesPorAcceso(c *gin.Context) {

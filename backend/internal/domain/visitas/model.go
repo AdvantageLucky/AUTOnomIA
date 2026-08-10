@@ -20,6 +20,7 @@ const (
 	DocumentoLicencia  TipoDocumento = "LICENCIA"
 	DocumentoQR        TipoDocumento = "QR"
 	DocumentoPIN       TipoDocumento = "PIN"
+	DocumentoRostro    TipoDocumento = "ROSTRO"
 
 	// EstadoVisita
 	EstadoPendiente EstadoVisita = "PENDIENTE"

@@ -110,6 +110,19 @@ func (r *Repository) FindPorPin(tenantID uint, pin string) (*Residente, error) {
 	return nil, errors.New("pin incorrecto")
 }
 
+// FindActivosConEmbeddingPorTenant devuelve los residentes activos de un tenant que
+// ya tienen una huella facial (embedding) calculada, candidatos para comparar
+// contra un rostro capturado en vivo.
+func (r *Repository) FindActivosConEmbeddingPorTenant(tenantID uint) ([]Residente, error) {
+	var list []Residente
+	if err := r.db.
+		Where("tenant_id = ? AND status = ? AND embedding IS NOT NULL", tenantID, ResidenteStatusActivo).
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
 // FindPendientesPorTenant devuelve residentes con status=pendiente del tenant.
 func (r *Repository) FindPendientesPorTenant(tenantID uint) ([]Residente, error) {
 	var list []Residente
