@@ -263,13 +263,25 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                   padding: const EdgeInsets.only(
                     left: 42,
                     right: 42,
-                    top: 60,
+                    top: 32,
                     bottom: 40,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _buildHeader(),
+                      SizedBox(
+                        width: double.infinity,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            _buildHeader(),
+                            Positioned(
+                              left: 0,
+                              child: _buildTopBackButton(),
+                            ),
+                          ],
+                        ),
+                      ),
 
                       const SizedBox(height: 40),
 
@@ -305,6 +317,25 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               child: _buildFooter(),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBackButton() {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: KigoDesign.surface2,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: KigoDesign.textSecondary,
+          size: 18,
         ),
       ),
     );
