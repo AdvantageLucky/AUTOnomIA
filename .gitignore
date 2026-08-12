@@ -23,6 +23,16 @@ web/uploads/visitantes/*
 *.test
 *.out
 
+# checkout local de llama.cpp para el asistente de voz; no es código del
+# proyecto
+/backend/llama.cpp/
+
+# =========================
+# Claude Code / superpowers
+# =========================
+/.claude/
+/docs/superpowers/
+
 # =========================
 # Flutter / Android Builds
 # =========================
