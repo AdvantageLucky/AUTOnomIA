@@ -610,7 +610,12 @@
 
           <div class="config-section">
             <div class="config-section-title">Visitante Sin Invitación</div>
-            <div class="config-section-sub">Personas que llegan sin invitación previa. La captura de INE es requerida por lo menos.</div>
+            <div class="config-section-sub">Personas que llegan sin invitación previa. En un acceso peatonal la captura de INE es obligatoria.</div>
+
+            <div class="config-section-sub" id="cfg-nota-vehicular" hidden>
+              En este acceso vehicular no se pide INE: el conductor no baja del vehículo y la placa
+              es lo que identifica la visita en la bitácora.
+            </div>
 
             <div class="toggle-row">
               <div>
@@ -626,7 +631,7 @@
             <div class="toggle-row" id="cfg-row-placa-visitante">
               <div>
                 <div class="toggle-label">Foto de placa vehicular</div>
-                <div class="toggle-sub">Registro de matrícula si llega en vehículo</div>
+                <div class="toggle-sub">Obligatoria en accesos vehiculares: identifica la visita</div>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="cfg-placa-visitante">

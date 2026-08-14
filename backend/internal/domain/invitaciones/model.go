@@ -15,7 +15,7 @@ const (
 
 type Invitacion struct {
 	gorm.Model
-	TenantID        uint   `gorm:"column:tenant_id;not null;index"`
+	TenantID    uint           `gorm:"column:tenant_id;not null;index"`
 	Token       string         `gorm:"not null;uniqueIndex"`
 	Tipo        TipoInvitacion `gorm:"not null;default:'PERSONAL'"`
 	Titular     string         `gorm:"not null"` // nombre del invitado (PERSONAL) o identificador del grupo (GRUPAL)

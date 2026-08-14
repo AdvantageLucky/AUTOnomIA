@@ -54,6 +54,46 @@ func TestAnalizarVisita_OCRSospechoso_CURPInvalida(t *testing.T) {
 	}
 }
 
+// Un acceso vehicular no captura INE: la visita llega sin CURP y eso no es una
+// anomalía. Tratarlo como OCR sospechoso dejaría a esos kioskos sin autopass.
+func TestAnalizarVisita_SinCURP_NoEsOCRSospechoso(t *testing.T) {
+	nueva := Visita{Placa: "ABC123D", TipoDocumento: DocumentoPlaca}
+	sc := AnalizarVisita(nil, nueva, 5)
+
+	if sc.OCRSospechoso {
+		t.Error("una visita sin CURP no debe marcar OCRSospechoso")
+	}
+}
+
+// Cuando no hay CURP el historial viene agrupado por placa, así que todas las
+// matrículas son iguales por construcción y comparar no aporta nada.
+func TestAnalizarVisita_SinCURP_NoComparaMatricula(t *testing.T) {
+	historial := []Visita{
+		{Placa: "ABC123D", Estado: EstadoAprobado},
+		{Placa: "ABC123D", Estado: EstadoAprobado},
+	}
+	nueva := Visita{Placa: "ABC123D"}
+	sc := AnalizarVisita(historial, nueva, 5)
+
+	if sc.AnomaliaMatricula {
+		t.Error("historial agrupado por placa no debe marcar AnomaliaMatricula")
+	}
+}
+
+// El visitante vehicular recurrente sí debe poder ganarse el autopass.
+func TestAnalizarVisita_SinCURP_AlcanzaConfianza(t *testing.T) {
+	historial := make([]Visita, 6)
+	for i := range historial {
+		historial[i] = Visita{Estado: EstadoAprobado, Placa: "ABC123D"}
+	}
+	nueva := Visita{Placa: "ABC123D", TipoDocumento: DocumentoPlaca}
+	sc := AnalizarVisita(historial, nueva, 5)
+
+	if !sc.Confiable {
+		t.Error("6 aprobaciones consecutivas de la misma placa deben marcar confiable")
+	}
+}
+
 func TestAnalizarVisita_HorarioInusual(t *testing.T) {
 	manana := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC)
 	historial := []Visita{

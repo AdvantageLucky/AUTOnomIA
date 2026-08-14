@@ -75,16 +75,22 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		return
 	}
 
-	if errMsg := validarCamposCondicionales(req, cfg); errMsg != "" {
+	tipoKiosko, err := repoCtx.GetKioskoTipo(uint(kioskoID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo obtener el tipo del kiosko"})
+		return
+	}
+
+	if errMsg := ValidarCamposCondicionales(req, cfg, tipoKiosko); errMsg != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": errMsg})
 		return
 	}
 
 	var fotoDocumentoURL string
 	if req.FotoDocumento != nil {
-		fotoDocumentoURL, err = guardarFotoVisitante(c, req.FotoDocumento, h.uploadsDir)
+		fotoDocumentoURL, err = GuardarFotoVisitante(c, req.FotoDocumento, h.uploadsDir)
 		if err != nil {
-			if errors.Is(err, errFormatoFotoInvalido) {
+			if errors.Is(err, ErrFormatoFotoInvalido) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_documento: " + err.Error()})
 				return
 			}
@@ -95,9 +101,9 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 
 	var fotoRostroURL string
 	if req.FotoRostro != nil {
-		fotoRostroURL, err = guardarFotoVisitante(c, req.FotoRostro, h.uploadsDir)
+		fotoRostroURL, err = GuardarFotoVisitante(c, req.FotoRostro, h.uploadsDir)
 		if err != nil {
-			if errors.Is(err, errFormatoFotoInvalido) {
+			if errors.Is(err, ErrFormatoFotoInvalido) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_rostro: " + err.Error()})
 				return
 			}
@@ -108,9 +114,9 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 
 	var fotoPlacaURL string
 	if req.FotoPlaca != nil {
-		fotoPlacaURL, err = guardarFotoVisitante(c, req.FotoPlaca, h.uploadsDir)
+		fotoPlacaURL, err = GuardarFotoVisitante(c, req.FotoPlaca, h.uploadsDir)
 		if err != nil {
-			if errors.Is(err, errFormatoFotoInvalido) {
+			if errors.Is(err, ErrFormatoFotoInvalido) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "foto_placa: " + err.Error()})
 				return
 			}
@@ -119,18 +125,31 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 	}
 
+	placa := strings.ToUpper(strings.TrimSpace(req.Placa))
+
+	// Sin INE ni invitación no hay nombre que mostrar: la placa hace de titular
+	// para que el vigilante y la búsqueda de la bitácora tengan de dónde agarrarse.
+	titular := strings.ToUpper(strings.TrimSpace(req.Titular))
+	if titular == "" {
+		titular = placa
+	}
+
+	tipoDocumento := req.TipoDocumento
+	if tipoDocumento == "" {
+		tipoDocumento = DocumentoPlaca
+	}
+
 	v := &Visita{
 		TenantID:         tenantID,
-		Titular:          strings.ToUpper(strings.TrimSpace(req.Titular)),
+		Titular:          titular,
 		TipoVisitante:    req.TipoVisitante,
-		TipoDocumento:    req.TipoDocumento,
+		TipoDocumento:    tipoDocumento,
 		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
 		FotoDocumentoURL: fotoDocumentoURL,
 		FotoRostroURL:    fotoRostroURL,
 		FotoPlacaURL:     fotoPlacaURL,
-		MotivoVisita:     req.MotivoVisita,
 		CasaDestino:      strings.ToUpper(strings.TrimSpace(req.CasaDestino)),
-		Placa:            strings.ToUpper(strings.TrimSpace(req.Placa)),
+		Placa:            placa,
 		Estado:           EstadoPendiente,
 		KioskoID:         uint(kioskoID),
 	}
@@ -157,7 +176,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 			return
 		}
 
-		historial, err := asyncRepo.HistorialPorCURP(visitaCopy.Curp)
+		historial, err := asyncRepo.HistorialDeVisitante(visitaCopy)
 		if err != nil {
 			return
 		}

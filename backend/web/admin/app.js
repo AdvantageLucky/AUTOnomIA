@@ -89,7 +89,6 @@
       delete_acceso: "¿Eliminar acceso?",
       delete_acceso_text: "Esta acción no se puede deshacer. El acceso dejará de estar disponible.",
       delete: "Eliminar",
-      motivo: "Motivo de visita",
       casa_destino: "Casa / Destino",
       placa: "Placa",
       no_placa: "Sin placa",
@@ -204,7 +203,6 @@
       delete_acceso: "Delete entry?",
       delete_acceso_text: "This cannot be undone. The entry will no longer be available.",
       delete: "Delete",
-      motivo: "Reason for visit",
       casa_destino: "House / Destination",
       placa: "License plate",
       no_placa: "No plate",
@@ -856,7 +854,6 @@
           <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${fmtDate(v.created_at)}</div>
           <div class="detalle-campos">
             <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp || "—")}</div></div>
-            <div><div class="campo-label">${t("motivo")}</div><div class="campo-value">${esc(v.motivo_visita || "—")}</div></div>
             <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
             <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
           </div>
@@ -922,7 +919,7 @@
       const esCurrent = String(v.id) === String(visitaActual.id);
       const acceso = state.accesosById.get(v.kiosko_id);
       const accNombre = acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`;
-      const meta = [accNombre, v.casa_destino ? esc(v.casa_destino) : null, v.motivo_visita ? esc(v.motivo_visita) : null].filter(Boolean).join(" · ");
+      const meta = [accNombre, v.casa_destino ? esc(v.casa_destino) : null].filter(Boolean).join(" · ");
       return `<div class="exp-row${esCurrent ? " exp-row--current" : ""}" style="animation-delay:${i*25}ms" data-id="${v.id}">
         <div class="exp-marker"><div class="exp-dot"></div></div>
         <div class="exp-info">
@@ -1036,7 +1033,6 @@
         <div>
           <div class="row-name">${esc(v.titular)} <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
           <div class="row-sub">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${esc(v.casa_destino || "sin destino")} · <span class="feed-elapsed">${fmtElapsed(v.created_at)}</span></div>
-          ${v.motivo_visita ? `<div class="row-sub" style="margin-top:2px;font-style:italic">"${esc(v.motivo_visita)}"</div>` : ""}
         </div>
       </div>
       <div class="sol-card-actions">
@@ -1244,7 +1240,7 @@
       <div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*30}ms" data-id="${v.id}">
         <div>
           <div class="row-name">${esc(v.titular)}</div>
-          <div class="row-sub">${esc(v.motivo_visita || v.casa_destino || "—")}</div>
+          <div class="row-sub">${esc(v.casa_destino || "—")}</div>
         </div>
         <div class="row-date">${fmtDate(v.created_at)}</div>
         <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
@@ -1580,7 +1576,9 @@
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
     document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
     document.getElementById("cfg-rostro-visitante").checked = !!cfg.foto_rostro_visitante;
-    document.getElementById("cfg-placa-visitante").checked  = esPeatonal ? false : !!cfg.foto_placa_visitante;
+    // En un acceso vehicular la placa es el identificador de la visita, no una
+    // captura opcional: el flujo la exige siempre, así que el toggle va fijo.
+    document.getElementById("cfg-placa-visitante").checked  = esPeatonal ? false : true;
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
     document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
@@ -1588,13 +1586,20 @@
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
 
-    // deshabilitar y ocultar toggles de placa en kioskos peatonales
+    // El toggle de placa para visitante no se puede tocar en ningún caso: en
+    // peatonal no aplica y en vehicular es obligatorio. El de invitado sí es
+    // configurable, pero solo en vehicular.
     const rowPlacaVis = document.getElementById("cfg-row-placa-visitante");
     const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
     if (rowPlacaVis) rowPlacaVis.style.opacity = esPeatonal ? "0.35" : "1";
     if (rowPlacaInv) rowPlacaInv.style.opacity = esPeatonal ? "0.35" : "1";
-    document.getElementById("cfg-placa-visitante").disabled = esPeatonal;
+    document.getElementById("cfg-placa-visitante").disabled = true;
     document.getElementById("cfg-placa-invitado").disabled  = esPeatonal;
+
+    // El visitante vehicular no pasa por INE: la fila de rostro es la única
+    // captura opcional que le queda.
+    const notaVehicular = document.getElementById("cfg-nota-vehicular");
+    if (notaVehicular) notaVehicular.hidden = esPeatonal;
 
     document.getElementById("cfg-error").hidden   = true;
     document.getElementById("cfg-success").hidden = true;
