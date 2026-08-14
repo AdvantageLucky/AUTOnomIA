@@ -12,7 +12,15 @@ import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart'
 class ResumenSolicitudView extends StatefulWidget {
   final UserRegistrationModel registrationData;
 
-  const ResumenSolicitudView({super.key, required this.registrationData});
+  /// El indicador de pasos se parametriza porque el flujo vehicular tiene más
+  /// pasos que el peatonal y el resumen siempre es el último.
+  final int totalSteps;
+
+  const ResumenSolicitudView({
+    super.key,
+    required this.registrationData,
+    this.totalSteps = 4,
+  });
 
   @override
   State<ResumenSolicitudView> createState() => _ResumenSolicitudViewState();
@@ -51,9 +59,9 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
     final data = widget.registrationData;
 
-    if (data.curp == null ||
-        data.curp!.length != 18 ||
-        data.pathFotoIne == null) {
+    // El invitado se identifica con el token del QR. Sin invitación hace falta
+    // un identificador: INE en el flujo peatonal, placa en el vehicular.
+    if (!data.esInvitado && !data.tieneIdentificador) {
       setState(() {
         _isSubmitting = false;
         _submitError = 'Faltan datos del registro. Regresa e intenta de nuevo.';
@@ -62,13 +70,42 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     }
 
     try {
+      // El invitado consume su token: el backend crea la visita ya APROBADA con
+      // las capturas que exija la config, así que no hay nada que esperar.
+      if (data.esInvitado) {
+        final respuesta = await _kioskoServicio.usarInvitacion(
+          data.tokenInvitacion!,
+          placa: data.placa ?? '',
+          curp: data.curp,
+          pathFotoIne: data.pathFotoIne,
+          pathFotoRostro: data.pathFotoRostro,
+          pathFotoPlaca: data.pathFotoPlaca,
+        );
+
+        if (!mounted) return;
+
+        setState(() {
+          _visitaId = respuesta['visita_id'] as int?;
+          _estado = respuesta['estado'] as String? ?? 'APROBADO';
+          _horaSolicitud = DateTime.now();
+          _isSubmitting = false;
+        });
+
+        _regresoTimer?.cancel();
+        _regresoTimer = Timer(const Duration(minutes: 1), _regresarABienvenida);
+        return;
+      }
+
       final respuesta = await _kioskoServicio.registrarVisitante(
-        titular: data.nombreCompleto ?? 'Visitante',
-        curp: data.curp!,
-        motivoVisita: data.motivoVisita ?? 'No especificado',
+        // Sin nombre el backend usa la placa como titular, para que la visita
+        // siga siendo buscable en la bitácora.
+        titular: data.nombreCompleto ?? '',
+        curp: data.curp ?? '',
         casaDestino: data.casaDestino ?? 'No especificado',
-        pathFotoIne: data.pathFotoIne!,
+        placa: data.placa ?? '',
+        pathFotoIne: data.pathFotoIne,
         pathFotoRostro: data.pathFotoRostro,
+        pathFotoPlaca: data.pathFotoPlaca,
       );
 
       if (!mounted) return;
@@ -184,7 +221,10 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             padding: const EdgeInsets.only(left: 42, right: 42, top: 40, bottom: 40),
             child: Column(
               children: [
-                const StepIndicator(currentStep: 4, totalSteps: 5),
+                StepIndicator(
+                  currentStep: widget.totalSteps - 1,
+                  totalSteps: widget.totalSteps,
+                ),
                 const SizedBox(height: 42),
                 if (_submitError != null)
                   _buildErrorState()
@@ -329,15 +369,18 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           ),
           const SizedBox(height: 20),
           Text(
-            data.nombreCompleto ?? 'Visitante',
+            // Sin INE no hay nombre: se muestra la placa, que es como el
+            // vigilante va a identificar esta visita.
+            data.nombreCompleto ?? data.placa ?? 'Visitante',
             style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           _buildDato(Icons.access_time_rounded, 'Hora de solicitud',
               TimeOfDay.fromDateTime(_horaSolicitud).format(context)),
-          _buildDato(Icons.flag_outlined, 'Motivo', data.motivoVisita ?? '—'),
           _buildDato(Icons.home_outlined, 'Casa destino', data.casaDestino ?? '—'),
+          if (data.placa != null && data.placa!.isNotEmpty)
+            _buildDato(Icons.directions_car_outlined, 'Placa', data.placa!),
         ],
       ),
     );

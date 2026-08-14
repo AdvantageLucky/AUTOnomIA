@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
+import 'package:kigo_kiosco/core/routing/registro_router.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
-import 'package:kigo_kiosco/features/registro/views/touch_register_view.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/visitor_type_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_scanner_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/qr_scanner_view.dart';
@@ -130,11 +132,13 @@ class _VisitorTypeViewState extends State<VisitorTypeView> {
         setState(() => _presionadoId = null);
         widget.viewModel.selectOption(id);
         final navigator = Navigator.of(context);
+        final config = context.read<KioskoConfigNotifier>().config;
         Future.delayed(const Duration(milliseconds: 160), () {
           if (id == 'tengo_invitacion') {
             navigator.push(MaterialPageRoute(builder: (_) => QrScannerView(viewModel: QrScannerViewModel())));
           } else {
-            navigator.push(MaterialPageRoute(builder: (_) => const TouchRegisterView()));
+            // El tipo de kiosko decide si el registro pide placa (ver RegistroRouter).
+            navigator.push(MaterialPageRoute(builder: (_) => RegistroRouter.paraVisitante(config)));
           }
         });
       },

@@ -45,9 +45,9 @@ class TouchRegisterViewModel extends ChangeNotifier {
 
   bool get isLastStep => currentStep == steps.length - 1;
 
-  // El StepIndicator visual muestra los 5 pasos principales:
-  // 0) INE  1) Rostro  2) Motivo  3) Casa  4) Resumen
-  static const int indicatorTotalSteps = 5;
+  // El StepIndicator visual muestra los 4 pasos principales:
+  // 0) INE  1) Rostro  2) Casa  3) Resumen
+  static const int indicatorTotalSteps = 4;
   int get indicatorStep => currentStep;
 
   void nextStep() {

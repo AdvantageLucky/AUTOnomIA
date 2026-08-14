@@ -215,37 +215,114 @@ class KioskoServicio {
 
   // ── Visitas ─────────────────────────────────────────────────────────────────
 
+  /// Registra una visita sin invitación (TipoVisitante = VISITANTE).
+  ///
+  /// La INE siempre es obligatoria para este tipo (ADR-0016); la foto de rostro
+  /// y la placa solo se exigen si la config del kiosko las tiene encendidas. Las
+  /// visitas con invitación no pasan por aquí sino por [usarInvitacion], que
+  /// además consume el token y las deja aprobadas.
   Future<Map<String, dynamic>> registrarVisitante({
     required String titular,
     required String curp,
-    required String motivoVisita,
     required String casaDestino,
     String placa = '',
-    required String pathFotoIne,
+    String? pathFotoIne,
     String? pathFotoRostro,
+    String? pathFotoPlaca,
   }) async {
     await _ensureLogin();
     return _enviarRegistro(
       titular: titular,
       curp: curp,
-      motivoVisita: motivoVisita,
       casaDestino: casaDestino,
       placa: placa,
+      tipoVisitante: 'VISITANTE',
       pathFotoIne: pathFotoIne,
       pathFotoRostro: pathFotoRostro,
+      pathFotoPlaca: pathFotoPlaca,
       reintento: false,
     );
   }
 
-  Future<Map<String, dynamic>> usarInvitacion(String token) async {
+  /// Valida un token de invitación sin consumirlo. El kiosko lo usa al escanear
+  /// el QR para saber a nombre de quién y a qué casa va la visita antes de pedir
+  /// las capturas que exija su configuración.
+  Future<Map<String, dynamic>> validarInvitacion(String token) async {
     await _ensureLogin();
-    final response = await http.post(
-      Uri.parse('$_baseUrl/kioskos/$_kioskoId/invitaciones/$token/usar'),
+    final response = await http.get(
+      Uri.parse('$_baseUrl/kioskos/$_kioskoId/invitaciones/validar?token=$token'),
       headers: {'Authorization': 'Bearer $_sessionToken'},
     ).timeout(const Duration(seconds: 10));
-    if (response.statusCode == 200) return jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode == 404) throw Exception('Invitación no válida, expirada o agotada');
-    throw Exception('Error al procesar invitación (${response.statusCode})');
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Invitación no válida, expirada o agotada');
+    }
+    throw Exception('Error al validar invitación (${response.statusCode})');
+  }
+
+  /// Consume la invitación y registra la visita como APROBADA.
+  ///
+  /// Las capturas van en el mismo request: el backend valida contra la config
+  /// del kiosko y crea una sola visita. Sin capturas se manda un POST vacío,
+  /// que es el caso del kiosko peatonal sin toggles de invitado.
+  Future<Map<String, dynamic>> usarInvitacion(
+    String token, {
+    String placa = '',
+    String? curp,
+    String? pathFotoIne,
+    String? pathFotoRostro,
+    String? pathFotoPlaca,
+  }) async {
+    await _ensureLogin();
+    final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/invitaciones/$token/usar');
+
+    final sinCapturas = placa.isEmpty &&
+        curp == null &&
+        pathFotoIne == null &&
+        pathFotoRostro == null &&
+        pathFotoPlaca == null;
+
+    final http.Response response;
+    if (sinCapturas) {
+      response = await http.post(
+        uri,
+        headers: {'Authorization': 'Bearer $_sessionToken'},
+      ).timeout(const Duration(seconds: 10));
+    } else {
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $_sessionToken'
+        ..fields['placa'] = placa
+        ..fields['curp'] = curp ?? '';
+
+      for (final foto in [
+        ('foto_documento', pathFotoIne),
+        ('foto_rostro', pathFotoRostro),
+        ('foto_placa', pathFotoPlaca),
+      ]) {
+        if (foto.$2 == null) continue;
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            foto.$1, foto.$2!,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+      }
+
+      final streamed = await request.send().timeout(const Duration(seconds: 20));
+      response = await http.Response.fromStream(streamed);
+    }
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Invitación no válida, expirada o agotada');
+    }
+    final body = jsonDecode(response.body);
+    throw Exception(body['error'] ?? 'Error al procesar invitación (${response.statusCode})');
   }
 
   Future<Map<String, dynamic>> validarPinResidente(String pin) async {
@@ -318,35 +395,49 @@ class KioskoServicio {
   Future<Map<String, dynamic>> _enviarRegistro({
     required String titular,
     required String curp,
-    required String motivoVisita,
     required String casaDestino,
     required String placa,
-    required String pathFotoIne,
+    required String tipoVisitante,
+    String? pathFotoIne,
     String? pathFotoRostro,
+    String? pathFotoPlaca,
     required bool reintento,
   }) async {
     final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/visitas/');
+    // Sin INE capturada, lo que respalda la visita es la placa: en un acceso
+    // vehicular es el único identificador que se toma (ADR-0024).
+    final tipoDocumento = pathFotoIne != null ? 'INE' : 'PLACA';
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $_sessionToken'
       ..fields['titular'] = titular
-      ..fields['tipo_visitante'] = 'VISITANTE'
-      ..fields['tipo_documento'] = 'INE'
+      ..fields['tipo_visitante'] = tipoVisitante
+      ..fields['tipo_documento'] = tipoDocumento
       ..fields['curp'] = curp
-      ..fields['motivo_visita'] = motivoVisita
       ..fields['casa_destino'] = casaDestino
       ..fields['placa'] = placa;
 
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'foto_documento', pathFotoIne,
-        contentType: MediaType('image', 'jpeg'),
-      ),
-    );
+    if (pathFotoIne != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'foto_documento', pathFotoIne,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
+    }
 
     if (pathFotoRostro != null) {
       request.files.add(
         await http.MultipartFile.fromPath(
           'foto_rostro', pathFotoRostro,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
+    }
+
+    if (pathFotoPlaca != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'foto_placa', pathFotoPlaca,
           contentType: MediaType('image', 'jpeg'),
         ),
       );
@@ -364,9 +455,11 @@ class KioskoServicio {
       final relogueado = await _reLogin();
       if (relogueado) {
         return _enviarRegistro(
-          titular: titular, curp: curp, motivoVisita: motivoVisita,
+          titular: titular, curp: curp,
           casaDestino: casaDestino, placa: placa,
+          tipoVisitante: tipoVisitante,
           pathFotoIne: pathFotoIne, pathFotoRostro: pathFotoRostro,
+          pathFotoPlaca: pathFotoPlaca,
           reintento: true,
         );
       }
