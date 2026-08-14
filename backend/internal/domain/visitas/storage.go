@@ -21,7 +21,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var errFormatoFotoInvalido = errors.New("formato de foto no soportado (usa jpg o png)")
+var ErrFormatoFotoInvalido = errors.New("formato de foto no soportado (usa jpg o png)")
 
 var fotoContentTypesPermitidos = map[string]bool{
 	"image/jpeg": true,
@@ -34,11 +34,11 @@ var fotoExtensionesPermitidas = map[string]bool{
 	".png":  true,
 }
 
-func guardarFotoVisitante(c *gin.Context, foto *multipart.FileHeader, dir string) (string, error) {
+func GuardarFotoVisitante(c *gin.Context, foto *multipart.FileHeader, dir string) (string, error) {
 	ext := strings.ToLower(filepath.Ext(foto.Filename))
 	if !fotoExtensionesPermitidas[ext] ||
 		!fotoContentTypesPermitidos[foto.Header.Get("Content-Type")] {
-		return "", errFormatoFotoInvalido
+		return "", ErrFormatoFotoInvalido
 	}
 
 	b := make([]byte, 16)

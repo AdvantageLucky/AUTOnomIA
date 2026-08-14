@@ -32,7 +32,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerVisitaRoutes(api, db, cfg, hub)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
-	registerInvitacionesRoutes(api, db, cfg.JWTSecret)
+	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
 	// <-- Nueva Linea de issue 21
 	registerTenantRoutes(api, db)
 
@@ -184,9 +184,9 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 	}
 }
 
-func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
+func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, uploadsDir string) {
 	invRepo := invitaciones.NewRepository(db)
-	invHandler := invitaciones.NewHandler(invRepo, db)
+	invHandler := invitaciones.NewHandler(invRepo, db, uploadsDir)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// app residente: crea, lista y revoca sus invitaciones

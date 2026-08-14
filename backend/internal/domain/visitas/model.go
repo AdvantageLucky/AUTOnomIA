@@ -21,6 +21,9 @@ const (
 	DocumentoQR        TipoDocumento = "QR"
 	DocumentoPIN       TipoDocumento = "PIN"
 	DocumentoRostro    TipoDocumento = "ROSTRO"
+	// DocumentoPlaca: en un acceso vehicular la matricula es lo que identifica a
+	// la visita, sin documento de identidad de por medio (ver ADR-0024)
+	DocumentoPlaca TipoDocumento = "PLACA"
 
 	// EstadoVisita
 	EstadoPendiente EstadoVisita = "PENDIENTE"
@@ -39,7 +42,6 @@ type Visita struct {
 	FotoDocumentoURL string        `gorm:"not null"`
 	FotoRostroURL    string        `gorm:"not null"`
 	FotoPlacaURL     string
-	MotivoVisita     string `gorm:"not null"`
 	CasaDestino      string `gorm:"not null"`
 	Placa            string
 	Estado           EstadoVisita `gorm:"not null;default:'PENDIENTE'"`

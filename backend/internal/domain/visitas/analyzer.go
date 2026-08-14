@@ -37,7 +37,9 @@ func AnalizarVisita(historial []Visita, nueva Visita, umbral int) ScoreContexto 
 	ultima := historial[0].CreatedAt
 	sc.UltimaVisita = &ultima
 
-	if nueva.Placa != "" {
+	// Si la visita no trae CURP, el historial vino agrupado por placa y todas las
+	// matrículas son la misma por construcción: comparar no diría nada (ADR-0024).
+	if nueva.Placa != "" && nueva.Curp != "" {
 		sc.AnomaliaMatricula = placaDiferente(historial, nueva.Placa)
 	}
 
@@ -56,8 +58,11 @@ func AnalizarVisita(historial []Visita, nueva Visita, umbral int) ScoreContexto 
 	return sc
 }
 
+// validarOCR marca como sospechosa una CURP que se capturó pero salió mal formada.
+// No capturarla no es sospechoso: un acceso vehicular puede no pedir INE, y tratar
+// la ausencia como anomalía dejaría a esos kioskos sin autopass para siempre.
 func validarOCR(curp string) bool {
-	return !reCURP.MatchString(curp)
+	return curp != "" && !reCURP.MatchString(curp)
 }
 
 func placaDiferente(historial []Visita, placaNueva string) bool {

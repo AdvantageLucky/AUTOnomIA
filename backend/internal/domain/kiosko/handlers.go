@@ -216,6 +216,8 @@ func (h *Handler) PatchKiosko(c *gin.Context) {
 		return
 	}
 
+	tipoAnterior := a.Tipo
+
 	a.Nombre = req.Nombre
 	a.Tipo = req.Tipo
 	a.Ubicacion = req.Ubicacion
@@ -226,6 +228,30 @@ func (h *Handler) PatchKiosko(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, toKioskoResponse(a))
+
+	if tipoAnterior == a.Tipo {
+		return
+	}
+
+	// El tipo cambio: la app del kiosko lo recibe por el stream de config y cambia
+	// de flujo sin reiniciar. Al pasar a peatonal se apagan los toggles de placa,
+	// que PatchConfig ya prohibe para ese tipo y el flujo peatonal no puede cumplir.
+	cfg, err := repoCtx.FindConfigByKioskoID(uint(id))
+	if err != nil {
+		return
+	}
+
+	if a.Tipo == KioskoPeatonal && (cfg.FotoPlacaVisitante || cfg.FotoPlacaInvitado) {
+		cfg.FotoPlacaVisitante = false
+		cfg.FotoPlacaInvitado = false
+		if err := repoCtx.UpdateConfig(cfg); err != nil {
+			return
+		}
+	}
+
+	if data, err := json.Marshal(toKioskoConfigResponse(cfg, a.Tipo)); err == nil {
+		h.cfgHubs.get(cfg.KioskoID).Broadcast(data)
+	}
 }
 
 // DeleteKiosko elimina un kiosko
@@ -286,7 +312,8 @@ func (h *Handler) GetConfig(c *gin.Context) {
 
 	repoCtx := h.repo.WithContext(c.Request.Context())
 
-	if _, err = repoCtx.FindByIDAndAdminID(uint(id), adminID); err != nil {
+	kiosko, err := repoCtx.FindByIDAndAdminID(uint(id), adminID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "kiosko no encontrado"})
 		return
 	}
@@ -297,7 +324,7 @@ func (h *Handler) GetConfig(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg))
+	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg, kiosko.Tipo))
 }
 
 // GetConfigDesdeKiosko devuelve la config del kiosko autenticado por su propia sesión
@@ -312,7 +339,14 @@ func (h *Handler) GetConfigDesdeKiosko(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg))
+	// el tipo decide si la app monta el flujo peatonal o el vehicular
+	kiosko, err := repoCtx.FindByID(kioskoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg, kiosko.Tipo))
 }
 
 // PatchConfig actualiza los campos indicados de la config del kiosko (PATCH parcial)
@@ -417,7 +451,7 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 		return
 	}
 
-	resp := toKioskoConfigResponse(cfg)
+	resp := toKioskoConfigResponse(cfg, kiosko.Tipo)
 	c.JSON(http.StatusOK, resp)
 
 	if data, err := json.Marshal(resp); err == nil {

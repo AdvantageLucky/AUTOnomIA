@@ -22,12 +22,14 @@ import (
 // Caso visitante con invitacion
 // Cuando el residente genera la invitacion esta ya tiene titular, tipo de docu
 // por lo que se puede garantizar busquedas
+// Titular y TipoDocumento no llevan `required` en el binding porque un acceso
+// vehicular sin INE no tiene ni nombre ni documento que ofrecer; su obligatoriedad
+// se decide en ValidarCamposCondicionales segun el tipo de kiosko (ADR-0016 §4).
 type VisitaRequest struct {
-	Titular       string                `form:"titular"        binding:"required"`
+	Titular       string                `form:"titular"`
 	TipoVisitante TipoVisitante         `form:"tipo_visitante" binding:"required,oneof=VISITANTE INVITADO"`
-	TipoDocumento TipoDocumento         `form:"tipo_documento" binding:"required,oneof=INE PASAPORTE LICENCIA QR"`
+	TipoDocumento TipoDocumento         `form:"tipo_documento" binding:"omitempty,oneof=INE PASAPORTE LICENCIA QR PLACA"`
 	Curp          string                `form:"curp"`
-	MotivoVisita  string                `form:"motivo_visita"  binding:"required"`
 	CasaDestino   string                `form:"casa_destino"   binding:"required"`
 	Placa         string                `form:"placa"`
 	FotoDocumento *multipart.FileHeader `form:"foto_documento"` // Content-Type image
@@ -45,7 +47,6 @@ type VisitaResponse struct {
 	FotoDocumentoURL string        `json:"foto_documento_url"`
 	FotoRostroURL    string        `json:"foto_rostro_url"`
 	FotoPlacaURL     string        `json:"foto_placa_url,omitempty"`
-	MotivoVisita     string        `json:"motivo_visita"`
 	CasaDestino      string        `json:"casa_destino"`
 	Placa            string        `json:"placa"`
 	Estado           EstadoVisita  `json:"estado"`
@@ -61,7 +62,6 @@ type VisitaListItemResponse struct {
 	TipoDocumento TipoDocumento `json:"tipo_documento"`
 	TipoVisitante TipoVisitante `json:"tipo_visitante"`
 	CasaDestino   string        `json:"casa_destino"`
-	MotivoVisita  string        `json:"motivo_visita"`
 	Estado        EstadoVisita  `json:"estado"`
 	Intervenida   bool          `json:"intervenida"`
 	KioskoID      uint          `json:"kiosko_id"`
@@ -94,7 +94,6 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		FotoDocumentoURL: v.FotoDocumentoURL,
 		FotoRostroURL:    v.FotoRostroURL,
 		FotoPlacaURL:     v.FotoPlacaURL,
-		MotivoVisita:     v.MotivoVisita,
 		CasaDestino:      v.CasaDestino,
 		Placa:            v.Placa,
 		Estado:           v.Estado,
@@ -113,7 +112,6 @@ func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 		TipoVisitante: v.TipoVisitante,
 		TipoDocumento: v.TipoDocumento,
 		CasaDestino:   v.CasaDestino,
-		MotivoVisita:  v.MotivoVisita,
 		Estado:        v.Estado,
 		Intervenida:   v.Intervenida,
 		KioskoID:      v.KioskoID,

@@ -1,0 +1,2 @@
+ALTER TABLE visitas ADD COLUMN motivo_visita TEXT NOT NULL DEFAULT '';
+ALTER TABLE visitas ALTER COLUMN motivo_visita DROP DEFAULT;

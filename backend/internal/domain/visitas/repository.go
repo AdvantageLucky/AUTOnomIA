@@ -174,6 +174,31 @@ func (r *Repository) HistorialPorCURP(curp string) ([]Visita, error) {
 	return visitas, err
 }
 
+// HistorialPorPlaca devuelve visitas previas de una placa, de más reciente a más antigua.
+// Es el historial de los accesos vehiculares que no capturan INE: ahí la matrícula
+// es lo único que liga una visita con las anteriores (ADR-0024).
+func (r *Repository) HistorialPorPlaca(placa string) ([]Visita, error) {
+	var visitas []Visita
+	err := r.db.Scopes(ByTenant).Where("placa = ?", placa).Order("created_at DESC").Find(&visitas).Error
+	return visitas, err
+}
+
+// HistorialDeVisitante agrupa por CURP cuando la hay y, si no, por placa.
+//
+// Nunca consulta con un identificador vacío: un `WHERE curp = ''` traeria todas
+// las visitas sin INE del tenant y el análisis heredaría el historial de
+// desconocidos — rechazos ajenos, visitas ajenas y, con autopass encendido,
+// aprobaciones que nadie se ganó.
+func (r *Repository) HistorialDeVisitante(v Visita) ([]Visita, error) {
+	if v.Curp != "" {
+		return r.HistorialPorCURP(v.Curp)
+	}
+	if v.Placa != "" {
+		return r.HistorialPorPlaca(v.Placa)
+	}
+	return nil, nil
+}
+
 // ActualizarEstadoConScore actualiza estado e intervenida de una visita
 func (r *Repository) ActualizarEstadoConScore(
 	id uint,
@@ -194,6 +219,18 @@ func (r *Repository) GetKioskoConfig(kioskoID uint) (*kiosko.KioskoConfig, error
 		return &kiosko.KioskoConfig{AutoPassHabilitado: true, UmbralConfianzaVisitas: 5}, nil
 	}
 	return &cfg, err
+}
+
+// GetKioskoTipo devuelve el tipo de acceso del kiosko (PEATONAL o VEHICULAR).
+// La validación condicional lo necesita porque un acceso vehicular no exige INE
+// al visitante sin invitación (ADR-0024).
+func (r *Repository) GetKioskoTipo(kioskoID uint) (kiosko.TipoKiosko, error) {
+	var k kiosko.Kiosko
+	err := r.db.Scopes(ByTenant).Where("id = ?", kioskoID).First(&k).Error
+	if err != nil {
+		return kiosko.KioskoPeatonal, err
+	}
+	return k.Tipo, nil
 }
 
 // ListarEnPeriodo devuelve visitas creadas entre inicio y fin
