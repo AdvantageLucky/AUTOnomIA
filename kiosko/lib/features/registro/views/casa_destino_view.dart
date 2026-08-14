@@ -4,7 +4,11 @@ import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
 
 class CasaDestinoView extends StatefulWidget {
-  const CasaDestinoView({super.key});
+  /// El indicador de pasos se parametriza porque el flujo vehicular tiene más
+  /// capturas antes de llegar aquí. La casa destino siempre es el penúltimo.
+  final int totalSteps;
+
+  const CasaDestinoView({super.key, this.totalSteps = 4});
 
   @override
   State<CasaDestinoView> createState() => _CasaDestinoViewState();
@@ -63,7 +67,10 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const StepIndicator(currentStep: 3, totalSteps: 5),
+              StepIndicator(
+                currentStep: widget.totalSteps - 2,
+                totalSteps: widget.totalSteps,
+              ),
               const SizedBox(height: 42),
               const Text(
                 '¿A qué casa te diriges?',
@@ -136,7 +143,6 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
 
   Widget _buildCasaCard(Map<String, dynamic> destino) {
     final nombre = destino['nombre'] as String? ?? 'Sin nombre';
-    final titular = destino['titular'] as String? ?? '';
 
     return GestureDetector(
       onTap: () => Navigator.pop(context, nombre),
@@ -162,21 +168,9 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
             ),
             const SizedBox(width: 20),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    nombre,
-                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
-                  ),
-                  if (titular.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      titular,
-                      style: const TextStyle(color: Color(0xFF8F8989), fontSize: 15, fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ],
+              child: Text(
+                nombre,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
               ),
             ),
             const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F8989), size: 28),

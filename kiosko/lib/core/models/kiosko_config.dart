@@ -1,12 +1,18 @@
 /// Modelo local que refleja el KioskoConfigResponse del backend.
-/// Campos: foto_placa_visitante, foto_rostro_visitante, foto_placa_invitado,
+/// Campos: tipo, foto_placa_visitante, foto_rostro_visitante, foto_placa_invitado,
 /// foto_rostro_invitado, foto_ine_invitado (= ine_obligatorio_invitado),
 /// tiempo_espera_min, horario_inicio, horario_fin, mensaje_bienvenida,
 /// auto_pass_habilitado, umbral_confianza_visitas.
 // Paleta de color del kiosko configurada desde el dashboard admin.
 enum KioskoColorTema { oscuro, claro }
 
+/// Tipo de acceso que atiende esta terminal. Decide qué flujo monta la app:
+/// el peatonal (INE + rostro) o el vehicular (INE + rostro + placa).
+/// Viene del backend en la misma config que el resto de los ajustes.
+enum TipoKiosko { peatonal, vehicular }
+
 class KioskoConfig {
+  final TipoKiosko tipo;
   final bool fotoPlacaVisitante;
   final bool fotoRostroVisitante;
   final bool fotoPlacaInvitado;
@@ -22,6 +28,7 @@ class KioskoConfig {
   final String idioma; // 'es' | 'en'
 
   const KioskoConfig({
+    this.tipo = TipoKiosko.peatonal,
     required this.fotoPlacaVisitante,
     required this.fotoRostroVisitante,
     required this.fotoPlacaInvitado,
@@ -40,6 +47,11 @@ class KioskoConfig {
   factory KioskoConfig.fromJson(Map<String, dynamic> json) {
     final colorStr = json['color_kiosko'] as String? ?? 'oscuro';
     return KioskoConfig(
+      // Ante un backend viejo que no manda 'tipo', peatonal es el default seguro:
+      // es el flujo que no exige capturas que la terminal quizá no pueda tomar.
+      tipo: (json['tipo'] as String?) == 'VEHICULAR'
+          ? TipoKiosko.vehicular
+          : TipoKiosko.peatonal,
       fotoPlacaVisitante: json['foto_placa_visitante'] as bool? ?? false,
       fotoRostroVisitante: json['foto_rostro_visitante'] as bool? ?? true,
       fotoPlacaInvitado: json['foto_placa_invitado'] as bool? ?? false,
@@ -57,6 +69,7 @@ class KioskoConfig {
   }
 
   static KioskoConfig get defaults => const KioskoConfig(
+        tipo: TipoKiosko.peatonal,
         fotoPlacaVisitante: false,
         fotoRostroVisitante: true,
         fotoPlacaInvitado: false,

@@ -8,11 +8,14 @@ class UserRegistrationModel {
   // Rutas de los archivos temporales de las fotos guardadas en el teléfono
   String? pathFotoIne;
   String? pathFotoRostro;
+  String? pathFotoPlaca;
 
   // Datos de la visita capturados en la pantalla de confirmación
-  String? motivoVisita;
   String? casaDestino;
   String? placa;
+
+  // Token de la invitación escaneada. Null en el flujo sin invitación.
+  String? tokenInvitacion;
 
   // Constructor de la clase
   // NOTA: todos los campos son opcionales al inicio porque el usuario los va llenando paso a paso
@@ -21,9 +24,10 @@ class UserRegistrationModel {
     this.curp,
     this.pathFotoIne,
     this.pathFotoRostro,
-    this.motivoVisita,
+    this.pathFotoPlaca,
     this.casaDestino,
     this.placa,
+    this.tokenInvitacion,
   });
 
   // Método por si en el futuro se necesita limpiar los datos y reiniciar el registro
@@ -32,11 +36,22 @@ class UserRegistrationModel {
     curp = null;
     pathFotoIne = null;
     pathFotoRostro = null;
-    motivoVisita = null;
+    pathFotoPlaca = null;
     casaDestino = null;
     placa = null;
+    tokenInvitacion = null;
   }
 
+  // true cuando el registro viene de una invitación con QR ya validada
+  bool get esInvitado => tokenInvitacion != null;
+
   // Método para verificar si el paso del INE ya tiene los datos mínimos
-  bool get tieneDatosIne => curp != null;
+  bool get tieneDatosIne => curp != null && curp!.length == 18 && pathFotoIne != null;
+
+  /// true si la visita se puede identificar después en la bitácora.
+  ///
+  /// En el flujo peatonal eso significa INE; en el vehicular, donde no se pide
+  /// documento, la placa es el identificador (ADR-0024).
+  bool get tieneIdentificador =>
+      tieneDatosIne || (placa != null && placa!.isNotEmpty);
 }

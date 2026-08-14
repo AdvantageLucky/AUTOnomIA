@@ -7,7 +7,6 @@ import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animat
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:kigo_kiosco/features/registro/viewmodels/touch_register_viewmodel.dart';
-import 'package:kigo_kiosco/features/registro/views/motivo_visita_view.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -161,20 +160,9 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         if (exito) {
           _speakText(registrationCompleteMessage);
           esRostroValido = true;
-          // 3. Rostro válido -> pedimos motivo y casa, y mostramos el resumen final.
-          // Si el usuario da "atrás" en cualquiera de las dos, cancelamos toda la
-          // solicitud y regresamos al inicio del wizard (no hay a dónde "reanudar").
-          if (!mounted) return;
-          final String? motivo = await Navigator.push<String>(
-            context,
-            MaterialPageRoute(builder: (_) => const MotivoVisitaView()),
-          );
-          if (motivo == null) {
-            if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
-            return;
-          }
-          viewModel.registrationData.motivoVisita = motivo;
-
+          // 3. Rostro válido -> pedimos casa y mostramos el resumen final.
+          // Si el usuario da "atrás", cancelamos toda la solicitud y regresamos
+          // al inicio del wizard (no hay a dónde "reanudar").
           if (!mounted) return;
           final String? casa = await Navigator.push<String>(
             context,

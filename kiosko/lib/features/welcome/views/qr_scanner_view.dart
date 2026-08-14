@@ -1,6 +1,10 @@
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
+import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
+import 'package:kigo_kiosco/core/routing/registro_router.dart';
+import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/consent_dialog.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_scanner_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_result_viewmodel.dart';
@@ -67,14 +71,51 @@ class _QrScannerViewState extends State<QrScannerView> {
     if (widget.viewModel.isScanned) return;
     widget.viewModel.onQrDetected(value);
     _controller?.stop();
+
+    final config = context.read<KioskoConfigNotifier>().config;
     final navigator = Navigator.of(context);
-    Future.delayed(const Duration(milliseconds: 1200), () {
+
+    // Si la config no pide capturas al invitado, el QR basta: se consume la
+    // invitación de inmediato como siempre.
+    if (!RegistroRouter.invitadoRequiereCapturas(config)) {
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        navigator.pushReplacement(MaterialPageRoute(
+          builder: (_) => QrResultView(viewModel: QrResultViewModel(token: value)),
+        ));
+      });
+      return;
+    }
+
+    _continuarConCapturas(value);
+  }
+
+  /// El invitado tiene que dejar evidencia (placa, rostro o INE) antes de que la
+  /// invitación se consuma. Se valida el token primero para no mandarlo a tomar
+  /// fotos si el QR ya venció, y para saber a nombre de quién va la visita.
+  Future<void> _continuarConCapturas(String token) async {
+    final config = context.read<KioskoConfigNotifier>().config;
+    final servicio = context.read<KioskoServicio>();
+    final navigator = Navigator.of(context);
+
+    try {
+      final invitacion = await servicio.validarInvitacion(token);
+      if (!mounted) return;
+
       navigator.pushReplacement(MaterialPageRoute(
-        builder: (_) => QrResultView(
-          viewModel: QrResultViewModel(token: value),
+        builder: (_) => RegistroRouter.paraInvitado(
+          config,
+          token: token,
+          titular: invitacion['titular'] as String?,
+          casaDestino: invitacion['casa_destino'] as String?,
         ),
       ));
-    });
+    } catch (_) {
+      if (!mounted) return;
+      // QrResultView ya sabe mostrar el error de una invitación inválida.
+      navigator.pushReplacement(MaterialPageRoute(
+        builder: (_) => QrResultView(viewModel: QrResultViewModel(token: token)),
+      ));
+    }
   }
 
   @override
