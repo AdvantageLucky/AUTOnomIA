@@ -60,14 +60,17 @@ func main() {
 		for gi := range resultado.Grupos {
 			g := &resultado.Grupos[gi]
 
-			if err := txPersonaRepo.Create(&g.Persona); err != nil {
+			if existente, err := txPersonaRepo.FindByTelefono(g.Persona.Telefono); err == nil {
+				g.Persona = *existente
+			} else if err := txPersonaRepo.Create(&g.Persona); err != nil {
 				return fmt.Errorf("creando persona %q: %w", g.Persona.Telefono, err)
 			}
 
 			for mi := range g.Membresias {
-				// PersonaID solo se conoce tras crear la Persona — GORM lo
-				// asigna a g.Persona.ID dentro de Create() de arriba.
 				g.Membresias[mi].PersonaID = g.Persona.ID
+				if _, err := txMembresiaRepo.FindByPersonaAndTenant(g.Persona.ID, g.Membresias[mi].TenantID); err == nil {
+					continue // ya migrada en una corrida anterior
+				}
 				if err := txMembresiaRepo.Create(&g.Membresias[mi]); err != nil {
 					return fmt.Errorf("creando membresia (persona %q, tenant %d, casa %q): %w",
 						g.Persona.Telefono, g.Membresias[mi].TenantID, g.Membresias[mi].CasaDestino, err)

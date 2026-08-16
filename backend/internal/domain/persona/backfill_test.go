@@ -78,3 +78,56 @@ func TestConstruirBackfill_TelefonoVacio_SeOmiteYNoCreaPersona(t *testing.T) {
 		t.Errorf("esperaba el residente #3 en omitidos, got %+v", resultado.Omitidos)
 	}
 }
+
+func TestConstruirBackfill_SoloElPrimeroSinRostro_UsaElEmbeddingDelSegundo(t *testing.T) {
+	embedding := residente.FloatArray{0.1, 0.2, 0.3}
+	r1 := residente.Residente{Model: gorm.Model{ID: 1}, TenantID: 10, Telefono: "5551112222", CasaDestino: "Casa 1", Pin: "hash1", Status: residente.ResidenteStatusActivo}
+	r2 := residente.Residente{Model: gorm.Model{ID: 2}, TenantID: 20, Telefono: "5551112222", CasaDestino: "Casa 2", Pin: "hash2", Status: residente.ResidenteStatusActivo, Embedding: embedding, FotoCaraUrl: "caras/2.jpg"}
+
+	resultado := ConstruirBackfill([]residente.Residente{r1, r2})
+
+	if len(resultado.Grupos) != 1 {
+		t.Fatalf("esperaba 1 grupo, got %d", len(resultado.Grupos))
+	}
+	p := resultado.Grupos[0].Persona
+	if p.Embedding == nil {
+		t.Fatal("esperaba que el embedding del segundo residente se usara, quedó nil")
+	}
+	if p.FotoCaraUrl != "caras/2.jpg" {
+		t.Errorf("esperaba foto_cara_url del residente que aportó el embedding, got %q", p.FotoCaraUrl)
+	}
+}
+
+func TestConstruirBackfill_DosResidentesMismoTelefonoYTenant_SegundoSeOmite(t *testing.T) {
+	r1 := residente.Residente{Model: gorm.Model{ID: 1}, TenantID: 10, Telefono: "5553334444", CasaDestino: "Casa 1", Pin: "hash1", Status: residente.ResidenteStatusActivo}
+	r2 := residente.Residente{Model: gorm.Model{ID: 2}, TenantID: 10, Telefono: "5553334444", CasaDestino: "Casa 1", Pin: "hash2", Status: residente.ResidenteStatusActivo}
+
+	resultado := ConstruirBackfill([]residente.Residente{r1, r2})
+
+	if len(resultado.Grupos) != 1 {
+		t.Fatalf("esperaba 1 grupo, got %d", len(resultado.Grupos))
+	}
+	if len(resultado.Grupos[0].Membresias) != 1 {
+		t.Fatalf("esperaba 1 membresia (mismo tenant+telefono), got %d", len(resultado.Grupos[0].Membresias))
+	}
+	if len(resultado.Omitidos) != 1 || resultado.Omitidos[0].ID != 2 {
+		t.Errorf("esperaba al residente #2 en omitidos por duplicado, got %+v", resultado.Omitidos)
+	}
+}
+
+func TestConstruirBackfill_TelefonosConFormatoDistinto_SeAgrupanJuntos(t *testing.T) {
+	r1 := residente.Residente{Model: gorm.Model{ID: 1}, TenantID: 10, Telefono: "55 1234 5678", CasaDestino: "Casa 1", Pin: "hash1", Status: residente.ResidenteStatusActivo}
+	r2 := residente.Residente{Model: gorm.Model{ID: 2}, TenantID: 20, Telefono: "5512345678", CasaDestino: "Casa 2", Pin: "hash2", Status: residente.ResidenteStatusActivo}
+
+	resultado := ConstruirBackfill([]residente.Residente{r1, r2})
+
+	if len(resultado.Grupos) != 1 {
+		t.Fatalf("esperaba 1 grupo (mismo teléfono, distinto formato), got %d", len(resultado.Grupos))
+	}
+	if resultado.Grupos[0].Persona.Telefono != "5512345678" {
+		t.Errorf("esperaba teléfono normalizado a solo dígitos, got %q", resultado.Grupos[0].Persona.Telefono)
+	}
+	if len(resultado.Grupos[0].Membresias) != 2 {
+		t.Fatalf("esperaba 2 membresias (tenants distintos), got %d", len(resultado.Grupos[0].Membresias))
+	}
+}
