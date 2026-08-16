@@ -2,10 +2,18 @@ package persona
 
 import "kigo-autonomia-backend/internal/domain/residente"
 
-type ResultadoBackfill struct {
-	Personas   []Persona
+// GrupoBackfill une una Persona con todas sus Membresias — mantiene la
+// vinculación explícita para que la Tarea 6 pueda asignar el ID real de la
+// Persona (asignado por la base de datos al guardarla) a cada Membresia
+// antes de guardarlas.
+type GrupoBackfill struct {
+	Persona    Persona
 	Membresias []residente.Membresia
-	Omitidos   []residente.Residente
+}
+
+type ResultadoBackfill struct {
+	Grupos   []GrupoBackfill
+	Omitidos []residente.Residente
 }
 
 // ConstruirBackfill agrupa Residentes existentes por teléfono: cada grupo se
@@ -26,19 +34,20 @@ func ConstruirBackfill(residentes []residente.Residente) ResultadoBackfill {
 
 	for telefono, grupo := range porTelefono {
 		primero := grupo[0]
-		p := Persona{
-			Telefono:             telefono,
-			Nombre:               primero.Nombre,
-			ApellidoPaterno:      primero.ApellidoPaterno,
-			ApellidoMaterno:      primero.ApellidoMaterno,
-			Embedding:            primero.Embedding,
-			FotoCaraUrl:          primero.FotoCaraUrl,
-			TelefonoVerificadoAt: &primero.CreatedAt,
+		g := GrupoBackfill{
+			Persona: Persona{
+				Telefono:             telefono,
+				Nombre:               primero.Nombre,
+				ApellidoPaterno:      primero.ApellidoPaterno,
+				ApellidoMaterno:      primero.ApellidoMaterno,
+				Embedding:            primero.Embedding,
+				FotoCaraUrl:          primero.FotoCaraUrl,
+				TelefonoVerificadoAt: &primero.CreatedAt,
+			},
 		}
-		resultado.Personas = append(resultado.Personas, p)
 
 		for _, r := range grupo {
-			resultado.Membresias = append(resultado.Membresias, residente.Membresia{
+			g.Membresias = append(g.Membresias, residente.Membresia{
 				TenantID:        r.TenantID,
 				CasaDestino:     r.CasaDestino,
 				Pin:             r.Pin,
@@ -48,6 +57,8 @@ func ConstruirBackfill(residentes []residente.Residente) ResultadoBackfill {
 				TiempoEsperaMin: r.TiempoEsperaMin,
 			})
 		}
+
+		resultado.Grupos = append(resultado.Grupos, g)
 	}
 
 	return resultado
