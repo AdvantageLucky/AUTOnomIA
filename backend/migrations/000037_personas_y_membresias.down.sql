@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS membresias;
+DROP TABLE IF EXISTS personas;
