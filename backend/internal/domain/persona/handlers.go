@@ -4,9 +4,11 @@ import (
 	"crypto/subtle"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"kigo-autonomia-backend/internal/domain/auth"
+	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
@@ -105,7 +107,20 @@ func (h *Handler) VerificarOTP(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		p = &Persona{Telefono: req.Telefono, TelefonoVerificadoAt: &ahora}
+		nombre := strings.TrimSpace(req.Nombre)
+		apellidoPaterno := strings.TrimSpace(req.ApellidoPaterno)
+		if nombre == "" || apellidoPaterno == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "nombre y apellido_paterno son requeridos para registrarse"})
+			return
+		}
+		p = &Persona{
+			Telefono:             req.Telefono,
+			TelefonoVerificadoAt: &ahora,
+			Nombre:               nombre,
+			ApellidoPaterno:      apellidoPaterno,
+			ApellidoMaterno:      strings.TrimSpace(req.ApellidoMaterno),
+			Embedding:            residente.FloatArray(req.Embedding),
+		}
 		if err := h.repo.Create(p); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
