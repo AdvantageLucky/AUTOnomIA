@@ -47,10 +47,16 @@ class AuthViewModel extends ChangeNotifier {
     try {
       await _cargarPerfilYMembresia();
       _isAuthenticated = true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        // sesión realmente inválida o expirada
+        await logout();
+      }
+      // otro error del servidor — no se borra el JWT, se deja
+      // _isAuthenticated en false para que el usuario reintente
     } catch (_) {
-      // sesión inválida o expirada — se descarta silenciosamente, la app
-      // manda a onboarding como si nunca hubiera habido sesión.
-      await logout();
+      // error de red/timeout — no se borra el JWT, se deja
+      // _isAuthenticated en false; la próxima apertura reintenta
     }
     notifyListeners();
   }
@@ -94,6 +100,9 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } on ApiException catch (e) {
+      ApiService().clearJwt();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppConstants.prefsJwt);
       _error = e.message;
       _isLoading = false;
       notifyListeners();
@@ -151,8 +160,14 @@ class AuthViewModel extends ChangeNotifier {
   /// Recarga el estado de la Membresia — usado por la pantalla de espera
   /// para consultar si el admin ya aprobó.
   Future<void> refrescarMembresia() async {
-    await _cargarMembresia();
-    notifyListeners();
+    try {
+      await _cargarMembresia();
+      notifyListeners();
+    } on ApiException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> _cargarPerfilYMembresia() async {
