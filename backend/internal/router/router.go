@@ -283,7 +283,13 @@ func registerTenantRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMasterSecret string) {
 	personaRepo := persona.NewRepository(db)
 	otpRepo := persona.NewOtpRepository(db)
-	personaHandler := persona.NewHandler(personaRepo, otpRepo, persona.LogOtpSender{}, jwtSecret, qrMasterSecret)
+	membresiaRepo := residente.NewMembresiaRepository(db)
+	tenantRepo := tenant.NewRepository(db)
+	invitacionRepo := invitaciones.NewRepository(db)
+	personaHandler := persona.NewHandler(
+		personaRepo, otpRepo, persona.LogOtpSender{}, jwtSecret, qrMasterSecret,
+		membresiaRepo, tenantRepo, invitacionRepo,
+	)
 
 	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)
 	rg.POST("/personas/registro/verificar-otp", personaHandler.VerificarOTP)

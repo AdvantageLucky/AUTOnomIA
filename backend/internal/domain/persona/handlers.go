@@ -8,10 +8,13 @@ import (
 	"time"
 
 	"kigo-autonomia-backend/internal/domain/auth"
+	"kigo-autonomia-backend/internal/domain/invitaciones"
 	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/domain/tenant"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -21,15 +24,29 @@ type Handler struct {
 	sender         OtpSender
 	jwtSecret      string
 	qrMasterSecret string
+	membresiaRepo  *residente.MembresiaRepository
+	tenantRepo     tenant.Repository
+	invitacionRepo *invitaciones.Repository
 }
 
-func NewHandler(repo *Repository, otpRepo *OtpRepository, sender OtpSender, jwtSecret, qrMasterSecret string) *Handler {
+func NewHandler(
+	repo *Repository,
+	otpRepo *OtpRepository,
+	sender OtpSender,
+	jwtSecret, qrMasterSecret string,
+	membresiaRepo *residente.MembresiaRepository,
+	tenantRepo tenant.Repository,
+	invitacionRepo *invitaciones.Repository,
+) *Handler {
 	return &Handler{
 		repo:           repo,
 		otpRepo:        otpRepo,
 		sender:         sender,
 		jwtSecret:      jwtSecret,
 		qrMasterSecret: qrMasterSecret,
+		membresiaRepo:  membresiaRepo,
+		tenantRepo:     tenantRepo,
+		invitacionRepo: invitacionRepo,
 	}
 }
 
@@ -148,4 +165,58 @@ func (h *Handler) GetQR(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
 	firma := FirmarPersonaID(personaID, h.qrMasterSecret)
 	c.JSON(http.StatusOK, QrResponse{PersonaID: personaID, Firma: firma})
+}
+
+// UnirseCentro crea una Membresia pendiente de una Persona en un centro,
+// identificado por su código público — mismo patrón que el auto-registro
+// de Residente hoy: la Membresia nace en pendiente y el admin la aprueba.
+func (h *Handler) UnirseCentro(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	var req UnirseCentroRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	t, err := h.tenantRepo.FindByCodigo(strings.TrimSpace(req.CodigoCentro))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "centro no encontrado"})
+		return
+	}
+
+	if _, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, t.ID); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "ya tienes una membresía en este centro"})
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Pin), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error procesando pin"})
+		return
+	}
+
+	m := &residente.Membresia{
+		PersonaID:   personaID,
+		TenantID:    t.ID,
+		CasaDestino: strings.TrimSpace(req.CasaDestino),
+		Pin:         string(hash),
+		Rol:         residente.MembresiaRolTitular,
+		Status:      residente.ResidenteStatusPendiente,
+	}
+	if err := h.membresiaRepo.Create(m); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, MembresiaResponse{
+		ID:          m.ID,
+		TenantID:    m.TenantID,
+		CasaDestino: m.CasaDestino,
+		Rol:         m.Rol,
+		Status:      m.Status,
+	})
 }
