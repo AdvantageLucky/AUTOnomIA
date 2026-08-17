@@ -302,6 +302,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMaster
 		p.PATCH("", personaHandler.PatchMe)
 		p.GET("/qr", personaHandler.GetQR)
 		p.POST("/membresias", personaHandler.UnirseCentro)
+		p.GET("/membresias", personaHandler.ListarMisMembresias)
 		p.POST("/invitaciones", personaHandler.CrearInvitacion)
 		p.GET("/invitaciones", personaHandler.ListarInvitaciones)
 		p.DELETE("/invitaciones/:id", personaHandler.RevocarInvitacion)

@@ -566,6 +566,37 @@ func (h *Handler) ResponderVisita(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"estado": string(estado)})
 }
 
+// ListarMisMembresias devuelve todas las membresías (en cualquier tenant y
+// status) de la Persona autenticada — la app la usa para resolver su
+// sesión al reabrir: sin membresías → onboarding "unirse a centro"; con
+// una pendiente → pantalla de espera; con una activa → dashboard.
+func (h *Handler) ListarMisMembresias(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	list, err := h.membresiaRepo.FindByPersonaID(personaID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]MembresiaMeResponse, 0, len(list))
+	for _, m := range list {
+		nombreCentro := ""
+		if t, err := h.tenantRepo.FindByID(m.TenantID); err == nil {
+			nombreCentro = t.Nombre
+		}
+		items = append(items, MembresiaMeResponse{
+			ID:           m.ID,
+			TenantID:     m.TenantID,
+			CentroNombre: nombreCentro,
+			CasaDestino:  m.CasaDestino,
+			Rol:          m.Rol,
+			Status:       m.Status,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"membresias": items})
+}
+
 // PatchMe completa o actualiza nombre/apellidos/embedding de la Persona
 // autenticada — usado por la app cuando GetMe devuelve un perfil vacío.
 func (h *Handler) PatchMe(c *gin.Context) {
