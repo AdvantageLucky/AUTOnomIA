@@ -52,6 +52,13 @@ class ApiService {
     return _handle(res);
   }
 
+  Future<dynamic> patch(String path, Map<String, dynamic> body) async {
+    await _getJwt();
+    final uri = Uri.parse('${AppConstants.apiBaseUrl}$path');
+    final res = await http.patch(uri, headers: _headers(), body: jsonEncode(body));
+    return _handle(res);
+  }
+
   Future<void> delete(String path) async {
     await _getJwt();
     final uri = Uri.parse('${AppConstants.apiBaseUrl}$path');
