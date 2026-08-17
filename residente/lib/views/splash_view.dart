@@ -17,10 +17,12 @@ class _SplashViewState extends State<SplashView> {
     // El AuthViewModel carga la sesión en su constructor; esperamos un frame
     // para que el estado inicial esté listo antes de navegar.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Pequeña pausa para que el ChangeNotifier termine de cargarse
-      await Future.delayed(const Duration(milliseconds: 400));
-      if (!mounted) return;
       final auth = context.read<AuthViewModel>();
+      await Future.wait([
+        Future.delayed(const Duration(milliseconds: 400)),
+        auth.waitUntilReady(),
+      ]);
+      if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
         (auth.isAuthenticated && auth.membresiaEstado == MembresiaEstado.activa)
