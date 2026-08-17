@@ -2,6 +2,7 @@ package persona
 
 import (
 	"crypto/subtle"
+	"errors"
 	"net/http"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -35,6 +37,15 @@ func (h *Handler) SolicitarOTP(c *gin.Context) {
 	var req SolicitarOtpRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if _, err := h.otpRepo.FindActivaPorTelefono(req.Telefono); err == nil {
+		// Ya hay un código activo para este teléfono — no se genera uno
+		// nuevo: permitir "resetear" el contador de intentos pidiendo otro
+		// código es exactamente el hueco de fuerza bruta que el límite de
+		// intentos debía cerrar.
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "ya tienes un código activo, espera a que expire"})
 		return
 	}
 
@@ -90,6 +101,10 @@ func (h *Handler) VerificarOTP(c *gin.Context) {
 	ahora := time.Now()
 	p, err := h.repo.FindByTelefono(req.Telefono)
 	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 		p = &Persona{Telefono: req.Telefono, TelefonoVerificadoAt: &ahora}
 		if err := h.repo.Create(p); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

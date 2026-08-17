@@ -131,7 +131,7 @@ func ParsePersonaToken(tokenStr, secret string) (uint, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
 		return []byte(secret), nil
 	})
-	if err != nil || !token.Valid {
+	if err != nil || !token.Valid || claims.PersonaID == 0 {
 		return 0, errors.New("token invalido o expirado")
 	}
 	return claims.PersonaID, nil
