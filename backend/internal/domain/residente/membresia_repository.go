@@ -15,6 +15,13 @@ func (r *MembresiaRepository) Create(m *Membresia) error {
 	return r.db.Create(m).Error
 }
 
+// Update guarda los cambios de una Membresia ya existente — usado para
+// reintentar el ingreso a un centro tras un rechazo previo (ver
+// Handler.UnirseCentro).
+func (r *MembresiaRepository) Update(m *Membresia) error {
+	return r.db.Save(m).Error
+}
+
 // FindByPersonaAndTenant busca la membresía de una Persona en un tenant
 // específico — no usa el scope ByTenant porque el tenant es explícito en la
 // firma, no viene del contexto (llamadas fuera de un request HTTP, como el
