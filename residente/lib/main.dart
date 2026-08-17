@@ -5,14 +5,14 @@ import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/auth_viewmodel.dart';
-import 'viewmodels/invitation_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 
 import 'views/dashboard_view.dart';
-import 'views/generate_qr_view.dart';
-import 'views/login_view.dart';
+import 'views/invitar_view.dart';
 import 'views/my_invitations_view.dart';
-import 'views/registro_view.dart';
+import 'views/my_qr_view.dart';
+import 'views/onboarding/onboarding_view.dart';
+import 'views/pending_visits_view.dart';
 import 'views/settings_view.dart';
 import 'views/splash_view.dart';
 
@@ -22,7 +22,6 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
-        ChangeNotifierProvider(create: (_) => InvitationViewModel()),
       ],
       child: const MyApp(),
     ),
@@ -37,7 +36,7 @@ class MyApp extends StatelessWidget {
     final settingsVM = context.watch<SettingsViewModel>();
 
     return MaterialApp(
-      title: 'Kigo Residente',
+      title: 'Kigo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -58,12 +57,13 @@ class MyApp extends StatelessWidget {
       initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashView(),
-        '/login': (context) => const LoginView(),
+        '/onboarding': (context) => const OnboardingView(),
         '/dashboard': (context) => const DashboardView(),
-        '/settings': (context) => const SettingsView(),
-        '/generate': (context) => const GenerateQrView(),
+        '/my_qr': (context) => const MyQrView(),
+        '/invitar': (context) => const InvitarView(),
         '/my_invitations': (context) => const MyInvitationsView(),
-        '/registro': (context) => const RegistroView(),
+        '/pending_visits': (context) => const PendingVisitsView(),
+        '/settings': (context) => const SettingsView(),
       },
     );
   }
