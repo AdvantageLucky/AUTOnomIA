@@ -12,6 +12,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/invitaciones"
 	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/domain/tenant"
+	"kigo-autonomia-backend/internal/domain/visitas"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +29,7 @@ type Handler struct {
 	membresiaRepo  *residente.MembresiaRepository
 	tenantRepo     tenant.Repository
 	invitacionRepo *invitaciones.Repository
+	visitaRepo     *visitas.Repository
 }
 
 func NewHandler(
@@ -38,6 +40,7 @@ func NewHandler(
 	membresiaRepo *residente.MembresiaRepository,
 	tenantRepo tenant.Repository,
 	invitacionRepo *invitaciones.Repository,
+	visitaRepo *visitas.Repository,
 ) *Handler {
 	return &Handler{
 		repo:           repo,
@@ -48,6 +51,7 @@ func NewHandler(
 		membresiaRepo:  membresiaRepo,
 		tenantRepo:     tenantRepo,
 		invitacionRepo: invitacionRepo,
+		visitaRepo:     visitaRepo,
 	}
 }
 
@@ -450,6 +454,112 @@ func (h *Handler) GetMe(c *gin.Context) {
 		ApellidoMaterno:      p.ApellidoMaterno,
 		TelefonoVerificadoAt: p.TelefonoVerificadoAt,
 	})
+}
+
+// ListarVisitasPendientes devuelve las visitas por aprobar en la casa de la
+// Membresia activa de la Persona en el tenant pedido — el tenant se recibe
+// explícito porque el JWT de Persona no lo lleva (identidad global).
+func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía en ese centro"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+		return
+	}
+
+	visitasPendientes, err := h.visitaRepo.WithContext(c.Request.Context()).
+		FindPendientesByCasaDestino(tenantID, m.CasaDestino)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]visitas.VisitaResponse, 0, len(visitasPendientes))
+	for _, v := range visitasPendientes {
+		items = append(items, visitas.ToVisitaResponse(v))
+	}
+	c.JSON(http.StatusOK, gin.H{"visitas": items})
+}
+
+// ResponderVisita aprueba o rechaza una visita dirigida a la casa de la
+// Membresia activa de la Persona en el tenant pedido.
+func (h *Handler) ResponderVisita(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía en ese centro"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+		return
+	}
+
+	visitaRepoCtx := h.visitaRepo.WithContext(c.Request.Context())
+	if _, err := visitaRepoCtx.FindByIDAndCasaDestino(uint(id), tenantID, m.CasaDestino); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
+		return
+	}
+
+	var req ResponderVisitaPersonaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	estado := visitas.EstadoVisita(req.Estado)
+	if estado != visitas.EstadoAprobado && estado != visitas.EstadoRechazado {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "estado debe ser APROBADO o RECHAZADO"})
+		return
+	}
+
+	p, err := h.repo.FindByID(personaID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	nombre := p.Nombre + " " + p.ApellidoPaterno
+
+	if err := visitaRepoCtx.UpdateEstado(uint(id), estado, visitas.AutorizadorResidente, nombre); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"estado": string(estado)})
 }
 
 // PatchMe completa o actualiza nombre/apellidos/embedding de la Persona
