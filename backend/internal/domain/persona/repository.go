@@ -10,16 +10,7 @@ func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-// Create guarda una Persona nueva, generando su qr_secreto si no lo trae ya
-// (permite que el backfill del Task 5 fije uno determinístico en tests).
 func (r *Repository) Create(p *Persona) error {
-	if p.QrSecreto == "" {
-		secreto, err := generarQrSecreto()
-		if err != nil {
-			return err
-		}
-		p.QrSecreto = secreto
-	}
 	return r.db.Create(p).Error
 }
 
