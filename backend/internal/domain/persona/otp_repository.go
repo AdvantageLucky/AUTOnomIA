@@ -37,3 +37,17 @@ func (r *OtpRepository) FindActivaPorTelefono(telefono string) (*OtpSolicitud, e
 func (r *OtpRepository) InvalidarPorTelefono(telefono string) error {
 	return r.db.Where("telefono = ?", telefono).Delete(&OtpSolicitud{}).Error
 }
+
+// IncrementarIntentos suma uno a los intentos fallidos de una solicitud de
+// OTP y devuelve el nuevo total — usado para cortar por fuerza bruta.
+func (r *OtpRepository) IncrementarIntentos(id uint) (int, error) {
+	if err := r.db.Model(&OtpSolicitud{}).Where("id = ?", id).
+		Update("intentos", gorm.Expr("intentos + 1")).Error; err != nil {
+		return 0, err
+	}
+	var o OtpSolicitud
+	if err := r.db.Select("intentos").First(&o, id).Error; err != nil {
+		return 0, err
+	}
+	return o.Intentos, nil
+}
