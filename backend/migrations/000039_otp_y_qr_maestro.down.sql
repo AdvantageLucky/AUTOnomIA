@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS otp_solicitudes;
+ALTER TABLE personas ADD COLUMN qr_secreto TEXT NOT NULL DEFAULT '';
