@@ -57,6 +57,48 @@ func (r *Repository) RevocarByID(id, residenteID uint) error {
 	return nil
 }
 
+// FindByPersonaCreadora lista las invitaciones activas creadas por una Persona.
+func (r *Repository) FindByPersonaCreadora(personaID uint) ([]Invitacion, error) {
+	var list []Invitacion
+	err := r.db.Where("persona_creadora_id = ?", personaID).
+		Order("created_at DESC").
+		Find(&list).Error
+	return list, err
+}
+
+// RevocarByIDAndPersonaCreadora hace soft-delete comprobando que la
+// invitación pertenece a la Persona que la creó.
+func (r *Repository) RevocarByIDAndPersonaCreadora(id, personaID uint) error {
+	result := r.db.Where("id = ? AND persona_creadora_id = ?", id, personaID).Delete(&Invitacion{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+// FindActivaByPersonaInvitadaAndTenant busca si una Persona tiene una
+// invitación activa (no expirada, no agotada) en un tenant — usado por el
+// kiosko al resolver un QR (ver persona.ResolverEstadoQR).
+func (r *Repository) FindActivaByPersonaInvitadaAndTenant(personaID, tenantID uint) (*Invitacion, error) {
+	var inv Invitacion
+	if err := r.db.
+		Where("persona_invitada_id = ? AND tenant_id = ?", personaID, tenantID).
+		Order("created_at DESC").
+		First(&inv).Error; err != nil {
+		return nil, err
+	}
+	if inv.ExpiresAt != nil && inv.ExpiresAt.Before(time.Now()) {
+		return nil, gorm.ErrRecordNotFound
+	}
+	if inv.MaxUsos != nil && inv.ConteoUsos >= *inv.MaxUsos {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return &inv, nil
+}
+
 // IncrementarUso suma uno al ConteoUsos y si el resultado alcanza MaxUsos entonces revoca
 func (r *Repository) IncrementarUso(id uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {

@@ -1,6 +1,10 @@
 package persona
 
-import "gorm.io/gorm"
+import (
+	"errors"
+
+	"gorm.io/gorm"
+)
 
 type Repository struct {
 	db *gorm.DB
@@ -28,4 +32,24 @@ func (r *Repository) FindByTelefono(telefono string) (*Persona, error) {
 		return nil, err
 	}
 	return &p, nil
+}
+
+// FindOrCreateByTelefono busca una Persona por teléfono o crea una "en
+// blanco" (sin nombre, sin verificar) si no existe — usado al invitar a
+// alguien que nunca ha usado Kigo: se le crea un registro anclado a su
+// teléfono, que se completa solo cuando esa persona se registre de verdad
+// (VerificarOTP encuentra este mismo registro por FindByTelefono).
+func (r *Repository) FindOrCreateByTelefono(telefono string) (*Persona, error) {
+	p, err := r.FindByTelefono(telefono)
+	if err == nil {
+		return p, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	p = &Persona{Telefono: telefono}
+	if err := r.Create(p); err != nil {
+		return nil, err
+	}
+	return p, nil
 }
