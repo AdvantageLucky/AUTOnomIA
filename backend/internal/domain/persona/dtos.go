@@ -63,3 +63,18 @@ type CrearInvitacionPersonaRequest struct {
 	MaxUsos                     *int                        `json:"max_usos"`
 	ExpiresAt                   *time.Time                  `json:"expires_at"`
 }
+
+type PersonaMeResponse struct {
+	Telefono             string     `json:"telefono"`
+	Nombre               string     `json:"nombre"`
+	ApellidoPaterno      string     `json:"apellido_paterno"`
+	ApellidoMaterno      string     `json:"apellido_materno"`
+	TelefonoVerificadoAt *time.Time `json:"telefono_verificado_at"`
+}
+
+type PatchPersonaMeRequest struct {
+	Nombre          string    `json:"nombre"`
+	ApellidoPaterno string    `json:"apellido_paterno"`
+	ApellidoMaterno string    `json:"apellido_materno"`
+	Embedding       []float64 `json:"embedding"`
+}
