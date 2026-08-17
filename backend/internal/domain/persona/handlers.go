@@ -427,3 +427,75 @@ func (h *Handler) RevocarInvitacion(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "invitación revocada"})
 }
+
+// GetMe devuelve el perfil de la Persona autenticada — la app lo usa tras
+// loguear para decidir si falta completar nombre/apellidos.
+func (h *Handler) GetMe(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	p, err := h.repo.FindByID(personaID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "persona no encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, PersonaMeResponse{
+		Telefono:             p.Telefono,
+		Nombre:               p.Nombre,
+		ApellidoPaterno:      p.ApellidoPaterno,
+		ApellidoMaterno:      p.ApellidoMaterno,
+		TelefonoVerificadoAt: p.TelefonoVerificadoAt,
+	})
+}
+
+// PatchMe completa o actualiza nombre/apellidos/embedding de la Persona
+// autenticada — usado por la app cuando GetMe devuelve un perfil vacío.
+func (h *Handler) PatchMe(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	var req PatchPersonaMeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	nombre := strings.TrimSpace(req.Nombre)
+	apellidoPaterno := strings.TrimSpace(req.ApellidoPaterno)
+	if nombre == "" || apellidoPaterno == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "nombre y apellido_paterno son requeridos"})
+		return
+	}
+
+	p, err := h.repo.FindByID(personaID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "persona no encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	p.Nombre = nombre
+	p.ApellidoPaterno = apellidoPaterno
+	p.ApellidoMaterno = strings.TrimSpace(req.ApellidoMaterno)
+	if len(req.Embedding) > 0 {
+		p.Embedding = residente.FloatArray(req.Embedding)
+	}
+	if err := h.repo.Update(p); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, PersonaMeResponse{
+		Telefono:             p.Telefono,
+		Nombre:               p.Nombre,
+		ApellidoPaterno:      p.ApellidoPaterno,
+		ApellidoMaterno:      p.ApellidoMaterno,
+		TelefonoVerificadoAt: p.TelefonoVerificadoAt,
+	})
+}

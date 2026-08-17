@@ -297,6 +297,8 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMaster
 	p := rg.Group("/personas/me")
 	p.Use(auth.RequirePersona(jwtSecret))
 	{
+		p.GET("", personaHandler.GetMe)
+		p.PATCH("", personaHandler.PatchMe)
 		p.GET("/qr", personaHandler.GetQR)
 		p.POST("/membresias", personaHandler.UnirseCentro)
 		p.POST("/invitaciones", personaHandler.CrearInvitacion)
