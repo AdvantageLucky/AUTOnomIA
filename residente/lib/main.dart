@@ -20,7 +20,7 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel(), lazy: false),
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
       ],
       child: const MyApp(),

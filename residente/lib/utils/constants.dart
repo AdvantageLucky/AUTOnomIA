@@ -11,10 +11,4 @@ class AppConstants {
   // Única clave persistida — todo lo demás (perfil, membresía) se
   // recarga del backend al restaurar sesión, nunca se cachea localmente.
   static const String prefsJwt = 'kigo_jwt';
-
-  // Sobrevive temporalmente: la usa `viewmodels/invitation_viewmodel.dart`
-  // (flujo viejo de Residente). El brief de Task 2 la daba por no usada,
-  // pero ese archivo se elimina hasta Task 5 — se retira de aquí en ese
-  // mismo commit.
-  static const String prefsTokenCache = 'kigo_token_cache';
 }

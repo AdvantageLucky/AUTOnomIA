@@ -4,13 +4,14 @@ import '../models/membresia_model.dart';
 import '../services/api_service.dart';
 import '../utils/constants.dart';
 
-enum MembresiaEstado { ninguna, pendiente, activa }
+enum MembresiaEstado { ninguna, pendiente, rechazada, activa }
 
 /// Identidad de la app: Persona (teléfono+OTP), no Residente. Ver spec
 /// 2026-08-17-kigo-app-rediseno-design.md §4.
 class AuthViewModel extends ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = false;
+  bool _isInitializing = true;
   String? _error;
 
   String _telefono = '';
@@ -22,6 +23,7 @@ class AuthViewModel extends ChangeNotifier {
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+  bool get isInitializing => _isInitializing;
   String? get error => _error;
   String get telefono => _telefono;
   String get nombre => _nombre;
@@ -33,17 +35,34 @@ class AuthViewModel extends ChangeNotifier {
 
   MembresiaEstado get membresiaEstado {
     if (_membresia == null) return MembresiaEstado.ninguna;
-    return _membresia!.status == 'activo' ? MembresiaEstado.activa : MembresiaEstado.pendiente;
+    switch (_membresia!.status) {
+      case 'activo':
+        return MembresiaEstado.activa;
+      case 'rechazado':
+        return MembresiaEstado.rechazada;
+      default:
+        return MembresiaEstado.pendiente;
+    }
   }
 
+  late final Future<void> _readyFuture;
+
+  /// Resuelve cuando `_checkSession` terminó (con o sin sesión) — usado
+  /// por SplashView para esperar de verdad antes de decidir la ruta.
+  Future<void> waitUntilReady() => _readyFuture;
+
   AuthViewModel() {
-    _checkSession();
+    _readyFuture = _checkSession();
   }
 
   Future<void> _checkSession() async {
     final prefs = await SharedPreferences.getInstance();
     final jwt = prefs.getString(AppConstants.prefsJwt);
-    if (jwt == null) return;
+    if (jwt == null) {
+      _isInitializing = false;
+      notifyListeners();
+      return;
+    }
 
     ApiService().setJwt(jwt);
     try {
@@ -60,6 +79,7 @@ class AuthViewModel extends ChangeNotifier {
       // error de red/timeout — no se borra el JWT, se deja
       // _isAuthenticated en false; la próxima apertura reintenta
     }
+    _isInitializing = false;
     notifyListeners();
   }
 
@@ -75,6 +95,11 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
     } on ApiException catch (e) {
       _error = e.message;
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    } catch (e) {
+      _error = 'No se pudo conectar al servidor';
       _isLoading = false;
       notifyListeners();
       rethrow;
@@ -102,14 +127,24 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } on ApiException catch (e) {
-      ApiService().clearJwt();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(AppConstants.prefsJwt);
+      await _revertirJwtParcial();
       _error = e.message;
       _isLoading = false;
       notifyListeners();
       rethrow;
+    } catch (e) {
+      await _revertirJwtParcial();
+      _error = 'No se pudo conectar al servidor';
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
     }
+  }
+
+  Future<void> _revertirJwtParcial() async {
+    ApiService().clearJwt();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(AppConstants.prefsJwt);
   }
 
   /// Paso 3 (solo si `perfilCompleto` es false tras verificar): completa
@@ -131,6 +166,11 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
     } on ApiException catch (e) {
       _error = e.message;
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    } catch (e) {
+      _error = 'No se pudo conectar al servidor';
       _isLoading = false;
       notifyListeners();
       rethrow;
@@ -156,6 +196,11 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       rethrow;
+    } catch (e) {
+      _error = 'No se pudo conectar al servidor';
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
     }
   }
 
@@ -167,6 +212,10 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
     } on ApiException catch (e) {
       _error = e.message;
+      notifyListeners();
+      rethrow;
+    } catch (e) {
+      _error = 'No se pudo conectar al servidor';
       notifyListeners();
       rethrow;
     }
@@ -193,6 +242,7 @@ class AuthViewModel extends ChangeNotifier {
     _apellidoPaterno = '';
     _apellidoMaterno = '';
     _membresia = null;
+    _error = null;
     ApiService().clearJwt();
 
     final prefs = await SharedPreferences.getInstance();

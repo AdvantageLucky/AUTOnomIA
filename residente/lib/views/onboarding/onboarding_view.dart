@@ -32,7 +32,10 @@ class _OnboardingViewState extends State<OnboardingView> {
     final auth = context.read<AuthViewModel>();
     if (!auth.isAuthenticated) return _Paso.telefono;
     if (!auth.perfilCompleto) return _Paso.perfil;
-    if (auth.membresiaEstado == MembresiaEstado.ninguna) return _Paso.unirseCentro;
+    if (auth.membresiaEstado == MembresiaEstado.ninguna ||
+        auth.membresiaEstado == MembresiaEstado.rechazada) {
+      return _Paso.unirseCentro;
+    }
     return _Paso.espera;
   }
 
