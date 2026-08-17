@@ -80,3 +80,17 @@ func (r *MembresiaRepository) UpdatePermiteReconocimientoFacial(id uint, permite
 	return r.db.Model(&Membresia{}).Where("id = ?", id).
 		Update("permite_reconocimiento_facial", permite).Error
 }
+
+// FindByPersonaID lista todas las membresías de una Persona, en cualquier
+// tenant y cualquier status — usado por la app para resolver su propia
+// sesión (¿ya pertenezco a algún centro? ¿en qué estado?).
+func (r *MembresiaRepository) FindByPersonaID(personaID uint) ([]Membresia, error) {
+	var list []Membresia
+	if err := r.db.
+		Where("persona_id = ?", personaID).
+		Order("created_at DESC").
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}

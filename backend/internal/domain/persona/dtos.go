@@ -82,3 +82,12 @@ type PatchPersonaMeRequest struct {
 type ResponderVisitaPersonaRequest struct {
 	Estado string `json:"estado" binding:"required"`
 }
+
+type MembresiaMeResponse struct {
+	ID           uint   `json:"id"`
+	TenantID     uint   `json:"tenant_id"`
+	CentroNombre string `json:"centro_nombre"`
+	CasaDestino  string `json:"casa_destino"`
+	Rol          string `json:"rol"`
+	Status       string `json:"status"`
+}
