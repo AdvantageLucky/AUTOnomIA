@@ -3,6 +3,8 @@ package persona
 import (
 	"errors"
 
+	"kigo-autonomia-backend/internal/domain/residente"
+
 	"gorm.io/gorm"
 )
 
@@ -52,4 +54,12 @@ func (r *Repository) FindOrCreateByTelefono(telefono string) (*Persona, error) {
 		return nil, err
 	}
 	return p, nil
+}
+
+// UpdateEmbedding guarda el embedding facial de una Persona — se llama
+// cuando el kiosko manda un embedding junto con la verificación de QR
+// (enrolamiento oportunista, ver Handler.VerificarQR).
+func (r *Repository) UpdateEmbedding(id uint, embedding []float64) error {
+	return r.db.Model(&Persona{}).Where("id = ?", id).
+		Update("embedding", residente.FloatArray(embedding)).Error
 }

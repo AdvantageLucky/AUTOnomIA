@@ -38,6 +38,21 @@ type MembresiaResponse struct {
 	Status      string `json:"status"`
 }
 
+type VerificarQRRequest struct {
+	PersonaID uint      `json:"persona_id" binding:"required"`
+	Firma     string    `json:"firma"      binding:"required"`
+	Embedding []float64 `json:"embedding"`
+}
+
+type VerificarQRResponse struct {
+	Estado                      EstadoQR `json:"estado"`
+	Nombre                      string   `json:"nombre"`
+	CasaDestino                 string   `json:"casa_destino,omitempty"`
+	DestinoID                   *uint    `json:"destino_id,omitempty"`
+	PermiteReconocimientoFacial bool     `json:"permite_reconocimiento_facial"`
+	InvitacionID                *uint    `json:"invitacion_id,omitempty"`
+}
+
 type CrearInvitacionPersonaRequest struct {
 	TenantID                    uint                        `json:"tenant_id"        binding:"required"`
 	TelefonoInvitado            string                      `json:"telefono_invitado" binding:"required"`

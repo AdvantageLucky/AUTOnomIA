@@ -298,6 +298,73 @@ func (h *Handler) ListarInvitaciones(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// VerificarQR resuelve un QR personal escaneado por el kiosko: verifica la
+// firma HMAC y, en la misma respuesta, si la Persona tiene membresía o
+// invitación activa en el tenant del kiosko. Si viene un embedding, se
+// enrola de una vez (ver spec §11) — no crea ninguna Visita, eso lo decide
+// el flujo del kiosko con esta resolución en la mano.
+func (h *Handler) VerificarQR(c *gin.Context) {
+	var req VerificarQRRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if !VerificarFirma(req.PersonaID, req.Firma, h.qrMasterSecret) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "firma inválida"})
+		return
+	}
+
+	p, err := h.repo.FindByID(req.PersonaID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "persona no encontrada"})
+		return
+	}
+
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	var membresia *residente.Membresia
+	if m, err := h.membresiaRepo.FindByPersonaAndTenant(req.PersonaID, tenantID); err == nil {
+		membresia = m
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var invitacion *invitaciones.Invitacion
+	if inv, err := h.invitacionRepo.FindActivaByPersonaInvitadaAndTenant(req.PersonaID, tenantID); err == nil {
+		invitacion = inv
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	resolucion := ResolverEstadoQR(p, membresia, invitacion)
+
+	if len(req.Embedding) > 0 {
+		if err := h.repo.UpdateEmbedding(req.PersonaID, req.Embedding); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if membresia != nil {
+			if err := h.membresiaRepo.UpdatePermiteReconocimientoFacial(membresia.ID, true); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			resolucion.PermiteReconocimientoFacial = true
+		}
+	}
+
+	c.JSON(http.StatusOK, VerificarQRResponse{
+		Estado:                      resolucion.Estado,
+		Nombre:                      resolucion.Nombre,
+		CasaDestino:                 resolucion.CasaDestino,
+		DestinoID:                   resolucion.DestinoID,
+		PermiteReconocimientoFacial: resolucion.PermiteReconocimientoFacial,
+		InvitacionID:                resolucion.InvitacionID,
+	})
+}
+
 // RevocarInvitacion revoca una invitación creada por la Persona autenticada.
 func (h *Handler) RevocarInvitacion(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
