@@ -41,6 +41,7 @@ type MembresiaResponse struct {
 type CrearInvitacionPersonaRequest struct {
 	TenantID                    uint                        `json:"tenant_id"        binding:"required"`
 	TelefonoInvitado            string                      `json:"telefono_invitado" binding:"required"`
+	NombreInvitado              string                      `json:"nombre_invitado"`
 	Tipo                        invitaciones.TipoInvitacion `json:"tipo"             binding:"required,oneof=PERSONAL GRUPAL"`
 	DestinoID                   uint                        `json:"destino_id"       binding:"required"`
 	PermiteReconocimientoFacial bool                        `json:"permite_reconocimiento_facial"`
