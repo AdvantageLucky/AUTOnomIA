@@ -73,10 +73,9 @@ type PersonaMeResponse struct {
 }
 
 type PatchPersonaMeRequest struct {
-	Nombre          string    `json:"nombre"`
-	ApellidoPaterno string    `json:"apellido_paterno"`
-	ApellidoMaterno string    `json:"apellido_materno"`
-	Embedding       []float64 `json:"embedding"`
+	Nombre          string `json:"nombre"`
+	ApellidoPaterno string `json:"apellido_paterno"`
+	ApellidoMaterno string `json:"apellido_materno"`
 }
 
 type ResponderVisitaPersonaRequest struct {

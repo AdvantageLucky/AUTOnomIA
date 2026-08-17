@@ -628,9 +628,6 @@ func (h *Handler) PatchMe(c *gin.Context) {
 	p.Nombre = nombre
 	p.ApellidoPaterno = apellidoPaterno
 	p.ApellidoMaterno = strings.TrimSpace(req.ApellidoMaterno)
-	if len(req.Embedding) > 0 {
-		p.Embedding = residente.FloatArray(req.Embedding)
-	}
 	if err := h.repo.Update(p); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
