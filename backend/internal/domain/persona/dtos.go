@@ -1,5 +1,11 @@
 package persona
 
+import (
+	"time"
+
+	"kigo-autonomia-backend/internal/domain/invitaciones"
+)
+
 type SolicitarOtpRequest struct {
 	Telefono string `json:"telefono" binding:"required"`
 }
@@ -30,4 +36,14 @@ type MembresiaResponse struct {
 	CasaDestino string `json:"casa_destino"`
 	Rol         string `json:"rol"`
 	Status      string `json:"status"`
+}
+
+type CrearInvitacionPersonaRequest struct {
+	TenantID                    uint                        `json:"tenant_id"        binding:"required"`
+	TelefonoInvitado            string                      `json:"telefono_invitado" binding:"required"`
+	Tipo                        invitaciones.TipoInvitacion `json:"tipo"             binding:"required,oneof=PERSONAL GRUPAL"`
+	DestinoID                   uint                        `json:"destino_id"       binding:"required"`
+	PermiteReconocimientoFacial bool                        `json:"permite_reconocimiento_facial"`
+	MaxUsos                     *int                        `json:"max_usos"`
+	ExpiresAt                   *time.Time                  `json:"expires_at"`
 }

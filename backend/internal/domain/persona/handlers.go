@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -219,4 +220,94 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		Rol:         m.Rol,
 		Status:      m.Status,
 	})
+}
+
+// CrearInvitacion crea una invitación anclada a Persona: quien invita debe
+// tener una Membresia activa en el tenant, y a quien se invita se
+// identifica por teléfono (se le crea una Persona "en blanco" si nunca ha
+// usado Kigo).
+func (h *Handler) CrearInvitacion(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	var req CrearInvitacionPersonaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, req.TenantID)
+	if err != nil || m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía activa en ese centro"})
+		return
+	}
+
+	invitado, err := h.repo.FindOrCreateByTelefono(strings.TrimSpace(req.TelefonoInvitado))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, err := invitaciones.GenerarToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error generando token"})
+		return
+	}
+
+	inv := &invitaciones.Invitacion{
+		Token:                       token,
+		TenantID:                    req.TenantID,
+		Tipo:                        req.Tipo,
+		Titular:                     invitado.Nombre,
+		DestinoID:                   req.DestinoID,
+		PersonaInvitadaID:           &invitado.ID,
+		PersonaCreadoraID:           &personaID,
+		PermiteReconocimientoFacial: req.PermiteReconocimientoFacial,
+		MaxUsos:                     req.MaxUsos,
+		ExpiresAt:                   req.ExpiresAt,
+	}
+	if err := h.invitacionRepo.Create(inv); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, invitaciones.ToInvitacionResponse(inv, false))
+}
+
+// ListarInvitaciones lista las invitaciones creadas por la Persona autenticada.
+func (h *Handler) ListarInvitaciones(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	list, err := h.invitacionRepo.FindByPersonaCreadora(personaID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp := make([]invitaciones.InvitacionResponse, len(list))
+	for i, inv := range list {
+		resp[i] = invitaciones.ToInvitacionResponse(&inv, false)
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+// RevocarInvitacion revoca una invitación creada por la Persona autenticada.
+func (h *Handler) RevocarInvitacion(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	if err := h.invitacionRepo.RevocarByIDAndPersonaCreadora(uint(id), personaID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "invitación no encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "invitación revocada"})
 }

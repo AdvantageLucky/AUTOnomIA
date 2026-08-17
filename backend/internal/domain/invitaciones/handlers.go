@@ -34,6 +34,13 @@ func generarToken() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+// GenerarToken expone generarToken a otros paquetes — el dominio persona
+// necesita generar el token de una invitación anclada a Persona sin
+// duplicar la lógica criptográfica (Token es NOT NULL y uniqueIndex).
+func GenerarToken() (string, error) {
+	return generarToken()
+}
+
 // CrearInvitacion crea una invitación y devuelve el token
 //
 // @Summary Crear invitación

@@ -68,6 +68,13 @@ type ValidarInvitacionResponse struct {
 	ExpiresAt   *time.Time     `json:"expires_at"`
 }
 
+// ToInvitacionResponse expone toInvitacionResponse a otros paquetes — el
+// dominio persona necesita convertir una Invitacion a su DTO de respuesta
+// sin duplicar el mapeo.
+func ToInvitacionResponse(inv *Invitacion, incluirToken bool) InvitacionResponse {
+	return toInvitacionResponse(inv, incluirToken)
+}
+
 // helper func para convertir una Invitacion (DB Model) a DTO Response
 func toInvitacionResponse(inv *Invitacion, incluirToken bool) InvitacionResponse {
 	r := InvitacionResponse{
