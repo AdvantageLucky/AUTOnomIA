@@ -1,0 +1,1 @@
+ALTER TABLE otp_solicitudes ADD COLUMN intentos INT NOT NULL DEFAULT 0;

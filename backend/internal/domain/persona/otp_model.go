@@ -14,6 +14,7 @@ type OtpSolicitud struct {
 	Telefono string    `gorm:"not null;index"`
 	Codigo   string    `gorm:"not null"`
 	ExpiraEn time.Time `gorm:"not null"`
+	Intentos int       `gorm:"not null;default:0"`
 }
 
 func (OtpSolicitud) TableName() string { return "otp_solicitudes" }

@@ -1,6 +1,7 @@
 package persona
 
 import (
+	"crypto/subtle"
 	"net/http"
 	"time"
 
@@ -75,7 +76,13 @@ func (h *Handler) VerificarOTP(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "código inválido o vencido"})
 		return
 	}
-	if solicitud.Codigo != req.Codigo {
+	if subtle.ConstantTimeCompare([]byte(solicitud.Codigo), []byte(req.Codigo)) != 1 {
+		// Corta por fuerza bruta: tras 5 intentos fallidos, se invalida el
+		// código y hay que pedir uno nuevo — no se puede seguir adivinando
+		// indefinidamente dentro de la ventana de 5 minutos.
+		if intentos, incErr := h.otpRepo.IncrementarIntentos(solicitud.ID); incErr == nil && intentos >= 5 {
+			_ = h.otpRepo.InvalidarPorTelefono(req.Telefono)
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "código inválido o vencido"})
 		return
 	}
