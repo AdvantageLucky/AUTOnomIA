@@ -27,10 +27,16 @@ class AppTheme {
   // ── Semantic ───────────────────────────────────────────────────────────────
   static const Color success = Color(0xFF2DCFA8);
   static const Color error   = Color(0xFFFF4D6A);
+  static const Color brandHover    = Color(0xFFFF6B47);
+  static const Color amber         = Color(0xFFFFC542);
+  static const Color blue          = Color(0xFF5B8AF5);
+  static const Color surface2Light = Color(0xFFEBEBF2);
 
   // ── Radius ─────────────────────────────────────────────────────────────────
+  static const double radiusSm = 6.0;
   static const double radius   = 10.0;
   static const double radiusLg = 16.0;
+  static const double radiusXl = 22.0;
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -82,7 +88,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFEBEBF2),
+        fillColor: surface2Light,
         labelStyle: const TextStyle(color: Color(0xFF8A8BA8)),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(radius)),
         enabledBorder: OutlineInputBorder(
