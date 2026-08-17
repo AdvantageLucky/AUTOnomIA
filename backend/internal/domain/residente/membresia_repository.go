@@ -38,3 +38,30 @@ func (r *MembresiaRepository) FindByCasaDestinoYTenant(tenantID uint, casaDestin
 	}
 	return list, nil
 }
+
+// FindPendientesPorTenant devuelve las membresías pendientes de aprobación de un tenant.
+func (r *MembresiaRepository) FindPendientesPorTenant(tenantID uint) ([]Membresia, error) {
+	var list []Membresia
+	if err := r.db.
+		Where("tenant_id = ? AND status = ?", tenantID, ResidenteStatusPendiente).
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// FindByTenantAndID busca una membresía por ID, comprobando que pertenece al tenant.
+func (r *MembresiaRepository) FindByTenantAndID(tenantID, id uint) (*Membresia, error) {
+	var m Membresia
+	if err := r.db.
+		Where("tenant_id = ? AND id = ?", tenantID, id).
+		First(&m).Error; err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+// UpdateStatus cambia el status de una membresía.
+func (r *MembresiaRepository) UpdateStatus(id uint, status string) error {
+	return r.db.Model(&Membresia{}).Where("id = ?", id).Update("status", status).Error
+}
