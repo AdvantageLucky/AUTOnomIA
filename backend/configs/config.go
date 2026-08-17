@@ -21,31 +21,33 @@ import (
 )
 
 type Config struct {
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	ServerPort string
-	JWTSecret  string
-	UploadsDir string
-	LLMUrl     string
-	PublicURL  string
+	DBHost         string
+	DBPort         string
+	DBUser         string
+	DBPassword     string
+	DBName         string
+	ServerPort     string
+	JWTSecret      string
+	QRMasterSecret string
+	UploadsDir     string
+	LLMUrl         string
+	PublicURL      string
 }
 
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 	cfg := &Config{
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "kigo"),
-		DBPassword: getEnv("DB_PASSWORD", ""),
-		DBName:     getEnv("DB_NAME", "kigo_db"),
-		ServerPort: getEnv("SERVER_PORT", "8080"),
-		JWTSecret:  getEnv("JWT_SECRET", "dev-secret-change-me"),
-		UploadsDir: getEnv("UPLOADS_DIR", "./web/uploads/visitantes"),
-		LLMUrl:     getEnv("LLM_URL", "http://localhost:8081"),
-		PublicURL:  getEnv("PUBLIC_URL", "http://localhost:8080"),
+		DBHost:         getEnv("DB_HOST", "localhost"),
+		DBPort:         getEnv("DB_PORT", "5432"),
+		DBUser:         getEnv("DB_USER", "kigo"),
+		DBPassword:     getEnv("DB_PASSWORD", ""),
+		DBName:         getEnv("DB_NAME", "kigo_db"),
+		ServerPort:     getEnv("SERVER_PORT", "8080"),
+		JWTSecret:      getEnv("JWT_SECRET", "dev-secret-change-me"),
+		QRMasterSecret: getEnv("QR_MASTER_SECRET", "dev-qr-secret-change-me"),
+		UploadsDir:     getEnv("UPLOADS_DIR", "./web/uploads/visitantes"),
+		LLMUrl:         getEnv("LLM_URL", "http://localhost:8081"),
+		PublicURL:      getEnv("PUBLIC_URL", "http://localhost:8080"),
 	}
 
 	return cfg, nil
