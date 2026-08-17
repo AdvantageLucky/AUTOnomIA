@@ -17,3 +17,17 @@ type QrResponse struct {
 	PersonaID uint   `json:"persona_id"`
 	Firma     string `json:"firma"`
 }
+
+type UnirseCentroRequest struct {
+	CodigoCentro string `json:"codigo_centro" binding:"required"`
+	CasaDestino  string `json:"casa_destino"  binding:"required"`
+	Pin          string `json:"pin"           binding:"required,min=4,max=6"`
+}
+
+type MembresiaResponse struct {
+	ID          uint   `json:"id"`
+	TenantID    uint   `json:"tenant_id"`
+	CasaDestino string `json:"casa_destino"`
+	Rol         string `json:"rol"`
+	Status      string `json:"status"`
+}
