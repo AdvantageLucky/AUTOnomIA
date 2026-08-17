@@ -78,3 +78,7 @@ type PatchPersonaMeRequest struct {
 	ApellidoMaterno string    `json:"apellido_materno"`
 	Embedding       []float64 `json:"embedding"`
 }
+
+type ResponderVisitaPersonaRequest struct {
+	Estado string `json:"estado" binding:"required"`
+}
