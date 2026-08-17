@@ -120,28 +120,44 @@ func (h *Handler) VerificarOTP(c *gin.Context) {
 
 	ahora := time.Now()
 	p, err := h.repo.FindByTelefono(req.Telefono)
-	if err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	esRegistro := errors.Is(err, gorm.ErrRecordNotFound) || (p != nil && p.TelefonoVerificadoAt == nil)
+	if esRegistro {
 		nombre := strings.TrimSpace(req.Nombre)
 		apellidoPaterno := strings.TrimSpace(req.ApellidoPaterno)
 		if nombre == "" || apellidoPaterno == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "nombre y apellido_paterno son requeridos para registrarse"})
 			return
 		}
-		p = &Persona{
-			Telefono:             req.Telefono,
-			TelefonoVerificadoAt: &ahora,
-			Nombre:               nombre,
-			ApellidoPaterno:      apellidoPaterno,
-			ApellidoMaterno:      strings.TrimSpace(req.ApellidoMaterno),
-			Embedding:            residente.FloatArray(req.Embedding),
-		}
-		if err := h.repo.Create(p); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			p = &Persona{
+				Telefono:             req.Telefono,
+				TelefonoVerificadoAt: &ahora,
+				Nombre:               nombre,
+				ApellidoPaterno:      apellidoPaterno,
+				ApellidoMaterno:      strings.TrimSpace(req.ApellidoMaterno),
+				Embedding:            residente.FloatArray(req.Embedding),
+			}
+			if err := h.repo.Create(p); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		} else {
+			p.Nombre = nombre
+			p.ApellidoPaterno = apellidoPaterno
+			p.ApellidoMaterno = strings.TrimSpace(req.ApellidoMaterno)
+			p.TelefonoVerificadoAt = &ahora
+			if len(req.Embedding) > 0 {
+				p.Embedding = residente.FloatArray(req.Embedding)
+			}
+			if err := h.repo.Update(p); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
 		}
 	}
 
@@ -186,17 +202,35 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, t.ID); err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "ya tienes una membresía en este centro"})
-		return
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Pin), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error procesando pin"})
+		return
+	}
+
+	existente, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, t.ID)
+	if err == nil {
+		if existente.Status != residente.ResidenteStatusRechazado {
+			c.JSON(http.StatusConflict, gin.H{"error": "ya tienes una membresía en este centro"})
+			return
+		}
+		existente.CasaDestino = strings.TrimSpace(req.CasaDestino)
+		existente.Pin = string(hash)
+		existente.Status = residente.ResidenteStatusPendiente
+		if err := h.membresiaRepo.Update(existente); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, MembresiaResponse{
+			ID:          existente.ID,
+			TenantID:    existente.TenantID,
+			CasaDestino: existente.CasaDestino,
+			Rol:         existente.Rol,
+			Status:      existente.Status,
+		})
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -345,7 +379,10 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 
 	resolucion := ResolverEstadoQR(p, membresia, invitacion)
 
-	if len(req.Embedding) > 0 {
+	puedeEnrolar := resolucion.Estado == EstadoQRMiembro ||
+		(resolucion.Estado == EstadoQRInvitado && invitacion != nil && invitacion.PermiteReconocimientoFacial)
+
+	if len(req.Embedding) > 0 && p.Embedding == nil && puedeEnrolar {
 		if err := h.repo.UpdateEmbedding(req.PersonaID, req.Embedding); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

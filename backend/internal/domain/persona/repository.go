@@ -20,6 +20,13 @@ func (r *Repository) Create(p *Persona) error {
 	return r.db.Create(p).Error
 }
 
+// Update guarda los cambios de una Persona ya existente — usado cuando una
+// Persona "fantasma" (creada solo por teléfono, al ser invitada antes de
+// haber usado Kigo) completa su perfil al registrarse de verdad.
+func (r *Repository) Update(p *Persona) error {
+	return r.db.Save(p).Error
+}
+
 func (r *Repository) FindByID(id uint) (*Persona, error) {
 	var p Persona
 	if err := r.db.First(&p, id).Error; err != nil {
