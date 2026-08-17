@@ -531,7 +531,11 @@ func (h *Handler) ResponderVisita(c *gin.Context) {
 
 	visitaRepoCtx := h.visitaRepo.WithContext(c.Request.Context())
 	if _, err := visitaRepoCtx.FindByIDAndCasaDestino(uint(id), tenantID, m.CasaDestino); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
