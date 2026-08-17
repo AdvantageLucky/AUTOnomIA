@@ -253,11 +253,19 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 		return
 	}
 
+	titular := strings.TrimSpace(req.NombreInvitado)
+	if titular == "" {
+		titular = invitado.Nombre
+	}
+	if titular == "" {
+		titular = invitado.Telefono
+	}
+
 	inv := &invitaciones.Invitacion{
 		Token:                       token,
 		TenantID:                    req.TenantID,
 		Tipo:                        req.Tipo,
-		Titular:                     invitado.Nombre,
+		Titular:                     titular,
 		DestinoID:                   req.DestinoID,
 		PersonaInvitadaID:           &invitado.ID,
 		PersonaCreadoraID:           &personaID,
