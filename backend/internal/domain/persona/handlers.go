@@ -317,7 +317,11 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 
 	p, err := h.repo.FindByID(req.PersonaID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "persona no encontrada"})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "persona no encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -346,7 +350,7 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		if membresia != nil {
+		if membresia != nil && membresia.Status == residente.ResidenteStatusActivo {
 			if err := h.membresiaRepo.UpdatePermiteReconocimientoFacial(membresia.ID, true); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
