@@ -7,8 +7,9 @@ import (
 	"kigo-autonomia-backend/internal/domain/destinos"
 	"kigo-autonomia-backend/internal/domain/invitaciones"
 	"kigo-autonomia-backend/internal/domain/kiosko"
+	"kigo-autonomia-backend/internal/domain/persona"
 	"kigo-autonomia-backend/internal/domain/residente"
-	"kigo-autonomia-backend/internal/domain/tenant" // <-- Nuevo import issue 21
+	"kigo-autonomia-backend/internal/domain/tenant"
 	"kigo-autonomia-backend/internal/domain/visitas"
 	"kigo-autonomia-backend/internal/platform/sse"
 
@@ -33,8 +34,8 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
 	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
-	// <-- Nueva Linea de issue 21
-	registerTenantRoutes(api, db)
+	registerPersonaRoutes(api, db, cfg.JWTSecret, cfg.QRMasterSecret)
+	registerTenantRoutes(api, db, cfg.JWTSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
@@ -130,7 +131,8 @@ func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 // consulta del admin (JWT).
 func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config, hub *sse.Hub) {
 	visitaRepo := visitas.NewRepository(db)
-	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub)
+	notificador := residente.NewPushNotificador(residente.NewRepository(db), residente.LogPushSender{})
+	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub, notificador)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: solo registra visitas
@@ -138,6 +140,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	v.Use(auth.RequireKiosko(sesionRepo))
 	{
 		v.POST("/", visitaHandler.RegisterVisita)
+		v.GET("/recurrencia", visitaHandler.ConsultarRecurrencia)
 		v.GET("/:visitaId", visitaHandler.GetVisitaEstado)
 	}
 
@@ -212,7 +215,8 @@ func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, upl
 func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string, uploadsDir string) {
 	residenteRepo := residente.NewRepository(db)
 	destinoRepo := destinos.NewRepository(db)
-	residenteHandler := residente.NewHandler(residenteRepo, destinoRepo, jwtSecret, db, uploadsDir)
+	visitaRepo := visitas.NewRepository(db)
+	residenteHandler := residente.NewHandler(residenteRepo, destinoRepo, jwtSecret, db, uploadsDir, visitaRepo)
 
 	// público: búsqueda de centro, auto-registro y consulta de estado
 	rg.GET("/centros/buscar", residenteHandler.BuscarCentro)
@@ -229,6 +233,9 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string,
 	r.Use(auth.RequireResidente(jwtSecret))
 	{
 		r.GET("/me", residenteHandler.GetMe)
+		r.POST("/me/device-token", residenteHandler.RegistrarDeviceToken)
+		r.GET("/me/visitas/pendientes", residenteHandler.ListarVisitasPendientes)
+		r.PATCH("/me/visitas/:id/estado", residenteHandler.ResponderVisita)
 	}
 
 	// kiosko: valida PIN de residente usando la sesión del kiosko
@@ -259,15 +266,31 @@ func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string,
 }
 
 // registerTenantRoutes registra las rutas para la gestión de fraccionamientos (tenants).
-// Por ahora están desprotegidas para facilitar las pruebas locales.
-func registerTenantRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+func registerTenantRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	tenantRepo := tenant.NewRepository(db)
 	tenantHandler := tenant.NewHandler(tenantRepo)
 
 	t := rg.Group("/tenants")
+	t.Use(auth.RequireAdmin(jwtSecret))
 	{
-		t.POST("/", tenantHandler.CreateTenant)
 		t.GET("/:id", tenantHandler.GetTenant)
 		t.PATCH("/:id", tenantHandler.PatchTenant)
+	}
+}
+
+// registerPersonaRoutes registra las rutas de la app Kigo: registro/login
+// por teléfono+OTP (público) y el QR personal (autenticado).
+func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMasterSecret string) {
+	personaRepo := persona.NewRepository(db)
+	otpRepo := persona.NewOtpRepository(db)
+	personaHandler := persona.NewHandler(personaRepo, otpRepo, persona.LogOtpSender{}, jwtSecret, qrMasterSecret)
+
+	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)
+	rg.POST("/personas/registro/verificar-otp", personaHandler.VerificarOTP)
+
+	p := rg.Group("/personas/me")
+	p.Use(auth.RequirePersona(jwtSecret))
+	{
+		p.GET("/qr", personaHandler.GetQR)
 	}
 }
