@@ -9,6 +9,7 @@ import (
 type Repository interface {
 	Create(tenant *CentroHabitacional) error
 	FindByID(id uint) (*CentroHabitacional, error)
+	FindByCodigo(codigo string) (*CentroHabitacional, error)
 	Update(id uint, fields map[string]any) error
 }
 
@@ -34,6 +35,14 @@ func (r *repository) FindByID(id uint) (*CentroHabitacional, error) {
 		return nil, err
 	}
 	return &tenant, nil
+}
+
+func (r *repository) FindByCodigo(codigo string) (*CentroHabitacional, error) {
+	var t CentroHabitacional
+	if err := r.db.Where("codigo = ?", codigo).First(&t).Error; err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
 
 func (r *repository) Update(id uint, fields map[string]any) error {
