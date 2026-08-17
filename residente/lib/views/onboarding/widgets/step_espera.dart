@@ -1,10 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 
-class StepEspera extends StatelessWidget {
+class StepEspera extends StatefulWidget {
   const StepEspera({super.key});
+
+  @override
+  State<StepEspera> createState() => _StepEsperaState();
+}
+
+class _StepEsperaState extends State<StepEspera> {
+  String? _error;
+  bool _cargando = false;
+
+  Future<void> _actualizar() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    final auth = context.read<AuthViewModel>();
+    try {
+      await auth.refrescarMembresia();
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _error = 'No se pudo conectar al servidor');
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,12 +49,20 @@ class StepEspera extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium,
           ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
+          ],
           const SizedBox(height: 24),
           OutlinedButton(
-            onPressed: () async {
-              await auth.refrescarMembresia();
-            },
-            child: const Text('Actualizar'),
+            onPressed: _cargando ? null : _actualizar,
+            child: _cargando
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Actualizar'),
           ),
           TextButton(
             onPressed: () async {
