@@ -65,3 +65,11 @@ func (r *MembresiaRepository) FindByTenantAndID(tenantID, id uint) (*Membresia, 
 func (r *MembresiaRepository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&Membresia{}).Where("id = ?", id).Update("status", status).Error
 }
+
+// UpdatePermiteReconocimientoFacial activa el consentimiento de reconocimiento
+// facial de una membresía — se llama cuando el kiosko captura un embedding
+// nuevo para una Persona que ya es miembro de este tenant.
+func (r *MembresiaRepository) UpdatePermiteReconocimientoFacial(id uint, permite bool) error {
+	return r.db.Model(&Membresia{}).Where("id = ?", id).
+		Update("permite_reconocimiento_facial", permite).Error
+}
