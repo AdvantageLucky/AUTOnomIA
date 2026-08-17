@@ -298,5 +298,25 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMaster
 	p.Use(auth.RequirePersona(jwtSecret))
 	{
 		p.GET("/qr", personaHandler.GetQR)
+		p.POST("/membresias", personaHandler.UnirseCentro)
+		p.POST("/invitaciones", personaHandler.CrearInvitacion)
+		p.GET("/invitaciones", personaHandler.ListarInvitaciones)
+		p.DELETE("/invitaciones/:id", personaHandler.RevocarInvitacion)
+	}
+
+	sesionRepo := auth.NewSesionRepository(db)
+	k := rg.Group("/kioskos/:id/personas")
+	k.Use(auth.RequireKiosko(sesionRepo))
+	{
+		k.POST("/verificar-qr", personaHandler.VerificarQR)
+	}
+
+	a := rg.Group("/membresias")
+	a.Use(auth.RequireAdmin(jwtSecret))
+	{
+		membresiaHandler := residente.NewMembresiaHandler(membresiaRepo)
+		a.GET("/pendientes", membresiaHandler.ListarPendientes)
+		a.POST("/:id/aprobar", membresiaHandler.Aprobar)
+		a.POST("/:id/rechazar", membresiaHandler.Rechazar)
 	}
 }
