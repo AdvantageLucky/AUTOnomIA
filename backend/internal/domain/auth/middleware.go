@@ -99,6 +99,28 @@ func RequireResidente(secret string) gin.HandlerFunc {
 	}
 }
 
+// RequirePersona valida el JWT de la app Kigo y mete el persona_id en el
+// contexto de gin y del request. A diferencia de RequireAdmin/RequireKiosko/
+// RequireResidente, no inyecta tenant_id — Persona es global.
+func RequirePersona(secret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := bearerToken(c)
+		if token == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token requerido"})
+			return
+		}
+
+		personaID, err := ParsePersonaToken(token, secret)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token invalido o expirado"})
+			return
+		}
+
+		injectCtx(c, ctxkeys.PersonaID, personaID)
+		c.Next()
+	}
+}
+
 func bearerToken(c *gin.Context) string {
 	const prefix = "Bearer "
 	header := c.GetHeader("Authorization")

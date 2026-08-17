@@ -37,7 +37,7 @@ const adminTokenTTL = 24 * time.Hour
 type adminClaims struct {
 	AdminID  uint   `json:"admin_id"`
 	Rol      string `json:"rol"`
-	TenantID uint   `json:"tenant_id"` // <-- NUEVO: Enlace con el multi-tenant
+	TenantID uint   `json:"tenant_id"`
 	jwt.RegisteredClaims
 }
 
@@ -46,7 +46,7 @@ func GenerateAdminToken(adminID uint, rol string, tenantID uint, secret string) 
 	claims := adminClaims{
 		AdminID:  adminID,
 		Rol:      rol,
-		TenantID: tenantID, // <-- NUEVO
+		TenantID: tenantID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(adminTokenTTL)),
@@ -68,13 +68,13 @@ func ParseAdminToken(tokenStr, secret string) (uint, string, uint, error) {
 		return 0, "", 0, errors.New("token invalido o expirado")
 	}
 
-	return claims.AdminID, claims.Rol, claims.TenantID, nil // <-- NUEVO
+	return claims.AdminID, claims.Rol, claims.TenantID, nil
 }
 
 // residenteClaims son los claims del JWT de un Residente autenticado en la app
 type residenteClaims struct {
 	ResidenteID uint `json:"residente_id"`
-	TenantID    uint `json:"tenant_id"` // <-- NUEVO: Enlace con el multi-tenant
+	TenantID    uint `json:"tenant_id"`
 	jwt.RegisteredClaims
 }
 
@@ -82,7 +82,7 @@ type residenteClaims struct {
 func GenerateResidenteToken(residenteID uint, tenantID uint, secret string) (string, error) {
 	claims := residenteClaims{
 		ResidenteID: residenteID,
-		TenantID:    tenantID, // <-- NUEVO
+		TenantID:    tenantID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
@@ -101,7 +101,40 @@ func ParseResidenteToken(tokenStr, secret string) (uint, uint, error) {
 	if err != nil || !token.Valid {
 		return 0, 0, errors.New("token invalido o expirado")
 	}
-	return claims.ResidenteID, claims.TenantID, nil // <-- NUEVO
+	return claims.ResidenteID, claims.TenantID, nil
+}
+
+// personaClaims son los claims del JWT de una Persona autenticada en la app
+// Kigo — a diferencia de admin/residente, Persona no lleva tenant_id: es
+// una identidad global (ver spec 2026-08-16-persona-identidad-kigo-design.md §2).
+type personaClaims struct {
+	PersonaID uint `json:"persona_id"`
+	jwt.RegisteredClaims
+}
+
+// GeneratePersonaToken firma un JWT (HS256) para la Persona autenticada, válido 30 días
+func GeneratePersonaToken(personaID uint, secret string) (string, error) {
+	claims := personaClaims{
+		PersonaID: personaID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(30 * 24 * time.Hour)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+// ParsePersonaToken valida el JWT de la Persona y devuelve su personaID
+func ParsePersonaToken(tokenStr, secret string) (uint, error) {
+	claims := &personaClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
+		return []byte(secret), nil
+	})
+	if err != nil || !token.Valid {
+		return 0, errors.New("token invalido o expirado")
+	}
+	return claims.PersonaID, nil
 }
 
 // generateSessionToken genera un token opaco de alta entropia para una sesion de kiosko
