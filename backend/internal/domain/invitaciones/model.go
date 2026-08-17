@@ -24,6 +24,9 @@ type Invitacion struct {
 	ConteoUsos  int            `gorm:"not null;default:0"`
 	MaxUsos     *int           // nil = sin limite
 	ExpiresAt   *time.Time     // nil = sin expiracion
+	PersonaInvitadaID            *uint `gorm:"column:persona_invitada_id;index"`
+	PersonaCreadoraID            *uint `gorm:"column:persona_creadora_id;index"`
+	PermiteReconocimientoFacial  bool  `gorm:"column:permite_reconocimiento_facial;not null;default:false"`
 }
 
 func (Invitacion) TableName() string { return "invitaciones" }
