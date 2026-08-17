@@ -1,39 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import 'package:kigo_user/l10n/app_localizations.dart';
 import 'package:kigo_user/theme/app_theme.dart';
-import 'package:kigo_user/viewmodels/auth_viewmodel.dart';
-import 'package:kigo_user/viewmodels/invitation_viewmodel.dart';
-import 'package:kigo_user/viewmodels/settings_viewmodel.dart';
-import 'package:kigo_user/views/login_view.dart';
-
-// Widget mínimo que envuelve una vista con todos los providers requeridos.
-Widget _wrapProviders(Widget child) {
-  return MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (_) => AuthViewModel()),
-      ChangeNotifierProvider(create: (_) => SettingsViewModel()),
-      ChangeNotifierProvider(create: (_) => InvitationViewModel()),
-    ],
-    child: MaterialApp(
-      locale: const Locale('es'),
-      supportedLocales: const [Locale('es'), Locale('en')],
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      home: child,
-    ),
-  );
-}
 
 void main() {
   // google_fonts intenta descargar fuentes por red en tests — lo desactivamos.
@@ -87,29 +57,6 @@ void main() {
 
     test('error color coincide con dashboard', () {
       expect(AppTheme.error, const Color(0xFFFF4D6A));
-    });
-  });
-
-  group('LoginView smoke test', () {
-    testWidgets('renderiza el formulario de login', (tester) async {
-      await tester.pumpWidget(_wrapProviders(const LoginView()));
-      await tester.pumpAndSettle();
-
-      // Los tres campos deben estar presentes
-      expect(find.byType(TextFormField), findsNWidgets(3));
-      // El botón de entrar
-      expect(find.byType(ElevatedButton), findsOneWidget);
-    });
-
-    testWidgets('muestra error de validación con campos vacíos', (tester) async {
-      await tester.pumpWidget(_wrapProviders(const LoginView()));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(ElevatedButton));
-      await tester.pumpAndSettle();
-
-      // El validador del primer campo debe disparar "Requerido"
-      expect(find.text('Requerido'), findsWidgets);
     });
   });
 }

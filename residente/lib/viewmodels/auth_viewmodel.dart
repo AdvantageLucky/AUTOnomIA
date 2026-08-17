@@ -25,6 +25,8 @@ class AuthViewModel extends ChangeNotifier {
   String? get error => _error;
   String get telefono => _telefono;
   String get nombre => _nombre;
+  String get apellidoPaterno => _apellidoPaterno;
+  String get apellidoMaterno => _apellidoMaterno;
   String get nombreCompleto => '$_nombre $_apellidoPaterno'.trim();
   bool get perfilCompleto => _nombre.isNotEmpty;
   MembresiaActual? get membresia => _membresia;

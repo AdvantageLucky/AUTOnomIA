@@ -23,7 +23,9 @@ class _SplashViewState extends State<SplashView> {
       final auth = context.read<AuthViewModel>();
       Navigator.pushReplacementNamed(
         context,
-        auth.isLoggedIn ? '/dashboard' : '/login',
+        (auth.isAuthenticated && auth.membresiaEstado == MembresiaEstado.activa)
+            ? '/dashboard'
+            : '/onboarding',
       );
     });
   }
@@ -46,7 +48,7 @@ class _SplashViewState extends State<SplashView> {
               Icon(Icons.qr_code_scanner, size: 90, color: AppTheme.primaryOrange),
               SizedBox(height: 20),
               Text(
-                'KIGO RESIDENTE',
+                'KIGO',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
