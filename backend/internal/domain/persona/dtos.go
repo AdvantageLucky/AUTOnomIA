@@ -70,6 +70,20 @@ type PersonaMeResponse struct {
 	ApellidoPaterno      string     `json:"apellido_paterno"`
 	ApellidoMaterno      string     `json:"apellido_materno"`
 	TelefonoVerificadoAt *time.Time `json:"telefono_verificado_at"`
+	Curp                 string     `json:"curp"`
+	FotoIneUrl           string     `json:"foto_ine_url"`
+}
+
+func toPersonaMeResponse(p *Persona) PersonaMeResponse {
+	return PersonaMeResponse{
+		Telefono:             p.Telefono,
+		Nombre:               p.Nombre,
+		ApellidoPaterno:      p.ApellidoPaterno,
+		ApellidoMaterno:      p.ApellidoMaterno,
+		TelefonoVerificadoAt: p.TelefonoVerificadoAt,
+		Curp:                 p.Curp,
+		FotoIneUrl:           p.FotoIneUrl,
+	}
 }
 
 type PatchPersonaMeRequest struct {

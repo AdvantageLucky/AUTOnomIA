@@ -21,6 +21,8 @@ type Persona struct {
 	ApellidoMaterno      string               `gorm:"not null;default:''"`
 	Embedding            residente.FloatArray `gorm:"type:float[]"`
 	FotoCaraUrl          string
+	Curp                 string `gorm:"not null;default:''"`
+	FotoIneUrl           string
 }
 
 func (Persona) TableName() string { return "personas" }
