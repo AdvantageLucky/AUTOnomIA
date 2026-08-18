@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/membresia_model.dart';
 import '../services/api_service.dart';
@@ -147,18 +151,44 @@ class AuthViewModel extends ChangeNotifier {
     await prefs.remove(AppConstants.prefsJwt);
   }
 
-  /// Paso 3 (solo si `perfilCompleto` es false tras verificar): completa
-  /// nombre/apellidos de una Persona nueva.
-  Future<void> completarPerfil(String nombre, String apellidoPaterno, String apellidoMaterno) async {
+  /// Paso 3 (solo si `perfilCompleto` es false tras verificar): wizard de
+  /// identidad — INE + rostro, ver spec §10. Une nombre/apellidos/CURP
+  /// confirmados + ambas fotos + embedding facial en una sola llamada.
+  Future<void> completarIdentidad({
+    required String nombre,
+    required String apellidoPaterno,
+    required String apellidoMaterno,
+    required String curp,
+    required String pathFotoIne,
+    required String pathFotoRostro,
+    required List<double> embedding,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      final data = await ApiService().patch('/personas/me', {
-        'nombre': nombre,
-        'apellido_paterno': apellidoPaterno,
-        'apellido_materno': apellidoMaterno,
-      });
+      final data = await ApiService().postMultipart(
+        '/personas/me/identidad',
+        {
+          'nombre': nombre,
+          'apellido_paterno': apellidoPaterno,
+          'apellido_materno': apellidoMaterno,
+          'curp': curp,
+          'embedding': jsonEncode(embedding),
+        },
+        [
+          await http.MultipartFile.fromPath(
+            'foto_documento',
+            pathFotoIne,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+          await http.MultipartFile.fromPath(
+            'foto_rostro',
+            pathFotoRostro,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        ],
+      );
       _nombre = data['nombre'] as String;
       _apellidoPaterno = data['apellido_paterno'] as String;
       _apellidoMaterno = data['apellido_materno'] as String;

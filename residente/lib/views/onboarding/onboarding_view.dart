@@ -3,15 +3,16 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import 'widgets/step_telefono.dart';
 import 'widgets/step_otp.dart';
-import 'widgets/step_perfil.dart';
+import 'widgets/step_identidad.dart';
 import 'widgets/step_unirse_centro.dart';
 import 'widgets/step_espera.dart';
 
-enum _Paso { telefono, otp, perfil, unirseCentro, espera }
+enum _Paso { telefono, otp, identidad, unirseCentro, espera }
 
-/// Flujo continuo de entrada: teléfono → OTP → perfil (si es Persona
-/// nueva) → unirse a centro → espera. Un solo controlador de pasos, cada
-/// paso es su propio widget — ver spec 2026-08-17-kigo-app-rediseno-design.md §4.
+/// Flujo continuo de entrada: teléfono → OTP → identidad (INE+rostro, si
+/// es Persona nueva) → unirse a centro → espera. Un solo controlador de
+/// pasos, cada paso es su propio widget — ver spec
+/// 2026-08-17-kigo-app-rediseno-design.md §4 y §10.
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
 
@@ -31,7 +32,7 @@ class _OnboardingViewState extends State<OnboardingView> {
   _Paso _resolverPasoInicial() {
     final auth = context.read<AuthViewModel>();
     if (!auth.isAuthenticated) return _Paso.telefono;
-    if (!auth.perfilCompleto) return _Paso.perfil;
+    if (!auth.perfilCompleto) return _Paso.identidad;
     if (auth.membresiaEstado == MembresiaEstado.ninguna ||
         auth.membresiaEstado == MembresiaEstado.rechazada) {
       return _Paso.unirseCentro;
@@ -56,11 +57,11 @@ class _OnboardingViewState extends State<OnboardingView> {
             StepTelefono(onSolicitado: () => setState(() => _paso = _Paso.otp)),
           _Paso.otp => StepOtp(
               onVerificado: () => setState(
-                () => _paso = auth.perfilCompleto ? _Paso.unirseCentro : _Paso.perfil,
+                () => _paso = auth.perfilCompleto ? _Paso.unirseCentro : _Paso.identidad,
               ),
             ),
-          _Paso.perfil =>
-            StepPerfil(onCompletado: () => setState(() => _paso = _Paso.unirseCentro)),
+          _Paso.identidad =>
+            StepIdentidad(onCompletado: () => setState(() => _paso = _Paso.unirseCentro)),
           _Paso.unirseCentro =>
             StepUnirseCentro(onUnido: () => setState(() => _paso = _Paso.espera)),
           _Paso.espera => const StepEspera(),
