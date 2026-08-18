@@ -1,0 +1,2 @@
+ALTER TABLE personas DROP COLUMN IF EXISTS foto_ine_url;
+ALTER TABLE personas DROP COLUMN IF EXISTS curp;

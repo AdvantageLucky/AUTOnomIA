@@ -2,6 +2,7 @@ package persona
 
 import (
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -30,6 +31,7 @@ type Handler struct {
 	tenantRepo     tenant.Repository
 	invitacionRepo *invitaciones.Repository
 	visitaRepo     *visitas.Repository
+	uploadsDir     string
 }
 
 func NewHandler(
@@ -41,6 +43,7 @@ func NewHandler(
 	tenantRepo tenant.Repository,
 	invitacionRepo *invitaciones.Repository,
 	visitaRepo *visitas.Repository,
+	uploadsDir string,
 ) *Handler {
 	return &Handler{
 		repo:           repo,
@@ -52,6 +55,7 @@ func NewHandler(
 		tenantRepo:     tenantRepo,
 		invitacionRepo: invitacionRepo,
 		visitaRepo:     visitaRepo,
+		uploadsDir:     uploadsDir,
 	}
 }
 
@@ -454,13 +458,7 @@ func (h *Handler) GetMe(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, PersonaMeResponse{
-		Telefono:             p.Telefono,
-		Nombre:               p.Nombre,
-		ApellidoPaterno:      p.ApellidoPaterno,
-		ApellidoMaterno:      p.ApellidoMaterno,
-		TelefonoVerificadoAt: p.TelefonoVerificadoAt,
-	})
+	c.JSON(http.StatusOK, toPersonaMeResponse(p))
 }
 
 // ListarVisitasPendientes devuelve las visitas por aprobar en la casa de la
@@ -604,8 +602,8 @@ func (h *Handler) ListarMisMembresias(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"membresias": items})
 }
 
-// PatchMe completa o actualiza nombre/apellidos/embedding de la Persona
-// autenticada — usado por la app cuando GetMe devuelve un perfil vacío.
+// PatchMe completa o actualiza nombre/apellidos de la Persona autenticada
+// — usado por la app cuando GetMe devuelve un perfil vacío.
 func (h *Handler) PatchMe(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
 
@@ -640,11 +638,83 @@ func (h *Handler) PatchMe(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, PersonaMeResponse{
-		Telefono:             p.Telefono,
-		Nombre:               p.Nombre,
-		ApellidoPaterno:      p.ApellidoPaterno,
-		ApellidoMaterno:      p.ApellidoMaterno,
-		TelefonoVerificadoAt: p.TelefonoVerificadoAt,
-	})
+	c.JSON(http.StatusOK, toPersonaMeResponse(p))
+}
+
+// CompletarIdentidad cierra el wizard de INE+rostro del onboarding: recibe
+// nombre/apellidos/CURP confirmados, la foto de la INE, la foto de rostro y
+// el embedding facial (192-dim MobileFaceNet, calculado on-device por la
+// app) en una sola llamada multipart, y completa el perfil de la Persona
+// autenticada de un tirón — ver spec 2026-08-17-kigo-app-rediseno-design.md §10.
+func (h *Handler) CompletarIdentidad(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	nombre := strings.TrimSpace(c.PostForm("nombre"))
+	apellidoPaterno := strings.TrimSpace(c.PostForm("apellido_paterno"))
+	apellidoMaterno := strings.TrimSpace(c.PostForm("apellido_materno"))
+	curp := strings.TrimSpace(c.PostForm("curp"))
+	if nombre == "" || apellidoPaterno == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "nombre y apellido_paterno son requeridos"})
+		return
+	}
+
+	var embedding []float64
+	if err := json.Unmarshal([]byte(c.PostForm("embedding")), &embedding); err != nil || len(embedding) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "embedding inválido o vacío"})
+		return
+	}
+
+	fotoIneHeader, err := c.FormFile("foto_documento")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "foto_documento requerida"})
+		return
+	}
+	fotoRostroHeader, err := c.FormFile("foto_rostro")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "foto_rostro requerida"})
+		return
+	}
+
+	fotoIneUrl, err := visitas.GuardarFotoVisitante(c, fotoIneHeader, h.uploadsDir)
+	if err != nil {
+		if errors.Is(err, visitas.ErrFormatoFotoInvalido) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_documento: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	fotoRostroUrl, err := visitas.GuardarFotoVisitante(c, fotoRostroHeader, h.uploadsDir)
+	if err != nil {
+		if errors.Is(err, visitas.ErrFormatoFotoInvalido) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_rostro: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	p, err := h.repo.FindByID(personaID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "persona no encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	p.Nombre = nombre
+	p.ApellidoPaterno = apellidoPaterno
+	p.ApellidoMaterno = apellidoMaterno
+	p.Curp = curp
+	p.FotoIneUrl = fotoIneUrl
+	p.FotoCaraUrl = fotoRostroUrl
+	p.Embedding = residente.FloatArray(embedding)
+	if err := h.repo.Update(p); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toPersonaMeResponse(p))
 }
