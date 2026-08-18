@@ -131,12 +131,13 @@ func (h *Handler) VerificarOTP(c *gin.Context) {
 
 	esRegistro := errors.Is(err, gorm.ErrRecordNotFound) || (p != nil && p.TelefonoVerificadoAt == nil)
 	if esRegistro {
+		// Nombre/apellidos ya NO son requeridos aquí — la app los pide en un
+		// paso posterior vía PATCH /personas/me (que sí los exige). Exigirlos
+		// en esta misma llamada obligaba a la app a mandar el perfil junto
+		// con el código de un tirón, algo que el flujo de onboarding de la
+		// app (teléfono → OTP → perfil → unirse a centro) nunca hace.
 		nombre := strings.TrimSpace(req.Nombre)
 		apellidoPaterno := strings.TrimSpace(req.ApellidoPaterno)
-		if nombre == "" || apellidoPaterno == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "nombre y apellido_paterno son requeridos para registrarse"})
-			return
-		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			p = &Persona{
 				Telefono:             req.Telefono,
@@ -151,10 +152,16 @@ func (h *Handler) VerificarOTP(c *gin.Context) {
 				return
 			}
 		} else {
-			p.Nombre = nombre
-			p.ApellidoPaterno = apellidoPaterno
-			p.ApellidoMaterno = strings.TrimSpace(req.ApellidoMaterno)
 			p.TelefonoVerificadoAt = &ahora
+			if nombre != "" {
+				p.Nombre = nombre
+			}
+			if apellidoPaterno != "" {
+				p.ApellidoPaterno = apellidoPaterno
+			}
+			if am := strings.TrimSpace(req.ApellidoMaterno); am != "" {
+				p.ApellidoMaterno = am
+			}
 			if len(req.Embedding) > 0 {
 				p.Embedding = residente.FloatArray(req.Embedding)
 			}
