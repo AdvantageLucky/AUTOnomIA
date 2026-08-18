@@ -1,7 +1,7 @@
 /// Modelo local que refleja el KioskoConfigResponse del backend.
 /// Campos: tipo, foto_placa_visitante, foto_rostro_visitante, foto_placa_invitado,
 /// foto_rostro_invitado, foto_ine_invitado (= ine_obligatorio_invitado),
-/// tiempo_espera_min, horario_inicio, horario_fin, mensaje_bienvenida,
+/// tiempo_espera_seg, horario_inicio, horario_fin, mensaje_bienvenida,
 /// auto_pass_habilitado, umbral_confianza_visitas.
 // Paleta de color del kiosko configurada desde el dashboard admin.
 enum KioskoColorTema { oscuro, claro }
@@ -18,7 +18,7 @@ class KioskoConfig {
   final bool fotoPlacaInvitado;
   final bool fotoRostroInvitado;
   final bool ineObligatorioInvitado;
-  final int tiempoEsperaMin;
+  final int tiempoEsperaSeg;
   final String horarioInicio;
   final String horarioFin;
   final String mensajeBienvenida;
@@ -34,7 +34,7 @@ class KioskoConfig {
     required this.fotoPlacaInvitado,
     required this.fotoRostroInvitado,
     required this.ineObligatorioInvitado,
-    required this.tiempoEsperaMin,
+    required this.tiempoEsperaSeg,
     required this.horarioInicio,
     required this.horarioFin,
     required this.mensajeBienvenida,
@@ -57,7 +57,7 @@ class KioskoConfig {
       fotoPlacaInvitado: json['foto_placa_invitado'] as bool? ?? false,
       fotoRostroInvitado: json['foto_rostro_invitado'] as bool? ?? false,
       ineObligatorioInvitado: json['foto_ine_invitado'] as bool? ?? false,
-      tiempoEsperaMin: json['tiempo_espera_min'] as int? ?? 15,
+      tiempoEsperaSeg: json['tiempo_espera_seg'] as int? ?? 60,
       horarioInicio: json['horario_inicio'] as String? ?? '08:00',
       horarioFin: json['horario_fin'] as String? ?? '20:00',
       mensajeBienvenida: json['mensaje_bienvenida'] as String? ?? '',
@@ -75,7 +75,7 @@ class KioskoConfig {
         fotoPlacaInvitado: false,
         fotoRostroInvitado: false,
         ineObligatorioInvitado: false,
-        tiempoEsperaMin: 15,
+        tiempoEsperaSeg: 60,
         horarioInicio: '08:00',
         horarioFin: '20:00',
         mensajeBienvenida: '',
