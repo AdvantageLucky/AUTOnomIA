@@ -58,7 +58,7 @@ func (r *DeviceRepository) Aprobar(userCode string, kioskoID, tenantID uint, cla
 	return r.db.Model(&DeviceAuthorization{}).
 		Where("user_code = ? AND status = ? AND deleted_at IS NULL", userCode, DeviceStatusPending).
 		Updates(map[string]any{
-			"status":              DeviceStatusApproved,
+			"status":             DeviceStatusApproved,
 			"kiosko_id":          kioskoID,
 			"tenant_id":          tenantID,
 			"clave_kiosko_plain": claveKiosko,

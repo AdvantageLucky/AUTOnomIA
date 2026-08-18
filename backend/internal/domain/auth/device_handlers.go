@@ -140,7 +140,7 @@ func (h *DeviceHandler) ObtenerToken(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{
 			"token":        token,
-			"kiosko_id":   *da.KioskoID,
+			"kiosko_id":    *da.KioskoID,
 			"clave_kiosko": claveKiosko,
 		})
 	default:
