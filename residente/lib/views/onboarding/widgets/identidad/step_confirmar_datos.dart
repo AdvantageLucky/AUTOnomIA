@@ -24,6 +24,7 @@ class _StepConfirmarDatosState extends State<StepConfirmarDatos> {
   final _apellidoPaternoCtrl = TextEditingController();
   final _apellidoMaternoCtrl = TextEditingController();
   late final TextEditingController _curpCtrl;
+  String? _errorLocal;
 
   @override
   void initState() {
@@ -41,9 +42,16 @@ class _StepConfirmarDatosState extends State<StepConfirmarDatos> {
   }
 
   void _continuar() {
+    final nombre = _nombreCtrl.text.trim();
+    final apellidoPaterno = _apellidoPaternoCtrl.text.trim();
+    if (nombre.isEmpty || apellidoPaterno.isEmpty) {
+      setState(() => _errorLocal = 'Nombre y apellido paterno son requeridos');
+      return;
+    }
+    setState(() => _errorLocal = null);
     widget.onConfirmado(
-      _nombreCtrl.text.trim(),
-      _apellidoPaternoCtrl.text.trim(),
+      nombre,
+      apellidoPaterno,
       _apellidoMaternoCtrl.text.trim(),
       _curpCtrl.text.trim(),
     );
@@ -73,6 +81,10 @@ class _StepConfirmarDatosState extends State<StepConfirmarDatos> {
           KigoTextField(controller: _apellidoMaternoCtrl, label: 'Apellido materno (opcional)'),
           const SizedBox(height: 12),
           KigoTextField(controller: _curpCtrl, label: 'CURP'),
+          if (_errorLocal case final mensaje?) ...[
+            const SizedBox(height: 8),
+            Text(mensaje, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
+          ],
           const SizedBox(height: 20),
           KigoPrimaryButton(label: 'Continuar', onPressed: _continuar),
         ],

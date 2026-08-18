@@ -15,6 +15,7 @@ class StepOtp extends StatefulWidget {
 
 class _StepOtpState extends State<StepOtp> {
   final _codigoCtrl = TextEditingController();
+  String? _errorLocal;
 
   @override
   void dispose() {
@@ -23,9 +24,16 @@ class _StepOtpState extends State<StepOtp> {
   }
 
   Future<void> _verificar() async {
+    final codigo = _codigoCtrl.text.trim();
+    if (codigo.length != 6) {
+      setState(() => _errorLocal = 'El código tiene 6 dígitos');
+      return;
+    }
+    setState(() => _errorLocal = null);
+
     final auth = context.read<AuthViewModel>();
     try {
-      await auth.verificarOtp(_codigoCtrl.text.trim());
+      await auth.verificarOtp(codigo);
       widget.onVerificado();
     } catch (_) {}
   }
@@ -49,9 +57,9 @@ class _StepOtpState extends State<StepOtp> {
             keyboardType: TextInputType.number,
             maxLength: 6,
           ),
-          if (auth.error != null) ...[
+          if (_errorLocal ?? auth.error case final mensaje?) ...[
             const SizedBox(height: 8),
-            Text(auth.error!, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
+            Text(mensaje, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
           ],
           const SizedBox(height: 20),
           KigoPrimaryButton(

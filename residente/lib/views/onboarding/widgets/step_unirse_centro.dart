@@ -17,6 +17,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
   final _codigoCtrl = TextEditingController();
   final _casaCtrl = TextEditingController();
   final _pinCtrl = TextEditingController();
+  String? _errorLocal;
 
   @override
   void dispose() {
@@ -27,13 +28,18 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
   }
 
   Future<void> _continuar() async {
+    final codigo = _codigoCtrl.text.trim();
+    final casa = _casaCtrl.text.trim();
+    final pin = _pinCtrl.text.trim();
+    if (codigo.isEmpty || casa.isEmpty || pin.length < 4 || pin.length > 6) {
+      setState(() => _errorLocal = 'Completa el código, la casa y un PIN de 4 a 6 dígitos');
+      return;
+    }
+    setState(() => _errorLocal = null);
+
     final auth = context.read<AuthViewModel>();
     try {
-      await auth.unirseCentro(
-        _codigoCtrl.text.trim(),
-        _casaCtrl.text.trim(),
-        _pinCtrl.text.trim(),
-      );
+      await auth.unirseCentro(codigo, casa, pin);
       widget.onUnido();
     } catch (_) {}
   }
@@ -62,9 +68,9 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
             obscureText: true,
             maxLength: 6,
           ),
-          if (auth.error != null) ...[
+          if (_errorLocal ?? auth.error case final mensaje?) ...[
             const SizedBox(height: 8),
-            Text(auth.error!, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
+            Text(mensaje, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
           ],
           const SizedBox(height: 20),
           KigoPrimaryButton(

@@ -15,6 +15,7 @@ class StepTelefono extends StatefulWidget {
 
 class _StepTelefonoState extends State<StepTelefono> {
   final _telefonoCtrl = TextEditingController();
+  String? _errorLocal;
 
   @override
   void dispose() {
@@ -23,9 +24,16 @@ class _StepTelefonoState extends State<StepTelefono> {
   }
 
   Future<void> _continuar() async {
+    final telefono = _telefonoCtrl.text.trim();
+    if (telefono.isEmpty) {
+      setState(() => _errorLocal = 'Ingresa tu número de teléfono');
+      return;
+    }
+    setState(() => _errorLocal = null);
+
     final auth = context.read<AuthViewModel>();
     try {
-      await auth.solicitarOtp(_telefonoCtrl.text.trim());
+      await auth.solicitarOtp(telefono);
       widget.onSolicitado();
     } catch (_) {
       // el error ya quedó en auth.error, se muestra abajo
@@ -50,9 +58,9 @@ class _StepTelefonoState extends State<StepTelefono> {
             label: 'Teléfono',
             keyboardType: TextInputType.phone,
           ),
-          if (auth.error != null) ...[
+          if (_errorLocal ?? auth.error case final mensaje?) ...[
             const SizedBox(height: 8),
-            Text(auth.error!, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
+            Text(mensaje, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
           ],
           const SizedBox(height: 20),
           KigoPrimaryButton(
