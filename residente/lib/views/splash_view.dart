@@ -23,11 +23,12 @@ class _SplashViewState extends State<SplashView> {
         auth.waitUntilReady(),
       ]);
       if (!mounted) return;
+      // La membresía ya no gatea la entrada: una Persona puede usar la app
+      // (Mi QR, recibir invitaciones) sin pertenecer a ningún centro — ver
+      // discusión 2026-08-18 sobre el caso del invitado frecuente.
       Navigator.pushReplacementNamed(
         context,
-        (auth.isAuthenticated && auth.membresiaEstado == MembresiaEstado.activa)
-            ? '/dashboard'
-            : '/onboarding',
+        (auth.isAuthenticated && auth.perfilCompleto) ? '/dashboard' : '/onboarding',
       );
     });
   }

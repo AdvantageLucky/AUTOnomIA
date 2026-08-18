@@ -287,9 +287,10 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMaster
 	tenantRepo := tenant.NewRepository(db)
 	invitacionRepo := invitaciones.NewRepository(db)
 	visitaRepo := visitas.NewRepository(db)
+	destinoRepo := destinos.NewRepository(db)
 	personaHandler := persona.NewHandler(
 		personaRepo, otpRepo, persona.LogOtpSender{}, jwtSecret, qrMasterSecret,
-		membresiaRepo, tenantRepo, invitacionRepo, visitaRepo, uploadsDir,
+		membresiaRepo, tenantRepo, invitacionRepo, visitaRepo, destinoRepo, uploadsDir,
 	)
 
 	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)
@@ -304,6 +305,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMaster
 		p.GET("/qr", personaHandler.GetQR)
 		p.POST("/membresias", personaHandler.UnirseCentro)
 		p.GET("/membresias", personaHandler.ListarMisMembresias)
+		p.GET("/destinos", personaHandler.ListarDestinos)
 		p.POST("/invitaciones", personaHandler.CrearInvitacion)
 		p.GET("/invitaciones", personaHandler.ListarInvitaciones)
 		p.DELETE("/invitaciones/:id", personaHandler.RevocarInvitacion)
