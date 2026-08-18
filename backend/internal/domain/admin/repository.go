@@ -53,10 +53,10 @@ func (r *Repository) Update(a *Admin) error {
 	return nil
 }
 
-// FindAll devuelve todos los admins; filtra por rol si se proporciona
-func (r *Repository) FindAll(rolFiltro string) ([]Admin, error) {
+// FindAllByTenant devuelve los admins del tenant dado; filtra por rol si se proporciona
+func (r *Repository) FindAllByTenant(tenantID uint, rolFiltro string) ([]Admin, error) {
 	var admins []Admin
-	q := r.db.Model(&Admin{})
+	q := r.db.Model(&Admin{}).Where("tenant_id = ?", tenantID)
 	if rolFiltro != "" {
 		q = q.Where("rol = ?", rolFiltro)
 	}

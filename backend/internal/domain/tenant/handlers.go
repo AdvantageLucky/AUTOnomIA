@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,28 +18,14 @@ func NewHandler(repo Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
-func (h *Handler) CreateTenant(c *gin.Context) {
-	var req CreateTenantRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	t := CentroHabitacional{
-		Nombre:    req.Nombre,
-		Direccion: req.Direccion,
-	}
-	if err := h.repo.Create(&t); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear instalación"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, toResponse(&t))
-}
-
 func (h *Handler) GetTenant(c *gin.Context) {
 	id, err := parseID(c, "id")
 	if err != nil {
+		return
+	}
+
+	if !esTenantPropio(c, id) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no autorizado"})
 		return
 	}
 
@@ -53,6 +41,11 @@ func (h *Handler) GetTenant(c *gin.Context) {
 func (h *Handler) PatchTenant(c *gin.Context) {
 	id, err := parseID(c, "id")
 	if err != nil {
+		return
+	}
+
+	if !esTenantPropio(c, id) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no autorizado"})
 		return
 	}
 
@@ -101,6 +94,13 @@ func toResponse(t *CentroHabitacional) TenantResponse {
 		Descripcion: t.Descripcion,
 		CreatedAt:   t.CreatedAt,
 	}
+}
+
+// esTenantPropio verifica que el id de la ruta coincida con el tenant_id del
+// admin autenticado (inyectado por auth.RequireAdmin vía JWT).
+func esTenantPropio(c *gin.Context, id uint) bool {
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+	return tenantID == id
 }
 
 func parseID(c *gin.Context, param string) (uint, error) {

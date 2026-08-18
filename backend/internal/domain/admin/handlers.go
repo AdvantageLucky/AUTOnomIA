@@ -34,8 +34,9 @@ func NewHandler(repo *Repository) *Handler {
 // @Success 200
 // @Router /admins [get]
 func (h *Handler) ListarAdmins(c *gin.Context) {
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
 	rol := c.Query("rol")
-	admins, err := h.repo.FindAll(rol)
+	admins, err := h.repo.FindAllByTenant(tenantID, rol)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error obteniendo admins"})
 		return
