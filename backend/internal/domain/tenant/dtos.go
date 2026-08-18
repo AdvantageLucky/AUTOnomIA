@@ -2,11 +2,6 @@ package tenant
 
 import "time"
 
-type CreateTenantRequest struct {
-	Nombre    string `json:"nombre" binding:"required"`
-	Direccion string `json:"direccion"`
-}
-
 type UpdateTenantRequest struct {
 	Nombre      string `json:"nombre"`
 	Direccion   string `json:"direccion"`
