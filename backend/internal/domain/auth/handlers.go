@@ -12,9 +12,9 @@ Pueden registrarse/loguearse con correo/contraseña o google services
 Pueden registrarse con codigo qr que redirigue a registro de kioskos (se necesita cuenta
 de admin logueada) o con codigo numerico
 
-3. Autorizacion a residentes: TODO. Desbloquean app orientada a residentes que puede hacer
-operaciones relacionadas con el dominio residentes. Pueden registrarse con correo/contraseña
-o con google services
+3. Autorizacion a residentes: desbloquean la app orientada a residentes. Se auto-registran
+con el codigo publico de su instalacion (ver internal/domain/residente y ADR 0020) y quedan
+pendientes de aprobacion del admin; el login usa casa_destino + PIN
 
 Documentado con swag
 */
@@ -155,7 +155,7 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret) // <-- Pasamos el TenantID
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -196,7 +196,7 @@ func (h *Handler) LoginAdminWithMailAndPassword(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret) // <-- Pasamos el TenantID
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -251,7 +251,7 @@ func (h *Handler) LoginWithGoogle(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret) // <-- Pasamos el TenantID
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -334,7 +334,7 @@ func (h *Handler) RegisterWithGoogle(c *gin.Context) {
 		return
 	}
 
-	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret) // <-- Pasamos el TenantID
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -385,7 +385,7 @@ func (h *Handler) LoginKiosko(c *gin.Context) {
 	sesion := &SesionKiosko{
 		KioskoID: a.ID,
 		Token:    token,
-		TenantID: a.TenantID, // <-- GUARDAMOS EL TENANTID EN LA SESIÓN
+		TenantID: a.TenantID,
 	}
 	if err := h.sesionRepo.Create(sesion); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
