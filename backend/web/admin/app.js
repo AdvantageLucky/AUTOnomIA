@@ -104,7 +104,7 @@
       nav_solicitudes: "Solicitudes",
       nav_residentes: "Residentes",
       nav_kioskos: "Kioskos",
-      nav_instalacion: "Instalación",
+      nav_instalacion: "Centro",
       tab_activos: "Activos",
       tab_solicitudes: "Solicitudes",
       tab_lista: "Lista",
@@ -116,8 +116,8 @@
       nuevo_residente: "+ Nuevo residente",
       res_title: "Residentes",
       kio_title: "Kioskos",
-      inst_title: "Instalación",
-      inst_sub: "Destinos de visita y configuración general",
+      inst_title: "Centro Habitacional",
+      inst_sub: "Casas del fraccionamiento y datos generales del centro",
       sol_title: "Solicitudes de acceso",
       sol_sub: "Visitantes pendientes de aprobación",
       approbar: "Aprobar",
@@ -224,7 +224,7 @@
       nav_solicitudes: "Requests",
       nav_residentes: "Residents",
       nav_kioskos: "Kiosks",
-      nav_instalacion: "Installation",
+      nav_instalacion: "Complex",
       tab_activos: "Active",
       tab_solicitudes: "Requests",
       tab_lista: "List",
@@ -236,8 +236,8 @@
       nuevo_residente: "+ New resident",
       res_title: "Residents",
       kio_title: "Kiosks",
-      inst_title: "Installation",
-      inst_sub: "Visit destinations and general settings",
+      inst_title: "Residential Complex",
+      inst_sub: "Houses in the complex and general settings",
       sol_title: "Access requests",
       sol_sub: "Visitors pending approval",
       approbar: "Approve",
@@ -1906,7 +1906,6 @@
       const d = await res.json();
       const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
       set('ob-inst-nombre', d.nombre);
-      set('ob-inst-tipo',   d.tipo || 'habitacional');
       set('ob-inst-codigo', d.codigo);
     }
   }
@@ -1937,7 +1936,6 @@
     }
     const body = {
       nombre: document.getElementById('ob-inst-nombre').value.trim(),
-      tipo:   document.getElementById('ob-inst-tipo').value,
       codigo: codigo,
     };
     const res = await api(`/tenants/${state.tenantId || 1}`, { method: 'PATCH', body: JSON.stringify(body) });
@@ -2122,7 +2120,7 @@
     loadDestinos();
   });
 
-  /* ─── Instalación config ─────────────────── */
+  /* ─── Centro habitacional: configuración ─────────────────── */
 
   async function loadInstalacionConfig() {
     const tenantId = state.tenantId || 1;
@@ -2131,7 +2129,6 @@
     const d = await res.json();
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
     set('inst-nombre',     d.nombre);
-    set('inst-tipo',       d.tipo);
     set('inst-direccion',  d.direccion);
     set('inst-codigo',     d.codigo);
     set('inst-descripcion', d.descripcion);
@@ -2142,7 +2139,6 @@
     const tenantId = state.tenantId || 1;
     const body = {
       nombre:      document.getElementById('inst-nombre')?.value.trim(),
-      tipo:        document.getElementById('inst-tipo')?.value,
       direccion:   document.getElementById('inst-direccion')?.value.trim(),
       codigo:      document.getElementById('inst-codigo')?.value.trim(),
       descripcion: document.getElementById('inst-descripcion')?.value.trim(),
@@ -2152,7 +2148,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (res && res.ok) mostrarToast('Instalación actualizada', 'ok');
+    if (res && res.ok) mostrarToast('Centro habitacional actualizado', 'ok');
     else mostrarToast('Error al guardar', 'err');
   });
 

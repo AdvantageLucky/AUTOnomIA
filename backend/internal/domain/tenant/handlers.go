@@ -65,9 +65,6 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 	if req.Codigo != "" {
 		fields["codigo"] = req.Codigo
 	}
-	if req.Tipo != "" {
-		fields["tipo"] = req.Tipo
-	}
 	fields["descripcion"] = req.Descripcion
 
 	if err := h.repo.Update(id, fields); err != nil {
@@ -94,7 +91,6 @@ func toResponse(t *CentroHabitacional) TenantResponse {
 		Nombre:      t.Nombre,
 		Direccion:   t.Direccion,
 		Codigo:      codigo,
-		Tipo:        t.Tipo,
 		Descripcion: t.Descripcion,
 		CreatedAt:   t.CreatedAt,
 	}
