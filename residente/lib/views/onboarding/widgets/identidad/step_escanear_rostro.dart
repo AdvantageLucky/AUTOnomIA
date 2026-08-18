@@ -91,13 +91,19 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       children: [
         Positioned.fill(child: CameraPreview(_controller!)),
         Center(
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.6,
-            height: MediaQuery.of(context).size.width * 0.6,
-            decoration: BoxDecoration(
-              border: Border.all(color: AppTheme.primaryOrange, width: 3),
-              shape: BoxShape.circle,
-            ),
+          child: Builder(
+            builder: (context) {
+              final ancho = MediaQuery.of(context).size.width * 0.6;
+              final alto = ancho * 1.35; // óvalo de cara, no círculo
+              return Container(
+                width: ancho,
+                height: alto,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppTheme.primaryOrange, width: 3),
+                  borderRadius: BorderRadius.all(Radius.elliptical(ancho / 2, alto / 2)),
+                ),
+              );
+            },
           ),
         ),
         const Positioned(
