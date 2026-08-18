@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"kigo-autonomia-backend/internal/domain/auth"
+	"kigo-autonomia-backend/internal/domain/destinos"
 	"kigo-autonomia-backend/internal/domain/invitaciones"
 	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/domain/tenant"
@@ -31,6 +32,7 @@ type Handler struct {
 	tenantRepo     tenant.Repository
 	invitacionRepo *invitaciones.Repository
 	visitaRepo     *visitas.Repository
+	destinoRepo    *destinos.Repository
 	uploadsDir     string
 }
 
@@ -43,6 +45,7 @@ func NewHandler(
 	tenantRepo tenant.Repository,
 	invitacionRepo *invitaciones.Repository,
 	visitaRepo *visitas.Repository,
+	destinoRepo *destinos.Repository,
 	uploadsDir string,
 ) *Handler {
 	return &Handler{
@@ -55,8 +58,50 @@ func NewHandler(
 		tenantRepo:     tenantRepo,
 		invitacionRepo: invitacionRepo,
 		visitaRepo:     visitaRepo,
+		destinoRepo:    destinoRepo,
 		uploadsDir:     uploadsDir,
 	}
+}
+
+// ListarDestinos devuelve los destinos (casas/unidades) del tenant pedido —
+// la Persona necesita el ID real (no solo el nombre) para crear una
+// invitación con destino_id. Verifica membresía activa igual que
+// ListarVisitasPendientes: el tenant no viene del JWT (identidad global).
+func (h *Handler) ListarDestinos(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía en ese centro"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+		return
+	}
+
+	list, err := h.destinoRepo.FindByTenantID(tenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]gin.H, 0, len(list))
+	for _, d := range list {
+		items = append(items, gin.H{"id": d.ID, "nombre": d.Nombre})
+	}
+	c.JSON(http.StatusOK, gin.H{"destinos": items})
 }
 
 // SolicitarOTP genera y "manda" (ver OtpSender) un código de verificación
