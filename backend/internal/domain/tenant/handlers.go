@@ -85,11 +85,15 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 }
 
 func toResponse(t *CentroHabitacional) TenantResponse {
+	codigo := ""
+	if t.Codigo != nil {
+		codigo = *t.Codigo
+	}
 	return TenantResponse{
 		ID:          t.ID,
 		Nombre:      t.Nombre,
 		Direccion:   t.Direccion,
-		Codigo:      t.Codigo,
+		Codigo:      codigo,
 		Tipo:        t.Tipo,
 		Descripcion: t.Descripcion,
 		CreatedAt:   t.CreatedAt,
