@@ -8,7 +8,9 @@ import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/consent_dialog.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_scanner_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_result_viewmodel.dart';
+import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/qr_result_view.dart';
+import 'package:kigo_kiosco/features/welcome/views/persona_qr_result_view.dart';
 
 class QrScannerView extends StatefulWidget {
   final QrScannerViewModel viewModel;
@@ -72,8 +74,21 @@ class _QrScannerViewState extends State<QrScannerView> {
     widget.viewModel.onQrDetected(value);
     _controller?.stop();
 
-    final config = context.read<KioskoConfigNotifier>().config;
     final navigator = Navigator.of(context);
+
+    // El QR personal de la app Kigo (persona_id:firma) siempre identifica
+    // por completo a quien lo trae — a diferencia del token de invitación,
+    // no hay reglas de captura del kiosko que aplicarle.
+    if (value.contains(':')) {
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        navigator.pushReplacement(MaterialPageRoute(
+          builder: (_) => PersonaQrResultView(viewModel: PersonaQrResultViewModel(qrValue: value)),
+        ));
+      });
+      return;
+    }
+
+    final config = context.read<KioskoConfigNotifier>().config;
 
     // Si la config no pide capturas al invitado, el QR basta: se consume la
     // invitación de inmediato como siempre.

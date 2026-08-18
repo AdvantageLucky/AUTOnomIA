@@ -456,6 +456,40 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 		}
 	}
 
+	// Un "miembro" es de la casa — no deja rastro de Visita. Un "invitado"
+	// sí: el QR personal ya lo identifica por completo (no requiere
+	// capturas adicionales), así que la Visita se crea de una vez, APROBADO,
+	// y se descuenta el uso de la invitación.
+	var visitaID *uint
+	if resolucion.Estado == EstadoQRInvitado && invitacion != nil {
+		destino, err := h.destinoRepo.FindByID(*resolucion.DestinoID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo resolver el destino de la invitación"})
+			return
+		}
+		resolucion.CasaDestino = destino.Nombre
+
+		kioskoID := c.MustGet(ctxkeys.KioskoID).(uint)
+		v := &visitas.Visita{
+			TenantID:      tenantID,
+			Titular:       resolucion.Nombre,
+			TipoVisitante: visitas.TipoConInvitacion,
+			TipoDocumento: visitas.DocumentoQR,
+			CasaDestino:   destino.Nombre,
+			Estado:        visitas.EstadoAprobado,
+			KioskoID:      kioskoID,
+		}
+		if err := h.visitaRepo.WithContext(c.Request.Context()).Create(v); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando la visita"})
+			return
+		}
+		if err := h.invitacionRepo.IncrementarUso(invitacion.ID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		visitaID = &v.ID
+	}
+
 	c.JSON(http.StatusOK, VerificarQRResponse{
 		Estado:                      resolucion.Estado,
 		Nombre:                      resolucion.Nombre,
@@ -463,6 +497,7 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 		DestinoID:                   resolucion.DestinoID,
 		PermiteReconocimientoFacial: resolucion.PermiteReconocimientoFacial,
 		InvitacionID:                resolucion.InvitacionID,
+		VisitaID:                    visitaID,
 	})
 }
 

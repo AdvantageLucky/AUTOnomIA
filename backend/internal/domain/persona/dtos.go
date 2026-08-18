@@ -51,6 +51,7 @@ type VerificarQRResponse struct {
 	DestinoID                   *uint    `json:"destino_id,omitempty"`
 	PermiteReconocimientoFacial bool     `json:"permite_reconocimiento_facial"`
 	InvitacionID                *uint    `json:"invitacion_id,omitempty"`
+	VisitaID                    *uint    `json:"visita_id,omitempty"`
 }
 
 type CrearInvitacionPersonaRequest struct {
