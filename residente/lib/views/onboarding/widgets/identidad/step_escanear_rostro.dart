@@ -39,6 +39,7 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       );
       _controller = CameraController(frontal, ResolutionPreset.high, enableAudio: false);
       await _controller!.initialize();
+      await _controller!.setFlashMode(FlashMode.off);
       if (mounted) setState(() {});
     } catch (e) {
       if (mounted) setState(() => _error = 'No se pudo iniciar la cámara');

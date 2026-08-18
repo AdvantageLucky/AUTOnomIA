@@ -35,6 +35,9 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
       }
       _controller = CameraController(camaras.first, ResolutionPreset.high, enableAudio: false);
       await _controller!.initialize();
+      // El flash automático contra el plástico laminado de la INE genera
+      // un reflejo que arruina el OCR — se apaga explícitamente.
+      await _controller!.setFlashMode(FlashMode.off);
       if (mounted) setState(() {});
     } catch (e) {
       if (mounted) setState(() => _error = 'No se pudo iniciar la cámara');
