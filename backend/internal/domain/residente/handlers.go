@@ -36,10 +36,25 @@ type Handler struct {
 	jwtSecret   string
 	db          *gorm.DB
 	uploadsDir  string
+	visitaRepo  *visitas.Repository
 }
 
-func NewHandler(repo *Repository, destinoRepo destinoFinder, jwtSecret string, db *gorm.DB, uploadsDir string) *Handler {
-	return &Handler{repo: repo, destinoRepo: destinoRepo, jwtSecret: jwtSecret, db: db, uploadsDir: uploadsDir}
+func NewHandler(
+	repo *Repository,
+	destinoRepo destinoFinder,
+	jwtSecret string,
+	db *gorm.DB,
+	uploadsDir string,
+	visitaRepo *visitas.Repository,
+) *Handler {
+	return &Handler{
+		repo:        repo,
+		destinoRepo: destinoRepo,
+		jwtSecret:   jwtSecret,
+		db:          db,
+		uploadsDir:  uploadsDir,
+		visitaRepo:  visitaRepo,
+	}
 }
 
 func (h *Handler) LoginResidente(c *gin.Context) {
@@ -93,6 +108,99 @@ func (h *Handler) GetMe(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, toResidenteResponse(*res, destinoID))
+}
+
+// RegistrarDeviceToken guarda el token FCM del dispositivo de la app
+// residente, usado para mandarle notificaciones push de nuevas visitas.
+func (h *Handler) RegistrarDeviceToken(c *gin.Context) {
+	residenteID := c.MustGet(ctxkeys.ResidenteID).(uint)
+
+	var req DeviceTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	if err := repoCtx.UpdateDeviceToken(residenteID, req.DeviceToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "token registrado"})
+}
+
+// ListarVisitasPendientes devuelve las visitas PENDIENTE dirigidas a la casa
+// del residente autenticado — lo que le falta autorizar.
+func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
+	residenteID := c.MustGet(ctxkeys.ResidenteID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	res, err := repoCtx.FindByID(residenteID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "residente no encontrado"})
+		return
+	}
+
+	visitasPendientes, err := h.visitaRepo.WithContext(c.Request.Context()).
+		FindPendientesByCasaDestino(tenantID, res.CasaDestino)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]visitas.VisitaResponse, 0, len(visitasPendientes))
+	for _, v := range visitasPendientes {
+		items = append(items, visitas.ToVisitaResponse(v))
+	}
+	c.JSON(http.StatusOK, gin.H{"visitas": items})
+}
+
+// ResponderVisita permite al residente aprobar o rechazar una visita
+// dirigida a su propia casa — nunca a la de otro residente.
+func (h *Handler) ResponderVisita(c *gin.Context) {
+	residenteID := c.MustGet(ctxkeys.ResidenteID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	res, err := repoCtx.FindByID(residenteID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "residente no encontrado"})
+		return
+	}
+
+	visitaRepoCtx := h.visitaRepo.WithContext(c.Request.Context())
+	if _, err := visitaRepoCtx.FindByIDAndCasaDestino(uint(id), tenantID, res.CasaDestino); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "visita no encontrada"})
+		return
+	}
+
+	var req ResponderVisitaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	estado := visitas.EstadoVisita(req.Estado)
+	if estado != visitas.EstadoAprobado && estado != visitas.EstadoRechazado {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "estado debe ser APROBADO o RECHAZADO"})
+		return
+	}
+
+	nombre := res.Nombre + " " + res.ApellidoPaterno
+	if err := visitaRepoCtx.UpdateEstado(uint(id), estado, visitas.AutorizadorResidente, nombre); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"estado": string(estado)})
 }
 
 func (h *Handler) CrearResidente(c *gin.Context) {

@@ -156,8 +156,41 @@ func (r *Repository) FindPendientesByKioskoID(kioskoID uint) ([]Visita, error) {
 	return list, nil
 }
 
-func (r *Repository) UpdateEstado(id uint, estado EstadoVisita) error {
-	result := r.db.Scopes(ByTenant).Model(&Visita{}).Where("id = ?", id).Update("estado", estado)
+// FindPendientesByCasaDestino devuelve las visitas PENDIENTE dirigidas a una
+// casa dentro de un tenant — usado por el residente para ver qué le falta
+// autorizar.
+func (r *Repository) FindPendientesByCasaDestino(tenantID uint, casaDestino string) ([]Visita, error) {
+	var list []Visita
+	if err := r.db.
+		Where("tenant_id = ? AND casa_destino = ? AND estado = ?", tenantID, casaDestino, EstadoPendiente).
+		Order("created_at DESC").
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// FindByIDAndCasaDestino busca una visita por ID acotada a la casa destino y
+// tenant del residente autenticado — evita que un residente apruebe o
+// rechace una visita de otra casa.
+func (r *Repository) FindByIDAndCasaDestino(id, tenantID uint, casaDestino string) (*Visita, error) {
+	var v Visita
+	if err := r.db.
+		Where("id = ? AND tenant_id = ? AND casa_destino = ?", id, tenantID, casaDestino).
+		First(&v).Error; err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+// UpdateEstado cambia el estado de una visita y deja constancia de quién
+// resolvió (autorizadoPorTipo: ver constantes Autorizador* en model.go).
+func (r *Repository) UpdateEstado(id uint, estado EstadoVisita, autorizadoPorTipo, autorizadoPorNombre string) error {
+	result := r.db.Scopes(ByTenant).Model(&Visita{}).Where("id = ?", id).Updates(map[string]any{
+		"estado":                estado,
+		"autorizado_por_tipo":   autorizadoPorTipo,
+		"autorizado_por_nombre": autorizadoPorNombre,
+	})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -185,7 +218,7 @@ func (r *Repository) HistorialPorPlaca(placa string) ([]Visita, error) {
 
 // HistorialDeVisitante agrupa por CURP cuando la hay y, si no, por placa.
 //
-// Nunca consulta con un identificador vacío: un `WHERE curp = ''` traeria todas
+// Nunca consulta con un identificador vacío: un `WHERE curp = ”` traeria todas
 // las visitas sin INE del tenant y el análisis heredaría el historial de
 // desconocidos — rechazos ajenos, visitas ajenas y, con autopass encendido,
 // aprobaciones que nadie se ganó.
@@ -199,15 +232,18 @@ func (r *Repository) HistorialDeVisitante(v Visita) ([]Visita, error) {
 	return nil, nil
 }
 
-// ActualizarEstadoConScore actualiza estado e intervenida de una visita
+// ActualizarEstadoConScore actualiza estado e intervenida de una visita —
+// usado por el agente de análisis de patrones, así que siempre queda
+// registrado como AutorizadorAgente en la bitácora.
 func (r *Repository) ActualizarEstadoConScore(
 	id uint,
 	estado EstadoVisita,
 	intervenida bool,
 ) error {
 	return r.db.Scopes(ByTenant).Model(&Visita{}).Where("id = ?", id).Updates(map[string]any{
-		"estado":      estado,
-		"intervenida": intervenida,
+		"estado":              estado,
+		"intervenida":         intervenida,
+		"autorizado_por_tipo": AutorizadorAgente,
 	}).Error
 }
 

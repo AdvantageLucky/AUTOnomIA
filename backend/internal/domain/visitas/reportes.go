@@ -7,12 +7,15 @@ import (
 	"log"
 	"time"
 
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
+
 	"gorm.io/gorm"
 )
 
 type ReporteIA struct {
 	ID            uint `gorm:"primaryKey"`
 	CreatedAt     time.Time
+	TenantID      uint      `gorm:"column:tenant_id;not null;index"`
 	PeriodoInicio time.Time `gorm:"not null"`
 	PeriodoFin    time.Time `gorm:"not null"`
 	Texto         string    `gorm:"not null"`
@@ -43,18 +46,37 @@ func IniciarAgenteReportes(db *gorm.DB, llmURL string) {
 		ticker := time.NewTicker(12 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			generarReporte(repo, visitaRepo, llmURL)
+			generarReportesPorTenant(db, repo, visitaRepo, llmURL)
 		}
 	}()
 }
 
-func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmURL string) {
+// generarReportesPorTenant genera un ReporteIA independiente para cada
+// CentroHabitacional activo — un reporte global mezclaría visitas de todos
+// los tenants, que es justo lo que la multi-tenancy debe evitar.
+func generarReportesPorTenant(db *gorm.DB, repo *reporteRepository, visitaRepo *Repository, llmURL string) {
+	var tenantIDs []uint
+	err := db.Table("centros_habitacionales").
+		Where("deleted_at IS NULL").
+		Pluck("id", &tenantIDs).Error
+	if err != nil {
+		log.Printf("[agente-reportes] error listando tenants: %v", err)
+		return
+	}
+
+	for _, tenantID := range tenantIDs {
+		generarReporte(repo, visitaRepo, llmURL, tenantID)
+	}
+}
+
+func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmURL string, tenantID uint) {
 	fin := time.Now()
 	inicio := fin.Add(-12 * time.Hour)
 
-	vs, err := visitaRepo.ListarEnPeriodo(inicio, fin)
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, tenantID)
+	vs, err := visitaRepo.WithContext(ctx).ListarEnPeriodo(inicio, fin)
 	if err != nil {
-		log.Printf("[agente-reportes] error obteniendo visitas: %v", err)
+		log.Printf("[agente-reportes] tenant %d: error obteniendo visitas: %v", tenantID, err)
 		return
 	}
 	if len(vs) == 0 {
@@ -64,22 +86,25 @@ func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmURL stri
 	datos := agregarDatos(vs)
 	datosJSON, _ := json.Marshal(datos)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	llmCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	sc := ScoreContexto{VecesVisitado: datos.TotalVisitas}
-	texto, err := GenerarResumen(ctx, llmURL, sc)
+	texto, err := GenerarResumen(llmCtx, llmURL, sc)
 	if err != nil {
-		log.Printf("[agente-reportes] error LLM: %v", err)
+		log.Printf("[agente-reportes] tenant %d: error LLM: %v", tenantID, err)
 		texto = resumirDatosTexto(datos)
 	}
 
-	_ = repo.guardar(&ReporteIA{
+	if err := repo.guardar(&ReporteIA{
+		TenantID:      tenantID,
 		PeriodoInicio: inicio,
 		PeriodoFin:    fin,
 		Texto:         texto,
 		DatosRaw:      datosJSON,
-	})
+	}); err != nil {
+		log.Printf("[agente-reportes] tenant %d: error guardando reporte: %v", tenantID, err)
+	}
 }
 
 type datosAgregados struct {

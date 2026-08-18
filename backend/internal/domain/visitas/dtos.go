@@ -39,33 +39,37 @@ type VisitaRequest struct {
 
 // VisitaResponse DTO de respuesta completo para una visita
 type VisitaResponse struct {
-	ID               uint          `json:"id"`
-	Titular          string        `json:"titular"`
-	TipoDocumento    TipoDocumento `json:"tipo_documento"`
-	TipoVisitante    TipoVisitante `json:"tipo_visitante"`
-	Curp             string        `json:"curp"`
-	FotoDocumentoURL string        `json:"foto_documento_url"`
-	FotoRostroURL    string        `json:"foto_rostro_url"`
-	FotoPlacaURL     string        `json:"foto_placa_url,omitempty"`
-	CasaDestino      string        `json:"casa_destino"`
-	Placa            string        `json:"placa"`
-	Estado           EstadoVisita  `json:"estado"`
-	Intervenida      bool          `json:"intervenida"`
-	KioskoID         uint          `json:"kiosko_id"`
-	CreatedAt        time.Time     `json:"created_at"`
+	ID                  uint          `json:"id"`
+	Titular             string        `json:"titular"`
+	TipoDocumento       TipoDocumento `json:"tipo_documento"`
+	TipoVisitante       TipoVisitante `json:"tipo_visitante"`
+	Curp                string        `json:"curp"`
+	FotoDocumentoURL    string        `json:"foto_documento_url"`
+	FotoRostroURL       string        `json:"foto_rostro_url"`
+	FotoPlacaURL        string        `json:"foto_placa_url,omitempty"`
+	CasaDestino         string        `json:"casa_destino"`
+	Placa               string        `json:"placa"`
+	Estado              EstadoVisita  `json:"estado"`
+	Intervenida         bool          `json:"intervenida"`
+	KioskoID            uint          `json:"kiosko_id"`
+	AutorizadoPorTipo   string        `json:"autorizado_por_tipo,omitempty"`
+	AutorizadoPorNombre string        `json:"autorizado_por_nombre,omitempty"`
+	CreatedAt           time.Time     `json:"created_at"`
 }
 
 // VisitaListItemResponse DTO reducido para el listado del dashboard (omite CURP y clave_lector)
 type VisitaListItemResponse struct {
-	ID            uint          `json:"id"`
-	Titular       string        `json:"titular"`
-	TipoDocumento TipoDocumento `json:"tipo_documento"`
-	TipoVisitante TipoVisitante `json:"tipo_visitante"`
-	CasaDestino   string        `json:"casa_destino"`
-	Estado        EstadoVisita  `json:"estado"`
-	Intervenida   bool          `json:"intervenida"`
-	KioskoID      uint          `json:"kiosko_id"`
-	CreatedAt     time.Time     `json:"created_at"`
+	ID                  uint          `json:"id"`
+	Titular             string        `json:"titular"`
+	TipoDocumento       TipoDocumento `json:"tipo_documento"`
+	TipoVisitante       TipoVisitante `json:"tipo_visitante"`
+	CasaDestino         string        `json:"casa_destino"`
+	Estado              EstadoVisita  `json:"estado"`
+	Intervenida         bool          `json:"intervenida"`
+	KioskoID            uint          `json:"kiosko_id"`
+	AutorizadoPorTipo   string        `json:"autorizado_por_tipo,omitempty"`
+	AutorizadoPorNombre string        `json:"autorizado_por_nombre,omitempty"`
+	CreatedAt           time.Time     `json:"created_at"`
 }
 
 // VisitasPaginadasResponse DTO para el listado paginado
@@ -83,23 +87,31 @@ type HistorialVisitaResponse struct {
 	Visitas      []VisitaResponse `json:"visitas"`
 }
 
+// ToVisitaResponse expone toVisitaResponse a otros dominios (p. ej. residente,
+// para responder los endpoints de aprobar/rechazar y listar pendientes).
+func ToVisitaResponse(v Visita) VisitaResponse {
+	return toVisitaResponse(v)
+}
+
 // helper func para convertir una Visita (DB Model) a DTO Response
 func toVisitaResponse(v Visita) VisitaResponse {
 	return VisitaResponse{
-		ID:               v.ID,
-		Titular:          v.Titular,
-		TipoDocumento:    v.TipoDocumento,
-		TipoVisitante:    v.TipoVisitante,
-		Curp:             v.Curp,
-		FotoDocumentoURL: v.FotoDocumentoURL,
-		FotoRostroURL:    v.FotoRostroURL,
-		FotoPlacaURL:     v.FotoPlacaURL,
-		CasaDestino:      v.CasaDestino,
-		Placa:            v.Placa,
-		Estado:           v.Estado,
-		Intervenida:      v.Intervenida,
-		KioskoID:         v.KioskoID,
-		CreatedAt:        v.CreatedAt,
+		ID:                  v.ID,
+		Titular:             v.Titular,
+		TipoDocumento:       v.TipoDocumento,
+		TipoVisitante:       v.TipoVisitante,
+		Curp:                v.Curp,
+		FotoDocumentoURL:    v.FotoDocumentoURL,
+		FotoRostroURL:       v.FotoRostroURL,
+		FotoPlacaURL:        v.FotoPlacaURL,
+		CasaDestino:         v.CasaDestino,
+		Placa:               v.Placa,
+		Estado:              v.Estado,
+		Intervenida:         v.Intervenida,
+		KioskoID:            v.KioskoID,
+		AutorizadoPorTipo:   v.AutorizadoPorTipo,
+		AutorizadoPorNombre: v.AutorizadoPorNombre,
+		CreatedAt:           v.CreatedAt,
 	}
 }
 
@@ -107,14 +119,16 @@ func toVisitaResponse(v Visita) VisitaResponse {
 // pensado para iterar visitas y retornar []VisitaListItemResponse
 func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 	return VisitaListItemResponse{
-		ID:            v.ID,
-		Titular:       v.Titular,
-		TipoVisitante: v.TipoVisitante,
-		TipoDocumento: v.TipoDocumento,
-		CasaDestino:   v.CasaDestino,
-		Estado:        v.Estado,
-		Intervenida:   v.Intervenida,
-		KioskoID:      v.KioskoID,
-		CreatedAt:     v.CreatedAt,
+		ID:                  v.ID,
+		Titular:             v.Titular,
+		TipoVisitante:       v.TipoVisitante,
+		TipoDocumento:       v.TipoDocumento,
+		CasaDestino:         v.CasaDestino,
+		Estado:              v.Estado,
+		Intervenida:         v.Intervenida,
+		KioskoID:            v.KioskoID,
+		AutorizadoPorTipo:   v.AutorizadoPorTipo,
+		AutorizadoPorNombre: v.AutorizadoPorNombre,
+		CreatedAt:           v.CreatedAt,
 	}
 }

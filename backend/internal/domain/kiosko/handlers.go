@@ -76,7 +76,7 @@ func NewHandler(repo *Repository, onKioskoDelete func(uint) error) *Handler {
 // @Router /kioskos [post]
 func (h *Handler) RegisterKiosko(c *gin.Context) {
 	adminID := c.MustGet(ctxkeys.AdminID).(uint)
-	tenantID := c.MustGet(ctxkeys.TenantID).(uint) // <-- Extraído del middleware
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
 
 	var req RegisterKioskoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -97,7 +97,7 @@ func (h *Handler) RegisterKiosko(c *gin.Context) {
 	}
 
 	a := &Kiosko{
-		TenantID:    tenantID, // <-- Asignado explícitamente para cumplir la regla multi-tenant
+		TenantID:    tenantID,
 		Nombre:      req.Nombre,
 		Tipo:        req.Tipo,
 		Ubicacion:   req.Ubicacion,
@@ -424,8 +424,8 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.IneObligatorioInvitado != nil {
 		cfg.IneObligatorioInvitado = *req.IneObligatorioInvitado
 	}
-	if req.TiempoEsperaMin != nil {
-		cfg.TiempoEsperaMin = *req.TiempoEsperaMin
+	if req.TiempoEsperaSeg != nil {
+		cfg.TiempoEsperaSeg = *req.TiempoEsperaSeg
 	}
 	if req.HorarioInicio != nil {
 		cfg.HorarioInicio = *req.HorarioInicio

@@ -18,6 +18,14 @@ type CrearResidenteRequest struct {
 	KioskoID        uint   `json:"kiosko_id"        binding:"required"`
 }
 
+type DeviceTokenRequest struct {
+	DeviceToken string `json:"device_token" binding:"required"`
+}
+
+type ResponderVisitaRequest struct {
+	Estado string `json:"estado" binding:"required"`
+}
+
 type ResidenteResponse struct {
 	ID              uint      `json:"id"`
 	Nombre          string    `json:"nombre"`
