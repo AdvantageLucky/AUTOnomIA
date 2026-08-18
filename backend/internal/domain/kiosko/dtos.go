@@ -35,7 +35,7 @@ type KioskoConfigRequest struct {
 	FotoPlacaInvitado      *bool    `json:"foto_placa_invitado"`
 	FotoRostroInvitado     *bool    `json:"foto_rostro_invitado"`
 	IneObligatorioInvitado *bool    `json:"foto_ine_invitado"`
-	TiempoEsperaMin        *int     `json:"tiempo_espera_min"`
+	TiempoEsperaSeg        *int     `json:"tiempo_espera_seg"`
 	HorarioInicio          *string  `json:"horario_inicio"`
 	HorarioFin             *string  `json:"horario_fin"`
 	MensajeBienvenida      *string  `json:"mensaje_bienvenida"`
@@ -59,7 +59,7 @@ type KioskoConfigResponse struct {
 	FotoPlacaInvitado      bool       `json:"foto_placa_invitado"`
 	FotoRostroInvitado     bool       `json:"foto_rostro_invitado"`
 	IneObligatorioInvitado bool       `json:"foto_ine_invitado"`
-	TiempoEsperaMin        int        `json:"tiempo_espera_min"`
+	TiempoEsperaSeg        int        `json:"tiempo_espera_seg"`
 	HorarioInicio          string     `json:"horario_inicio"`
 	HorarioFin             string     `json:"horario_fin"`
 	MensajeBienvenida      string     `json:"mensaje_bienvenida"`
@@ -97,7 +97,7 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 		FotoRostroInvitado:     cfg.FotoRostroInvitado,
 		IneObligatorioInvitado: cfg.IneObligatorioInvitado,
 
-		TiempoEsperaMin:        cfg.TiempoEsperaMin,
+		TiempoEsperaSeg:        cfg.TiempoEsperaSeg,
 		HorarioInicio:          cfg.HorarioInicio,
 		HorarioFin:             cfg.HorarioFin,
 		MensajeBienvenida:      cfg.MensajeBienvenida,

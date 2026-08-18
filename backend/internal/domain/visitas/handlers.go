@@ -25,14 +25,18 @@ type SseHub interface {
 }
 
 type Handler struct {
-	repo       *Repository
-	uploadsDir string
-	llmURL     string
-	sseHub     SseHub
+	repo        *Repository
+	uploadsDir  string
+	llmURL      string
+	sseHub      SseHub
+	notificador Notificador
 }
 
-func NewHandler(repo *Repository, uploadsDir string, llmURL string, hub SseHub) *Handler {
-	return &Handler{repo: repo, uploadsDir: uploadsDir, llmURL: llmURL, sseHub: hub}
+func NewHandler(repo *Repository, uploadsDir string, llmURL string, hub SseHub, notificador Notificador) *Handler {
+	if notificador == nil {
+		notificador = NotificadorNulo{}
+	}
+	return &Handler{repo: repo, uploadsDir: uploadsDir, llmURL: llmURL, sseHub: hub, notificador: notificador}
 }
 
 func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
@@ -42,6 +46,60 @@ func kioskoSesionAutorizada(c *gin.Context, kioskoID uint) bool {
 		return false
 	}
 	return true
+}
+
+// ConsultarRecurrencia devuelve si un CURP tiene historial en el tenant y su última casa,
+// para que el kiosko ofrezca el atajo de visitante recurrente. Autenticado por sesión de kiosko.
+//
+// @Summary Consultar recurrencia de un CURP
+// @Description Indica si el CURP ya visitó antes y sugiere la última casa destino
+// @Tags visitas
+// @Produce json
+// @Param id path int true "ID del kiosko"
+// @Param curp query string true "CURP del visitante"
+// @Success 200 {object} map[string]any
+// @Failure 400 {object} map[string]string
+// @Router /kioskos/{id}/visitas/recurrencia [get]
+func (h *Handler) ConsultarRecurrencia(c *gin.Context) {
+	kioskoID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de kiosko invalido"})
+		return
+	}
+	if !kioskoSesionAutorizada(c, uint(kioskoID)) {
+		return
+	}
+
+	curp := strings.ToUpper(strings.TrimSpace(c.Query("curp")))
+	if curp == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "curp requerido"})
+		return
+	}
+
+	historial, err := h.repo.WithContext(c.Request.Context()).HistorialPorCURP(curp)
+	if err != nil || len(historial) == 0 {
+		c.JSON(http.StatusOK, gin.H{"recurrente": false, "total_visitas": 0})
+		return
+	}
+
+	// Solo cuentan las visitas que terminaron aprobadas: un CURP con puros
+	// rechazos no merece el atajo de "bienvenido de nuevo".
+	var aprobadas int
+	var ultimaCasa string
+	for _, v := range historial { // ya viene ordenado de más reciente a más antigua
+		if v.Estado == EstadoAprobado {
+			aprobadas++
+			if ultimaCasa == "" {
+				ultimaCasa = v.CasaDestino
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"recurrente":    aprobadas > 0,
+		"total_visitas": aprobadas,
+		"ultima_casa":   ultimaCasa,
+	})
 }
 
 func (h *Handler) RegisterVisita(c *gin.Context) {
@@ -213,6 +271,20 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 				h.sseHub.Broadcast(jsonData)
 			}
 		}
+
+		// Solo notificamos al anfitrión cuando de verdad necesita actuar — si el
+		// agente ya la aprobó o la mandó a revisión de un vigilante, no le toca
+		// decidir nada.
+		if nuevoEstado == EstadoPendiente {
+			// Timeout propio: el "ctx" de arriba ya se gastó (o casi) en la
+			// llamada al LLM — reusarlo dejaría al notificador con muy poco o
+			// nada de margen.
+			notifCtx, notifCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer notifCancel()
+			if err := h.notificador.NotificarNuevaVisita(notifCtx, tenantID, visitaCopy.CasaDestino, visitaCopy); err != nil {
+				log.Printf("NotificarNuevaVisita visita %d: %v", visitaCopy.ID, err)
+			}
+		}
 	}()
 }
 
@@ -227,17 +299,17 @@ func (h *Handler) aplicarExpiracionSiVencida(repoCtx *Repository, v *Visita) {
 		return
 	}
 
-	tiempoEsperaMin := cfg.TiempoEsperaMin
-	if tiempoEsperaMin <= 0 {
-		tiempoEsperaMin = 10
+	tiempoEsperaSeg := cfg.TiempoEsperaSeg
+	if tiempoEsperaSeg <= 0 {
+		tiempoEsperaSeg = 90
 	}
 
-	limite := v.CreatedAt.Add(time.Duration(tiempoEsperaMin) * time.Minute)
+	limite := v.CreatedAt.Add(time.Duration(tiempoEsperaSeg) * time.Second)
 	if time.Now().Before(limite) {
 		return
 	}
 
-	if err := repoCtx.UpdateEstado(v.ID, EstadoRevision); err != nil {
+	if err := repoCtx.UpdateEstado(v.ID, EstadoRevision, AutorizadorSistema, ""); err != nil {
 		return
 	}
 	v.Estado = EstadoRevision
@@ -387,7 +459,8 @@ func (h *Handler) ActualizarEstado(c *gin.Context) {
 		return
 	}
 
-	if err := repoCtx.UpdateEstado(uint(id), estado); err != nil {
+	nombre := fmt.Sprintf("admin #%d", adminID)
+	if err := repoCtx.UpdateEstado(uint(id), estado, AutorizadorAdmin, nombre); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

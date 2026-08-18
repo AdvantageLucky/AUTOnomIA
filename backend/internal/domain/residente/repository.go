@@ -123,6 +123,23 @@ func (r *Repository) FindActivosConEmbeddingPorTenant(tenantID uint) ([]Resident
 	return list, nil
 }
 
+// FindActivosPorCasaDestino devuelve los residentes activos de una casa dentro
+// de un tenant — usado para decidir a quién notificar cuando llega una visita.
+func (r *Repository) FindActivosPorCasaDestino(tenantID uint, casaDestino string) ([]Residente, error) {
+	var list []Residente
+	if err := r.db.
+		Where("tenant_id = ? AND casa_destino = ? AND status = ?", tenantID, casaDestino, ResidenteStatusActivo).
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// UpdateDeviceToken guarda el token FCM del dispositivo de la app residente.
+func (r *Repository) UpdateDeviceToken(id uint, token string) error {
+	return r.db.Model(&Residente{}).Where("id = ?", id).Update("device_token", token).Error
+}
+
 // FindPendientesPorTenant devuelve residentes con status=pendiente del tenant.
 func (r *Repository) FindPendientesPorTenant(tenantID uint) ([]Residente, error) {
 	var list []Residente

@@ -92,6 +92,12 @@
       casa_destino: "Casa / Destino",
       placa: "Placa",
       no_placa: "Sin placa",
+      autorizado_por: "Autorizado por",
+      sin_resolver: "Sin resolver",
+      autorizador_admin: "Admin",
+      autorizador_residente: "Residente",
+      autorizador_agente: "Agente IA",
+      autorizador_sistema: "Sistema (sin respuesta)",
       visits: n => `${n} visita${n !== 1 ? "s" : ""} registrada${n !== 1 ? "s" : ""}`,
       hello: name => `Hola, ${name}`,
       nav_inicio: "Inicio",
@@ -206,6 +212,12 @@
       casa_destino: "House / Destination",
       placa: "License plate",
       no_placa: "No plate",
+      autorizado_por: "Authorized by",
+      sin_resolver: "Unresolved",
+      autorizador_admin: "Admin",
+      autorizador_residente: "Resident",
+      autorizador_agente: "AI agent",
+      autorizador_sistema: "System (no response)",
       visits: n => `${n} visit${n !== 1 ? "s" : ""} recorded`,
       hello: name => `Hello, ${name}`,
       nav_inicio: "Home",
@@ -748,6 +760,18 @@
     return map[e] || e;
   }
 
+  function autorizadorLabel(v) {
+    if (!v.autorizado_por_tipo) return t("sin_resolver");
+    const map = {
+      ADMIN: t("autorizador_admin"),
+      RESIDENTE: t("autorizador_residente"),
+      AGENTE: t("autorizador_agente"),
+      SISTEMA: t("autorizador_sistema"),
+    };
+    const tipo = map[v.autorizado_por_tipo] || v.autorizado_por_tipo;
+    return v.autorizado_por_nombre ? `${tipo} — ${esc(v.autorizado_por_nombre)}` : tipo;
+  }
+
   /* ─── Visitas ────────────────────────────── */
   async function loadVisitas(page) {
     state.visPage = page;
@@ -856,6 +880,7 @@
             <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp || "—")}</div></div>
             <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
             <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
+            <div><div class="campo-label">${t("autorizado_por")}</div><div class="campo-value">${autorizadorLabel(v)}</div></div>
           </div>
         </div>
       </div>
@@ -1145,8 +1170,8 @@
         <div class="detalle-campos" style="margin-top:16px">
           <div><div class="campo-label">Casa / Destino</div><div class="campo-value">${esc(r.casa_destino || "—")}</div></div>
           ${r.telefono ? `<div><div class="campo-label">Teléfono</div><div class="campo-value">${esc(r.telefono)}</div></div>` : ""}
-          ${r.tiempo_espera_min !== undefined && r.tiempo_espera_min !== null
-            ? `<div><div class="campo-label">Tiempo de espera</div><div class="campo-value">${r.tiempo_espera_min} min</div></div>`
+          ${r.tiempo_espera_seg !== undefined && r.tiempo_espera_seg !== null
+            ? `<div><div class="campo-label">Tiempo de espera</div><div class="campo-value">${r.tiempo_espera_seg} s</div></div>`
             : ""}
         </div>
       </div>
@@ -1582,7 +1607,7 @@
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
     document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
-    document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_min ?? 5;
+    document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_seg ?? 60;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
 
@@ -1623,7 +1648,7 @@
       foto_ine_invitado:     document.getElementById("cfg-ine-invitado").checked,
       foto_rostro_invitado:  document.getElementById("cfg-rostro-invitado").checked,
       foto_placa_invitado:   document.getElementById("cfg-placa-invitado").checked,
-      tiempo_espera_min:     parseInt(document.getElementById("cfg-tiempo-espera").value) || 0,
+      tiempo_espera_seg:     parseInt(document.getElementById("cfg-tiempo-espera").value) || 0,
       horario_inicio:        document.getElementById("cfg-horario-inicio").value,
       horario_fin:           document.getElementById("cfg-horario-fin").value,
     };
@@ -1876,8 +1901,8 @@
     setObStep(1);
     renderObDestinos();
     // precargar datos actuales del tenant
-    const res = await fetch(`/api/v1/tenants/${state.tenantId || 1}`);
-    if (res.ok) {
+    const res = await api(`/tenants/${state.tenantId || 1}`);
+    if (res && res.ok) {
       const d = await res.json();
       const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
       set('ob-inst-nombre', d.nombre);

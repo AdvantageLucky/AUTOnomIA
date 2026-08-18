@@ -22,7 +22,7 @@ const (
 
 type Kiosko struct {
 	gorm.Model
-	TenantID        uint   `gorm:"column:tenant_id;not null;index"`
+	TenantID    uint       `gorm:"column:tenant_id;not null;index"`
 	Nombre      string     `gorm:"not null"`
 	Tipo        TipoKiosko `gorm:"not null"`
 	Ubicacion   string
@@ -51,7 +51,7 @@ type KioskoConfig struct {
 	IneObligatorioInvitado bool `gorm:"not null;default:false"`
 
 	// Comportamiento de solicitudes
-	TiempoEsperaMin   int    `gorm:"not null;default:5"` // minutos antes de auto-rechazar
+	TiempoEsperaSeg   int    `gorm:"not null;default:90"` // segundos antes de liberar el kiosko o escalar a revisión si nadie responde
 	HorarioInicio     string `gorm:"not null;default:'00:00'"`
 	HorarioFin        string `gorm:"not null;default:'23:59'"`
 	MensajeBienvenida string
