@@ -63,6 +63,14 @@ func (r *Repository) FindByNombreAndTenantID(nombre string, tenantID uint) (uint
 	return d.ID, nil
 }
 
+func (r *Repository) FindByID(id uint) (*Destino, error) {
+	var d Destino
+	if err := r.db.First(&d, id).Error; err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
 func (r *Repository) Delete(id, tenantID uint) error {
 	if tenantID == 0 {
 		return ErrTenantNoResuelto

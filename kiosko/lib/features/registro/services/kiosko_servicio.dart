@@ -325,6 +325,34 @@ class KioskoServicio {
     throw Exception(body['error'] ?? 'Error al procesar invitación (${response.statusCode})');
   }
 
+  /// Verifica el QR personal de una Persona (app Kigo): valida su firma y,
+  /// en la misma llamada, resuelve si es miembro/invitado/desconocido en
+  /// este centro. Si es invitado, el backend ya deja registrada la visita
+  /// APROBADA — no hace falta una llamada aparte para consumirla.
+  Future<Map<String, dynamic>> verificarQrPersona(int personaId, String firma) async {
+    await _ensureLogin();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/kioskos/$_kioskoId/personas/verificar-qr'),
+      headers: {
+        'Authorization': 'Bearer $_sessionToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'persona_id': personaId, 'firma': firma}),
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Código QR inválido');
+    }
+    if (response.statusCode == 404) {
+      throw Exception('No se encontró esa cuenta de Kigo');
+    }
+    final body = jsonDecode(response.body);
+    throw Exception(body['error'] ?? 'Error al verificar el QR (${response.statusCode})');
+  }
+
   Future<Map<String, dynamic>> validarPinResidente(String pin) async {
     await _ensureLogin();
     final response = await http.post(
