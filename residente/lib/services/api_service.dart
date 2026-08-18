@@ -59,6 +59,22 @@ class ApiService {
     return _handle(res);
   }
 
+  Future<dynamic> postMultipart(
+    String path,
+    Map<String, String> fields,
+    List<http.MultipartFile> files,
+  ) async {
+    await _getJwt();
+    final uri = Uri.parse('${AppConstants.apiBaseUrl}$path');
+    final request = http.MultipartRequest('POST', uri);
+    if (_jwt != null) request.headers['Authorization'] = 'Bearer $_jwt';
+    request.fields.addAll(fields);
+    request.files.addAll(files);
+    final streamed = await request.send();
+    final res = await http.Response.fromStream(streamed);
+    return _handle(res);
+  }
+
   Future<void> delete(String path) async {
     await _getJwt();
     final uri = Uri.parse('${AppConstants.apiBaseUrl}$path');
