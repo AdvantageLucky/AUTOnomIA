@@ -13,7 +13,6 @@ type CentroHabitacional struct {
 	// contra el uniqueIndex (Postgres solo trata NULL, no "", como distinto
 	// de sí mismo en una constraint única).
 	Codigo      *string `gorm:"uniqueIndex"`
-	Tipo        string  `gorm:"not null;default:'habitacional'"`
 	Descripcion string  `gorm:"not null;default:''"`
 }
 

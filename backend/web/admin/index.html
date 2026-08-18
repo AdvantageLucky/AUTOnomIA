@@ -126,29 +126,17 @@
       <div class="ob-step-dot" id="ob-dot-3">3</div>
     </div>
 
-    <!-- Paso 1: Configurar instalación -->
+    <!-- Paso 1: Configurar centro habitacional -->
     <div id="ob-step-1" class="ob-step active">
       <div class="ob-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </div>
-      <div class="ob-title">Configura tu instalación</div>
+      <div class="ob-title">Configura tu centro habitacional</div>
       <div class="ob-sub">Define cómo se llama tu comunidad o edificio. Esto aparecerá en la app del residente.</div>
       <form id="ob-inst-form">
         <div class="form-group">
           <label>Nombre</label>
           <input id="ob-inst-nombre" type="text" required placeholder="Ej. Residencial Las Palmas">
-        </div>
-        <div class="form-group">
-          <label>Tipo</label>
-          <select id="ob-inst-tipo" style="width:100%">
-            <option value="habitacional">Habitacional</option>
-            <option value="comercial">Comercial</option>
-            <option value="educativo">Educativo</option>
-            <option value="salud">Salud</option>
-            <option value="industrial">Industrial</option>
-            <option value="mixto">Mixto</option>
-            <option value="otro">Otro</option>
-          </select>
         </div>
         <div class="form-group">
           <label>Código público</label>
@@ -166,7 +154,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg>
       </div>
       <div class="ob-title">Registra tus destinos</div>
-      <div class="ob-sub">Agrega las casas, departamentos u oficinas de tu instalación. Los residentes las buscarán al registrarse en la app.</div>
+      <div class="ob-sub">Agrega las casas o departamentos de tu centro habitacional. Los residentes las buscarán al registrarse en la app.</div>
       <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px">
         <div class="form-group" style="flex:1;margin-bottom:0">
           <label>Destino</label>
@@ -225,7 +213,7 @@
       <button class="nav-btn" data-nav="visitas" data-i18n="nav_visitas">Visitas</button>
       <button class="nav-btn" data-nav="residentes" data-i18n="nav_residentes">Residentes</button>
       <button class="nav-btn" data-nav="kioskos" data-i18n="nav_kioskos">Kioskos</button>
-      <button class="nav-btn" data-nav="instalacion" data-i18n="nav_instalacion">Instalación</button>
+      <button class="nav-btn" data-nav="instalacion" data-i18n="nav_instalacion">Centro</button>
     </nav>
 
     <div class="topbar-end">
@@ -435,7 +423,7 @@
       <div class="screen-header">
         <div>
           <div class="screen-title" data-i18n="res_title">Residentes</div>
-          <div class="screen-sub">Personas registradas en la instalación</div>
+          <div class="screen-sub">Personas registradas en el centro habitacional</div>
         </div>
         <button class="btn-primary" id="btn-nuevo-residente"><span class="plus">+</span> Nuevo residente</button>
       </div>
@@ -723,12 +711,12 @@
       </div>
     </section>
 
-    <!-- INSTALACIÓN (multi-tab: unidades · configuración) -->
+    <!-- CENTRO HABITACIONAL (multi-tab: unidades · configuración) -->
     <section id="screen-instalacion" class="screen" hidden>
       <div class="screen-header">
         <div>
-          <div class="screen-title" data-i18n="inst_title">Instalación</div>
-          <div class="screen-sub" data-i18n="inst_sub">Destinos de visita y configuración general</div>
+          <div class="screen-title" data-i18n="inst_title">Centro Habitacional</div>
+          <div class="screen-sub" data-i18n="inst_sub">Casas del fraccionamiento y datos generales del centro</div>
         </div>
       </div>
 
@@ -762,23 +750,11 @@
       <div id="inst-config" hidden>
         <div class="screen-body screen-body--narrow">
           <div class="panel panel-padded">
-            <div class="form-section-title" style="margin-top:0">Información de la instalación</div>
+            <div class="form-section-title" style="margin-top:0">Información del centro habitacional</div>
             <form id="inst-config-form">
               <div class="form-group">
                 <label>Nombre</label>
                 <input id="inst-nombre" type="text" placeholder="Ej. Residencial Las Palmas" required>
-              </div>
-              <div class="form-group">
-                <label>Tipo de instalación</label>
-                <select id="inst-tipo">
-                  <option value="habitacional">Habitacional (residencial, condo, fraccionamiento)</option>
-                  <option value="comercial">Comercial (centro comercial, oficinas, plaza)</option>
-                  <option value="educativo">Educativo (escuela, universidad, campus)</option>
-                  <option value="salud">Salud (hospital, clínica, consultorio)</option>
-                  <option value="industrial">Industrial (parque, bodega, planta)</option>
-                  <option value="mixto">Mixto (uso mixto)</option>
-                  <option value="otro">Otro</option>
-                </select>
               </div>
               <div class="form-group">
                 <label>Dirección</label>
@@ -787,11 +763,11 @@
               <div class="form-group">
                 <label>Código público</label>
                 <input id="inst-codigo" type="text" required placeholder="Ej. FEPRO-2026" style="text-transform:uppercase">
-                <div class="form-hint">Código que los residentes escriben en la app para unirse a esta instalación.</div>
+                <div class="form-hint">Código que los residentes escriben en la app para unirse a este centro habitacional.</div>
               </div>
               <div class="form-group">
                 <label>Descripción</label>
-                <textarea id="inst-descripcion" rows="3" placeholder="Descripción breve de la instalación…"></textarea>
+                <textarea id="inst-descripcion" rows="3" placeholder="Descripción breve del centro…"></textarea>
               </div>
               <div id="inst-config-error" class="form-error" hidden></div>
               <div id="inst-config-ok" class="form-success" hidden>Configuración guardada.</div>
