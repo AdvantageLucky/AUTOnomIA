@@ -2156,13 +2156,16 @@
     else mostrarToast('Error al guardar', 'err');
   });
 
-  /* ─── Residentes pendientes ─────────────── */
+  /* ─── Residentes pendientes (modelo viejo Residente + Membresia de la app Kigo) ─── */
 
   async function loadResidentesPendientesBadge() {
-    const res = await api('/residentes/pendientes');
-    if (!res || !res.ok) return;
-    const d = await res.json();
-    const n = (d.residentes || []).length;
+    const [resRes, resMem] = await Promise.all([
+      api('/residentes/pendientes'),
+      api('/membresias/pendientes'),
+    ]);
+    let n = 0;
+    if (resRes && resRes.ok) n += ((await resRes.json()).residentes || []).length;
+    if (resMem && resMem.ok) n += (await resMem.json()).length;
     const badge = document.getElementById('tab-badge-res-sol');
     if (badge) { badge.textContent = n; badge.hidden = n === 0; }
   }
@@ -2177,14 +2180,23 @@
     emptyEl.hidden = true;
     loadEl.hidden = false;
 
-    const res = await api('/residentes/pendientes');
+    const [resResidentes, resMembresias] = await Promise.all([
+      api('/residentes/pendientes'),
+      api('/membresias/pendientes'),
+    ]);
     loadEl.hidden = true;
-    if (!res || !res.ok) { mostrarToast('Error al cargar residentes pendientes', 'err'); return; }
 
-    const items = await res.json();
-    if (!items.length) { emptyEl.hidden = false; return; }
+    if ((!resResidentes || !resResidentes.ok) && (!resMembresias || !resMembresias.ok)) {
+      mostrarToast('Error al cargar solicitudes pendientes', 'err');
+      return;
+    }
 
-    rowsEl.innerHTML = items.map(r => {
+    const residentes = (resResidentes && resResidentes.ok) ? await resResidentes.json() : [];
+    const membresias  = (resMembresias && resMembresias.ok) ? await resMembresias.json() : [];
+
+    if (!residentes.length && !membresias.length) { emptyEl.hidden = false; return; }
+
+    const filasResidentes = residentes.map(r => {
       const fecha = new Date(r.created_at).toLocaleDateString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
       const foto  = r.foto_cara_url
         ? `<img src="${esc(r.foto_cara_url)}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-right:12px" alt="foto">`
@@ -2203,6 +2215,21 @@
         </div>`;
     }).join('');
 
+    const filasMembresias = membresias.map(m => `
+        <div class="equipo-row" style="align-items:center">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:20px">👤</div>
+          <div class="equipo-info" style="flex:1">
+            <div class="equipo-name">${esc(m.nombre || 'Sin nombre')}</div>
+            <div class="equipo-sub">${esc(m.casa_destino)}${m.telefono ? ' · ' + esc(m.telefono) : ''} · App Kigo</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-primary" data-aprobar-mem="${m.id}">Aprobar</button>
+            <button class="btn-ghost" data-rechazar-mem="${m.id}" style="color:var(--danger,#e55)">Rechazar</button>
+          </div>
+        </div>`).join('');
+
+    rowsEl.innerHTML = filasMembresias + filasResidentes;
+
     rowsEl.querySelectorAll('[data-aprobar-res]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.aprobarRes;
@@ -2217,6 +2244,25 @@
         const id = btn.dataset.rechazarRes;
         if (!confirm('¿Rechazar esta solicitud?')) return;
         const res = await api(`/residentes/${id}/rechazar`, { method: 'POST' });
+        if (res && res.ok) { mostrarToast('Solicitud rechazada', 'ok'); loadResidentesPendientes(); }
+        else mostrarToast('Error al rechazar', 'err');
+      });
+    });
+
+    rowsEl.querySelectorAll('[data-aprobar-mem]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.aprobarMem;
+        const res = await api(`/membresias/${id}/aprobar`, { method: 'POST' });
+        if (res && res.ok) { mostrarToast('Solicitud aprobada', 'ok'); loadResidentesPendientes(); }
+        else mostrarToast('Error al aprobar', 'err');
+      });
+    });
+
+    rowsEl.querySelectorAll('[data-rechazar-mem]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.rechazarMem;
+        if (!confirm('¿Rechazar esta solicitud?')) return;
+        const res = await api(`/membresias/${id}/rechazar`, { method: 'POST' });
         if (res && res.ok) { mostrarToast('Solicitud rechazada', 'ok'); loadResidentesPendientes(); }
         else mostrarToast('Error al rechazar', 'err');
       });

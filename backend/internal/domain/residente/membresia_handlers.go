@@ -31,12 +31,7 @@ func (h *MembresiaHandler) ListarPendientes(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	items := make([]MembresiaAdminResponse, 0, len(list))
-	for _, m := range list {
-		items = append(items, toMembresiaAdminResponse(m))
-	}
-	c.JSON(http.StatusOK, items)
+	c.JSON(http.StatusOK, list)
 }
 
 // Aprobar cambia el status de una membresía pendiente a activo.
