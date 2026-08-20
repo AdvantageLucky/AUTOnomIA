@@ -5,7 +5,6 @@ import "time"
 type UpdateTenantRequest struct {
 	Nombre      string `json:"nombre"`
 	Direccion   string `json:"direccion"`
-	Codigo      string `json:"codigo"`
 	Descripcion string `json:"descripcion"`
 }
 

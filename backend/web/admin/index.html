@@ -137,11 +137,7 @@
         <div class="form-group">
           <label>Nombre</label>
           <input id="ob-inst-nombre" type="text" required placeholder="Ej. Residencial Las Palmas">
-        </div>
-        <div class="form-group">
-          <label>Código público</label>
-          <input id="ob-inst-codigo" type="text" required placeholder="Ej. FEPRO-2026" style="text-transform:uppercase">
-          <div class="form-hint">Los residentes usan este código para unirse desde la app y buscar su casa. Debe ser único.</div>
+          <div class="form-hint">Tu código público será: <strong id="ob-inst-codigo-preview">—</strong>. Los residentes lo usan para unirse desde la app.</div>
         </div>
         <div id="ob-inst-error" class="form-error" hidden></div>
         <button type="submit" class="btn-primary btn-block">Siguiente →</button>
@@ -762,8 +758,8 @@
               </div>
               <div class="form-group">
                 <label>Código público</label>
-                <input id="inst-codigo" type="text" required placeholder="Ej. FEPRO-2026" style="text-transform:uppercase">
-                <div class="form-hint">Código que los residentes escriben en la app para unirse a este centro habitacional.</div>
+                <div id="inst-codigo" class="form-static-value">—</div>
+                <div class="form-hint">Se asignó automáticamente al crear el centro. Los residentes lo usan en la app para unirse.</div>
               </div>
               <div class="form-group">
                 <label>Descripción</label>
