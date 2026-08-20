@@ -15,7 +15,6 @@ import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart'
 import 'package:kigo_kiosco/features/registro_vehicular/models/consts.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/viewmodels/vehicular_register_viewmodel.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/views/confirmar_placa_view.dart';
-import 'package:kigo_kiosco/features/registro_vehicular/views/widgets/scanner_placa_widget.dart';
 
 /// Gemela de `TouchRegisterView` para la caseta vehicular. Comparte los
 /// servicios de OCR y detección facial, y agrega la captura de placa. Vive
@@ -83,8 +82,6 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         await _capturarIne();
       case PasoVehicular.rostro:
         await _capturarRostro();
-      case PasoVehicular.placa:
-        await _capturarPlaca();
     }
   }
 
@@ -98,6 +95,25 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   }
 
   Future<void> _continuarACasaDestino() async {
+    if (!mounted) return;
+
+    // La lectura de placa arrancó en paralelo desde que se creó el
+    // viewmodel — para cuando se llega aquí, normalmente ya está resuelta.
+    // Sin lectura y si este visitante la necesita, el teclado manual es el
+    // único respaldo (no hay cámara dedicada a la placa todavía).
+    final placa = await viewModel.leerPlaca();
+    if (!mounted) return;
+    if (placa == null && viewModel.requierePlaca) {
+      final placaManual = await pedirConfirmacionPlaca(context);
+      if (!mounted) return;
+      if (placaManual == null) {
+        // El conductor canceló: no hay un punto intermedio al que reanudar.
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        return;
+      }
+      viewModel.confirmarPlaca(placaManual);
+    }
+
     if (!mounted) return;
 
     // El invitado ya trae casa destino en su invitación.
@@ -183,40 +199,6 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         titulo: faceNotDetectedErrorTitle,
         mensaje: faceNotDetectedErrorContent,
       );
-    }
-  }
-
-  /// A diferencia de la INE y el rostro, una lectura fallida no obliga a repetir
-  /// la foto: el diálogo de confirmación deja escribir la placa a mano. En una
-  /// caseta vehicular repetir capturas detiene la fila.
-  Future<void> _capturarPlaca() async {
-    while (true) {
-      if (!mounted) return;
-
-      _speakText(voiceInstructionPlaca);
-      final String? pathFoto = await Navigator.push<String>(
-        context,
-        MaterialPageRoute(builder: (_) => const EscaneoPlacaPage()),
-      );
-
-      if (pathFoto == null) return;
-
-      final placaLeida = await viewModel.procesarEscaneoPlaca(pathFoto);
-      if (!mounted) return;
-
-      if (placaLeida == null) _speakText(placaNotDetectedMessage);
-
-      final confirmada = await pedirConfirmacionPlaca(
-        context,
-        placaLeida: placaLeida,
-      );
-
-      // null = el visitante eligió "Tomar otra foto": se repite el ciclo.
-      if (confirmada == null) continue;
-
-      viewModel.confirmarPlaca(confirmada);
-      await _avanzar();
-      return;
     }
   }
 
@@ -389,36 +371,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
           child: switch (viewModel.pasoActual) {
             PasoVehicular.ine => const IneApproachAnimation(),
             PasoVehicular.rostro => const FaceApproachAnimation(),
-            PasoVehicular.placa => _buildGuiaPlaca(),
           },
-        ),
-      ),
-    );
-  }
-
-  /// El paso de placa no tiene animación propia todavía; se usa una guía
-  /// estática con la instrucción para no bloquear el flujo.
-  Widget _buildGuiaPlaca() {
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.directions_car_rounded, color: KigoDesign.brand, size: 96),
-          const SizedBox(height: 28),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              viewModel.currentStepData.description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: KigoDesign.textSecondary,
-                fontSize: 17,
-                height: 1.45,
-              ),
-            ),
-          ),
-          ],
         ),
       ),
     );

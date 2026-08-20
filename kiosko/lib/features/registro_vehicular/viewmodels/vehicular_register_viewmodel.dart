@@ -6,16 +6,18 @@ import 'package:kigo_kiosco/features/registro/models/touch_step_model.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
-import 'package:kigo_kiosco/features/registro_vehicular/services/placa_detector_servicio.dart';
+import 'package:kigo_kiosco/features/registro_vehicular/services/placa_lector_servicio.dart';
 
 /// Identifica qué captura corresponde a cada paso, para que la vista no dependa
-/// del índice: los pasos se arman según la config y el índice cambia.
-enum PasoVehicular { ine, rostro, placa }
+/// del índice: los pasos se arman según la config y el índice cambia. La
+/// placa ya no es un paso — se lee sola en paralelo (ver [leerPlaca]).
+enum PasoVehicular { ine, rostro }
 
 class VehicularRegisterViewModel extends ChangeNotifier {
   final DetectorServicio _detectorServicio = DetectorServicio();
   final FaceDetectorServicio _faceDetectorServicio = FaceDetectorServicio();
-  final PlacaDetectorServicio _placaDetectorServicio = PlacaDetectorServicio();
+  final PlacaLectorServicio _placaLectorServicio = MockPlacaLectorServicio();
+  late final Future<String?> _lecturaPlaca;
 
   UserRegistrationModel registrationData = UserRegistrationModel();
 
@@ -28,6 +30,11 @@ class VehicularRegisterViewModel extends ChangeNotifier {
   late final List<PasoVehicular> pasos;
 
   late final List<TouchStepModel> steps;
+
+  /// true si este visitante necesita placa: siempre para quien no trae
+  /// invitación (es su identificador principal, ADR-0024), o para un
+  /// invitado si la config del kiosko lo pide.
+  late final bool requierePlaca;
 
   /// [tokenInvitacion] llega cuando el visitante ya escaneó su QR: cambia qué
   /// capturas se piden y con qué endpoint se registra la visita. [titular] y
@@ -49,17 +56,31 @@ class VehicularRegisterViewModel extends ChangeNotifier {
             // Al invitado su QR ya lo identifica; lo demás depende de la config.
             if (config.ineObligatorioInvitado) PasoVehicular.ine,
             if (config.fotoRostroInvitado) PasoVehicular.rostro,
-            if (config.fotoPlacaInvitado) PasoVehicular.placa,
           ]
         : [
             // En un acceso vehicular no se pide INE: el conductor no baja del
-            // coche. La placa toma su lugar como identificador de la visita, así
-            // que va primero y no es opcional (ADR-0024).
-            PasoVehicular.placa,
+            // coche. La placa la identifica en su lugar (ADR-0024), pero ya no
+            // es un paso de la UI — se lee sola en paralelo, ver [leerPlaca].
             if (config.fotoRostroVisitante) PasoVehicular.rostro,
           ];
 
     steps = pasos.map(_descripcionDe).toList();
+
+    requierePlaca = !invitado || config.fotoPlacaInvitado;
+
+    // Arranca apenas se crea el viewmodel — en paralelo con INE/rostro, no
+    // después. Para cuando el conductor termina esos pasos, la lectura ya
+    // suele estar resuelta.
+    _lecturaPlaca = requierePlaca ? _placaLectorServicio.leer() : Future.value(null);
+  }
+
+  /// Espera la lectura en paralelo que arrancó en el constructor. Si hubo
+  /// lectura, la deja confirmada de una vez; si no y [requierePlaca], la
+  /// vista debe ofrecer el teclado manual.
+  Future<String?> leerPlaca() async {
+    final placa = await _lecturaPlaca;
+    if (placa != null) confirmarPlaca(placa);
+    return placa;
   }
 
   // ── Estados de carga del procesamiento local ────────────────────────────────
@@ -70,11 +91,7 @@ class VehicularRegisterViewModel extends ChangeNotifier {
   bool _isProcessingRostro = false;
   bool get isProcessingRostro => _isProcessingRostro;
 
-  bool _isProcessingPlaca = false;
-  bool get isProcessingPlaca => _isProcessingPlaca;
-
-  bool get isProcessing =>
-      _isProcessingIne || _isProcessingRostro || _isProcessingPlaca;
+  bool get isProcessing => _isProcessingIne || _isProcessingRostro;
 
   // ── Navegación entre pasos ──────────────────────────────────────────────────
 
@@ -149,27 +166,6 @@ class VehicularRegisterViewModel extends ChangeNotifier {
     }
   }
 
-  /// Corre el OCR sobre la foto de la placa. Devuelve el texto leído o null si
-  /// no se reconoció: la foto se conserva de todos modos porque la bitácora la
-  /// exige aunque el visitante termine escribiendo la placa a mano.
-  Future<String?> procesarEscaneoPlaca(String pathFoto) async {
-    _isProcessingPlaca = true;
-    notifyListeners();
-
-    try {
-      final detectada = await _placaDetectorServicio.analizarPlaca(pathFoto);
-      registrationData.pathFotoPlaca = detectada.pathFoto;
-      return detectada.texto;
-    } catch (e) {
-      debugPrint('Error al procesar la placa: $e');
-      registrationData.pathFotoPlaca = pathFoto;
-      return null;
-    } finally {
-      _isProcessingPlaca = false;
-      notifyListeners();
-    }
-  }
-
   void confirmarPlaca(String placa) {
     registrationData.placa = placa;
     notifyListeners();
@@ -196,15 +192,6 @@ class VehicularRegisterViewModel extends ChangeNotifier {
               'Puedes capturar una foto de tu rostro o usar evidencia desde cámaras conectadas al sistema de seguridad.',
           icon: Icons.photo_camera_outlined,
           buttonText: 'Reconocimiento Facial',
-        );
-      case PasoVehicular.placa:
-        return TouchStepModel(
-          title: 'Encuadra la placa de tu vehículo',
-          subtitle: '',
-          description:
-              'Baja la ventanilla si es necesario y apunta la cámara a la placa delantera. Podrás corregir el texto si la lectura no es exacta.',
-          icon: Icons.directions_car_outlined,
-          buttonText: 'Capturar placa',
         );
     }
   }
