@@ -14,11 +14,20 @@ class CasaDestinoView extends StatefulWidget {
   State<CasaDestinoView> createState() => _CasaDestinoViewState();
 }
 
+/// Selección progresiva: calle → tipo (si la calle tiene más de uno) →
+/// número. Una lista plana de todas las casas no escala a un fraccionamiento
+/// con decenas o cientos de unidades.
+enum _SubPaso { calle, tipo, numero }
+
 class _CasaDestinoViewState extends State<CasaDestinoView> {
   final KioskoServicio _kioskoServicio = KioskoServicio();
   List<Map<String, dynamic>>? _destinos;
   bool _isLoading = true;
   String? _error;
+
+  _SubPaso _subPaso = _SubPaso.calle;
+  String? _calleSeleccionada;
+  String? _tipoSeleccionado;
 
   @override
   void initState() {
@@ -48,6 +57,81 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
     }
   }
 
+  List<String> get _calles {
+    final set = <String>{};
+    for (final d in _destinos ?? []) {
+      final calle = (d['calle'] as String?)?.trim() ?? '';
+      if (calle.isNotEmpty) set.add(calle);
+    }
+    final lista = set.toList()..sort();
+    return lista;
+  }
+
+  List<Map<String, dynamic>> get _destinosDeLaCalle {
+    return (_destinos ?? []).where((d) => d['calle'] == _calleSeleccionada).toList();
+  }
+
+  List<String> get _tiposDeLaCalle {
+    final set = <String>{};
+    for (final d in _destinosDeLaCalle) {
+      final tipo = d['tipo'] as String?;
+      if (tipo != null) set.add(tipo);
+    }
+    return set.toList()..sort();
+  }
+
+  List<Map<String, dynamic>> get _numerosVisibles {
+    return _destinosDeLaCalle.where((d) => d['tipo'] == _tipoSeleccionado).toList()
+      ..sort((a, b) => (a['numero'] as String? ?? '').compareTo(b['numero'] as String? ?? ''));
+  }
+
+  void _elegirCalle(String calle) {
+    final tipos = (_destinos ?? [])
+        .where((d) => d['calle'] == calle)
+        .map((d) => d['tipo'] as String?)
+        .whereType<String>()
+        .toSet();
+    setState(() {
+      _calleSeleccionada = calle;
+      if (tipos.length <= 1) {
+        _tipoSeleccionado = tipos.isEmpty ? null : tipos.first;
+        _subPaso = _SubPaso.numero;
+      } else {
+        _subPaso = _SubPaso.tipo;
+      }
+    });
+  }
+
+  void _elegirTipo(String tipo) {
+    setState(() {
+      _tipoSeleccionado = tipo;
+      _subPaso = _SubPaso.numero;
+    });
+  }
+
+  void _regresar() {
+    switch (_subPaso) {
+      case _SubPaso.calle:
+        Navigator.pop(context);
+      case _SubPaso.tipo:
+        setState(() {
+          _subPaso = _SubPaso.calle;
+          _calleSeleccionada = null;
+        });
+      case _SubPaso.numero:
+        final tipos = _tiposDeLaCalle;
+        setState(() {
+          if (tipos.length <= 1) {
+            _subPaso = _SubPaso.calle;
+            _calleSeleccionada = null;
+          } else {
+            _subPaso = _SubPaso.tipo;
+          }
+          _tipoSeleccionado = null;
+        });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,7 +141,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _regresar,
         ),
       ),
       body: SingleChildScrollView(
@@ -72,10 +156,14 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                 totalSteps: widget.totalSteps,
               ),
               const SizedBox(height: 42),
-              const Text(
-                '¿A qué casa te diriges?',
-                style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800),
-              ),
+              Text(_titulo(), style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800)),
+              if (_subtitulo() != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _subtitulo()!,
+                  style: const TextStyle(color: Color(0xFF999494), fontSize: 17),
+                ),
+              ],
               const SizedBox(height: 32),
               _buildContenido(),
             ],
@@ -83,6 +171,22 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         ),
       ),
     );
+  }
+
+  String _titulo() {
+    switch (_subPaso) {
+      case _SubPaso.calle:
+        return '¿En qué calle está tu destino?';
+      case _SubPaso.tipo:
+        return '¿Casa o edificio?';
+      case _SubPaso.numero:
+        return '¿Cuál es el número?';
+    }
+  }
+
+  String? _subtitulo() {
+    if (_subPaso == _SubPaso.calle) return null;
+    return _calleSeleccionada;
   }
 
   Widget _buildContenido() {
@@ -122,8 +226,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
       );
     }
 
-    final destinos = _destinos ?? [];
-    if (destinos.isEmpty) {
+    if ((_destinos ?? []).isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 60),
         child: Center(
@@ -136,16 +239,43 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
       );
     }
 
-    return Column(
-      children: destinos.map((d) => _buildCasaCard(d)).toList(),
-    );
+    switch (_subPaso) {
+      case _SubPaso.calle:
+        return Column(
+          children: _calles
+              .map((c) => _buildCard(
+                    icono: Icons.signpost_outlined,
+                    titulo: c,
+                    onTap: () => _elegirCalle(c),
+                  ))
+              .toList(),
+        );
+      case _SubPaso.tipo:
+        return Column(
+          children: _tiposDeLaCalle
+              .map((t) => _buildCard(
+                    icono: t == 'edificio' ? Icons.apartment_outlined : Icons.home_outlined,
+                    titulo: t == 'edificio' ? 'Edificio' : 'Casa',
+                    onTap: () => _elegirTipo(t),
+                  ))
+              .toList(),
+        );
+      case _SubPaso.numero:
+        return Column(
+          children: _numerosVisibles
+              .map((d) => _buildCard(
+                    icono: Icons.home_outlined,
+                    titulo: d['numero'] as String? ?? '—',
+                    onTap: () => Navigator.pop(context, d['nombre'] as String?),
+                  ))
+              .toList(),
+        );
+    }
   }
 
-  Widget _buildCasaCard(Map<String, dynamic> destino) {
-    final nombre = destino['nombre'] as String? ?? 'Sin nombre';
-
+  Widget _buildCard({required IconData icono, required String titulo, required VoidCallback onTap}) {
     return GestureDetector(
-      onTap: () => Navigator.pop(context, nombre),
+      onTap: onTap,
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 16),
@@ -164,12 +294,12 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                 color: const Color(0xFF3A2420),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.home_outlined, color: Color(0xFFFF542F), size: 28),
+              child: Icon(icono, color: const Color(0xFFFF542F), size: 28),
             ),
             const SizedBox(width: 20),
             Expanded(
               child: Text(
-                nombre,
+                titulo,
                 style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
               ),
             ),

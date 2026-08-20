@@ -2076,15 +2076,28 @@
     const items = await res.json();
     if (!items.length) { emptyEl.hidden = false; return; }
 
-    rowsEl.innerHTML = items.map(d => `
-      <div class="equipo-row" id="dest-row-${d.id}">
-        <div class="equipo-info">
-          <div class="equipo-name">${esc(d.nombre)}</div>
-          <div class="equipo-sub">${esc(d.titular)}</div>
-        </div>
-        <button class="btn-ghost" style="color:var(--red)" data-del-dest="${d.id}" title="Eliminar destino">
-          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
-        </button>
+    // Agrupadas por calle: un fraccionamiento con decenas de casas es
+    // ilegible como lista plana.
+    const porCalle = new Map();
+    for (const d of items) {
+      const calle = d.calle || 'Sin calle';
+      if (!porCalle.has(calle)) porCalle.set(calle, []);
+      porCalle.get(calle).push(d);
+    }
+
+    rowsEl.innerHTML = [...porCalle.entries()].map(([calle, destinos]) => `
+      <div class="dest-grupo">
+        <div class="dest-grupo-titulo">${esc(calle)}</div>
+        ${destinos.map(d => `
+          <div class="equipo-row" id="dest-row-${d.id}">
+            <div class="equipo-info">
+              <div class="equipo-name">${esc(d.tipo === 'edificio' ? 'Edificio' : 'Casa')} ${esc(d.numero || '')}</div>
+              ${d.titular ? `<div class="equipo-sub">${esc(d.titular)}</div>` : ''}
+            </div>
+            <button class="btn-ghost" style="color:var(--red)" data-del-dest="${d.id}" title="Eliminar destino">
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
+            </button>
+          </div>`).join('')}
       </div>`).join('');
 
     rowsEl.querySelectorAll('[data-del-dest]').forEach(btn => {
@@ -2111,22 +2124,40 @@
     document.getElementById('modal-destino').hidden = true;
   });
 
+  function parsearNumeros(texto) {
+    return texto.split(',').map(n => n.trim()).filter(n => n.length > 0);
+  }
+
+  document.getElementById('dest-numeros')?.addEventListener('input', e => {
+    const n = parsearNumeros(e.target.value).length;
+    document.getElementById('dest-numeros-preview').textContent =
+      n > 0 ? `Se crearán ${n} destino${n !== 1 ? 's' : ''}.` : 'Separa cada número con una coma.';
+  });
+
   document.getElementById('destino-form')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const nombre   = document.getElementById('dest-nombre').value.trim();
-    const titular  = document.getElementById('dest-titular').value.trim();
-    const errEl    = document.getElementById('dest-form-error');
-    errEl.hidden   = true;
+    const calle   = document.getElementById('dest-calle').value.trim();
+    const tipo    = document.getElementById('dest-tipo').value;
+    const numeros = parsearNumeros(document.getElementById('dest-numeros').value);
+    const errEl   = document.getElementById('dest-form-error');
+    errEl.hidden  = true;
 
-    const res = await api('/destinos/', { method: 'POST', body: JSON.stringify({ nombre, titular }) });
+    if (!numeros.length) {
+      errEl.textContent = 'Escribe al menos un número';
+      errEl.hidden = false;
+      return;
+    }
+
+    const res = await api('/destinos/lote', { method: 'POST', body: JSON.stringify({ calle, tipo, numeros }) });
     if (!res) return;
     if (!res.ok) {
       const d = await res.json();
-      errEl.textContent = d.error || 'Error al crear destino';
+      errEl.textContent = d.error || 'Error al crear destinos';
       errEl.hidden = false; return;
     }
     document.getElementById('modal-destino').hidden = true;
     document.getElementById('destino-form').reset();
+    document.getElementById('dest-numeros-preview').textContent = 'Separa cada número con una coma.';
     loadDestinos();
   });
 

@@ -183,6 +183,7 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 	{
 		a.GET("/", destinoHandler.ListarDestinos)
 		a.POST("/", destinoHandler.CrearDestino)
+		a.POST("/lote", destinoHandler.CrearDestinosLote)
 		a.DELETE("/:id", destinoHandler.EliminarDestino)
 	}
 }
