@@ -1,6 +1,8 @@
 package tenant
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -8,6 +10,7 @@ import (
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -55,6 +58,12 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 		return
 	}
 
+	actual, err := h.repo.FindByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
 	fields := map[string]any{}
 	if req.Nombre != "" {
 		fields["nombre"] = req.Nombre
@@ -62,10 +71,13 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 	if req.Direccion != "" {
 		fields["direccion"] = req.Direccion
 	}
-	if req.Codigo != "" {
-		fields["codigo"] = req.Codigo
-	}
 	fields["descripcion"] = req.Descripcion
+
+	// El código se genera solo una vez, a partir del nombre — el admin nunca
+	// lo escribe. Una vez asignado queda fijo, aunque el nombre cambie después.
+	if req.Nombre != "" && (actual.Codigo == nil || *actual.Codigo == "") {
+		fields["codigo"] = h.generarCodigoUnico(req.Nombre)
+	}
 
 	if err := h.repo.Update(id, fields); err != nil {
 		msg := err.Error()
@@ -79,6 +91,19 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 
 	t, _ := h.repo.FindByID(id)
 	c.JSON(http.StatusOK, toResponse(t))
+}
+
+// generarCodigoUnico deriva el código del nombre y le agrega un sufijo
+// numérico si ya está en uso por otro centro (Codigo es uniqueIndex).
+func (h *Handler) generarCodigoUnico(nombre string) string {
+	base := GenerarCodigo(nombre)
+	codigo := base
+	for i := 2; ; i++ {
+		if _, err := h.repo.FindByCodigo(codigo); errors.Is(err, gorm.ErrRecordNotFound) {
+			return codigo
+		}
+		codigo = fmt.Sprintf("%s-%d", base, i)
+	}
 }
 
 func toResponse(t *CentroHabitacional) TenantResponse {

@@ -1894,6 +1894,18 @@
 
   let obDestinos = [];
 
+  // Preview en el cliente del código que el backend va a generar a partir del
+  // nombre — el valor real (con sufijo anti-colisión si aplica) lo decide
+  // siempre el backend al guardar; esto es solo para que el admin lo vea
+  // en vivo mientras escribe.
+  function previsualizarCodigo(nombre) {
+    const plano = (nombre || '').trim().toUpperCase()
+      .replace(/[ÁÀÄ]/g, 'A').replace(/[ÉÈË]/g, 'E').replace(/[ÍÌÏ]/g, 'I')
+      .replace(/[ÓÒÖ]/g, 'O').replace(/[ÚÙÜ]/g, 'U').replace(/Ñ/g, 'N');
+    const codigo = plano.replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30).replace(/-+$/, '');
+    return codigo || 'CENTRO';
+  }
+
   async function showOnboarding() {
     obStep = 1;
     obDestinos = [];
@@ -1904,11 +1916,16 @@
     const res = await api(`/tenants/${state.tenantId || 1}`);
     if (res && res.ok) {
       const d = await res.json();
-      const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-      set('ob-inst-nombre', d.nombre);
-      set('ob-inst-codigo', d.codigo);
+      const nombreEl = document.getElementById('ob-inst-nombre');
+      if (nombreEl) nombreEl.value = d.nombre || '';
+      const previewEl = document.getElementById('ob-inst-codigo-preview');
+      if (previewEl) previewEl.textContent = d.codigo || previsualizarCodigo(d.nombre);
     }
   }
+
+  document.getElementById('ob-inst-nombre')?.addEventListener('input', e => {
+    document.getElementById('ob-inst-codigo-preview').textContent = previsualizarCodigo(e.target.value);
+  });
 
   function setObStep(n) {
     [1,2,3].forEach(i => {
@@ -1928,15 +1945,8 @@
     e.preventDefault();
     const errEl = document.getElementById('ob-inst-error');
     errEl.hidden = true;
-    const codigo = document.getElementById('ob-inst-codigo').value.trim().toUpperCase();
-    if (!codigo) {
-      errEl.textContent = 'El código público es obligatorio';
-      errEl.hidden = false;
-      return;
-    }
     const body = {
       nombre: document.getElementById('ob-inst-nombre').value.trim(),
-      codigo: codigo,
     };
     const res = await api(`/tenants/${state.tenantId || 1}`, { method: 'PATCH', body: JSON.stringify(body) });
     if (!res) return;
@@ -2130,8 +2140,9 @@
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
     set('inst-nombre',     d.nombre);
     set('inst-direccion',  d.direccion);
-    set('inst-codigo',     d.codigo);
     set('inst-descripcion', d.descripcion);
+    const codigoEl = document.getElementById('inst-codigo');
+    if (codigoEl) codigoEl.textContent = d.codigo || '—';
   }
 
   document.getElementById('inst-config-form')?.addEventListener('submit', async e => {
@@ -2140,7 +2151,6 @@
     const body = {
       nombre:      document.getElementById('inst-nombre')?.value.trim(),
       direccion:   document.getElementById('inst-direccion')?.value.trim(),
-      codigo:      document.getElementById('inst-codigo')?.value.trim(),
       descripcion: document.getElementById('inst-descripcion')?.value.trim(),
     };
     const res = await api(`/tenants/${tenantId}`, {
