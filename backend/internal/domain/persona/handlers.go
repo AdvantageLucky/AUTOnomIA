@@ -268,13 +268,29 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		return
 	}
 
+	// La app no muestra el directorio completo de casas (evita exponer todo
+	// el directorio a quien solo tiene el código público) — la persona
+	// escribe la casa a mano, así que se normaliza sin distinguir mayúsculas
+	// ni espacios contra el destino real y se guarda su Nombre exacto, nunca
+	// lo que tecleó. Sin coincidencia, error específico sin listar opciones.
+	destino, err := h.destinoRepo.FindCanonicoPorTenant(req.CasaDestino, t.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no encontramos esa casa en este centro — verifica mayúsculas, espacios y el número exacto"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	casaDestino := destino.Nombre
+
 	existente, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, t.ID)
 	if err == nil {
 		if existente.Status != residente.ResidenteStatusRechazado {
 			c.JSON(http.StatusConflict, gin.H{"error": "ya tienes una membresía en este centro"})
 			return
 		}
-		existente.CasaDestino = strings.TrimSpace(req.CasaDestino)
+		existente.CasaDestino = casaDestino
 		existente.Pin = string(hash)
 		existente.Status = residente.ResidenteStatusPendiente
 		if err := h.membresiaRepo.Update(existente); err != nil {
@@ -297,7 +313,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 	m := &residente.Membresia{
 		PersonaID:   personaID,
 		TenantID:    t.ID,
-		CasaDestino: strings.TrimSpace(req.CasaDestino),
+		CasaDestino: casaDestino,
 		Pin:         string(hash),
 		Rol:         residente.MembresiaRolTitular,
 		Status:      residente.ResidenteStatusPendiente,

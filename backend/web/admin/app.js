@@ -1346,7 +1346,16 @@
     });
   }
 
-  function openNuevoKioskoWizard() {
+  // onCreado: se llama en cuanto el kiosko queda vinculado al dispositivo
+  // (aunque el admin todavía no haya guardado/saltado el paso de
+  // configuración) — es el momento en que el kiosko "existe" de verdad.
+  // onCancelado: se llama solo si se cierra el wizard sin haber llegado ahí.
+  let nkOnCreado = null;
+  let nkOnCancelado = null;
+
+  function openNuevoKioskoWizard(onCreado, onCancelado) {
+    nkOnCreado = onCreado || null;
+    nkOnCancelado = onCancelado || null;
     nkPendingCode = '';
     document.getElementById('nk-code').value = '';
     document.getElementById('nk-code-error').hidden = true;
@@ -1362,7 +1371,13 @@
     document.getElementById('modal-nuevo-kiosko').hidden = true;
   }
 
-  document.getElementById('nk-cancel-1')?.addEventListener('click', cerrarNuevoKioskoWizard);
+  document.getElementById('nk-cancel-1')?.addEventListener('click', () => {
+    cerrarNuevoKioskoWizard();
+    const cb = nkOnCancelado;
+    nkOnCreado = null;
+    nkOnCancelado = null;
+    if (cb) cb();
+  });
   document.getElementById('nk-back-2')?.addEventListener('click', () => setNkStep(1));
 
   document.getElementById('nk-verificar')?.addEventListener('click', async () => {
@@ -1433,6 +1448,11 @@
     nkNuevoKioskoId = kiosko.id;
     setNkStep(3);
     loadAccesos();
+
+    const cb = nkOnCreado;
+    nkOnCreado = null;
+    nkOnCancelado = null;
+    if (cb) cb();
   });
 
   let nkNuevoKioskoId = null;
@@ -1892,8 +1912,6 @@
   /* ─── Onboarding first-run ───────────────── */
   let obStep = 1;
 
-  let obDestinos = [];
-
   // Preview en el cliente del código que el backend va a generar a partir del
   // nombre — el valor real (con sufijo anti-colisión si aplica) lo decide
   // siempre el backend al guardar; esto es solo para que el admin lo vea
@@ -1908,10 +1926,8 @@
 
   async function showOnboarding() {
     obStep = 1;
-    obDestinos = [];
     document.getElementById('onboarding-overlay').hidden = false;
     setObStep(1);
-    renderObDestinos();
     // precargar datos actuales del tenant
     const res = await api(`/tenants/${state.tenantId || 1}`);
     if (res && res.ok) {
@@ -1959,64 +1975,21 @@
     setObStep(2);
   });
 
-  function renderObDestinos() {
-    const wrap = document.getElementById('ob-dest-lista');
-    if (!wrap) return;
-    if (obDestinos.length === 0) {
-      wrap.innerHTML = '<div style="font-size:13px;color:var(--text-3);padding:8px 0">Aún no has agregado destinos.</div>';
-      return;
-    }
-    wrap.innerHTML = obDestinos.map(d => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
-        <div>
-          <div style="font-size:13px;font-weight:600">${d.nombre}</div>
-          ${d.titular ? `<div style="font-size:12px;color:var(--text-2)">${d.titular}</div>` : ''}
-        </div>
-        <button type="button" class="btn-icon-del" data-id="${d.id}" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:16px">×</button>
-      </div>
-    `).join('');
-    wrap.querySelectorAll('.btn-icon-del').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = parseInt(btn.dataset.id);
-        const res = await api(`/destinos/${id}`, { method: 'DELETE' });
-        if (res && res.ok) {
-          obDestinos = obDestinos.filter(d => d.id !== id);
-          renderObDestinos();
-        }
-      });
+  // Activar el kiosko reusa el wizard normal de "nuevo kiosko" (código →
+  // datos → configuración) — se oculta el overlay de onboarding mientras
+  // está abierto para no encimar dos pantallas completas, y se retoma al
+  // terminar (o al cancelar, para no dejar al admin varado sin ver nada).
+  document.getElementById('ob-kiosko-activar')?.addEventListener('click', () => {
+    document.getElementById('onboarding-overlay').hidden = true;
+    openNuevoKioskoWizard(() => {
+      document.getElementById('onboarding-overlay').hidden = false;
+      setObStep(3);
+    }, () => {
+      document.getElementById('onboarding-overlay').hidden = false;
     });
-  }
-
-  document.getElementById('ob-dest-agregar')?.addEventListener('click', async () => {
-    const errEl = document.getElementById('ob-dest-error');
-    errEl.hidden = true;
-    const nombreEl = document.getElementById('ob-dest-nombre');
-    const titularEl = document.getElementById('ob-dest-titular');
-    const nombre = nombreEl.value.trim();
-    const titular = titularEl.value.trim();
-    if (!nombre) {
-      errEl.textContent = 'El nombre del destino es requerido';
-      errEl.hidden = false;
-      return;
-    }
-    const res = await api('/destinos/', {
-      method: 'POST', body: JSON.stringify({ nombre, titular: titular || nombre }),
-    });
-    if (!res || !res.ok) {
-      const d = res ? await res.json() : {};
-      errEl.textContent = d.error || 'Error al agregar destino';
-      errEl.hidden = false;
-      return;
-    }
-    const creado = await res.json();
-    obDestinos.push(creado);
-    nombreEl.value = '';
-    titularEl.value = '';
-    nombreEl.focus();
-    renderObDestinos();
   });
 
-  document.getElementById('ob-dest-siguiente')?.addEventListener('click', () => {
+  document.getElementById('ob-kiosko-saltar')?.addEventListener('click', () => {
     setObStep(3);
   });
 
