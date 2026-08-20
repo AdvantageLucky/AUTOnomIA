@@ -90,7 +90,6 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
             }
             return QrScannerView(
               viewModel: QrScannerViewModel(),
-              esPantallaPrincipal: true,
               onSinCodigo: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => WelcomeView(viewModel: WelcomeViewModel()),
               )),

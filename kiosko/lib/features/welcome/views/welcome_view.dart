@@ -3,14 +3,13 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:kigo_kiosco/features/registro/views/touch_register_view.dart';
-import 'package:kigo_kiosco/features/welcome/views/visitor_type_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/operator_exit_pin_view.dart';
-import 'package:kigo_kiosco/features/welcome/viewmodels/visitor_type_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/operator_exit_viewmodel.dart';
 import 'package:kigo_kiosco/features/residente/views/residente_acceso_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
+import 'package:kigo_kiosco/core/routing/registro_router.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
 
@@ -110,7 +109,7 @@ class _WelcomeViewState extends State<WelcomeView>
             padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
             child: Column(
               children: [
-                _buildHeader(),
+                _buildHeader(context),
                 const Spacer(),
                 FadeTransition(
                   opacity: _fadeAnim,
@@ -268,10 +267,14 @@ class _WelcomeViewState extends State<WelcomeView>
         setState(() => _presionadoId = null);
         widget.viewModel.selectOption(id);
         final navigator = Navigator.of(context);
+        final config = context.read<KioskoConfigNotifier>().config;
         Future.delayed(const Duration(milliseconds: 160), () {
           if (id == 'visitante') {
+            // El QR ya se ofrece en la pantalla principal del kiosko — llegar
+            // aquí significa que la visita no trae ninguno, así que se salta
+            // directo al registro sin invitación.
             navigator.push(MaterialPageRoute(
-              builder: (_) => VisitorTypeView(viewModel: VisitorTypeViewModel()),
+              builder: (_) => RegistroRouter.paraVisitante(config),
             ));
           } else if (id == 'residente') {
             navigator.push(MaterialPageRoute(
@@ -327,10 +330,26 @@ class _WelcomeViewState extends State<WelcomeView>
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: KigoDesign.surface2,
+              borderRadius: BorderRadius.circular(KigoDesign.radius),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: KigoDesign.textSecondary,
+              size: 18,
+            ),
+          ),
+        ),
+        const Spacer(),
         Container(
           width: 48,
           height: 48,
@@ -364,6 +383,8 @@ class _WelcomeViewState extends State<WelcomeView>
                     fontWeight: FontWeight.w500)),
           ],
         ),
+        const Spacer(),
+        const SizedBox(width: 44),
       ],
     );
   }
