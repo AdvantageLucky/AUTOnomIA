@@ -72,6 +72,26 @@ func (r *Repository) FindByNombreAndTenantID(nombre string, tenantID uint) (uint
 	return d.ID, nil
 }
 
+// FindCanonicoPorTenant busca un destino comparando sin distinguir mayúsculas
+// ni espacios — quien escribe "casa destino" a mano en la app (sin picker,
+// para no exponer el directorio completo por seguridad) fácilmente varía
+// "102A" de "102a". Devuelve el registro real, cuyo Nombre exacto es el que
+// debe quedar guardado, nunca lo que tecleó la persona.
+func (r *Repository) FindCanonicoPorTenant(nombreLibre string, tenantID uint) (*Destino, error) {
+	if tenantID == 0 {
+		return nil, ErrTenantNoResuelto
+	}
+	var d Destino
+	err := r.db.Where(
+		"tenant_id = ? AND LOWER(TRIM(nombre)) = LOWER(TRIM(?))",
+		tenantID, nombreLibre,
+	).First(&d).Error
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
 func (r *Repository) FindByID(id uint) (*Destino, error) {
 	var d Destino
 	if err := r.db.First(&d, id).Error; err != nil {

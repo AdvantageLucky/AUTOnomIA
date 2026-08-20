@@ -60,6 +60,11 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
           KigoTextField(controller: _codigoCtrl, label: 'Código del centro'),
           const SizedBox(height: 12),
           KigoTextField(controller: _casaCtrl, label: 'Casa / destino'),
+          const SizedBox(height: 4),
+          const Text(
+            'Escríbela tal como te la dio tu administrador (ej. Calle Roble · Casa 12).',
+            style: TextStyle(fontSize: 12, color: AppTheme.textDimmed),
+          ),
           const SizedBox(height: 12),
           KigoTextField(
             controller: _pinCtrl,

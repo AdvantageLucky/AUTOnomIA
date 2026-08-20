@@ -144,27 +144,15 @@
       </form>
     </div>
 
-    <!-- Paso 2: Registrar destinos (casas/departamentos) -->
+    <!-- Paso 2: Activar el primer kiosko -->
     <div id="ob-step-2" class="ob-step">
       <div class="ob-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M9 21h6M12 17v4"/></svg>
       </div>
-      <div class="ob-title">Registra tus destinos</div>
-      <div class="ob-sub">Agrega las casas o departamentos de tu centro habitacional. Los residentes las buscarán al registrarse en la app.</div>
-      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px">
-        <div class="form-group" style="flex:1;margin-bottom:0">
-          <label>Destino</label>
-          <input id="ob-dest-nombre" type="text" placeholder="Ej. Torre B, Depto 102">
-        </div>
-        <div class="form-group" style="flex:1;margin-bottom:0">
-          <label>Titular <span style="color:var(--text-3);font-weight:400">(opcional)</span></label>
-          <input id="ob-dest-titular" type="text" placeholder="Nombre del titular">
-        </div>
-        <button type="button" class="btn-primary" id="ob-dest-agregar" style="height:38px">+</button>
-      </div>
-      <div id="ob-dest-error" class="form-error" hidden></div>
-      <div id="ob-dest-lista" style="max-height:180px;overflow-y:auto;margin-bottom:20px"></div>
-      <button class="btn-primary btn-block" id="ob-dest-siguiente">Siguiente →</button>
+      <div class="ob-title">Activa tu primer kiosko</div>
+      <div class="ob-sub">Las casas o edificios se agregan después, desde Instalación — para arrancar solo necesitas un kiosko activo. Abre la app en el dispositivo, mostrará un código, y actívalo aquí.</div>
+      <button type="button" class="btn-primary btn-block" id="ob-kiosko-activar" style="margin-top:16px">Activar kiosko</button>
+      <button type="button" class="btn-cancel btn-block" id="ob-kiosko-saltar" style="margin-top:12px">Lo haré después →</button>
     </div>
 
     <!-- Paso 3: Agregar vigilante (opcional) -->
