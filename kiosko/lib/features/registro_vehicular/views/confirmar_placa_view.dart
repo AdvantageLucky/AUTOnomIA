@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/services/placa_detector_servicio.dart';
 
-/// Muestra la placa que leyó el OCR y deja corregirla antes de continuar.
+/// Respaldo manual cuando la lectura automática de placa (hardware dedicado,
+/// ver PlacaLectorServicio) no resolvió a tiempo — deja escribirla a mano.
 ///
-/// Devuelve la placa confirmada, o null si el visitante prefiere volver a tomar
-/// la foto.
+/// Devuelve la placa confirmada, o null si el visitante cancela.
 Future<String?> pedirConfirmacionPlaca(
   BuildContext context, {
   String? placaLeida,
@@ -129,7 +129,7 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
         Text(
           _fueLeida
               ? 'Si algún carácter no coincide, corrígelo con el teclado.'
-              : 'No pudimos leer la placa en la foto. Escríbela tal como aparece.',
+              : 'No pudimos detectar tu placa automáticamente. Escríbela aquí.',
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: KigoDesign.textSecondary,
@@ -285,7 +285,7 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
               ),
               child: const Center(
                 child: Text(
-                  'Tomar otra foto',
+                  'Cancelar',
                   style: TextStyle(
                     color: KigoDesign.textSecondary,
                     fontSize: 17,
