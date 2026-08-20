@@ -121,16 +121,14 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
             ),
           ),
 
-          // Guía oval con borde naranja
+          // Guía oval con borde naranja — se dibuja el óvalo real con
+          // CustomPaint: un Border.all() sobre BorderRadius circular al 50%
+          // en un rectángulo no cuadrado deja costuras visibles a los lados.
           Center(
-            child: Container(
+            child: SizedBox(
               width: ovalW,
               height: ovalH,
-              decoration: BoxDecoration(
-                shape: BoxShape.rectangle,
-                borderRadius: BorderRadius.circular(ovalW / 2),
-                border: Border.all(color: const Color(0xFFFF542F), width: 3),
-              ),
+              child: CustomPaint(painter: _OvaloGuiaPainter()),
             ),
           ),
 
@@ -177,15 +175,27 @@ class _OvalOverlayPainter extends CustomPainter {
     final full = Rect.fromLTWH(0, 0, size.width, size.height);
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final oval = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(cx, cy), width: ovalW, height: ovalH),
-      Radius.circular(ovalW / 2),
-    );
+    final oval = Rect.fromCenter(center: Offset(cx, cy), width: ovalW, height: ovalH);
     final path = Path()
       ..addRect(full)
-      ..addRRect(oval)
+      ..addOval(oval)
       ..fillType = PathFillType.evenOdd;
     canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _OvaloGuiaPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFFF542F)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    final rect = Offset.zero & size;
+    canvas.drawOval(rect.deflate(1.5), paint);
   }
 
   @override

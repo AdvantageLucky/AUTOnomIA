@@ -74,21 +74,34 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
     return Scaffold(
       backgroundColor: KigoDesign.bgDark,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-          child: Column(
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 24),
-              _buildDisplay(),
-              const SizedBox(height: 8),
-              _buildError(),
-              const Spacer(),
-              _buildKeypad(),
-              const SizedBox(height: 20),
-              _buildAcciones(),
-            ],
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // El teclado QWERTY completo + encabezado + acciones no siempre
+            // cabe en pantallas chicas — se envuelve en scroll en vez de
+            // desbordar, forzando al menos la altura disponible para que el
+            // Spacer siga empujando el teclado hacia abajo cuando sí cabe.
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 24),
+                      _buildDisplay(),
+                      const SizedBox(height: 8),
+                      _buildError(),
+                      const Spacer(),
+                      _buildKeypad(),
+                      const SizedBox(height: 20),
+                      _buildAcciones(),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

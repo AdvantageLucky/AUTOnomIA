@@ -95,13 +95,14 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
             builder: (context) {
               final ancho = MediaQuery.of(context).size.width * 0.6;
               final alto = ancho * 1.35; // óvalo de cara, no círculo
-              return Container(
+              // Un Border.all() sobre BorderRadius elíptico al 50% deja
+              // costuras visibles donde se encuentran los arcos de las 4
+              // esquinas — se dibuja el óvalo real con CustomPaint en vez
+              // de simularlo con border-radius.
+              return SizedBox(
                 width: ancho,
                 height: alto,
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppTheme.primaryOrange, width: 3),
-                  borderRadius: BorderRadius.all(Radius.elliptical(ancho / 2, alto / 2)),
-                ),
+                child: CustomPaint(painter: _OvaloGuiaPainter()),
               );
             },
           ),
@@ -149,4 +150,19 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       ],
     );
   }
+}
+
+class _OvaloGuiaPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppTheme.primaryOrange
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    final rect = Offset.zero & size;
+    canvas.drawOval(rect.deflate(1.5), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
