@@ -400,7 +400,8 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   /// estática con la instrucción para no bloquear el flujo.
   Widget _buildGuiaPlaca() {
     return Center(
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.directions_car_rounded, color: KigoDesign.brand, size: 96),
@@ -417,7 +418,8 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
