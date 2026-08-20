@@ -11,45 +11,41 @@ import 'package:kigo_kiosco/features/welcome/viewmodels/qr_result_viewmodel.dart
 import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/qr_result_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/persona_qr_result_view.dart';
+import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
 
+/// Pantalla de entrada del kiosko: escanea sola, sin toque previo. Detecta
+/// tanto el QR personal de la app Kigo como el token de invitación de
+/// siempre. [onSinCodigo] es la única salida — quien no trae ningún código
+/// cae al flujo manual existente.
 class QrScannerView extends StatefulWidget {
   final QrScannerViewModel viewModel;
+  final VoidCallback onSinCodigo;
 
-  /// Cuando es la pantalla de entrada del kiosko (no se llegó aquí desde
-  /// "Escanear invitación"): arranca a escanear solo, sin el paso de "toca
-  /// para escanear"; el botón de regreso se reemplaza por [onSinCodigo]; y
-  /// las pantallas de resultado regresan solas aquí para el siguiente
-  /// visitante en vez de quedarse esperando un toque.
-  final bool esPantallaPrincipal;
-  final VoidCallback? onSinCodigo;
-
-  const QrScannerView({
-    super.key,
-    required this.viewModel,
-    this.esPantallaPrincipal = false,
-    this.onSinCodigo,
-  });
+  const QrScannerView({super.key, required this.viewModel, required this.onSinCodigo});
 
   @override
   State<QrScannerView> createState() => _QrScannerViewState();
 }
 
-class _QrScannerViewState extends State<QrScannerView> {
+class _QrScannerViewState extends State<QrScannerView> with SingleTickerProviderStateMixin {
   bool _consentGiven = false;
   bool _readyToScan = false;
-  bool _scanStarted = false;
   MobileScannerController? _controller;
+  late final AnimationController _anilloCtrl;
 
   @override
   void initState() {
     super.initState();
     widget.viewModel.addListener(_updateView);
+    _anilloCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))
+      ..repeat(reverse: true);
     WidgetsBinding.instance.addPostFrameCallback((_) => _solicitarConsentimiento());
   }
 
   @override
   void dispose() {
     widget.viewModel.removeListener(_updateView);
+    _anilloCtrl.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -62,24 +58,18 @@ class _QrScannerViewState extends State<QrScannerView> {
     if (aceptado) {
       setState(() {
         _consentGiven = true;
-        _controller = MobileScannerController(
-          detectionSpeed: DetectionSpeed.noDuplicates,
-        );
+        _controller = MobileScannerController(detectionSpeed: DetectionSpeed.noDuplicates);
       });
-      if (widget.esPantallaPrincipal) _iniciarEscaneo();
-    } else if (widget.esPantallaPrincipal) {
+      _iniciarEscaneo();
+    } else {
       // No hay a dónde regresar — es la pantalla de entrada. Reintentamos el
       // consentimiento en vez de dejar al kiosko sin nada que mostrar.
       _solicitarConsentimiento();
-    } else {
-      Navigator.pop(context);
     }
   }
 
   Future<void> _iniciarEscaneo() async {
-    if (_scanStarted) return;
-    setState(() => _scanStarted = true);
-    // Reiniciar el controller para limpiar el caché de noDuplicates
+    // Reiniciar el controller para limpiar el caché de noDuplicates.
     _controller?.stop();
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
@@ -98,11 +88,11 @@ class _QrScannerViewState extends State<QrScannerView> {
     // por completo a quien lo trae — a diferencia del token de invitación,
     // no hay reglas de captura del kiosko que aplicarle.
     if (value.contains(':')) {
-      Future.delayed(const Duration(milliseconds: 1200), () {
+      Future.delayed(const Duration(milliseconds: 900), () {
         navigator.pushReplacement(MaterialPageRoute(
           builder: (_) => PersonaQrResultView(
             viewModel: PersonaQrResultViewModel(qrValue: value),
-            alTerminar: widget.esPantallaPrincipal ? () => _reiniciar(navigator) : null,
+            alTerminar: () => _reiniciar(navigator),
           ),
         ));
       });
@@ -114,11 +104,11 @@ class _QrScannerViewState extends State<QrScannerView> {
     // Si la config no pide capturas al invitado, el QR basta: se consume la
     // invitación de inmediato como siempre.
     if (!RegistroRouter.invitadoRequiereCapturas(config)) {
-      Future.delayed(const Duration(milliseconds: 1200), () {
+      Future.delayed(const Duration(milliseconds: 900), () {
         navigator.pushReplacement(MaterialPageRoute(
           builder: (_) => QrResultView(
             viewModel: QrResultViewModel(token: value),
-            alTerminar: widget.esPantallaPrincipal ? () => _reiniciar(navigator) : null,
+            alTerminar: () => _reiniciar(navigator),
           ),
         ));
       });
@@ -132,11 +122,7 @@ class _QrScannerViewState extends State<QrScannerView> {
   /// visitante — cada persona da su propio consentimiento de cámara.
   void _reiniciar(NavigatorState navigator) {
     navigator.pushReplacement(MaterialPageRoute(
-      builder: (_) => QrScannerView(
-        viewModel: QrScannerViewModel(),
-        esPantallaPrincipal: true,
-        onSinCodigo: widget.onSinCodigo,
-      ),
+      builder: (_) => QrScannerView(viewModel: QrScannerViewModel(), onSinCodigo: widget.onSinCodigo),
     ));
   }
 
@@ -164,7 +150,10 @@ class _QrScannerViewState extends State<QrScannerView> {
       if (!mounted) return;
       // QrResultView ya sabe mostrar el error de una invitación inválida.
       navigator.pushReplacement(MaterialPageRoute(
-        builder: (_) => QrResultView(viewModel: QrResultViewModel(token: token)),
+        builder: (_) => QrResultView(
+          viewModel: QrResultViewModel(token: token),
+          alTerminar: () => _reiniciar(navigator),
+        ),
       ));
     }
   }
@@ -186,95 +175,23 @@ class _QrScannerViewState extends State<QrScannerView> {
               },
             ),
 
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: CustomPaint(
-              key: ValueKey(widget.viewModel.isScanned),
-              painter: _QrOverlayPainter(scanned: widget.viewModel.isScanned),
+          AnimatedBuilder(
+            animation: _anilloCtrl,
+            builder: (context, _) => CustomPaint(
+              painter: _QrOverlayPainter(
+                scanned: widget.viewModel.isScanned,
+                pulso: _anilloCtrl.value,
+              ),
               child: const SizedBox.expand(),
             ),
           ),
-
-          // Botón de inicio de escaneo — centrado en el recuadro del QR
-          if (_consentGiven && !_scanStarted && !widget.viewModel.isScanned)
-            GestureDetector(
-              onTap: _iniciarEscaneo,
-              behavior: HitTestBehavior.translucent,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF542F).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFFF542F), width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.qr_code_scanner_rounded,
-                        color: Color(0xFFFF542F),
-                        size: 38,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Toca para escanear',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          if (widget.viewModel.isScanned)
-            Center(
-              child: Padding(
-                padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.12),
-                child: AnimatedOpacity(
-                  opacity: widget.viewModel.isScanned ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 250),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: KigoDesign.success.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: KigoDesign.success.withValues(alpha: 0.5), width: 1.5),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle_rounded, color: KigoDesign.success, size: 22),
-                        SizedBox(width: 10),
-                        Text(
-                          '¡Código detectado!',
-                          style: TextStyle(color: KigoDesign.success, fontSize: 16, fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
 
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
                 children: [
-                  _buildTopBar(context),
+                  const KigoWordmark(),
                   const Spacer(),
                   _buildBottomHint(),
                   const SizedBox(height: 48),
@@ -287,160 +204,95 @@ class _QrScannerViewState extends State<QrScannerView> {
     );
   }
 
-  Widget _buildTopBar(BuildContext context) {
-    return Row(
-      children: [
-        if (widget.esPantallaPrincipal)
-          const SizedBox(width: 44)
-        else
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  width: 1,
-                ),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
-
-        const Spacer(),
-
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFFF542F), size: 18),
-              const SizedBox(width: 8),
-              Text(
-                widget.esPantallaPrincipal ? 'Acceso Kigo' : 'Escanea tu invitación',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const Spacer(),
-        const SizedBox(width: 44),
-      ],
-    );
-  }
-
   Widget _buildBottomHint() {
     return Column(
       children: [
-        Text(
-          _readyToScan
-              ? 'Apunta al código QR'
-              : 'Posiciona el código QR y toca para escanear',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          _readyToScan ? 'El código se detectará automáticamente' : 'La cámara no escaneará hasta que toques',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 13,
-          ),
-        ),
-        if (widget.esPantallaPrincipal && widget.onSinCodigo != null) ...[
-          const SizedBox(height: 28),
-          GestureDetector(
-            onTap: widget.onSinCodigo,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-              ),
-              child: const Text(
-                'No tengo la app Kigo o código QR',
-                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-              ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            widget.viewModel.isScanned ? 'Código detectado' : 'Apunta al código QR',
+            key: ValueKey(widget.viewModel.isScanned),
+            style: TextStyle(
+              color: widget.viewModel.isScanned ? KigoDesign.success : Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Tu código personal o el de tu invitación',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+        ),
+        const SizedBox(height: 28),
+        GestureDetector(
+          onTap: widget.onSinCodigo,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+            ),
+            child: const Text(
+              'No tengo la app Kigo o código QR',
+              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
+/// El motivo de firma de todo el flujo QR: un solo anillo continuo que
+/// respira mientras espera (en vez del típico marco de esquinas) y se cierra
+/// en un gesto rápido y sin rebote al detectar un código — mismo lenguaje
+/// visual que retoman las pantallas de resultado.
 class _QrOverlayPainter extends CustomPainter {
   final bool scanned;
-  const _QrOverlayPainter({this.scanned = false});
+  final double pulso;
+  const _QrOverlayPainter({required this.scanned, required this.pulso});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final overlayPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.62);
+    final overlayPaint = Paint()..color = Colors.black.withValues(alpha: 0.62);
 
-    final cutSize = size.width * 0.68;
+    final cutBase = size.width * 0.66;
+    // Respiración sutil (0.97–1.0) mientras espera; sólido y estable ya detectado.
+    final escala = scanned ? 1.0 : 0.97 + (0.03 * pulso);
+    final cutSize = cutBase * escala;
     final left = (size.width - cutSize) / 2;
     final top = (size.height - cutSize) / 2;
+    final rect = Rect.fromLTWH(left, top, cutSize, cutSize);
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(left, top, cutSize, cutSize),
-        const Radius.circular(16),
-      ))
+      ..addRRect(rrect)
       ..fillType = PathFillType.evenOdd;
-
     canvas.drawPath(path, overlayPaint);
 
-    final cornerPaint = Paint()
-      ..color = scanned ? KigoDesign.success : const Color(0xFFFF542F)
-      ..strokeWidth = 3.5
+    final color = scanned ? KigoDesign.success : KigoDesign.brand;
+    final opacidadAnillo = scanned ? 1.0 : 0.55 + (0.35 * pulso);
+
+    // Resplandor suave detrás del anillo — la profundidad que separa esto de
+    // un simple marco plano.
+    final glowPaint = Paint()
+      ..color = color.withValues(alpha: 0.35 * opacidadAnillo)
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+      ..strokeWidth = 14
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
+    canvas.drawRRect(rrect, glowPaint);
 
-    final cl = cutSize * 0.12;
-    const r = 16.0;
-
-    // Superior izquierda
-    canvas.drawLine(Offset(left + r, top), Offset(left + r + cl, top), cornerPaint);
-    canvas.drawLine(Offset(left, top + r), Offset(left, top + r + cl), cornerPaint);
-
-    // Superior derecha
-    canvas.drawLine(Offset(left + cutSize - r, top), Offset(left + cutSize - r - cl, top), cornerPaint);
-    canvas.drawLine(Offset(left + cutSize, top + r), Offset(left + cutSize, top + r + cl), cornerPaint);
-
-    // Inferior izquierda
-    canvas.drawLine(Offset(left + r, top + cutSize), Offset(left + r + cl, top + cutSize), cornerPaint);
-    canvas.drawLine(Offset(left, top + cutSize - r), Offset(left, top + cutSize - r - cl), cornerPaint);
-
-    // Inferior derecha
-    canvas.drawLine(Offset(left + cutSize - r, top + cutSize), Offset(left + cutSize - r - cl, top + cutSize), cornerPaint);
-    canvas.drawLine(Offset(left + cutSize, top + cutSize - r), Offset(left + cutSize, top + cutSize - r - cl), cornerPaint);
+    final ringPaint = Paint()
+      ..color = color.withValues(alpha: opacidadAnillo)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = scanned ? 3.5 : 2.5;
+    canvas.drawRRect(rrect, ringPaint);
   }
 
   @override
-  bool shouldRepaint(_QrOverlayPainter oldDelegate) => oldDelegate.scanned != scanned;
+  bool shouldRepaint(_QrOverlayPainter oldDelegate) =>
+      oldDelegate.scanned != scanned || oldDelegate.pulso != pulso;
 }

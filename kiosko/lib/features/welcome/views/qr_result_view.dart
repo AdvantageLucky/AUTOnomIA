@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_result_viewmodel.dart';
+import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
+import 'package:kigo_kiosco/features/welcome/views/widgets/verdict_ring.dart';
 
 class QrResultView extends StatefulWidget {
   final QrResultViewModel viewModel;
@@ -54,7 +56,7 @@ class _QrResultViewState extends State<QrResultView> {
               padding: EdgeInsets.symmetric(horizontal: 34, vertical: vPad),
               child: Column(
                 children: [
-                  _buildHeader(),
+                  const KigoWordmark(color: KigoDesign.textPrimary),
                   const Spacer(),
                   _buildContent(),
                   const Spacer(),
@@ -65,34 +67,6 @@ class _QrResultViewState extends State<QrResultView> {
           },
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: KigoDesign.brand,
-            borderRadius: BorderRadius.circular(KigoDesign.radius),
-          ),
-          child: const Center(
-            child: Text('K', style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.bold)),
-          ),
-        ),
-        const SizedBox(width: 14),
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Kigo', style: TextStyle(color: KigoDesign.textPrimary, fontSize: 29, fontWeight: FontWeight.w800)),
-            SizedBox(height: 2),
-            Text('SELF CHECK-IN', style: TextStyle(color: KigoDesign.textSecondary, fontSize: 14, letterSpacing: 4, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ],
     );
   }
 
@@ -130,16 +104,7 @@ class _QrResultViewState extends State<QrResultView> {
     final gap = (h * 0.04).clamp(10.0, 36.0);
     return Column(
       children: [
-        Container(
-          width: iconSize,
-          height: iconSize,
-          decoration: BoxDecoration(
-            color: KigoDesign.success.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-            border: Border.all(color: KigoDesign.success.withValues(alpha: 0.5), width: 2),
-          ),
-          child: Icon(Icons.check_rounded, color: KigoDesign.success, size: iconSize * 0.55),
-        ),
+        VerdictRing(color: KigoDesign.success, icon: Icons.check_rounded, size: iconSize),
         SizedBox(height: gap),
         Text('¡Acceso concedido!', style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.048).clamp(22.0, 38.0), fontWeight: FontWeight.w800)),
         SizedBox(height: gap * 0.4),
@@ -171,16 +136,7 @@ class _QrResultViewState extends State<QrResultView> {
     final gap = (h * 0.04).clamp(10.0, 36.0);
     return Column(
       children: [
-        Container(
-          width: iconSize,
-          height: iconSize,
-          decoration: BoxDecoration(
-            color: KigoDesign.error.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-            border: Border.all(color: KigoDesign.error.withValues(alpha: 0.5), width: 2),
-          ),
-          child: Icon(Icons.close_rounded, color: KigoDesign.error, size: iconSize * 0.55),
-        ),
+        VerdictRing(color: KigoDesign.error, icon: Icons.close_rounded, size: iconSize),
         SizedBox(height: gap),
         Text('Acceso denegado', style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.044).clamp(20.0, 34.0), fontWeight: FontWeight.w800)),
         SizedBox(height: gap * 0.4),
