@@ -15,7 +15,20 @@ import 'package:kigo_kiosco/features/welcome/views/persona_qr_result_view.dart';
 class QrScannerView extends StatefulWidget {
   final QrScannerViewModel viewModel;
 
-  const QrScannerView({super.key, required this.viewModel});
+  /// Cuando es la pantalla de entrada del kiosko (no se llegó aquí desde
+  /// "Escanear invitación"): arranca a escanear solo, sin el paso de "toca
+  /// para escanear"; el botón de regreso se reemplaza por [onSinCodigo]; y
+  /// las pantallas de resultado regresan solas aquí para el siguiente
+  /// visitante en vez de quedarse esperando un toque.
+  final bool esPantallaPrincipal;
+  final VoidCallback? onSinCodigo;
+
+  const QrScannerView({
+    super.key,
+    required this.viewModel,
+    this.esPantallaPrincipal = false,
+    this.onSinCodigo,
+  });
 
   @override
   State<QrScannerView> createState() => _QrScannerViewState();
@@ -53,6 +66,11 @@ class _QrScannerViewState extends State<QrScannerView> {
           detectionSpeed: DetectionSpeed.noDuplicates,
         );
       });
+      if (widget.esPantallaPrincipal) _iniciarEscaneo();
+    } else if (widget.esPantallaPrincipal) {
+      // No hay a dónde regresar — es la pantalla de entrada. Reintentamos el
+      // consentimiento en vez de dejar al kiosko sin nada que mostrar.
+      _solicitarConsentimiento();
     } else {
       Navigator.pop(context);
     }
@@ -82,7 +100,10 @@ class _QrScannerViewState extends State<QrScannerView> {
     if (value.contains(':')) {
       Future.delayed(const Duration(milliseconds: 1200), () {
         navigator.pushReplacement(MaterialPageRoute(
-          builder: (_) => PersonaQrResultView(viewModel: PersonaQrResultViewModel(qrValue: value)),
+          builder: (_) => PersonaQrResultView(
+            viewModel: PersonaQrResultViewModel(qrValue: value),
+            alTerminar: widget.esPantallaPrincipal ? () => _reiniciar(navigator) : null,
+          ),
         ));
       });
       return;
@@ -95,13 +116,28 @@ class _QrScannerViewState extends State<QrScannerView> {
     if (!RegistroRouter.invitadoRequiereCapturas(config)) {
       Future.delayed(const Duration(milliseconds: 1200), () {
         navigator.pushReplacement(MaterialPageRoute(
-          builder: (_) => QrResultView(viewModel: QrResultViewModel(token: value)),
+          builder: (_) => QrResultView(
+            viewModel: QrResultViewModel(token: value),
+            alTerminar: widget.esPantallaPrincipal ? () => _reiniciar(navigator) : null,
+          ),
         ));
       });
       return;
     }
 
     _continuarConCapturas(value);
+  }
+
+  /// Vuelve a montar la pantalla de escaneo desde cero para el siguiente
+  /// visitante — cada persona da su propio consentimiento de cámara.
+  void _reiniciar(NavigatorState navigator) {
+    navigator.pushReplacement(MaterialPageRoute(
+      builder: (_) => QrScannerView(
+        viewModel: QrScannerViewModel(),
+        esPantallaPrincipal: true,
+        onSinCodigo: widget.onSinCodigo,
+      ),
+    ));
   }
 
   /// El invitado tiene que dejar evidencia (placa, rostro o INE) antes de que la
@@ -254,26 +290,29 @@ class _QrScannerViewState extends State<QrScannerView> {
   Widget _buildTopBar(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
-                width: 1,
+        if (widget.esPantallaPrincipal)
+          const SizedBox(width: 44)
+        else
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+                size: 18,
               ),
             ),
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
           ),
-        ),
 
         const Spacer(),
 
@@ -287,13 +326,13 @@ class _QrScannerViewState extends State<QrScannerView> {
               width: 1,
             ),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFFF542F), size: 18),
-              SizedBox(width: 8),
+              const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFFF542F), size: 18),
+              const SizedBox(width: 8),
               Text(
-                'Escanea tu invitación',
-                style: TextStyle(
+                widget.esPantallaPrincipal ? 'Acceso Kigo' : 'Escanea tu invitación',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -314,7 +353,7 @@ class _QrScannerViewState extends State<QrScannerView> {
       children: [
         Text(
           _readyToScan
-              ? 'Apunta al código QR de tu invitación'
+              ? 'Apunta al código QR'
               : 'Posiciona el código QR y toca para escanear',
           style: const TextStyle(
             color: Colors.white,
@@ -330,6 +369,24 @@ class _QrScannerViewState extends State<QrScannerView> {
             fontSize: 13,
           ),
         ),
+        if (widget.esPantallaPrincipal && widget.onSinCodigo != null) ...[
+          const SizedBox(height: 28),
+          GestureDetector(
+            onTap: widget.onSinCodigo,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+              ),
+              child: const Text(
+                'No tengo la app Kigo o código QR',
+                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

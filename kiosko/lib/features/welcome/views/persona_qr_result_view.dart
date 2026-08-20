@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmodel.dart';
@@ -5,13 +7,20 @@ import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmo
 class PersonaQrResultView extends StatefulWidget {
   final PersonaQrResultViewModel viewModel;
 
-  const PersonaQrResultView({super.key, required this.viewModel});
+  /// Si no es null, se llama solo tras ~5s en un estado terminal — usado
+  /// cuando esta pantalla se alcanzó desde la entrada principal del kiosko,
+  /// para volver a escanear con el siguiente visitante sin esperar un toque.
+  final VoidCallback? alTerminar;
+
+  const PersonaQrResultView({super.key, required this.viewModel, this.alTerminar});
 
   @override
   State<PersonaQrResultView> createState() => _PersonaQrResultViewState();
 }
 
 class _PersonaQrResultViewState extends State<PersonaQrResultView> {
+  Timer? _autoTimer;
+
   @override
   void initState() {
     super.initState();
@@ -21,10 +30,18 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
   @override
   void dispose() {
     widget.viewModel.removeListener(_updateView);
+    _autoTimer?.cancel();
     super.dispose();
   }
 
-  void _updateView() => setState(() {});
+  void _updateView() {
+    setState(() {});
+    if (_autoTimer == null &&
+        widget.alTerminar != null &&
+        widget.viewModel.estado != PersonaQrResultEstado.cargando) {
+      _autoTimer = Timer(const Duration(seconds: 5), widget.alTerminar!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,7 +199,14 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
         ),
         SizedBox(height: gap),
         GestureDetector(
-          onTap: () => Navigator.pop(context),
+          onTap: () {
+            _autoTimer?.cancel();
+            if (widget.alTerminar != null) {
+              widget.alTerminar!();
+            } else {
+              Navigator.pop(context);
+            }
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             decoration: BoxDecoration(
