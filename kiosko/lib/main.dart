@@ -7,7 +7,9 @@ import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/activacion/views/activacion_view.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
+import 'package:kigo_kiosco/features/welcome/viewmodels/qr_scanner_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
+import 'package:kigo_kiosco/features/welcome/views/qr_scanner_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/welcome_view.dart';
 
 void main() {
@@ -86,7 +88,13 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
             if (cfg.necesitaActivacion) {
               return ActivacionView(onActivado: () => cfg.reinicializar());
             }
-            return WelcomeView(viewModel: WelcomeViewModel());
+            return QrScannerView(
+              viewModel: QrScannerViewModel(),
+              esPantallaPrincipal: true,
+              onSinCodigo: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => WelcomeView(viewModel: WelcomeViewModel()),
+              )),
+            );
           }),
         );
       },
