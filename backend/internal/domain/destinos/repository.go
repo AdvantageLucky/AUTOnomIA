@@ -25,6 +25,15 @@ func (r *Repository) Create(d *Destino) error {
 	return r.db.Create(d).Error
 }
 
+// CreateLote inserta varios destinos en una sola transacción — alta masiva
+// desde el dashboard en vez de un POST por cada uno.
+func (r *Repository) CreateLote(destinos []Destino) error {
+	if len(destinos) == 0 {
+		return nil
+	}
+	return r.db.Create(&destinos).Error
+}
+
 func (r *Repository) FindByTenantID(tenantID uint) ([]Destino, error) {
 	if tenantID == 0 {
 		return nil, ErrTenantNoResuelto

@@ -95,9 +95,13 @@ func (h *Handler) CrearDestino(c *gin.Context) {
 		return
 	}
 
+	tipo := TipoDestino(req.Tipo)
 	d := &Destino{
 		TenantID: tenantID,
-		Nombre:   req.Nombre,
+		Nombre:   nombreDestino(req.Calle, tipo, req.Numero),
+		Calle:    req.Calle,
+		Tipo:     tipo,
+		Numero:   req.Numero,
 		Titular:  req.Titular,
 	}
 
@@ -107,6 +111,45 @@ func (h *Handler) CrearDestino(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, toDestinoResponse(*d))
+}
+
+// CrearDestinosLote — admin: da de alta N destinos de una calle y tipo de
+// una sola llamada, un número por cada elemento de la lista.
+func (h *Handler) CrearDestinosLote(c *gin.Context) {
+	tenantID, ok := tenantFromCtx(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tenant no resuelto"})
+		return
+	}
+
+	var req DestinoLoteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	tipo := TipoDestino(req.Tipo)
+	nuevos := make([]Destino, 0, len(req.Numeros))
+	for _, numero := range req.Numeros {
+		nuevos = append(nuevos, Destino{
+			TenantID: tenantID,
+			Nombre:   nombreDestino(req.Calle, tipo, numero),
+			Calle:    req.Calle,
+			Tipo:     tipo,
+			Numero:   numero,
+		})
+	}
+
+	if err := h.repo.WithContext(c.Request.Context()).CreateLote(nuevos); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]DestinoResponse, len(nuevos))
+	for i, d := range nuevos {
+		items[i] = toDestinoResponse(d)
+	}
+	c.JSON(http.StatusCreated, gin.H{"destinos": items})
 }
 
 // EliminarDestino — admin: elimina un destino del tenant
