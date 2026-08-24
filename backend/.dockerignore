@@ -1,0 +1,7 @@
+llama.cpp/
+.git/
+.env
+*.md
+web/uploads/visitantes/*
+!web/uploads/visitantes/.gitkeep
+main

@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET}
+      QR_MASTER_SECRET: ${QR_MASTER_SECRET}
+      UPLOADS_DIR: ./web/uploads/visitantes
+      LLM_URL: ${LLM_URL}
+      PUBLIC_URL: ${PUBLIC_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+    # 10000, no 8080: es uno de los 3 puertos que Tailscale Funnel permite
+    # exponer al internet público (443/8443/10000) — el 8443 ya está en uso
+    # para otra cosa en este homelab.
+    ports:
+      - "10000:8080"
+    volumes:
+      - uploads_data:/app/web/uploads
+
+volumes:
+  db_data:
+  uploads_data:
