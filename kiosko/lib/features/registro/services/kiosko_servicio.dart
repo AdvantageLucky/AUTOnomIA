@@ -14,7 +14,7 @@ class DeviceAuthorizationPendingException implements Exception {}
 class DeviceExpiredException implements Exception {}
 
 class KioskoServicio {
-  static const String _baseUrl = 'http://localhost:8000/api/v1';
+  static const String _baseUrl = 'https://homelab.tail8dc7f1.ts.net/api/v1';
   static const String _keyToken = 'kiosko_token';
   static const String _keyKioskoId = 'kiosko_id';
   static const String _keyClave = 'kiosko_clave';
