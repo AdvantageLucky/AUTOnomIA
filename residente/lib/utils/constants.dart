@@ -6,7 +6,7 @@ class AppConstants {
   // Ejemplo: '192.168.1.100'  (obtén tu IP con: ip addr | grep 192)
   // ─────────────────────────────────────────────────────────────────────────
   static const String serverHost = 'localhost';
-  static const String apiBaseUrl = 'http://$serverHost:8000/api/v1';
+  static const String apiBaseUrl = 'https://homelab.tail8dc7f1.ts.net/api/v1/';
 
   // Única clave persistida — todo lo demás (perfil, membresía) se
   // recarga del backend al restaurar sesión, nunca se cachea localmente.
