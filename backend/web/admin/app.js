@@ -31,15 +31,17 @@
       nav_accesos: "Accesos",
       nav_perfil: "Perfil",
       role_admin: "Administrador",
-      loading: "Cargando…",
       dash_sub: "Resumen de tu comunidad",
-      stat_today: "Visitas de hoy",
+      stat_today: "Entradas hoy",
+      stat_attention: "Requieren atención",
+      stat_approved: "Aprobadas hoy",
+      stat_residents: "Residentes activos",
       stat_week: "Últimos 7 días",
       stat_total: "Total registros",
       stat_pending: "Pendientes",
-      q_visitas_title: "Ver visitas",
-      q_visitas_sub: "Bitácora completa y paginada",
-      recent_title: "Visitas recientes",
+      q_visitas_title: "Ver bitácora de entradas",
+      q_visitas_sub: "Filtros por tipo: residente, con QR o sin app",
+      recent_title: "Entradas recientes",
       see_all: "Ver todas ›",
       vis_sub: "Bitácora de registros",
       all_docs: "Todos los tipos",
@@ -56,14 +58,14 @@
       col_access: "ACCESO",
       col_estado: "ESTADO",
       col_date: "FECHA",
-      vis_empty_title: "Sin visitantes registrados",
-      vis_empty_text: "Cuando alguien se registre en una de tus entradas, aparecerá aquí automáticamente.",
+      vis_empty_title: "Sin entradas registradas",
+      vis_empty_text: "Cuando alguien ingrese o se registre en un kiosko, aparecerá aquí automáticamente.",
       load_err_title: "Error al cargar",
       load_err_text: "Revisa tu conexión e inténtalo de nuevo.",
       retry: "Reintentar",
       prev: "‹ Anterior",
       next: "Siguiente ›",
-      detail_title: "Detalle de visita",
+      detail_title: "Detalle de entrada",
       accesos_sub: "Entradas y casetas de tu comunidad",
       new_acceso: "Nuevo acceso",
       perfil_sub: "Tus datos personales y seguridad",
@@ -100,7 +102,7 @@
       autorizador_residente: "Residente",
       autorizador_agente: "Agente IA",
       autorizador_sistema: "Sistema (sin respuesta)",
-      visits: n => `${n} visita${n !== 1 ? "s" : ""} registrada${n !== 1 ? "s" : ""}`,
+      visits: n => `${n} entrada${n !== 1 ? "s" : ""} registrada${n !== 1 ? "s" : ""}`,
       hello: name => `Hola, ${name}`,
       nav_inicio: "Inicio",
       nav_solicitudes: "Solicitudes",
@@ -155,13 +157,16 @@
       role_admin: "Administrator",
       loading: "Loading…",
       dash_sub: "Community summary",
-      stat_today: "Today's visits",
+      stat_today: "Today's entries",
+      stat_attention: "Require attention",
+      stat_approved: "Approved today",
+      stat_residents: "Active residents",
       stat_week: "Last 7 days",
       stat_total: "Total records",
       stat_pending: "Pending",
-      q_visitas_title: "View visits",
-      q_visitas_sub: "Complete paginated log",
-      recent_title: "Recent visits",
+      q_visitas_title: "View entry log",
+      q_visitas_sub: "Filter by type: resident, QR guest or walk-in",
+      recent_title: "Recent entries",
       see_all: "See all ›",
       vis_sub: "Entry log",
       all_docs: "All types",
@@ -178,14 +183,14 @@
       col_access: "ENTRY",
       col_estado: "STATUS",
       col_date: "DATE",
-      vis_empty_title: "No visitors registered",
-      vis_empty_text: "Once someone registers at one of your entries, they'll appear here.",
+      vis_empty_title: "No entries recorded",
+      vis_empty_text: "When someone enters or registers at a kiosk, they'll appear here.",
       load_err_title: "Failed to load",
       load_err_text: "Check your connection and try again.",
       retry: "Try again",
       prev: "‹ Previous",
       next: "Next ›",
-      detail_title: "Visit detail",
+      detail_title: "Entry detail",
       accesos_sub: "Entry points and booths in your community",
       new_acceso: "New entry",
       perfil_sub: "Your personal data and security",
@@ -222,7 +227,7 @@
       autorizador_residente: "Resident",
       autorizador_agente: "AI agent",
       autorizador_sistema: "System (no response)",
-      visits: n => `${n} visit${n !== 1 ? "s" : ""} recorded`,
+      visits: n => `${n} entr${n !== 1 ? "ies" : "y"} recorded`,
       hello: name => `Hello, ${name}`,
       nav_inicio: "Home",
       nav_solicitudes: "Requests",
@@ -309,7 +314,7 @@
   const MESES_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   const TIPO_BADGE  = { INE: "badge--ine", PASAPORTE: "badge--pasaporte", LICENCIA: "badge--licencia" };
-  const TIPO_VIS_BADGE = { RESIDENTE: "badge--ine", INVITADO: "badge--pasaporte", VISITANTE: "badge--licencia" };
+  const TIPO_VIS_BADGE = { RESIDENTE: "badge--residente", INVITADO: "badge--invitado", VISITANTE: "badge--visitante" };
   const TIPO_VIS_LABEL = {
     RESIDENTE: { es: "Residente",  en: "Resident" },
     INVITADO:  { es: "Con QR",     en: "QR Guest" },
@@ -745,29 +750,44 @@
 
   /* ─── Dashboard ─────────────────────────── */
   async function loadDashboard() {
-    const res = await api("/visitas/?page_size=100");
-    if (!res || !res.ok) return;
-    const data = await res.json();
+    const [resVisitas, resResidentes] = await Promise.all([
+      api("/visitas/?page_size=100"),
+      api("/residentes/")
+    ]);
 
-    const visitas   = data.visitas || [];
-    const total     = data.total  || 0;
+    let visitas = [];
+    if (resVisitas && resVisitas.ok) {
+      const data = await resVisitas.json();
+      visitas = data.visitas || [];
+    }
+
+    let residentesCount = 0;
+    if (resResidentes && resResidentes.ok) {
+      const resList = await resResidentes.json();
+      residentesCount = Array.isArray(resList) ? resList.length : 0;
+    }
 
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-    const sieteDias = new Date(hoy); sieteDias.setDate(sieteDias.getDate() - 7);
 
     const hoyCount      = visitas.filter(v => new Date(v.created_at) >= hoy).length;
-    const semanaCount   = visitas.filter(v => new Date(v.created_at) >= sieteDias).length;
     const pendCount     = visitas.filter(v => v.estado === "PENDIENTE" || v.estado === "REVISION").length;
+    const pendSolo      = visitas.filter(v => v.estado === "PENDIENTE").length;
+    const revSolo       = visitas.filter(v => v.estado === "REVISION").length;
     const aprobHoyCount = visitas.filter(v => new Date(v.created_at) >= hoy && v.estado === "APROBADO").length;
 
-    animateStat("stat-hoy",         hoyCount);
-    animateStat("stat-pendientes",  pendCount);
-    animateStat("stat-semana",       semanaCount);
-    animateStat("stat-total",        total);
+    animateStat("stat-hoy",        hoyCount);
+    animateStat("stat-pendientes", pendCount);
+    animateStat("stat-aprobadas",  aprobHoyCount);
+    animateStat("stat-residentes", residentesCount);
 
-    // Actualizar subtítulos de stats con contexto
-    const statAprobEl = document.getElementById("stat-label-aprobadas");
-    if (statAprobEl) statAprobEl.textContent = aprobHoyCount + " aprobadas hoy";
+    const subPend = document.getElementById("stat-sub-pendientes");
+    if (subPend) {
+      if (pendCount > 0) {
+        subPend.textContent = `${pendSolo} ${lang === 'en' ? 'pending' : 'pendientes'} · ${revSolo} ${lang === 'en' ? 'in review' : 'en revisión'}`;
+      } else {
+        subPend.textContent = lang === 'en' ? "Up to date" : "Al día";
+      }
+    }
 
     const container = document.getElementById("dash-recent-rows");
     const recent = visitas.slice(0, 8);
@@ -796,11 +816,14 @@
   }
 
   function renderDashRow(v, i) {
-    return `<div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*40}ms" data-id="${v.id}">
+    const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
+    const tvLabel = tipoVisLabel(v.tipo_visitante);
+    return `<div class="row-item" style="grid-template-columns:2fr auto 1fr 80px;gap:12px;align-items:center;animation-delay:${i*40}ms" data-id="${v.id}">
       <div>
         <div class="row-name">${esc(v.titular)}</div>
         <div class="row-sub">${esc(v.casa_destino || "")}</div>
       </div>
+      <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-date">${fmtDateShort(v.created_at)}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
     </div>`;
@@ -913,6 +936,8 @@
     }
     const v = await res.json();
     const acceso = state.accesosById.get(v.kiosko_id);
+    const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
+    const tvLabel = tipoVisLabel(v.tipo_visitante);
 
     body.innerHTML = `
       <div class="detalle-hero">
@@ -923,7 +948,8 @@
         </div>
         <div class="detalle-info">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-            <span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span>
+            <span class="badge ${tvBadge}">${esc(tvLabel)}</span>
+            ${v.tipo_documento && v.tipo_documento !== v.tipo_visitante ? `<span class="badge ${TIPO_BADGE[v.tipo_documento] || 'badge--neutral'}">${esc(v.tipo_documento)}</span>` : ""}
             <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
             ${v.intervenida ? `<span class="badge badge--intervenida">Revisada por IA</span>` : ""}
           </div>
