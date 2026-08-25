@@ -740,6 +740,8 @@ textarea { resize: vertical; }
 
 .stat-card--accent { border-color: rgba(255,84,47,0.3); background: rgba(255,84,47,0.03); }
 .stat-card--accent .stat-value { color: var(--orange); }
+.stat-card--green  { border-color: rgba(45,207,168,0.3); background: rgba(45,207,168,0.03); }
+.stat-card--green .stat-value { color: var(--green); }
 
 .stat-label {
   font-size: 10px;
@@ -988,6 +990,11 @@ textarea { resize: vertical; }
 .badge--ine       { background: rgba(91,138,245,0.14); color: var(--blue); }
 .badge--pasaporte { background: rgba(45,207,168,0.12); color: var(--green); }
 .badge--licencia  { background: rgba(255,149,0,0.12); color: var(--orange); }
+
+.badge--residente { background: rgba(91,138,245,0.16); color: var(--blue); }
+.badge--invitado  { background: rgba(45,207,168,0.16); color: var(--green); }
+.badge--visitante { background: rgba(255,149,0,0.16); color: var(--orange); }
+.badge--neutral   { background: rgba(255,255,255,0.08); color: var(--text-3); }
 
 /* ================================================================
    SEARCH ROW — visitas filters
