@@ -118,6 +118,39 @@ class AppLocalizations {
       'verificando_tu_codigo': 'Verificando tu código...',
       'cuenta_sin_invitacion_membresia': 'Esta cuenta no tiene invitación ni membresía en este centro',
       'no_se_pudo_verificar_qr': 'No se pudo verificar el código QR',
+
+      // Diálogo de consentimiento y términos y condiciones
+      'consentimiento_datos_title': 'Consentimiento de datos',
+      'consentimiento_datos_content': 'Estas a punto de confiarnos datos sencibles para acceder a las instalaciones.'
+          ' \n\n'
+          '¿Aceptas el uso de tus datos para este fin?',
+      'terminos_y_condiciones': 'Términos y condiciones',
+      'terminos_y_condiciones_content': 'Este texto es de referencia y debe sustituirse por los términos y condiciones '
+          'legales definitivos antes de publicar la aplicación.\n\n'
+          '1. Objeto\n'
+          'Los presentes términos regulan el uso del kiosco de autoservicio y el tratamiento '
+          'de los datos proporcionados por el usuario durante su registro y acceso a las '
+          'instalaciones.\n\n'
+          '2. Datos que recabamos\n'
+          'Para el proceso de registro se podrán recabar, entre otros: nombre completo, '
+          'fotografía del rostro, identificación oficial (INE u otro documento) y datos de '
+          'contacto asociados a la unidad o domicilio.\n\n'
+          '3. Finalidad del tratamiento\n'
+          'Los datos se utilizan exclusivamente para validar la identidad del usuario, '
+          'gestionar el acceso a las instalaciones y mantener un registro de seguridad de '
+          'ingresos y salidas.\n\n'
+          '4. Conservación y seguridad\n'
+          'La información se almacena de forma segura y se conserva únicamente durante el '
+          'tiempo necesario para cumplir con la finalidad descrita o lo que exija la '
+          'normativa aplicable.\n\n'
+          '5. Derechos del usuario\n'
+          'El usuario puede solicitar en cualquier momento el acceso, rectificación o '
+          'eliminación de sus datos personales a través de la administración del condominio '
+          'o fraccionamiento.\n\n'
+          '6. Contacto\n'
+          'Para dudas relacionadas con el uso de tus datos, contacta a la administración '
+          'del sitio.',
+      'cerrar_button': 'Cerrar',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -214,6 +247,39 @@ class AppLocalizations {
       'verificando_tu_codigo': 'Verifying your code...',
       'cuenta_sin_invitacion_membresia': 'This account has no invitation or membership at this facility',
       'no_se_pudo_verificar_qr': 'Could not verify the QR code',
+
+      // Diálogo de consentimiento y términos y condiciones
+      'consentimiento_datos_title': 'Data consent',
+      'consentimiento_datos_content': "You're about to share sensitive data with us to access the facilities."
+          ' \n\n'
+          'Do you agree to the use of your data for this purpose?',
+      'terminos_y_condiciones': 'Terms and conditions',
+      'terminos_y_condiciones_content': 'This text is a placeholder and must be replaced with the final '
+          'legal terms and conditions before publishing the app.\n\n'
+          '1. Purpose\n'
+          'These terms govern the use of the self-service kiosk and the handling '
+          'of the data provided by the user during registration and access to the '
+          'facilities.\n\n'
+          '2. Data we collect\n'
+          'The registration process may collect, among others: full name, '
+          'facial photo, official ID (INE or other document), and contact data '
+          'associated with the unit or address.\n\n'
+          '3. Purpose of processing\n'
+          "The data is used exclusively to validate the user's identity, "
+          'manage access to the facilities, and maintain a security log of '
+          'entries and exits.\n\n'
+          '4. Retention and security\n'
+          'Information is stored securely and kept only for the time needed '
+          'to fulfill the stated purpose or as required by applicable '
+          'regulations.\n\n'
+          '5. User rights\n'
+          'The user may request access, correction, or deletion of their '
+          'personal data at any time through the condominium or development '
+          'administration.\n\n'
+          '6. Contact\n'
+          'For questions about the use of your data, contact the site '
+          'administration.',
+      'cerrar_button': 'Close',
     },
   };
 

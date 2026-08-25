@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Segundos antes de aceptar automáticamente el consentimiento.
 const int _segundosParaAceptarAuto = 6;
@@ -54,28 +55,24 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
             titlePadding: const EdgeInsets.fromLTRB(28, 28, 28, 14),
             contentPadding: const EdgeInsets.fromLTRB(28, 0, 28, 22),
             actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.privacy_tip_outlined, color: Color(0xFFFF542F), size: 36),
-                SizedBox(width: 14),
+                const Icon(Icons.privacy_tip_outlined, color: Color(0xFFFF542F), size: 36),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    'Consentimiento de datos',
-                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    AppLocalizations.t(context, 'consentimiento_datos_title'),
+                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
             content: SizedBox(
               width: anchoDialogo,
-              // ↓↓↓ Edita aquí el texto del aviso de consentimiento ↓↓↓
-              child: const Text(
-                'Estas a punto de confiarnos datos sencibles para acceder a las instalaciones.'
-                ' \n\n'
-                '¿Aceptas el uso de tus datos para este fin?',
-                style: TextStyle(color: Color(0xFFC5BFBF), fontSize: 21, height: 1.5),
+              child: Text(
+                AppLocalizations.t(context, 'consentimiento_datos_content'),
+                style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 21, height: 1.5),
               ),
-              // ↑↑↑ Edita aquí el texto del aviso de consentimiento ↑↑↑
             ),
             actionsAlignment: MainAxisAlignment.center,
             actions: [
@@ -100,9 +97,9 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
                               minimumSize: const Size(150, 64),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             ),
-                            child: const Text(
-                              'Aceptar',
-                              style: TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 22),
+                            child: Text(
+                              AppLocalizations.t(context, 'aceptar_button'),
+                              style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 22),
                             ),
                           ),
                           if (!timerDetenido) ...[
@@ -128,9 +125,9 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
                           minimumSize: const Size(150, 64),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: const Text(
-                          'Regresar',
-                          style: TextStyle(color: Color(0xFF999494), fontWeight: FontWeight.bold, fontSize: 22),
+                        child: Text(
+                          AppLocalizations.t(context, 'back_button_text'),
+                          style: const TextStyle(color: Color(0xFF999494), fontWeight: FontWeight.bold, fontSize: 22),
                         ),
                       ),
                     ],
@@ -143,9 +140,9 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
                       setState(() {});
                       mostrarTerminosYCondiciones(context);
                     },
-                    child: const Text(
-                      'Términos y condiciones',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.t(context, 'terminos_y_condiciones'),
+                      style: const TextStyle(
                         color: Color(0xFF999494),
                         fontSize: 15,
                         decoration: TextDecoration.underline,
@@ -180,14 +177,14 @@ Future<void> mostrarTerminosYCondiciones(BuildContext context) async {
         contentPadding: const EdgeInsets.fromLTRB(28, 0, 28, 22),
         actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
         actionsAlignment: MainAxisAlignment.center,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.description_outlined, color: Color(0xFFFF542F), size: 32),
-            SizedBox(width: 14),
+            const Icon(Icons.description_outlined, color: Color(0xFFFF542F), size: 32),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
-                'Términos y condiciones',
-                style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                AppLocalizations.t(context, 'terminos_y_condiciones'),
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -197,36 +194,10 @@ Future<void> mostrarTerminosYCondiciones(BuildContext context) async {
           height: MediaQuery.of(context).size.height * 0.55,
           child: Scrollbar(
             child: SingleChildScrollView(
-              // ↓↓↓ TEXTO DE REFERENCIA: sustituye este contenido por los términos y condiciones reales ↓↓↓
-              child: const Text(
-                'Este texto es de referencia y debe sustituirse por los términos y condiciones '
-                'legales definitivos antes de publicar la aplicación.\n\n'
-                '1. Objeto\n'
-                'Los presentes términos regulan el uso del kiosco de autoservicio y el tratamiento '
-                'de los datos proporcionados por el usuario durante su registro y acceso a las '
-                'instalaciones.\n\n'
-                '2. Datos que recabamos\n'
-                'Para el proceso de registro se podrán recabar, entre otros: nombre completo, '
-                'fotografía del rostro, identificación oficial (INE u otro documento) y datos de '
-                'contacto asociados a la unidad o domicilio.\n\n'
-                '3. Finalidad del tratamiento\n'
-                'Los datos se utilizan exclusivamente para validar la identidad del usuario, '
-                'gestionar el acceso a las instalaciones y mantener un registro de seguridad de '
-                'ingresos y salidas.\n\n'
-                '4. Conservación y seguridad\n'
-                'La información se almacena de forma segura y se conserva únicamente durante el '
-                'tiempo necesario para cumplir con la finalidad descrita o lo que exija la '
-                'normativa aplicable.\n\n'
-                '5. Derechos del usuario\n'
-                'El usuario puede solicitar en cualquier momento el acceso, rectificación o '
-                'eliminación de sus datos personales a través de la administración del condominio '
-                'o fraccionamiento.\n\n'
-                '6. Contacto\n'
-                'Para dudas relacionadas con el uso de tus datos, contacta a la administración '
-                'del sitio.',
-                style: TextStyle(color: Color(0xFFC5BFBF), fontSize: 16, height: 1.6),
+              child: Text(
+                AppLocalizations.t(context, 'terminos_y_condiciones_content'),
+                style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16, height: 1.6),
               ),
-              // ↑↑↑ TEXTO DE REFERENCIA ↑↑↑
             ),
           ),
         ),
@@ -236,9 +207,9 @@ Future<void> mostrarTerminosYCondiciones(BuildContext context) async {
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             ),
-            child: const Text(
-              'Cerrar',
-              style: TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 18),
+            child: Text(
+              AppLocalizations.t(context, 'cerrar_button'),
+              style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ),
         ],
