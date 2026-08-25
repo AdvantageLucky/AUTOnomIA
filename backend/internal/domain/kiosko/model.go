@@ -40,10 +40,10 @@ type KioskoConfig struct {
 	IdiomaKiosko string `gorm:"not null;default:'es'"`     // "es" | "en"
 
 	// Bitacora para visitantes sin invitacion
-	// la ine siempre sera requerida en el caso de sin invitacion
-	// para asegurar busquedas sobre nombre, curp, etc
-	FotoPlacaVisitante  bool `gorm:"not null;default:false"`
-	FotoRostroVisitante bool `gorm:"not null;default:true"`
+	FotoPlacaVisitante  bool   `gorm:"not null;default:false"`
+	FotoRostroVisitante bool   `gorm:"not null;default:true"`
+	FotoIneVisitante    bool   `gorm:"not null;default:false"`
+	PasosSinInvitacion  string `gorm:"not null;default:'[\"ROSTRO\",\"DESTINO\"]'"`
 
 	// Bitacora para visitantes con invitacion
 	FotoPlacaInvitado      bool `gorm:"not null;default:false"`

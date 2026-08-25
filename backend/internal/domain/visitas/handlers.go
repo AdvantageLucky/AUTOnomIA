@@ -185,16 +185,25 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 
 	placa := strings.ToUpper(strings.TrimSpace(req.Placa))
 
-	// Sin INE ni invitación no hay nombre que mostrar: la placa hace de titular
-	// para que el vigilante y la búsqueda de la bitácora tengan de dónde agarrarse.
+	// Sin INE ni invitación no hay nombre que mostrar: la placa o el rostro hacen de titular
 	titular := strings.ToUpper(strings.TrimSpace(req.Titular))
 	if titular == "" {
-		titular = placa
+		if placa != "" {
+			titular = placa
+		} else {
+			titular = "VISITANTE"
+		}
 	}
 
 	tipoDocumento := req.TipoDocumento
 	if tipoDocumento == "" {
-		tipoDocumento = DocumentoPlaca
+		if fotoRostroURL != "" {
+			tipoDocumento = "ROSTRO"
+		} else if placa != "" {
+			tipoDocumento = DocumentoPlaca
+		} else {
+			tipoDocumento = "SIN_DOCUMENTO"
+		}
 	}
 
 	v := &Visita{

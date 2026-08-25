@@ -19,16 +19,10 @@ func ValidarCamposCondicionales(
 	switch req.TipoVisitante {
 
 	case TipoSinInvitacion:
+		reqIne = cfg.FotoIneVisitante
 		if tipoKiosko == kiosko.KioskoVehicular {
-			// En un acceso vehicular el conductor no baja del coche: pedirle la INE
-			// detiene la fila. La matrícula toma su lugar como identificador de la
-			// visita, así que aquí es obligatoria sin importar el toggle (ADR-0024).
-			reqIne = false
 			reqPlaca = true
 		} else {
-			// En el peatonal la INE sigue siendo la única forma de construir el
-			// historial de una persona (ADR-0016).
-			reqIne = true
 			reqPlaca = cfg.FotoPlacaVisitante
 		}
 		reqRostro = cfg.FotoRostroVisitante
@@ -39,10 +33,9 @@ func ValidarCamposCondicionales(
 		reqPlaca = cfg.FotoPlacaInvitado
 	}
 
-	// El titular sale de la INE o de la invitación. Si no hay ninguna de las dos,
-	// el handler lo rellena con la placa; sin ningún identificador la visita
-	// quedaría imposible de encontrar después en la bitácora.
-	if strings.TrimSpace(req.Titular) == "" && !reqIne && !reqPlaca {
+	// El titular sale de la INE, de la placa o de la invitación. Si no hay ninguna
+	// y tampoco viene explícito, no bloquea si al menos hay foto de rostro o destino
+	if strings.TrimSpace(req.Titular) == "" && !reqIne && !reqPlaca && !reqRostro {
 		return "titular es requerido"
 	}
 

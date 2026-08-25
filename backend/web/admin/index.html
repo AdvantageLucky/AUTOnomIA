@@ -592,45 +592,30 @@
 							</div>
 
 							<div class="config-section">
-								<div class="config-section-title">Visitante Sin Invitación</div>
-								<div class="config-section-sub">Personas que llegan sin invitación previa. En un acceso peatonal la captura de INE es obligatoria.</div>
-
-								<div class="config-section-sub" id="cfg-nota-vehicular" hidden>
-									En este acceso vehicular no se pide INE: el conductor no baja del vehículo y la placa
-									es lo que identifica la visita en la bitácora.
+								<div class="config-section-title">Flujo Sin Invitación (Secuencia de Pasos)</div>
+								<div class="config-section-sub">
+									Define qué pasos son obligatorios y <strong>arrastra las tarjetas</strong> para elegir el orden exacto en que aparecerán en la pantalla del kiosko.
 								</div>
 
-								<div class="toggle-row">
-									<div>
-										<div class="toggle-label">Foto de rostro</div>
-										<div class="toggle-sub">Captura facial para verificación</div>
+								<div class="pipeline-container">
+									<div class="pipeline-list" id="cfg-pipeline-list">
+										<!-- Renderizado dinámicamente en app.js con soporte Drag & Drop -->
 									</div>
-									<label class="toggle-switch">
-										<input type="checkbox" id="cfg-rostro-visitante">
-										<span class="toggle-slider"></span>
-									</label>
 								</div>
 
-								<div class="toggle-row" id="cfg-row-placa-visitante">
-									<div>
-										<div class="toggle-label">Foto de placa vehicular</div>
-										<div class="toggle-sub">Obligatoria en accesos vehiculares: identifica la visita</div>
-									</div>
-									<label class="toggle-switch">
-										<input type="checkbox" id="cfg-placa-visitante">
-										<span class="toggle-slider"></span>
-									</label>
+								<div class="pipeline-preview-hint">
+									💡 <strong>Orden de ejecución:</strong> El visitante completará los pasos de arriba hacia abajo. Los pasos desactivados se omitirán por completo.
 								</div>
 							</div>
 
 							<div class="config-section">
-								<div class="config-section-title">Visitante Con Invitación</div>
-								<div class="config-section-sub">Personas con invitación QR generada por un residente</div>
+								<div class="config-section-title">Flujo Con Invitación (Pase QR App Kigo)</div>
+								<div class="config-section-sub">Verificaciones adicionales requeridas cuando una persona llega con un código QR generado desde la app móvil.</div>
 
 								<div class="toggle-row">
 									<div>
 										<div class="toggle-label">INE obligatoria</div>
-										<div class="toggle-sub">Verificar identidad con credencial incluso si el QR es válido</div>
+										<div class="toggle-sub">Verificar identidad con credencial física aunque el QR sea válido</div>
 									</div>
 									<label class="toggle-switch">
 										<input type="checkbox" id="cfg-ine-invitado">
@@ -641,7 +626,7 @@
 								<div class="toggle-row">
 									<div>
 										<div class="toggle-label">Foto de rostro</div>
-										<div class="toggle-sub">Captura facial de confirmación</div>
+										<div class="toggle-sub">Captura facial de confirmación al validar el QR</div>
 									</div>
 									<label class="toggle-switch">
 										<input type="checkbox" id="cfg-rostro-invitado">
@@ -652,7 +637,7 @@
 								<div class="toggle-row" id="cfg-row-placa-invitado">
 									<div>
 										<div class="toggle-label">Foto de placa vehicular</div>
-										<div class="toggle-sub">Registro de matrícula si llega en vehículo</div>
+										<div class="toggle-sub">Registro de matrícula si el invitado ingresa en vehículo</div>
 									</div>
 									<label class="toggle-switch">
 										<input type="checkbox" id="cfg-placa-invitado">
