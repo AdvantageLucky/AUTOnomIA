@@ -98,6 +98,9 @@ func horarioInusual(historial []Visita, llegada time.Time) bool {
 	if diff < 0 {
 		diff = -diff
 	}
+	if diff > 12 {
+		diff = 24 - diff
+	}
 	return diff > 4
 }
 

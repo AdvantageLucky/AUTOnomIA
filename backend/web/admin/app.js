@@ -296,12 +296,12 @@
     if (subEl) subEl.textContent = theme === "dark" ? t("light_mode") : t("dark_mode");
   }
 
-  document.getElementById("btn-theme").addEventListener("click", () => {
+  document.getElementById("btn-theme")?.addEventListener("click", () => {
     const current = document.documentElement.dataset.theme;
     setTheme(current === "dark" ? "light" : "dark");
   });
 
-  document.getElementById("btn-lang").addEventListener("click", () => {
+  document.getElementById("btn-lang")?.addEventListener("click", () => {
     lang = lang === "es" ? "en" : "es";
     localStorage.setItem("autonomia_lang", lang);
     applyI18n();
@@ -491,7 +491,7 @@
   /* ─── Login ─────────────────────────────── */
   let loginMode = "login";
 
-  document.getElementById("login-toggle-mode").addEventListener("click", () => {
+  document.getElementById("login-toggle-mode")?.addEventListener("click", () => {
     loginMode = loginMode === "login" ? "register" : "login";
     const isReg = loginMode === "register";
     document.getElementById("login-submit").textContent = isReg ? (lang === "en" ? "Create account" : "Crear cuenta") : t("login_btn");
@@ -503,7 +503,7 @@
     renderGoogleButton();
   });
 
-  document.getElementById("login-form").addEventListener("submit", async e => {
+  document.getElementById("login-form")?.addEventListener("submit", async e => {
     e.preventDefault();
     const correo   = document.getElementById("login-correo").value;
     const password = document.getElementById("login-password").value;
@@ -912,9 +912,9 @@
     </div>`;
   }
 
-  document.getElementById("vis-prev").addEventListener("click",  () => loadVisitas(state.visPage - 1));
-  document.getElementById("vis-next").addEventListener("click",  () => loadVisitas(state.visPage + 1));
-  document.getElementById("vis-retry").addEventListener("click", () => loadVisitas(state.visPage));
+  document.getElementById("vis-prev")?.addEventListener("click",  () => loadVisitas(state.visPage - 1));
+  document.getElementById("vis-next")?.addEventListener("click",  () => loadVisitas(state.visPage + 1));
+  document.getElementById("vis-retry")?.addEventListener("click", () => loadVisitas(state.visPage));
 
   ["vis-quick-search","vis-filter-tipo","vis-filter-estado"].forEach(id => {
     document.getElementById(id)?.addEventListener("input", () => {
@@ -1418,7 +1418,7 @@
     });
   }
 
-  document.getElementById("btn-nuevo-acceso").addEventListener("click", () => openNuevoKioskoWizard());
+  document.getElementById("btn-nuevo-acceso")?.addEventListener("click", () => openNuevoKioskoWizard());
 
   /* ─── Wizard: nuevo kiosko ───────────────── */
   let nkPendingCode = '';
@@ -1591,11 +1591,11 @@
     document.getElementById("modal-acceso").hidden = false;
   }
 
-  document.getElementById("acceso-cancel").addEventListener("click", () => {
+  document.getElementById("acceso-cancel")?.addEventListener("click", () => {
     document.getElementById("modal-acceso").hidden = true;
   });
 
-  document.getElementById("acceso-form").addEventListener("submit", async e => {
+  document.getElementById("acceso-form")?.addEventListener("submit", async e => {
     e.preventDefault();
     const errEl = document.getElementById("acceso-form-error");
     errEl.hidden = true;
@@ -1624,11 +1624,11 @@
     document.getElementById("modal-delete").hidden = false;
   }
 
-  document.getElementById("delete-cancel").addEventListener("click", () => {
+  document.getElementById("delete-cancel")?.addEventListener("click", () => {
     document.getElementById("modal-delete").hidden = true;
   });
 
-  document.getElementById("delete-confirm").addEventListener("click", async () => {
+  document.getElementById("delete-confirm")?.addEventListener("click", async () => {
     const res = await api(`/kioskos/${state.deletingAccesoId}`, { method: "DELETE" });
     document.getElementById("modal-delete").hidden = true;
     if (res && res.ok) await loadAccesos();

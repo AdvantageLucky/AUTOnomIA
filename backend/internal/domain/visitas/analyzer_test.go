@@ -109,3 +109,21 @@ func TestAnalizarVisita_HorarioInusual(t *testing.T) {
 		t.Error("llegada nocturna cuando historial es diurno debe marcar HorarioInusual")
 	}
 }
+
+func TestAnalizarVisita_HorarioInusual_MedianocheWrap(t *testing.T) {
+	// Visitas habituales a las 23:50
+	noche := time.Date(2026, 1, 1, 23, 50, 0, 0, time.UTC)
+	historial := []Visita{
+		{Estado: EstadoAprobado, Model: gorm.Model{CreatedAt: noche}},
+		{Estado: EstadoAprobado, Model: gorm.Model{CreatedAt: noche}},
+		{Estado: EstadoAprobado, Model: gorm.Model{CreatedAt: noche}},
+	}
+	// Llegada a las 00:10 (20 minutos después, cruzando medianoche)
+	madrugada := time.Date(2026, 1, 2, 0, 10, 0, 0, time.UTC)
+	nueva := Visita{Curp: "GARJ900101HMCRNA01", Model: gorm.Model{CreatedAt: madrugada}}
+	sc := AnalizarVisita(historial, nueva, 5)
+
+	if sc.HorarioInusual {
+		t.Error("llegada a las 00:10 cuando historial es 23:50 no debe marcar HorarioInusual (cruce de medianoche)")
+	}
+}
