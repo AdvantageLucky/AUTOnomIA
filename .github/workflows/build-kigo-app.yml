@@ -1,0 +1,46 @@
+name: Build kigo-app APK
+
+# Compila el APK de release de kigo-app y lo publica como asset de un
+# release fijo (tag "kigo-app-latest") — da una URL de descarga estable
+# para el QR del stand, sin tener que compilar a mano cada vez que cambia
+# algo. Firma con la keystore de debug (no hay Play Store de por medio,
+# es distribución directa para FEPRO).
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "kigo-app/**"
+      - ".github/workflows/build-kigo-app.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Instalar dependencias
+        working-directory: kigo-app
+        run: flutter pub get
+
+      - name: Compilar APK de release
+        working-directory: kigo-app
+        run: flutter build apk --release
+
+      - name: Publicar como release "kigo-app-latest"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: kigo-app-latest
+          name: Kigo App — última build
+          body: |
+            Build automático desde el commit ${{ github.sha }}.
+            Descarga: kigo-app-release.apk — instalación directa (fuentes desconocidas), no viene de Play Store.
+          prerelease: true
+          files: kigo-app/build/app/outputs/flutter-apk/app-release.apk
