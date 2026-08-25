@@ -155,6 +155,7 @@ class AppLocalizations {
       // Pantalla de bienvenida
       'bienvenido_title': 'Bienvenido',
       'selecciona_como_continuar': 'SELECCIONA CÓMO QUIERES CONTINUAR',
+      'bienvenido_exclamacion': '¡Bienvenido!',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -288,6 +289,7 @@ class AppLocalizations {
       // Pantalla de bienvenida
       'bienvenido_title': 'Welcome',
       'selecciona_como_continuar': 'CHOOSE HOW YOU WANT TO CONTINUE',
+      'bienvenido_exclamacion': 'Welcome!',
     },
   };
 
