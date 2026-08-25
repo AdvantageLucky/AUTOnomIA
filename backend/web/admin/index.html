@@ -448,8 +448,9 @@
             <div class="loading-text">Cargando solicitudes…</div>
           </div>
           <div id="resp-empty" class="empty-state" hidden>
+            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
             <div class="empty-title">Sin solicitudes pendientes</div>
-            <div class="empty-text">Cuando un residente se auto-registre, aparecerá aquí para tu aprobación.</div>
+            <div class="empty-text">Cuando un habitante solicite unirse desde la app o auto-registro, aparecerá aquí para tu aprobación.</div>
           </div>
           <div id="resp-rows"></div>
         </div>
@@ -489,6 +490,15 @@
       <!-- Tab: lista de kioskos -->
       <div id="kio-lista">
         <div class="screen-body">
+          <div id="kio-loading" class="loading-state" hidden>
+            <div class="spinner"></div>
+            <div class="loading-text">Cargando kioskos…</div>
+          </div>
+          <div id="kio-empty" class="empty-state" hidden>
+            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M9 21h6M12 17v4"/></svg></div>
+            <div class="empty-title">Sin kioskos registrados</div>
+            <div class="empty-text">Activa tu primer kiosko o punto de acceso para empezar a recibir visitantes.</div>
+          </div>
           <div id="accesos-list"></div>
         </div>
       </div>
