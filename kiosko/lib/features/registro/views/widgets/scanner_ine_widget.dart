@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'consent_dialog.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class EscaneoInePage extends StatefulWidget {
   const EscaneoInePage({super.key});
@@ -145,7 +146,7 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: KigoDesign.bgDark,
-        title: const Text("Apunta a tu INE", style: TextStyle(color: Colors.white)),
+        title: Text(AppLocalizations.t(context, 'apunta_a_tu_ine'), style: const TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context), // Botón físico/virtual para regresar si cancela
@@ -179,18 +180,18 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
                   color: Colors.black.withValues(alpha: 0.65),
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(color: Colors.green, strokeWidth: 2),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Text(
-                      'Detección automática — mantén la INE dentro del recuadro',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      AppLocalizations.t(context, 'deteccion_automatica_ine'),
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),

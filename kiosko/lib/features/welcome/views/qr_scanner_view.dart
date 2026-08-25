@@ -12,6 +12,7 @@ import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmo
 import 'package:kigo_kiosco/features/welcome/views/qr_result_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/persona_qr_result_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Pantalla de entrada del kiosko: escanea sola, sin toque previo. Detecta
 /// tanto el QR personal de la app Kigo como el token de invitación de
@@ -210,7 +211,9 @@ class _QrScannerViewState extends State<QrScannerView> with SingleTickerProvider
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: Text(
-            widget.viewModel.isScanned ? 'Código detectado' : 'Apunta al código QR',
+            widget.viewModel.isScanned
+                ? AppLocalizations.t(context, 'codigo_detectado')
+                : AppLocalizations.t(context, 'apunta_al_codigo_qr'),
             key: ValueKey(widget.viewModel.isScanned),
             style: TextStyle(
               color: widget.viewModel.isScanned ? KigoDesign.success : Colors.white,
@@ -221,7 +224,7 @@ class _QrScannerViewState extends State<QrScannerView> with SingleTickerProvider
         ),
         const SizedBox(height: 6),
         Text(
-          'Tu código personal o el de tu invitación',
+          AppLocalizations.t(context, 'codigo_personal_o_invitacion'),
           style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
         ),
         const SizedBox(height: 28),
@@ -234,9 +237,9 @@ class _QrScannerViewState extends State<QrScannerView> with SingleTickerProvider
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
-            child: const Text(
-              'No tengo la app Kigo o código QR',
-              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+            child: Text(
+              AppLocalizations.t(context, 'no_tengo_app_o_qr'),
+              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
         ),

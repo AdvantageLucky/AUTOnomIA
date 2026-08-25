@@ -2,6 +2,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'consent_dialog.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class EscaneoRostro extends StatefulWidget {
   const EscaneoRostro({super.key});
@@ -102,7 +103,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: KigoDesign.bgDark,
-        title: const Text("Apunta a tu rostro", style: TextStyle(color: Colors.white)),
+        title: Text(AppLocalizations.t(context, 'apunta_a_tu_rostro'), style: const TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context), // Botón físico/virtual para regresar
@@ -137,10 +138,10 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
             top: 16,
             left: 0,
             right: 0,
-            child: const Text(
-              'Centra tu rostro dentro del óvalo',
+            child: Text(
+              AppLocalizations.t(context, 'centra_rostro_ovalo'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
 
