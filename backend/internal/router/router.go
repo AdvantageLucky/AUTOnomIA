@@ -45,18 +45,22 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	// El dashboard admin se edita seguido en desarrollo; sin esto el navegador
 	// cachea app.js/styles.css con heurísticas propias y los cambios no se ven
 	// aunque el archivo en disco ya esté actualizado.
-	adminAssets := r.Group("/admin")
-	adminAssets.Use(func(c *gin.Context) {
-		c.Header("Cache-Control", "no-store")
-		c.Next()
-	})
 	// El botón de Google del dashboard lee window.__GOOGLE_CLIENT_ID__ — se
 	// sirve como JS generado en vez de hardcodearlo en index.html para que
 	// sea la misma variable de entorno la que valida el backend
 	// (auth.LoginWithGoogle), nunca dos copias que se puedan desalinear.
-	adminAssets.GET("/config.js", func(c *gin.Context) {
+	// Va fuera de /admin: un GET explícito bajo el mismo prefijo que ya usa
+	// adminAssets.Static (wildcard *filepath) hace panic a gin al arrancar
+	// (conflicto de rutas en su árbol de radix).
+	r.GET("/admin-config.js", func(c *gin.Context) {
 		c.Header("Content-Type", "application/javascript")
 		c.String(200, "window.__GOOGLE_CLIENT_ID__ = %q;", cfg.GoogleClientID)
+	})
+
+	adminAssets := r.Group("/admin")
+	adminAssets.Use(func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store")
+		c.Next()
 	})
 	adminAssets.Static("/", "./web/admin")
 
