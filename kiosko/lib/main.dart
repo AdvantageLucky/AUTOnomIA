@@ -11,6 +11,7 @@ import 'package:kigo_kiosco/features/welcome/viewmodels/qr_scanner_viewmodel.dar
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/qr_scanner_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/welcome_view.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +79,7 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
           locale: locale,
           supportedLocales: const [Locale('es'), Locale('en')],
           localizationsDelegates: const [
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
