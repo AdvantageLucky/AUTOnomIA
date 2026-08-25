@@ -6,13 +6,16 @@ class TouchStepModel {
   final String subtitle;
   final String description;
   final IconData icon;
-  final String buttonText;
+  // Clave de AppLocalizations, no el texto ya resuelto — este modelo lo arma
+  // el ViewModel, que no tiene BuildContext; la vista resuelve la clave al
+  // idioma activo en el momento de dibujar el botón.
+  final String buttonTextKey;
 
   TouchStepModel({
     required this.title,
     required this.subtitle,
     required this.description,
     required this.icon,
-    required this.buttonText,
+    required this.buttonTextKey,
   });
 }

@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
-import 'package:kigo_kiosco/features/registro/models/consts.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
@@ -12,9 +11,9 @@ import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animati
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_rostro_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
-import 'package:kigo_kiosco/features/registro_vehicular/models/consts.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/viewmodels/vehicular_register_viewmodel.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/views/confirmar_placa_view.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Gemela de `TouchRegisterView` para la caseta vehicular. Comparte los
 /// servicios de OCR y detección facial, y agrega la captura de placa. Vive
@@ -47,7 +46,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         _continuarACasaDestino();
         return;
       }
-      _speakText(welcomeVehicularMessage);
+      _speakText(AppLocalizations.t(context, 'welcome_vehicular_message'));
     });
   }
 
@@ -151,7 +150,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     while (true) {
       if (!mounted) return;
 
-      _speakText(voiceInstructionIne);
+      _speakText(AppLocalizations.t(context, 'voice_instruction_ine'));
       final String? pathFoto = await Navigator.push<String>(
         context,
         MaterialPageRoute(builder: (_) => const EscaneoInePage()),
@@ -160,17 +159,17 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       if (pathFoto == null) return; // el visitante canceló
 
       if (await viewModel.procesarEscaneoIne(pathFoto)) {
-        _speakText(ineDetectedTitle);
+        _speakText(AppLocalizations.t(context, 'ine_detected_title'));
         await _avanzar();
         return;
       }
 
-      _speakText(ineInvalidMessage);
+      _speakText(AppLocalizations.t(context, 'ine_invalid_message'));
       if (!mounted) return;
       await _mostrarError(
         icono: Icons.error_outline_rounded,
-        titulo: ineInvalidErrorTitle,
-        mensaje: ineInvalidErrorContent,
+        titulo: AppLocalizations.t(context, 'ine_invalid_error_title'),
+        mensaje: AppLocalizations.t(context, 'ine_invalid_error_content'),
       );
     }
   }
@@ -179,7 +178,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     while (true) {
       if (!mounted) return;
 
-      _speakText(voiceInstructionFace);
+      _speakText(AppLocalizations.t(context, 'voice_instruction_face'));
       final String? pathFoto = await Navigator.push<String>(
         context,
         MaterialPageRoute(builder: (_) => const EscaneoRostro()),
@@ -192,12 +191,12 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         return;
       }
 
-      _speakText(faceNotDetectedMessage);
+      _speakText(AppLocalizations.t(context, 'face_not_detected_message'));
       if (!mounted) return;
       await _mostrarError(
         icono: Icons.face_retouching_off,
-        titulo: faceNotDetectedErrorTitle,
-        mensaje: faceNotDetectedErrorContent,
+        titulo: AppLocalizations.t(context, 'face_not_detected_error_title'),
+        mensaje: AppLocalizations.t(context, 'face_not_detected_error_content'),
       );
     }
   }
@@ -231,9 +230,9 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              retryButtonText,
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.t(context, 'retry_button_text'),
+              style: const TextStyle(
                 color: KigoDesign.brand,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -291,7 +290,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
                       viewModel.isProcessing
                           ? const Center(
                               child: CircularProgressIndicator(color: KigoDesign.brand))
-                          : _buildMainButton(viewModel.currentStepData.buttonText),
+                          : _buildMainButton(AppLocalizations.t(context, viewModel.currentStepData.buttonTextKey)),
                       if (viewModel.currentStep > 0) ...[
                         const SizedBox(height: 16),
                         _buildBackButton(),
@@ -349,9 +348,9 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
           ),
         ),
         const SizedBox(width: 18),
-        const Text(
-          kigoLabel,
-          style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800),
+        Text(
+          AppLocalizations.t(context, 'kigo_label'),
+          style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800),
         ),
       ],
     );
@@ -417,10 +416,10 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
-                        continuePressText,
+                      Text(
+                        AppLocalizations.t(context, 'continue_press_text'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFFFFE3DC),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -441,7 +440,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
       child: FloatingActionButton(
-        onPressed: _isSpeaking ? null : () => _speakText(listeningMessage),
+        onPressed: _isSpeaking ? null : () => _speakText(AppLocalizations.t(context, 'listening_message')),
         backgroundColor: KigoDesign.brand,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -472,14 +471,14 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFF393333), width: 1.2),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.arrow_back_rounded, color: KigoDesign.brand, size: 24),
-            SizedBox(width: 10),
+            const Icon(Icons.arrow_back_rounded, color: KigoDesign.brand, size: 24),
+            const SizedBox(width: 10),
             Text(
-              backButtonText,
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+              AppLocalizations.t(context, 'back_button_text'),
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -488,8 +487,8 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   }
 
   Widget _buildFooter() {
-    return const Text(
-      footerText,
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
       textAlign: TextAlign.center,
       style: TextStyle(
         color: KigoDesign.textTertiary,

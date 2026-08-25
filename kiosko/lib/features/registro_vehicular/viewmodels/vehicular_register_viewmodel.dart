@@ -182,7 +182,7 @@ class VehicularRegisterViewModel extends ChangeNotifier {
           description:
               'Asegúrate de que tu INE esté bien iluminada, sin reflejos y completamente visible dentro del recuadro.',
           icon: Icons.badge_outlined,
-          buttonText: 'Capturar INE',
+          buttonTextKey: 'capturar_ine_button',
         );
       case PasoVehicular.rostro:
         return TouchStepModel(
@@ -191,7 +191,7 @@ class VehicularRegisterViewModel extends ChangeNotifier {
           description:
               'Puedes capturar una foto de tu rostro o usar evidencia desde cámaras conectadas al sistema de seguridad.',
           icon: Icons.photo_camera_outlined,
-          buttonText: 'Reconocimiento Facial',
+          buttonTextKey: 'reconocimiento_facial_button',
         );
     }
   }

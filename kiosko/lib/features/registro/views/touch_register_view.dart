@@ -12,7 +12,7 @@ import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart'
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_rostro_widget.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
-import 'package:kigo_kiosco/features/registro/models/consts.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 
 
@@ -34,7 +34,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     viewModel.addListener(_refresh);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _speakText(welcomeMessage);
+      _speakText(AppLocalizations.t(context, 'welcome_message'));
     });
   }
 
@@ -80,7 +80,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           if (!mounted) return;
 
           // 1. Abrir la cámara
-          _speakText(voiceInstructionIne);
+          _speakText(AppLocalizations.t(context, 'voice_instruction_ine'));
           final String? pathFoto = await Navigator.push<String>(
             context,
             MaterialPageRoute(builder: (_) => const EscaneoInePage()), // Usa el nombre exacto de tu clase
@@ -94,11 +94,11 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
           if (exito) {
             esIneValida = true;
-            _speakText(ineDetectedTitle);
+            _speakText(AppLocalizations.t(context, 'ine_detected_title'));
             viewModel.nextStep(); // Avanzamos al paso de la foto de rostro
           } else {
             // 3. Mostrar mensaje de error si no es un INE
-            _speakText(ineInvalidMessage);
+            _speakText(AppLocalizations.t(context, 'ine_invalid_message'));
             if (mounted) {
               await showDialog(
                 context: context,
@@ -107,23 +107,23 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                   return AlertDialog(
                     backgroundColor: const Color(0xFF211D1D),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                    title: const Row(
+                    title: Row(
                       children: [
-                        Icon(Icons.error_outline_rounded, color: Color(0xFFFF542F), size: 28),
-                        SizedBox(width: 12),
-                        Flexible(child: Text(ineInvalidErrorTitle, style: TextStyle(color: Colors.white))),
+                        const Icon(Icons.error_outline_rounded, color: Color(0xFFFF542F), size: 28),
+                        const SizedBox(width: 12),
+                        Flexible(child: Text(AppLocalizations.t(context, 'ine_invalid_error_title'), style: const TextStyle(color: Colors.white))),
                       ],
                     ),
-                    content: const Text(
-                      ineInvalidErrorContent,
-                      style: TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
+                    content: Text(
+                      AppLocalizations.t(context, 'ine_invalid_error_content'),
+                      style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          retryButtonText,
-                          style: TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
+                        child: Text(
+                          AppLocalizations.t(context, 'retry_button_text'),
+                          style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ],
@@ -144,7 +144,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       while (!esRostroValido) {
         if (!mounted) return;
 
-        _speakText(voiceInstructionFace);
+        _speakText(AppLocalizations.t(context, 'voice_instruction_face'));
         // NUEVO: 1. Abrir la cámara frontal
         final String? pathFoto = await Navigator.push<String>(
           context,
@@ -158,7 +158,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         final bool exito = await viewModel.procesarEscaneoRostro(pathFoto);
 
         if (exito) {
-          _speakText(registrationCompleteMessage);
+          _speakText(AppLocalizations.t(context, 'registration_complete_message'));
           esRostroValido = true;
           // 3. Rostro válido -> pedimos casa y mostramos el resumen final.
           // Si el usuario da "atrás", cancelamos toda la solicitud y regresamos
@@ -185,7 +185,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           );
         } else {
           // NUEVO: 4. Mostrar mensaje de error si no se detectó un rostro
-          _speakText(faceNotDetectedMessage);
+          _speakText(AppLocalizations.t(context, 'face_not_detected_message'));
           if (mounted) {
             await showDialog(
               context: context,
@@ -194,23 +194,23 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                 return AlertDialog(
                   backgroundColor: const Color(0xFF211D1D),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                  title: const Row(
+                  title: Row(
                     children: [
-                      Icon(Icons.face_retouching_off, color: Color(0xFFFF542F), size: 28),
-                      SizedBox(width: 12),
-                      Flexible(child: Text(faceNotDetectedErrorTitle, style: TextStyle(color: Colors.white))),
+                      const Icon(Icons.face_retouching_off, color: Color(0xFFFF542F), size: 28),
+                      const SizedBox(width: 12),
+                      Flexible(child: Text(AppLocalizations.t(context, 'face_not_detected_error_title'), style: const TextStyle(color: Colors.white))),
                     ],
                   ),
-                  content: const Text(
-                    faceNotDetectedErrorContent,
-                    style: TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
+                  content: Text(
+                    AppLocalizations.t(context, 'face_not_detected_error_content'),
+                    style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        retryButtonText,
-                        style: TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
+                      child: Text(
+                        AppLocalizations.t(context, 'retry_button_text'),
+                        style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                   ],
@@ -287,7 +287,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                       // --- BOTÓN PRINCIPAL CON LOADER ---
                       viewModel.isProcessingIne
                         ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF542F)))
-                        : _buildMainButton(step.buttonText),
+                        : _buildMainButton(AppLocalizations.t(context, step.buttonTextKey)),
 
                       if (viewModel.currentStep > 1) ...[
                         const SizedBox(height: 16),
@@ -352,9 +352,9 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           ),
         ),
         const SizedBox(width: 18),
-        const Text(
-          kigoLabel,
-          style: TextStyle(
+        Text(
+          AppLocalizations.t(context, 'kigo_label'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 34,
             fontWeight: FontWeight.w800,
@@ -427,10 +427,10 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
-                        continuePressText,
+                      Text(
+                        AppLocalizations.t(context, 'continue_press_text'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFFFFE3DC),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -451,7 +451,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
       child: FloatingActionButton(
-        onPressed: _isSpeaking ? null : () => _speakText(listeningMessage),
+        onPressed: _isSpeaking ? null : () => _speakText(AppLocalizations.t(context, 'listening_message')),
         backgroundColor: const Color(0xFFFF542F),
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -485,18 +485,18 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
             width: 1.2,
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.arrow_back_rounded,
               color: Color(0xFFFF542F),
               size: 24,
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Text(
-              backButtonText,
-              style: TextStyle(
+              AppLocalizations.t(context, 'back_button_text'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -509,8 +509,8 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   }
 
   Widget _buildFooter() {
-    return const Text(
-      footerText,
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
       textAlign: TextAlign.center,
       style: TextStyle(
         color: KigoDesign.textTertiary,
