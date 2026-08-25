@@ -792,7 +792,7 @@
     const container = document.getElementById("dash-recent-rows");
     const recent = visitas.slice(0, 8);
     if (recent.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-title">${t("vis_empty_title")}</div></div>`;
+      container.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg></div><div class="empty-title">${t("vis_empty_title")}</div><div class="empty-text">${t("vis_empty_text")}</div></div>`;
       return;
     }
     container.innerHTML = recent.map((v, i) => renderDashRow(v, i)).join("");
@@ -1336,7 +1336,7 @@
     const visitas = (data.visitas || []).filter(v => v.kiosko_id === r.kiosko_id);
 
     if (visitas.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-title">Sin visitas registradas</div></div>`;
+      container.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg></div><div class="empty-title">Sin entradas registradas</div><div class="empty-text">Este residente aún no registra entradas ni invitaciones.</div></div>`;
       return;
     }
 
@@ -1361,19 +1361,32 @@
 
   /* ─── Accesos ────────────────────────────── */
   async function loadAccesos() {
-    const res = await api("/kioskos/");
+    const loadEl  = document.getElementById("kio-loading");
+    const emptyEl = document.getElementById("kio-empty");
     const container = document.getElementById("accesos-list");
-    if (!res || !res.ok) { container.innerHTML = `<div class="empty-title">${t("load_err_title")}</div>`; return; }
+
+    if (loadEl) loadEl.hidden = false;
+    if (emptyEl) emptyEl.hidden = true;
+    if (container) container.innerHTML = "";
+
+    const res = await api("/kioskos/");
+    if (loadEl) loadEl.hidden = true;
+
+    if (!res || !res.ok) {
+      if (container) container.innerHTML = `<div class="empty-state"><div class="empty-icon empty-icon--err"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 4 L21 19 H3 Z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="16.6" r=".6" fill="currentColor" stroke="none"/></svg></div><div class="empty-title">${t("load_err_title")}</div><div class="empty-text">${t("load_err_text")}</div></div>`;
+      return;
+    }
 
     const data = await res.json();
     const list = Array.isArray(data) ? data : (data.kioskos || []);
     list.forEach(a => state.accesosById.set(a.id, a));
 
     if (list.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-title">${t("new_acceso")}</div></div>`;
+      if (emptyEl) emptyEl.hidden = false;
       return;
     }
 
+    if (emptyEl) emptyEl.hidden = true;
     container.innerHTML = list.map(a => `
       <div class="acceso-card">
         <div class="acceso-info">
