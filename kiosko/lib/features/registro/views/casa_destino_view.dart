@@ -2,6 +2,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class CasaDestinoView extends StatefulWidget {
   /// El indicador de pasos se parametriza porque el flujo vehicular tiene más
@@ -51,7 +52,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudo cargar la lista de casas. Verifica la conexión.';
+        _error = AppLocalizations.t(context, 'no_se_pudo_cargar_casas');
         _isLoading = false;
       });
     }
@@ -166,6 +167,10 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
               ],
               const SizedBox(height: 32),
               _buildContenido(),
+              if (!_isLoading && _error == null) ...[
+                const SizedBox(height: 24),
+                _buildBotonNoEncuentroDestino(),
+              ],
             ],
           ),
         ),
@@ -176,11 +181,11 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
   String _titulo() {
     switch (_subPaso) {
       case _SubPaso.calle:
-        return '¿En qué calle está tu destino?';
+        return AppLocalizations.t(context, 'en_que_calle_esta_destino');
       case _SubPaso.tipo:
-        return '¿Casa o edificio?';
+        return AppLocalizations.t(context, 'casa_o_edificio');
       case _SubPaso.numero:
-        return '¿Cuál es el número?';
+        return AppLocalizations.t(context, 'cual_es_el_numero');
     }
   }
 
@@ -219,7 +224,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              child: const Text('Reintentar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              child: Text(AppLocalizations.t(context, 'retry_button_text'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -227,13 +232,13 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
     }
 
     if ((_destinos ?? []).isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 60),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
         child: Center(
           child: Text(
-            'Todavía no hay casas registradas en este kiosko.\nAvisa a la administración.',
+            AppLocalizations.t(context, 'sin_casas_registradas'),
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF999494), fontSize: 18),
+            style: const TextStyle(color: Color(0xFF999494), fontSize: 18),
           ),
         ),
       );
@@ -255,7 +260,9 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
           children: _tiposDeLaCalle
               .map((t) => _buildCard(
                     icono: t == 'edificio' ? Icons.apartment_outlined : Icons.home_outlined,
-                    titulo: t == 'edificio' ? 'Edificio' : 'Casa',
+                    titulo: t == 'edificio'
+                        ? AppLocalizations.t(context, 'edificio_label')
+                        : AppLocalizations.t(context, 'casa_label'),
                     onTap: () => _elegirTipo(t),
                   ))
               .toList(),
@@ -270,6 +277,65 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                   ))
               .toList(),
         );
+    }
+  }
+
+  /// Respaldo cuando el destino del visitante no aparece en la lista jerárquica
+  /// (calle/tipo/número): permite escribirlo a mano, igual que aceptaba el
+  /// campo libre antes de este selector progresivo.
+  Widget _buildBotonNoEncuentroDestino() {
+    return Center(
+      child: TextButton(
+        onPressed: _escribirDestinoManual,
+        child: Text(
+          AppLocalizations.t(context, 'no_encuentro_mi_destino'),
+          style: const TextStyle(
+            color: Color(0xFF999494),
+            fontSize: 15,
+            decoration: TextDecoration.underline,
+            decorationColor: Color(0xFF999494),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _escribirDestinoManual() async {
+    final controller = TextEditingController();
+    final destino = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF211D1D),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          AppLocalizations.t(context, 'escribe_tu_destino'),
+          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF302A2A))),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: KigoDesign.brand)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.t(context, 'cancelar_button'),
+                style: const TextStyle(color: Color(0xFF999494), fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: Text(AppLocalizations.t(context, 'continue_button_text'),
+                style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (destino != null && destino.isNotEmpty && mounted) {
+      Navigator.pop(context, destino);
     }
   }
 

@@ -164,6 +164,17 @@ class AppLocalizations {
       'corrige_caracter_no_coincide': 'Si algún carácter no coincide, corrígelo con el teclado.',
       'no_detectamos_placa_escribela': 'No pudimos detectar tu placa automáticamente. Escríbela aquí.',
       'cancelar_button': 'Cancelar',
+
+      // Selección progresiva de destino (calle/tipo/número)
+      'no_se_pudo_cargar_casas': 'No se pudo cargar la lista de casas. Verifica la conexión.',
+      'en_que_calle_esta_destino': '¿En qué calle está tu destino?',
+      'casa_o_edificio': '¿Casa o edificio?',
+      'cual_es_el_numero': '¿Cuál es el número?',
+      'sin_casas_registradas': 'Todavía no hay casas registradas en este kiosko.\nAvisa a la administración.',
+      'edificio_label': 'Edificio',
+      'casa_label': 'Casa',
+      'no_encuentro_mi_destino': 'No encuentro mi destino',
+      'escribe_tu_destino': 'Escribe tu destino',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -306,6 +317,17 @@ class AppLocalizations {
       'corrige_caracter_no_coincide': "If a character doesn't match, correct it with the keyboard.",
       'no_detectamos_placa_escribela': "We couldn't detect your plate automatically. Type it here.",
       'cancelar_button': 'Cancel',
+
+      // Selección progresiva de destino (calle/tipo/número)
+      'no_se_pudo_cargar_casas': 'Could not load the list of houses. Check your connection.',
+      'en_que_calle_esta_destino': 'Which street is your destination on?',
+      'casa_o_edificio': 'House or building?',
+      'cual_es_el_numero': 'What is the number?',
+      'sin_casas_registradas': 'There are no houses registered in this kiosk yet.\nLet the administration know.',
+      'edificio_label': 'Building',
+      'casa_label': 'House',
+      'no_encuentro_mi_destino': "I can't find my destination",
+      'escribe_tu_destino': 'Type your destination',
     },
   };
 
