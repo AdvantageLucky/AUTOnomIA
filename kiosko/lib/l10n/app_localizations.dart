@@ -175,6 +175,11 @@ class AppLocalizations {
       'casa_label': 'Casa',
       'no_encuentro_mi_destino': 'No encuentro mi destino',
       'escribe_tu_destino': 'Escribe tu destino',
+
+      // Salida de modo operador (PIN)
+      'modo_operador': 'MODO OPERADOR',
+      'ingresa_pin_salir_kiosko': 'Ingresa el PIN para salir del modo kiosko',
+      'pin_incorrecto_intenta_de_nuevo': 'PIN incorrecto, intenta de nuevo',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -328,6 +333,11 @@ class AppLocalizations {
       'casa_label': 'House',
       'no_encuentro_mi_destino': "I can't find my destination",
       'escribe_tu_destino': 'Type your destination',
+
+      // Salida de modo operador (PIN)
+      'modo_operador': 'OPERATOR MODE',
+      'ingresa_pin_salir_kiosko': 'Enter the PIN to exit kiosk mode',
+      'pin_incorrecto_intenta_de_nuevo': 'Incorrect PIN, try again',
     },
   };
 
