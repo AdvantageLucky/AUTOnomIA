@@ -107,6 +107,38 @@ func (h *Handler) ListarDestinos(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"destinos": items})
 }
 
+// ListarDestinosPorCodigo devuelve los destinos de un centro por su código
+// público — a diferencia de ListarDestinos, no exige membresía activa: es
+// justo el picker que se usa *antes* de unirse (UnirseCentro), para no
+// depender de que la persona escriba la casa/calle a mano sin saber el
+// formato exacto que usó el admin. Requiere Persona autenticada (no es
+// anónimo) como mitigación — expone la estructura del centro, no datos de
+// residentes.
+func (h *Handler) ListarDestinosPorCodigo(c *gin.Context) {
+	codigo := strings.TrimSpace(c.Param("codigo"))
+
+	t, err := h.tenantRepo.FindByCodigo(codigo)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "centro no encontrado"})
+		return
+	}
+
+	list, err := h.destinoRepo.FindByTenantID(t.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]gin.H, 0, len(list))
+	for _, d := range list {
+		items = append(items, gin.H{
+			"id": d.ID, "nombre": d.Nombre, "calle": d.Calle,
+			"tipo": string(d.Tipo), "numero": d.Numero,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"destinos": items})
+}
+
 // SolicitarOTP genera y "manda" (ver OtpSender) un código de verificación
 // para un teléfono. Válido 5 minutos.
 func (h *Handler) SolicitarOTP(c *gin.Context) {
