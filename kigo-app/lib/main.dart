@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +16,12 @@ import 'views/onboarding/onboarding_view.dart';
 import 'views/settings_view.dart';
 import 'views/splash_view.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Sin argumentos: en Android basta con google-services.json, ya procesado
+  // por el plugin de Gradle — no hace falta firebase_options.dart (eso solo
+  // es necesario para web o multi-plataforma explícita).
+  await Firebase.initializeApp();
   runApp(
     MultiProvider(
       providers: [
