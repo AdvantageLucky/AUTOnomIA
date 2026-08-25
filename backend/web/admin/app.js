@@ -2261,15 +2261,25 @@
   /* ─── Residentes pendientes (modelo viejo Residente + Membresia de la app Kigo) ─── */
 
   async function loadResidentesPendientesBadge() {
-    const [resRes, resMem] = await Promise.all([
-      api('/residentes/pendientes'),
-      api('/membresias/pendientes'),
-    ]);
-    let n = 0;
-    if (resRes && resRes.ok) n += ((await resRes.json()).residentes || []).length;
-    if (resMem && resMem.ok) n += (await resMem.json()).length;
-    const badge = document.getElementById('tab-badge-res-sol');
-    if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+    try {
+      const [resRes, resMem] = await Promise.all([
+        api('/residentes/pendientes'),
+        api('/membresias/pendientes'),
+      ]);
+      let n = 0;
+      if (resRes && resRes.ok) {
+        const d = await resRes.json();
+        n += (Array.isArray(d) ? d : (d.residentes || [])).length;
+      }
+      if (resMem && resMem.ok) {
+        const d = await resMem.json();
+        n += (Array.isArray(d) ? d : (d.membresias || [])).length;
+      }
+      const badge = document.getElementById('tab-badge-res-sol');
+      if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+    } catch (e) {
+      console.warn('loadResidentesPendientesBadge error:', e);
+    }
   }
 
   async function loadResidentesPendientes() {
@@ -2279,24 +2289,41 @@
     if (!rowsEl) return;
 
     rowsEl.innerHTML = '';
-    emptyEl.hidden = true;
-    loadEl.hidden = false;
+    if (emptyEl) emptyEl.hidden = true;
+    if (loadEl)  loadEl.hidden = false;
 
-    const [resResidentes, resMembresias] = await Promise.all([
-      api('/residentes/pendientes'),
-      api('/membresias/pendientes'),
-    ]);
-    loadEl.hidden = true;
+    let resResidentes = null, resMembresias = null;
+    try {
+      [resResidentes, resMembresias] = await Promise.all([
+        api('/residentes/pendientes'),
+        api('/membresias/pendientes'),
+      ]);
+    } catch (e) {
+      console.error('Error fetching pendientes:', e);
+    }
+    if (loadEl) loadEl.hidden = true;
 
-    if ((!resResidentes || !resResidentes.ok) && (!resMembresias || !resMembresias.ok)) {
-      mostrarToast('Error al cargar solicitudes pendientes', 'err');
-      return;
+    let residentes = [];
+    if (resResidentes && resResidentes.ok) {
+      try {
+        const d = await resResidentes.json();
+        residentes = Array.isArray(d) ? d : (d.residentes || []);
+      } catch (e) { console.error(e); }
     }
 
-    const residentes = (resResidentes && resResidentes.ok) ? await resResidentes.json() : [];
-    const membresias  = (resMembresias && resMembresias.ok) ? await resMembresias.json() : [];
+    let membresias = [];
+    if (resMembresias && resMembresias.ok) {
+      try {
+        const d = await resMembresias.json();
+        membresias = Array.isArray(d) ? d : (d.membresias || []);
+      } catch (e) { console.error(e); }
+    }
 
-    if (!residentes.length && !membresias.length) { emptyEl.hidden = false; return; }
+    if (!residentes.length && !membresias.length) {
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
+    if (emptyEl) emptyEl.hidden = true;
 
     const filasResidentes = residentes.map(r => {
       const fecha = new Date(r.created_at).toLocaleDateString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
