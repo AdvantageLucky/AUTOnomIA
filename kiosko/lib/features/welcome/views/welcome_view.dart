@@ -12,6 +12,7 @@ import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/routing/registro_router.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class WelcomeView extends StatefulWidget {
   final WelcomeViewModel viewModel;
@@ -179,9 +180,9 @@ class _WelcomeViewState extends State<WelcomeView>
         const SizedBox(height: 20),
 
         // Título principal
-        const Text(
-          'Bienvenido',
-          style: TextStyle(
+        Text(
+          AppLocalizations.t(context, 'bienvenido_title'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 52,
             fontWeight: FontWeight.w900,
@@ -203,15 +204,15 @@ class _WelcomeViewState extends State<WelcomeView>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildLinea(),
-            const Flexible(
+            Flexible(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  'SELECCIONA CÓMO QUIERES CONTINUAR',
+                  AppLocalizations.t(context, 'selecciona_como_continuar'),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: KigoDesign.textTertiary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -243,12 +244,12 @@ class _WelcomeViewState extends State<WelcomeView>
     return Row(
       children: [
         Expanded(
-            child: _buildBoton(
-                context, options[0].id, options[0].icon, options[0].title)),
+            child: _buildBoton(context, options[0].id, options[0].icon,
+                AppLocalizations.t(context, options[0].titleKey))),
         const SizedBox(width: 20),
         Expanded(
-            child: _buildBoton(
-                context, options[1].id, options[1].icon, options[1].title)),
+            child: _buildBoton(context, options[1].id, options[1].icon,
+                AppLocalizations.t(context, options[1].titleKey))),
       ],
     );
   }
@@ -366,17 +367,17 @@ class _WelcomeViewState extends State<WelcomeView>
           ),
         ),
         const SizedBox(width: 14),
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Kigo',
-                style: TextStyle(
+            Text(AppLocalizations.t(context, 'kigo_label'),
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 29,
                     fontWeight: FontWeight.w800)),
-            SizedBox(height: 2),
-            Text('SELF CHECK-IN',
-                style: TextStyle(
+            const SizedBox(height: 2),
+            Text(AppLocalizations.t(context, 'self_checkin_label'),
+                style: const TextStyle(
                     color: KigoDesign.textSecondary,
                     fontSize: 14,
                     letterSpacing: 4,
@@ -390,9 +391,9 @@ class _WelcomeViewState extends State<WelcomeView>
   }
 
   Widget _buildFooter() {
-    return const Text(
-      'POWERED BY KIGO · FEPRO 2026',
-      style: TextStyle(
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
+      style: const TextStyle(
         color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,

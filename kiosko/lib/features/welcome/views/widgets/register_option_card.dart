@@ -2,6 +2,7 @@
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/models/register_option_model.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class RegisterOptionCard extends StatelessWidget {
   final RegisterOptionModel option;
@@ -80,7 +81,7 @@ class RegisterOptionCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          option.title,
+                          AppLocalizations.t(context, option.titleKey),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 23,
