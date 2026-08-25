@@ -31,6 +31,11 @@ Las decisiones que cruzan más de un subproyecto (backend, kiosko, residente) vi
 - [0022 - El tipo de kiosko viaja en su configuración](0022-tipo-kiosko-en-config.md)
 - [0023 - Las capturas del invitado viajan en `UsarInvitacion`](0023-capturas-de-invitado-al-usar-invitacion.md)
 - [0024 - La placa identifica la visita en un acceso vehicular](0024-identidad-por-placa-en-acceso-vehicular.md)
+- [0025 - El kiosko arranca en el escáner QR, no en Visitante/Residente](0025-kiosko-qr-first-entrada-principal.md)
+- [0026 - La placa se lee en paralelo con un punto de integración a hardware pendiente](0026-lectura-placa-paralela-hardware-pendiente.md)
+- [0027 - Destino gana estructura (calle/tipo/número) sin volverse relacional](0027-destinos-jerarquicos-calle-tipo-numero.md)
+- [0028 - Backend en Docker sobre un homelab, expuesto por Tailscale Funnel](0028-deploy-homelab-docker-tailscale-funnel.md)
+- [0029 - FCM real, con caída automática al notificador falso si falla](0029-fcm-real-con-respaldo-a-notificador-falso.md)
 
 ---
 
