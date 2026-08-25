@@ -1,4 +1,4 @@
-package com.example.kigo_user
+package com.fepro.autonomia
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -109,6 +109,17 @@ class AppLocalizations {
       'edit_username_title': 'Nombre de Usuario',
       'edit_username_hint': 'Ingresa tu nombre',
       'save': 'GUARDAR',
+
+      // Solicitudes de acceso (aprobar/rechazar)
+      'pending_visits': 'Solicitudes de acceso',
+      'pending_visits_title': 'SOLICITUDES DE ACCESO',
+      'no_pending_visits': 'No tienes solicitudes pendientes.',
+      'plate_label': 'Placa',
+      'approve': 'Aceptar',
+      'reject': 'Rechazar',
+      'visit_approved': 'Visita aprobada',
+      'visit_rejected': 'Visita rechazada',
+      'visit_response_error': 'No se pudo responder la solicitud',
     },
     'en': {
       // Dashboard
@@ -203,6 +214,17 @@ class AppLocalizations {
       'edit_username_title': 'Username',
       'edit_username_hint': 'Enter your name',
       'save': 'SAVE',
+
+      // Access requests (approve/reject)
+      'pending_visits': 'Access requests',
+      'pending_visits_title': 'ACCESS REQUESTS',
+      'no_pending_visits': 'You have no pending requests.',
+      'plate_label': 'Plate',
+      'approve': 'Approve',
+      'reject': 'Reject',
+      'visit_approved': 'Visit approved',
+      'visit_rejected': 'Visit rejected',
+      'visit_response_error': 'Could not respond to the request',
     },
   };
 
