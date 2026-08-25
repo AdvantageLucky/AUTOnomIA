@@ -34,6 +34,9 @@ web/uploads/visitantes/*
 # credencial de cliente OAuth de Google (trae client_secret) — secreto real
 /backend/client_secret*.json
 
+# contraseña de aplicación de Gmail (SMTP para OTP por correo) — secreto real
+/backend/password_gmail.txt
+
 # =========================
 # Claude Code / superpowers
 # =========================
