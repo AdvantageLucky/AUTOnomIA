@@ -397,6 +397,14 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 		}
 		filtros.TipoDocumento = &tipo
 	}
+	if tipoVisStr := c.Query("tipo_visitante"); tipoVisStr != "" {
+		tv := TipoVisitante(tipoVisStr)
+		if tv != TipoConInvitacion && tv != TipoSinInvitacion && tv != TipoResidente {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "tipo_visitante invalido"})
+			return
+		}
+		filtros.TipoVisitante = &tv
+	}
 	if estadoStr := c.Query("estado"); estadoStr != "" {
 		estado := EstadoVisita(estadoStr)
 		if estado != EstadoPendiente && estado != EstadoAprobado && estado != EstadoRechazado && estado != EstadoRevision {
