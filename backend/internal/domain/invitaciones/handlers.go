@@ -205,6 +205,10 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no valida, expirada o agotada"})
 		return
 	}
+	if inv.TenantID != tenantID {
+		c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no valida, expirada o agotada"})
+		return
+	}
 
 	// Cuerpo opcional: un kiosko sin capturas configuradas para invitados sigue
 	// mandando un POST vacio.
