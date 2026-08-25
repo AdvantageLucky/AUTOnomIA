@@ -521,13 +521,19 @@
   });
 
   /* ─── Google Login ──────────────────────── */
-  document.getElementById("btn-google-login").addEventListener("click", () => {
-    if (typeof google === "undefined" || !google.accounts) {
-      alert("Google Identity Services no disponible. Verifica la conexión.");
-      return;
-    }
+  // Se usa el botón que Google renderiza (renderButton), no el prompt de
+  // One Tap — Google suprime automáticamente el prompt tras el primer
+  // descarte o error, dejando el botón muerto para el resto de la sesión.
+  // renderButton abre el selector de cuenta en cada clic, sin ese límite.
+  async function initGoogleSignIn() {
+    const container = document.getElementById("google-btn-container");
+    if (!container || typeof google === "undefined" || !google.accounts) return;
+
+    const clientId = window.__GOOGLE_CLIENT_ID__ || "";
+    if (!clientId) return; // sin configurar todavía — no se muestra el botón
+
     google.accounts.id.initialize({
-      client_id: window.__GOOGLE_CLIENT_ID__ || "",
+      client_id: clientId,
       callback: async ({ credential }) => {
         const errEl = document.getElementById("login-error");
         try {
@@ -546,8 +552,18 @@
         } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
       },
     });
-    google.accounts.id.prompt();
-  });
+    google.accounts.id.renderButton(container, {
+      theme: "outline", size: "large", width: 320,
+      locale: lang === "en" ? "en" : "es",
+    });
+  }
+
+  // El script de Google carga async — puede terminar antes o después de
+  // este punto, así que se reintenta hasta que exista window.google.
+  (function esperarGoogleSDK() {
+    if (typeof google !== "undefined" && google.accounts) { initGoogleSignIn(); return; }
+    setTimeout(esperarGoogleSDK, 200);
+  })();
 
   /* ─── Bootstrap ─────────────────────────── */
   async function bootstrapApp() {
