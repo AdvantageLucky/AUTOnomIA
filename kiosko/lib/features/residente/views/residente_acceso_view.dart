@@ -12,6 +12,7 @@ import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.d
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/resident_pin_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/resident_welcome_view.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class ResidenteAccesoView extends StatefulWidget {
   const ResidenteAccesoView({super.key});
@@ -124,7 +125,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
       if (mounted) {
         setState(() {
           _camaraInicializando = false;
-          _camaraError = 'No se pudo activar la cámara';
+          _camaraError = AppLocalizations.t(context, 'no_se_pudo_activar_camara');
         });
       }
     }
@@ -192,7 +193,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => ResidentWelcomeView(
           viewModel: ResidentWelcomeViewModel(
-            nombre: nombre ?? 'Residente',
+            nombre: nombre ?? AppLocalizations.t(context, 'residente_label'),
             casaDestino: casaDestino ?? '',
           ),
         ),
@@ -281,13 +282,14 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
           ),
         ),
         const SizedBox(width: 14),
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Kigo', style: TextStyle(color: Colors.white, fontSize: 29, fontWeight: FontWeight.w800)),
-            SizedBox(height: 2),
-            Text('SELF CHECK-IN',
-                style: TextStyle(color: KigoDesign.textSecondary, fontSize: 14, letterSpacing: 4, fontWeight: FontWeight.w500)),
+            Text(AppLocalizations.t(context, 'kigo_label'),
+                style: const TextStyle(color: Colors.white, fontSize: 29, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 2),
+            Text(AppLocalizations.t(context, 'self_checkin_label'),
+                style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 14, letterSpacing: 4, fontWeight: FontWeight.w500)),
           ],
         ),
         const Spacer(),
@@ -299,10 +301,10 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
   Widget _buildAreaFacial() {
     return Column(
       children: [
-        const Text(
-          'Mira a la cámara para identificarte',
+        Text(
+          AppLocalizations.t(context, 'mira_camara_identificarte'),
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 26,
             fontWeight: FontWeight.w700,
@@ -367,20 +369,20 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
 
   String _textoEstadoCamara() {
     if (_cameraController?.value.isInitialized == true) {
-      return 'Detectando rostro automáticamente';
+      return AppLocalizations.t(context, 'detectando_rostro_automaticamente');
     }
     if (_camaraError != null) {
       return _camaraError!;
     }
-    return 'Activando cámara...';
+    return AppLocalizations.t(context, 'activando_camara');
   }
 
   Widget _buildPinFallback() {
     return Column(
       children: [
-        const Text(
-          'O bien,',
-          style: TextStyle(color: KigoDesign.textTertiary, fontSize: 15),
+        Text(
+          AppLocalizations.t(context, 'o_bien'),
+          style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 15),
         ),
         const SizedBox(height: 12),
         GestureDetector(
@@ -391,14 +393,14 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
               border: Border.all(color: const Color(0xFFFF542F).withValues(alpha: 0.5), width: 1.5),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.dialpad_rounded, color: Color(0xFFFF542F), size: 22),
-                SizedBox(width: 10),
+                const Icon(Icons.dialpad_rounded, color: Color(0xFFFF542F), size: 22),
+                const SizedBox(width: 10),
                 Text(
-                  'Acceder por PIN...',
-                  style: TextStyle(
+                  AppLocalizations.t(context, 'acceder_por_pin'),
+                  style: const TextStyle(
                     color: Color(0xFFFF542F),
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
@@ -413,9 +415,9 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
   }
 
   Widget _buildFooter() {
-    return const Text(
-      'POWERED BY KIGO · FEPRO 2026',
-      style: TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
+      style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
     );
   }
 }
@@ -432,36 +434,32 @@ Future<bool> _mostrarConsentimientoFacial(BuildContext context) async {
       titlePadding: const EdgeInsets.fromLTRB(28, 28, 28, 14),
       contentPadding: const EdgeInsets.fromLTRB(28, 0, 28, 22),
       actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.face_outlined, color: Color(0xFFFF542F), size: 36),
-          SizedBox(width: 14),
+          const Icon(Icons.face_outlined, color: Color(0xFFFF542F), size: 36),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Aviso de privacidad',
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              AppLocalizations.t(context, 'aviso_privacidad_title'),
+              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ),
         ],
       ),
-      content: const Text(
-        'Su rostro se analiza en este dispositivo para generar una huella digital '
-        'matemática; la imagen nunca se transmite ni se almacena. Esa huella se '
-        'compara de forma segura contra los residentes registrados del edificio '
-        'para verificar su identidad. Si prefiere no usar reconocimiento facial, '
-        'puede ingresar con su PIN.',
-        style: TextStyle(color: Color(0xFFC5BFBF), fontSize: 18, height: 1.6),
+      content: Text(
+        AppLocalizations.t(context, 'aviso_privacidad_content'),
+        style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 18, height: 1.6),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Regresar',
-              style: TextStyle(color: Color(0xFF999494), fontWeight: FontWeight.bold, fontSize: 18)),
+          child: Text(AppLocalizations.t(context, 'back_button_text'),
+              style: const TextStyle(color: Color(0xFF999494), fontWeight: FontWeight.bold, fontSize: 18)),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Aceptar',
-              style: TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 18)),
+          child: Text(AppLocalizations.t(context, 'aceptar_button'),
+              style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 18)),
         ),
       ],
     ),
