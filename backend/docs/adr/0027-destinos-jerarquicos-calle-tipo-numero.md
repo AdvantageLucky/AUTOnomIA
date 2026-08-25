@@ -3,6 +3,9 @@
 **Estado:** Aceptado
 **Fecha:** 2026-08-24
 **Extiende:** ADR-0007 (dominio destinos con titular)
+**Reemplazado parcialmente por:** ADR-0030 (punto 5 — la app Kigo sí obtiene
+picker de destino; en la práctica el texto libre resultó imposible de
+acertar)
 
 ## Contexto
 
