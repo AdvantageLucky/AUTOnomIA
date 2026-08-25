@@ -28,14 +28,15 @@ class _StepTelefonoState extends State<StepTelefono> {
   Future<void> _continuar() async {
     final telefono = _telefonoCtrl.text.trim();
     final correo = _correoCtrl.text.trim();
-    if (telefono.isEmpty) {
-      setState(() => _errorLocal = 'Ingresa tu número de teléfono');
-      return;
-    }
     // El código se manda por correo mientras no haya un proveedor de SMS
-    // real — sin correo, la solicitud no llega a ningún lado.
+    // real — sin correo, la solicitud no llega a ningún lado. Se pide
+    // primero porque es el canal que de verdad se usa ahorita.
     if (correo.isEmpty || !correo.contains('@')) {
       setState(() => _errorLocal = 'Ingresa un correo válido para recibir el código');
+      return;
+    }
+    if (telefono.isEmpty) {
+      setState(() => _errorLocal = 'Ingresa tu número de teléfono');
       return;
     }
     setState(() => _errorLocal = null);
@@ -58,20 +59,20 @@ class _StepTelefonoState extends State<StepTelefono> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Tu número', style: Theme.of(context).textTheme.headlineSmall),
+          Text('Tu correo y teléfono', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 6),
           const Text('Te mandamos un código por correo para verificarte.'),
           const SizedBox(height: 24),
           KigoTextField(
-            controller: _telefonoCtrl,
-            label: 'Teléfono',
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 12),
-          KigoTextField(
             controller: _correoCtrl,
             label: 'Correo (recibirás el código aquí)',
             keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 12),
+          KigoTextField(
+            controller: _telefonoCtrl,
+            label: 'Teléfono',
+            keyboardType: TextInputType.phone,
           ),
           if (_errorLocal ?? auth.error case final mensaje?) ...[
             const SizedBox(height: 8),
