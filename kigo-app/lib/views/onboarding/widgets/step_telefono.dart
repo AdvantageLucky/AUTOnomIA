@@ -15,25 +15,34 @@ class StepTelefono extends StatefulWidget {
 
 class _StepTelefonoState extends State<StepTelefono> {
   final _telefonoCtrl = TextEditingController();
+  final _correoCtrl = TextEditingController();
   String? _errorLocal;
 
   @override
   void dispose() {
     _telefonoCtrl.dispose();
+    _correoCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _continuar() async {
     final telefono = _telefonoCtrl.text.trim();
+    final correo = _correoCtrl.text.trim();
     if (telefono.isEmpty) {
       setState(() => _errorLocal = 'Ingresa tu número de teléfono');
+      return;
+    }
+    // El código se manda por correo mientras no haya un proveedor de SMS
+    // real — sin correo, la solicitud no llega a ningún lado.
+    if (correo.isEmpty || !correo.contains('@')) {
+      setState(() => _errorLocal = 'Ingresa un correo válido para recibir el código');
       return;
     }
     setState(() => _errorLocal = null);
 
     final auth = context.read<AuthViewModel>();
     try {
-      await auth.solicitarOtp(telefono);
+      await auth.solicitarOtp(telefono, correo: correo);
       widget.onSolicitado();
     } catch (_) {
       // el error ya quedó en auth.error, se muestra abajo
@@ -51,12 +60,18 @@ class _StepTelefonoState extends State<StepTelefono> {
         children: [
           Text('Tu número', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 6),
-          const Text('Te mandamos un código para verificarlo.'),
+          const Text('Te mandamos un código por correo para verificarte.'),
           const SizedBox(height: 24),
           KigoTextField(
             controller: _telefonoCtrl,
             label: 'Teléfono',
             keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 12),
+          KigoTextField(
+            controller: _correoCtrl,
+            label: 'Correo (recibirás el código aquí)',
+            keyboardType: TextInputType.emailAddress,
           ),
           if (_errorLocal ?? auth.error case final mensaje?) ...[
             const SizedBox(height: 8),

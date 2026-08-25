@@ -26,6 +26,7 @@ type Handler struct {
 	repo           *Repository
 	otpRepo        *OtpRepository
 	sender         OtpSender
+	emailSender    OtpSender
 	jwtSecret      string
 	qrMasterSecret string
 	membresiaRepo  *residente.MembresiaRepository
@@ -40,6 +41,7 @@ func NewHandler(
 	repo *Repository,
 	otpRepo *OtpRepository,
 	sender OtpSender,
+	emailSender OtpSender,
 	jwtSecret, qrMasterSecret string,
 	membresiaRepo *residente.MembresiaRepository,
 	tenantRepo tenant.Repository,
@@ -52,6 +54,7 @@ func NewHandler(
 		repo:           repo,
 		otpRepo:        otpRepo,
 		sender:         sender,
+		emailSender:    emailSender,
 		jwtSecret:      jwtSecret,
 		qrMasterSecret: qrMasterSecret,
 		membresiaRepo:  membresiaRepo,
@@ -138,7 +141,14 @@ func (h *Handler) SolicitarOTP(c *gin.Context) {
 		return
 	}
 
-	if err := h.sender.Enviar(c.Request.Context(), req.Telefono, codigo); err != nil {
+	// Con correo, se manda ahí en vez de por SMS — el teléfono sigue siendo
+	// el ancla de identidad (la solicitud y la verificación siguen
+	// buscándose por teléfono), esto solo decide el canal de entrega.
+	destino, sender := req.Telefono, h.sender
+	if req.Correo != "" {
+		destino, sender = req.Correo, h.emailSender
+	}
+	if err := sender.Enviar(c.Request.Context(), destino, codigo); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo enviar el código"})
 		return
 	}
