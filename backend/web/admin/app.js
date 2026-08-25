@@ -480,6 +480,7 @@
     document.getElementById("login-toggle-mode").textContent =
       isReg ? (lang === "en" ? "Sign in" : "Iniciar sesión") : t("create_account");
     document.getElementById("login-error").hidden = true;
+    renderGoogleButton();
   });
 
   document.getElementById("login-form").addEventListener("submit", async e => {
@@ -525,35 +526,49 @@
   // One Tap — Google suprime automáticamente el prompt tras el primer
   // descarte o error, dejando el botón muerto para el resto de la sesión.
   // renderButton abre el selector de cuenta en cada clic, sin ese límite.
-  async function initGoogleSignIn() {
+  let googleInitialized = false;
+
+  async function googleCallback({ credential }) {
+    const errEl = document.getElementById("login-error");
+    // El endpoint depende del modo activo al momento del clic — registro
+    // crea la cuenta, login solo la busca. Antes siempre pegaba a login,
+    // así que "crear cuenta" con Google en realidad intentaba iniciar
+    // sesión con una cuenta que no existe.
+    const endpoint = loginMode === "register" ? "/auth/google/sign-in" : "/auth/google";
+    try {
+      const res = await fetch(API_BASE + endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || "Google login fallido"; errEl.hidden = false; return; }
+      setToken(data.access_token);
+      const claims = decodeJWT(data.access_token);
+      state.adminId  = claims?.admin_id;
+      state.tenantId = claims?.tenant_id;
+      await bootstrapApp();
+    } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
+  }
+
+  function renderGoogleButton() {
     const container = document.getElementById("google-btn-container");
     if (!container || typeof google === "undefined" || !google.accounts) return;
 
     const clientId = window.__GOOGLE_CLIENT_ID__ || "";
     if (!clientId) return; // sin configurar todavía — no se muestra el botón
 
-    google.accounts.id.initialize({
-      client_id: clientId,
-      callback: async ({ credential }) => {
-        const errEl = document.getElementById("login-error");
-        try {
-          const res = await fetch(API_BASE + "/auth/google", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ credential }),
-          });
-          const data = await res.json();
-          if (!res.ok) { errEl.textContent = data.error || "Google login fallido"; errEl.hidden = false; return; }
-          setToken(data.access_token);
-          const claims = decodeJWT(data.access_token);
-          state.adminId  = claims?.admin_id;
-          state.tenantId = claims?.tenant_id;
-          await bootstrapApp();
-        } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
-      },
-    });
+    if (!googleInitialized) {
+      google.accounts.id.initialize({ client_id: clientId, callback: googleCallback });
+      googleInitialized = true;
+    }
+    container.innerHTML = "";
+    // Mismo ancho que el botón naranja (btn-block = 100% del contenedor) —
+    // Google no acepta porcentaje, solo píxeles, así que se mide en vivo.
+    const ancho = Math.round(container.getBoundingClientRect().width) || 320;
     google.accounts.id.renderButton(container, {
-      theme: "outline", size: "large", width: 320,
+      theme: "outline", size: "large", width: ancho,
+      text: loginMode === "register" ? "signup_with" : "signin_with",
       locale: lang === "en" ? "en" : "es",
     });
   }
@@ -561,7 +576,7 @@
   // El script de Google carga async — puede terminar antes o después de
   // este punto, así que se reintenta hasta que exista window.google.
   (function esperarGoogleSDK() {
-    if (typeof google !== "undefined" && google.accounts) { initGoogleSignIn(); return; }
+    if (typeof google !== "undefined" && google.accounts) { renderGoogleButton(); return; }
     setTimeout(esperarGoogleSDK, 200);
   })();
 
