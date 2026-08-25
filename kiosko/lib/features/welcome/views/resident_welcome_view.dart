@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class ResidentWelcomeView extends StatefulWidget {
   final ResidentWelcomeViewModel viewModel;
@@ -83,21 +84,21 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
           ),
         ),
         const SizedBox(width: 14),
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Kigo',
-              style: TextStyle(
+              AppLocalizations.t(context, 'kigo_label'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 29,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
-              'SELF CHECK-IN',
-              style: TextStyle(
+              AppLocalizations.t(context, 'self_checkin_label'),
+              style: const TextStyle(
                 color: KigoDesign.textSecondary,
                 fontSize: 14,
                 letterSpacing: 4,
@@ -133,9 +134,9 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
 
         const SizedBox(height: 36),
 
-        const Text(
-          '¡Bienvenido!',
-          style: TextStyle(
+        Text(
+          AppLocalizations.t(context, 'bienvenido_exclamacion'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 46,
             fontWeight: FontWeight.w800,
@@ -172,9 +173,9 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
   }
 
   Widget _buildFooter() {
-    return const Text(
-      'POWERED BY KIGO · FEPRO 2026',
-      style: TextStyle(
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
+      style: const TextStyle(
         color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,
