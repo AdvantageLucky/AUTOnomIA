@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class ResumenSolicitudView extends StatefulWidget {
   final UserRegistrationModel registrationData;
@@ -64,7 +65,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     if (!data.esInvitado && !data.tieneIdentificador) {
       setState(() {
         _isSubmitting = false;
-        _submitError = 'Faltan datos del registro. Regresa e intenta de nuevo.';
+        _submitError = AppLocalizations.t(context, 'faltan_datos_registro');
       });
       return;
     }
@@ -101,7 +102,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         // siga siendo buscable en la bitácora.
         titular: data.nombreCompleto ?? '',
         curp: data.curp ?? '',
-        casaDestino: data.casaDestino ?? 'No especificado',
+        casaDestino: data.casaDestino ?? AppLocalizations.t(context, 'no_especificado'),
         placa: data.placa ?? '',
         pathFotoIne: data.pathFotoIne,
         pathFotoRostro: data.pathFotoRostro,
@@ -124,7 +125,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
-        _submitError = 'No se pudo registrar tu acceso. Intenta de nuevo.\n\nDetalle: $e';
+        _submitError = '${AppLocalizations.t(context, 'no_se_pudo_registrar_prefix')} $e';
       });
     }
   }
@@ -180,29 +181,28 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF211D1D),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF542F), size: 32),
-            SizedBox(width: 12),
+            const Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF542F), size: 32),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Pasó a revisión manual',
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                AppLocalizations.t(context, 'revision_manual_dialog_title'),
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
-        content: const Text(
-          'La solicitud pasó el tiempo límite de respuesta, tu solicitud pasó a '
-          'revisión manual. Un vigilante te atenderá en breve.',
-          style: TextStyle(color: Color(0xFFC5BFBF), fontSize: 18, height: 1.5),
+        content: Text(
+          AppLocalizations.t(context, 'revision_manual_dialog_content'),
+          style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 18, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Entendido',
-              style: TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
+            child: Text(
+              AppLocalizations.t(context, 'entendido_button'),
+              style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ],
@@ -262,7 +262,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             ),
-            child: const Text('Reintentar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            child: Text(AppLocalizations.t(context, 'retry_button_text'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           ),
         ),
       ],
@@ -286,14 +286,16 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           ),
           const SizedBox(height: 24),
           Text(
-            _isSubmitting ? 'Enviando tu solicitud…' : 'Esperando aprobación…',
+            _isSubmitting
+                ? AppLocalizations.t(context, 'enviando_solicitud')
+                : AppLocalizations.t(context, 'esperando_aprobacion'),
             style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Un residente o administrador debe autorizar tu acceso',
-            style: TextStyle(color: Color(0xFF999494), fontSize: 17, fontWeight: FontWeight.w400),
+          Text(
+            AppLocalizations.t(context, 'esperando_aprobacion_subtitle'),
+            style: const TextStyle(color: Color(0xFF999494), fontSize: 17, fontWeight: FontWeight.w400),
             textAlign: TextAlign.center,
           ),
         ],
@@ -301,19 +303,19 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     }
 
     if (_estado == 'REVISION') {
-      return const Column(
+      return Column(
         children: [
-          Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF542F), size: 80),
-          SizedBox(height: 18),
+          const Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF542F), size: 80),
+          const SizedBox(height: 18),
           Text(
-            'En revisión manual',
-            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+            AppLocalizations.t(context, 'en_revision_manual_title'),
+            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
-            'Un vigilante revisará tu acceso en breve',
-            style: TextStyle(color: Color(0xFF999494), fontSize: 17, fontWeight: FontWeight.w400),
+            AppLocalizations.t(context, 'en_revision_manual_subtitle'),
+            style: const TextStyle(color: Color(0xFF999494), fontSize: 17, fontWeight: FontWeight.w400),
             textAlign: TextAlign.center,
           ),
         ],
@@ -330,7 +332,9 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         ),
         const SizedBox(height: 18),
         Text(
-          aprobado ? '¡Acceso aprobado!' : 'Acceso no autorizado',
+          aprobado
+              ? AppLocalizations.t(context, 'acceso_aprobado')
+              : AppLocalizations.t(context, 'acceso_no_autorizado'),
           style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
           textAlign: TextAlign.center,
         ),
@@ -371,16 +375,16 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           Text(
             // Sin INE no hay nombre: se muestra la placa, que es como el
             // vigilante va a identificar esta visita.
-            data.nombreCompleto ?? data.placa ?? 'Visitante',
+            data.nombreCompleto ?? data.placa ?? AppLocalizations.t(context, 'visitante_label'),
             style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          _buildDato(Icons.access_time_rounded, 'Hora de solicitud',
+          _buildDato(Icons.access_time_rounded, AppLocalizations.t(context, 'hora_solicitud_label'),
               TimeOfDay.fromDateTime(_horaSolicitud).format(context)),
-          _buildDato(Icons.home_outlined, 'Casa destino', data.casaDestino ?? '—'),
+          _buildDato(Icons.home_outlined, AppLocalizations.t(context, 'casa_destino_label'), data.casaDestino ?? '—'),
           if (data.placa != null && data.placa!.isNotEmpty)
-            _buildDato(Icons.directions_car_outlined, 'Placa', data.placa!),
+            _buildDato(Icons.directions_car_outlined, AppLocalizations.t(context, 'placa_label'), data.placa!),
         ],
       ),
     );

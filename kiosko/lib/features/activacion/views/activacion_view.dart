@@ -3,6 +3,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/activacion/models/device_solicitud.dart';
 import 'package:kigo_kiosco/features/activacion/viewmodels/activacion_viewmodel.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class ActivacionView extends StatefulWidget {
@@ -52,7 +53,7 @@ class _ActivacionViewState extends State<ActivacionView> {
   Widget _buildContenido() {
     switch (_vm.estado) {
       case ActivacionEstado.solicitando:
-        return _buildCargando('Activando dispositivo...');
+        return _buildCargando(AppLocalizations.t(context, 'activando_dispositivo'));
       case ActivacionEstado.esperando:
         return _buildEsperando();
       case ActivacionEstado.expirado:
@@ -60,7 +61,7 @@ class _ActivacionViewState extends State<ActivacionView> {
       case ActivacionEstado.error:
         return _buildError();
       case ActivacionEstado.aprobado:
-        return _buildCargando('Activación completada...');
+        return _buildCargando(AppLocalizations.t(context, 'activacion_completada'));
     }
   }
 
@@ -90,15 +91,15 @@ class _ActivacionViewState extends State<ActivacionView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Activar dispositivo',
-                style: TextStyle(color: KigoDesign.brand, fontSize: 28, fontWeight: FontWeight.w700),
+              Text(
+                AppLocalizations.t(context, 'activar_dispositivo_title'),
+                style: const TextStyle(color: KigoDesign.brand, fontSize: 28, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Escanea el código QR o ingresa el código en el panel de administración.',
+              Text(
+                AppLocalizations.t(context, 'activar_dispositivo_subtitle'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: KigoDesign.textSecondary, fontSize: 16),
+                style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 16),
               ),
               const SizedBox(height: 40),
               if (isWide)
@@ -109,7 +110,7 @@ class _ActivacionViewState extends State<ActivacionView> {
               Text(solicitud.verificationUri,
                   style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 13)),
               const SizedBox(height: 8),
-              Text('Expira en $countdown',
+              Text('${AppLocalizations.t(context, 'expira_en_prefix')} $countdown',
                   style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 14)),
               const SizedBox(height: 24),
               const SizedBox(
@@ -145,12 +146,12 @@ class _ActivacionViewState extends State<ActivacionView> {
         _buildQr(qrData),
         const SizedBox(height: 28),
         Row(children: [
-          Expanded(child: Divider(color: KigoDesign.border, thickness: 1)),
+          const Expanded(child: Divider(color: KigoDesign.border, thickness: 1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Text('O', style: TextStyle(color: KigoDesign.textTertiary, fontSize: 13)),
+            child: Text(AppLocalizations.t(context, 'o_separador'), style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 13)),
           ),
-          Expanded(child: Divider(color: KigoDesign.border, thickness: 1)),
+          const Expanded(child: Divider(color: KigoDesign.border, thickness: 1)),
         ]),
         const SizedBox(height: 28),
         _buildCodigo(solicitud.userCode),
@@ -181,7 +182,7 @@ class _ActivacionViewState extends State<ActivacionView> {
         Container(width: 1, height: 55, color: KigoDesign.border),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text('O', style: TextStyle(color: KigoDesign.textTertiary, fontSize: 13)),
+          child: Text(AppLocalizations.t(context, 'o_separador'), style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 13)),
         ),
         Container(width: 1, height: 55, color: KigoDesign.border),
       ],
@@ -191,9 +192,9 @@ class _ActivacionViewState extends State<ActivacionView> {
   Widget _buildCodigo(String userCode) {
     return Column(
       children: [
-        const Text(
-          'Código',
-          style: TextStyle(color: KigoDesign.textSecondary, fontSize: 13, letterSpacing: 1.5),
+        Text(
+          AppLocalizations.t(context, 'codigo_label'),
+          style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 13, letterSpacing: 1.5),
         ),
         const SizedBox(height: 12),
         Container(
@@ -222,16 +223,16 @@ class _ActivacionViewState extends State<ActivacionView> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text(
-          'El código ha expirado',
-          style: TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w600),
+        Text(
+          AppLocalizations.t(context, 'codigo_expirado_title'),
+          style: const TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        const Text('Solicita uno nuevo para continuar.', style: TextStyle(color: KigoDesign.textSecondary, fontSize: 15)),
+        Text(AppLocalizations.t(context, 'codigo_expirado_subtitle'), style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 15)),
         const SizedBox(height: 32),
         ElevatedButton(
           onPressed: _vm.iniciar,
-          child: const Text('Solicitar nuevo código'),
+          child: Text(AppLocalizations.t(context, 'solicitar_nuevo_codigo_button')),
         ),
       ],
     );
@@ -244,14 +245,14 @@ class _ActivacionViewState extends State<ActivacionView> {
         const Icon(Icons.error_outline, color: KigoDesign.brand, size: 56),
         const SizedBox(height: 16),
         Text(
-          _vm.errorMsg ?? 'Error desconocido',
+          _vm.errorMsg ?? AppLocalizations.t(context, 'error_desconocido'),
           textAlign: TextAlign.center,
           style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 15),
         ),
         const SizedBox(height: 32),
         ElevatedButton(
           onPressed: _vm.iniciar,
-          child: const Text('Reintentar'),
+          child: Text(AppLocalizations.t(context, 'retry_button_text')),
         ),
       ],
     );
