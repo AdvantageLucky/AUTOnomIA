@@ -1,6 +1,9 @@
 package router
 
 import (
+	"context"
+	"log"
+
 	"kigo-autonomia-backend/configs"
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/domain/auth"
@@ -127,11 +130,26 @@ func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	}
 }
 
+// pushSender decide entre FCM real y el falso que solo loguea, según si hay
+// credencial de Firebase configurada — sin ella el servidor sigue
+// arrancando (dev/local sin FCM configurado no debe tumbar todo).
+func pushSender(cfg *configs.Config) residente.PushSender {
+	if cfg.FirebaseCredentialsPath == "" {
+		return residente.LogPushSender{}
+	}
+	sender, err := residente.NewFirebasePushSender(context.Background(), cfg.FirebaseCredentialsPath)
+	if err != nil {
+		log.Printf("pushSender: no se pudo inicializar FCM (%v), usando el notificador falso", err)
+		return residente.LogPushSender{}
+	}
+	return sender
+}
+
 // registerVisitaRoutes registra las rutas de visitas: registro desde el kiosko (sesion) y
 // consulta del admin (JWT).
 func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config, hub *sse.Hub) {
 	visitaRepo := visitas.NewRepository(db)
-	notificador := residente.NewPushNotificador(residente.NewRepository(db), residente.LogPushSender{})
+	notificador := residente.NewPushNotificador(residente.NewRepository(db), pushSender(cfg))
 	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub, notificador)
 	sesionRepo := auth.NewSesionRepository(db)
 
