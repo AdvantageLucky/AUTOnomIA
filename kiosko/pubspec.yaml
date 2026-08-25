@@ -43,6 +43,7 @@ dependencies:
   mobile_scanner: ^5.2.3               # Escaner de QR/códigos de barras
   tflite_flutter: ^0.12.1              # Motor de inferencia para el modelo de huella facial
   image: ^4.9.1                        # Recorte/redimensionado del rostro antes de la inferencia
+  speech_to_text: ^7.0.0               # STT on-device para decir la casa destino en voz alta
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
