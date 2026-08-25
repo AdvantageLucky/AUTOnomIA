@@ -3,16 +3,11 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 
-    // firebase
+    // firebase — procesa google-services.json. Los paquetes Flutter
+    // firebase_core/firebase_messaging (pubspec.yaml) ya traen sus propias
+    // dependencias nativas; agregarlas aquí también es redundante y puede
+    // desalinear versiones con el BoM que ellos mismos gestionan.
     id("com.google.gms.google-services")
-}
-
-dependencies {
-    // firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:34.18.0"))
-
-    // FCM
-    implementation("com.google.firebase:firebase-messaging")
 }
 
 android {
