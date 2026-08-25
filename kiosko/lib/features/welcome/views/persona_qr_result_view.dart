@@ -5,6 +5,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/verdict_ring.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class PersonaQrResultView extends StatefulWidget {
   final PersonaQrResultViewModel viewModel;
@@ -75,30 +76,33 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
       case PersonaQrResultEstado.cargando:
         return _buildCargando();
       case PersonaQrResultEstado.miembro:
-        return _buildExitoso(titulo: 'Bienvenido a casa', subtitulo: null);
+        return _buildExitoso(titulo: AppLocalizations.t(context, 'bienvenido_a_casa'), subtitulo: null);
       case PersonaQrResultEstado.invitado:
-        return _buildExitoso(titulo: '¡Acceso concedido!', subtitulo: 'Puedes ingresar al evento.\nBienvenido.');
+        return _buildExitoso(
+          titulo: AppLocalizations.t(context, 'acceso_concedido'),
+          subtitulo: AppLocalizations.t(context, 'puedes_ingresar_evento_bienvenido'),
+        );
       case PersonaQrResultEstado.desconocido:
         return _buildError(
-          'Esta cuenta no tiene invitación ni membresía en este centro',
+          AppLocalizations.t(context, 'cuenta_sin_invitacion_membresia'),
         );
       case PersonaQrResultEstado.error:
-        return _buildError(widget.viewModel.errorMsg ?? 'No se pudo verificar el código QR');
+        return _buildError(widget.viewModel.errorMsg ?? AppLocalizations.t(context, 'no_se_pudo_verificar_qr'));
     }
   }
 
   Widget _buildCargando() {
-    return const Column(
+    return Column(
       children: [
-        SizedBox(
+        const SizedBox(
           width: 64,
           height: 64,
           child: CircularProgressIndicator(color: KigoDesign.brand, strokeWidth: 3),
         ),
-        SizedBox(height: 36),
+        const SizedBox(height: 36),
         Text(
-          'Verificando tu código...',
-          style: TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
+          AppLocalizations.t(context, 'verificando_tu_codigo'),
+          style: const TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -146,7 +150,7 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
       children: [
         VerdictRing(color: KigoDesign.error, icon: Icons.close_rounded, size: iconSize),
         SizedBox(height: gap),
-        Text('Acceso denegado', style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.044).clamp(20.0, 34.0), fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.t(context, 'acceso_denegado'), style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.044).clamp(20.0, 34.0), fontWeight: FontWeight.w800)),
         SizedBox(height: gap * 0.4),
         Text(
           mensaje,
@@ -170,7 +174,7 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
               borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
               border: Border.all(color: KigoDesign.border),
             ),
-            child: const Text('Volver a intentar', style: TextStyle(color: KigoDesign.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.t(context, 'volver_a_intentar'), style: const TextStyle(color: KigoDesign.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
       ],
@@ -178,9 +182,9 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
   }
 
   Widget _buildFooter() {
-    return const Text(
-      'POWERED BY KIGO · FEPRO 2026',
-      style: TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
+      style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
     );
   }
 }

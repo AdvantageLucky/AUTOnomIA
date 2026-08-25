@@ -106,6 +106,18 @@ class AppLocalizations {
       // Acceso de residente por PIN
       'ingresa_tu_numero': 'Ingresa tu número',
       'confirmar_button_caps': 'CONFIRMAR',
+
+      // Resultado de escaneo QR (invitación)
+      'verificando_invitacion': 'Verificando invitación...',
+      'acceso_concedido': '¡Acceso concedido!',
+      'puedes_ingresar_evento_bienvenido': 'Puedes ingresar al evento.\nBienvenido.',
+      'acceso_denegado': 'Acceso denegado',
+      'invitacion_no_valida': 'La invitación no es válida',
+      'volver_a_intentar': 'Volver a intentar',
+      'bienvenido_a_casa': 'Bienvenido a casa',
+      'verificando_tu_codigo': 'Verificando tu código...',
+      'cuenta_sin_invitacion_membresia': 'Esta cuenta no tiene invitación ni membresía en este centro',
+      'no_se_pudo_verificar_qr': 'No se pudo verificar el código QR',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -190,6 +202,18 @@ class AppLocalizations {
       // Acceso de residente por PIN
       'ingresa_tu_numero': 'Enter your number',
       'confirmar_button_caps': 'CONFIRM',
+
+      // Resultado de escaneo QR (invitación)
+      'verificando_invitacion': 'Verifying invitation...',
+      'acceso_concedido': 'Access granted!',
+      'puedes_ingresar_evento_bienvenido': 'You may enter the event.\nWelcome.',
+      'acceso_denegado': 'Access denied',
+      'invitacion_no_valida': 'The invitation is not valid',
+      'volver_a_intentar': 'Try again',
+      'bienvenido_a_casa': 'Welcome home',
+      'verificando_tu_codigo': 'Verifying your code...',
+      'cuenta_sin_invitacion_membresia': 'This account has no invitation or membership at this facility',
+      'no_se_pudo_verificar_qr': 'Could not verify the QR code',
     },
   };
 
