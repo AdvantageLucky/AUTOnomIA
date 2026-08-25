@@ -415,6 +415,14 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.FotoRostroVisitante != nil {
 		cfg.FotoRostroVisitante = *req.FotoRostroVisitante
 	}
+	if req.FotoIneVisitante != nil {
+		cfg.FotoIneVisitante = *req.FotoIneVisitante
+	}
+	if req.PasosSinInvitacion != nil {
+		if data, err := json.Marshal(*req.PasosSinInvitacion); err == nil {
+			cfg.PasosSinInvitacion = string(data)
+		}
+	}
 	if req.FotoPlacaInvitado != nil {
 		cfg.FotoPlacaInvitado = *req.FotoPlacaInvitado
 	}

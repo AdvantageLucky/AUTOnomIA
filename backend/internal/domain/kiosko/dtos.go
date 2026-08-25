@@ -7,6 +7,8 @@ Usado en endpoints para recibir una respuesta o enviar una respuesta con un cuer
 */
 package kiosko
 
+import "encoding/json"
+
 // RegisterKioskoRequest DTO para dar de alta o modificar un kiosko
 type RegisterKioskoRequest struct {
 	Nombre    string     `json:"nombre"    binding:"required"`
@@ -28,20 +30,22 @@ type KioskoResponse struct {
 
 // KioskoConfigRequest DTO para actualizar la config de un kiosko
 type KioskoConfigRequest struct {
-	ColorKiosko            *string  `json:"color_kiosko"`
-	IdiomaKiosko           *string  `json:"idioma_kiosko"`
-	FotoPlacaVisitante     *bool    `json:"foto_placa_visitante"`
-	FotoRostroVisitante    *bool    `json:"foto_rostro_visitante"`
-	FotoPlacaInvitado      *bool    `json:"foto_placa_invitado"`
-	FotoRostroInvitado     *bool    `json:"foto_rostro_invitado"`
-	IneObligatorioInvitado *bool    `json:"foto_ine_invitado"`
-	TiempoEsperaSeg        *int     `json:"tiempo_espera_seg"`
-	HorarioInicio          *string  `json:"horario_inicio"`
-	HorarioFin             *string  `json:"horario_fin"`
-	MensajeBienvenida      *string  `json:"mensaje_bienvenida"`
-	AutoPassHabilitado     *bool    `json:"auto_pass_habilitado"`
-	UmbralConfianzaVisitas *int     `json:"umbral_confianza_visitas"`
-	UmbralSimilitudCara    *float64 `json:"umbral_similitud_cara"`
+	ColorKiosko            *string   `json:"color_kiosko"`
+	IdiomaKiosko           *string   `json:"idioma_kiosko"`
+	FotoPlacaVisitante     *bool     `json:"foto_placa_visitante"`
+	FotoRostroVisitante    *bool     `json:"foto_rostro_visitante"`
+	FotoIneVisitante       *bool     `json:"foto_ine_visitante"`
+	PasosSinInvitacion     *[]string `json:"pasos_sin_invitacion"`
+	FotoPlacaInvitado      *bool     `json:"foto_placa_invitado"`
+	FotoRostroInvitado     *bool     `json:"foto_rostro_invitado"`
+	IneObligatorioInvitado *bool     `json:"foto_ine_invitado"`
+	TiempoEsperaSeg        *int      `json:"tiempo_espera_seg"`
+	HorarioInicio          *string   `json:"horario_inicio"`
+	HorarioFin             *string   `json:"horario_fin"`
+	MensajeBienvenida      *string   `json:"mensaje_bienvenida"`
+	AutoPassHabilitado     *bool     `json:"auto_pass_habilitado"`
+	UmbralConfianzaVisitas *int      `json:"umbral_confianza_visitas"`
+	UmbralSimilitudCara    *float64  `json:"umbral_similitud_cara"`
 }
 
 // KioskoConfigResponse DTO de respuesta de la config del kiosko
@@ -56,6 +60,8 @@ type KioskoConfigResponse struct {
 	IdiomaKiosko           string     `json:"idioma_kiosko"`
 	FotoPlacaVisitante     bool       `json:"foto_placa_visitante"`
 	FotoRostroVisitante    bool       `json:"foto_rostro_visitante"`
+	FotoIneVisitante       bool       `json:"foto_ine_visitante"`
+	PasosSinInvitacion     []string   `json:"pasos_sin_invitacion"`
 	FotoPlacaInvitado      bool       `json:"foto_placa_invitado"`
 	FotoRostroInvitado     bool       `json:"foto_rostro_invitado"`
 	IneObligatorioInvitado bool       `json:"foto_ine_invitado"`
@@ -82,6 +88,18 @@ func toKioskoResponse(a *Kiosko) KioskoResponse {
 // helper func para convertir un KioskoConfig (DB Model) a DTO Response
 // tipo se recibe aparte porque pertenece al Kiosko, no a su config
 func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResponse {
+	var pasos []string
+	if cfg.PasosSinInvitacion != "" {
+		_ = json.Unmarshal([]byte(cfg.PasosSinInvitacion), &pasos)
+	}
+	if len(pasos) == 0 {
+		if tipo == KioskoVehicular {
+			pasos = []string{"PLACA", "ROSTRO", "DESTINO"}
+		} else {
+			pasos = []string{"ROSTRO", "DESTINO"}
+		}
+	}
+
 	return KioskoConfigResponse{
 		KioskoID:     cfg.KioskoID,
 		Tipo:         tipo,
@@ -91,6 +109,8 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 		// SinInvitacion
 		FotoPlacaVisitante:  cfg.FotoPlacaVisitante,
 		FotoRostroVisitante: cfg.FotoRostroVisitante,
+		FotoIneVisitante:    cfg.FotoIneVisitante,
+		PasosSinInvitacion:  pasos,
 
 		// ConInvitacion
 		FotoPlacaInvitado:      cfg.FotoPlacaInvitado,

@@ -1687,6 +1687,154 @@
     await loadConfig(id);
   });
 
+  const PIPELINE_DEFS = {
+    ROSTRO: {
+      id: "ROSTRO",
+      icon: "👤",
+      title: "Foto de Rostro",
+      desc: "Captura facial de verificación y reconocimiento",
+      defaultChecked: true,
+    },
+    DESTINO: {
+      id: "DESTINO",
+      icon: "🏠",
+      title: "Selección de Destino",
+      desc: "Búsqueda y selección de calle, edificio o casa",
+      defaultChecked: true,
+    },
+    PLACA: {
+      id: "PLACA",
+      icon: "🚗",
+      title: "Captura de Placa Vehicular",
+      desc: "Lectura de matrícula (obligatoria en accesos vehiculares)",
+      defaultChecked: false,
+    },
+    INE: {
+      id: "INE",
+      icon: "🪪",
+      title: "Escaneo de INE / Identificación",
+      desc: "Lectura de credencial con OCR (opcional según hardware)",
+      defaultChecked: false,
+    },
+  };
+
+  function renderPipeline(cfg, esPeatonal) {
+    const listEl = document.getElementById("cfg-pipeline-list");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    const rawPasos = Array.isArray(cfg.pasos_sin_invitacion) && cfg.pasos_sin_invitacion.length
+      ? cfg.pasos_sin_invitacion
+      : (esPeatonal ? ["ROSTRO", "DESTINO"] : ["PLACA", "ROSTRO", "DESTINO"]);
+
+    const orderedIds = [...new Set([...rawPasos, "ROSTRO", "DESTINO", "PLACA", "INE"])];
+
+    const checkedMap = {
+      ROSTRO: cfg.foto_rostro_visitante !== undefined ? !!cfg.foto_rostro_visitante : true,
+      DESTINO: true,
+      PLACA: !esPeatonal ? true : !!cfg.foto_placa_visitante,
+      INE: !!cfg.foto_ine_visitante,
+    };
+
+    orderedIds.forEach((stepId) => {
+      const def = PIPELINE_DEFS[stepId];
+      if (!def) return;
+
+      const isChecked = checkedMap[stepId] ?? def.defaultChecked;
+      const isPlacaVehicular = !esPeatonal && stepId === "PLACA";
+
+      const item = document.createElement("div");
+      item.className = `pipeline-item ${!isChecked ? "disabled" : ""}`;
+      item.draggable = true;
+      item.dataset.stepId = stepId;
+
+      item.innerHTML = `
+        <div class="pipeline-handle" title="Arrastrar para reordenar">⠿</div>
+        <div class="pipeline-order-badge">—</div>
+        <div class="pipeline-icon">${def.icon}</div>
+        <div class="pipeline-info">
+          <div class="pipeline-title">${def.title}</div>
+          <div class="pipeline-desc">${def.desc}</div>
+        </div>
+        <div class="pipeline-actions">
+          <div class="pipeline-move-btns">
+            <button type="button" class="pipeline-btn-move btn-move-up" title="Mover arriba">▲</button>
+            <button type="button" class="pipeline-btn-move btn-move-down" title="Mover abajo">▼</button>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" class="pipeline-toggle" ${isChecked ? "checked" : ""} ${isPlacaVehicular ? "disabled" : ""}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      `;
+
+      const toggle = item.querySelector(".pipeline-toggle");
+      toggle.addEventListener("change", () => {
+        item.classList.toggle("disabled", !toggle.checked);
+        updatePipelineBadges();
+      });
+
+      item.querySelector(".btn-move-up").addEventListener("click", (e) => {
+        e.stopPropagation();
+        const prev = item.previousElementSibling;
+        if (prev) {
+          listEl.insertBefore(item, prev);
+          updatePipelineBadges();
+        }
+      });
+      item.querySelector(".btn-move-down").addEventListener("click", (e) => {
+        e.stopPropagation();
+        const next = item.nextElementSibling;
+        if (next) {
+          listEl.insertBefore(next, item);
+          updatePipelineBadges();
+        }
+      });
+
+      item.addEventListener("dragstart", (e) => {
+        item.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", stepId);
+      });
+
+      item.addEventListener("dragend", () => {
+        item.classList.remove("dragging");
+        listEl.querySelectorAll(".pipeline-item").forEach(el => el.classList.remove("drag-over"));
+        updatePipelineBadges();
+      });
+
+      item.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        const dragging = listEl.querySelector(".dragging");
+        if (dragging && dragging !== item) {
+          const rect = item.getBoundingClientRect();
+          const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+          listEl.insertBefore(dragging, next ? item.nextSibling : item);
+        }
+      });
+
+      listEl.appendChild(item);
+    });
+
+    updatePipelineBadges();
+  }
+
+  function updatePipelineBadges() {
+    const listEl = document.getElementById("cfg-pipeline-list");
+    if (!listEl) return;
+    let order = 1;
+    listEl.querySelectorAll(".pipeline-item").forEach((item) => {
+      const badge = item.querySelector(".pipeline-order-badge");
+      const toggle = item.querySelector(".pipeline-toggle");
+      if (toggle && toggle.checked) {
+        badge.textContent = order++;
+      } else {
+        badge.textContent = "—";
+      }
+    });
+  }
+
   async function loadConfig(accesoId) {
     const wrap = document.getElementById("cfg-form-wrap");
     const idle = document.getElementById("cfg-idle");
@@ -1712,10 +1860,6 @@
     document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
     document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
-    document.getElementById("cfg-rostro-visitante").checked = !!cfg.foto_rostro_visitante;
-    // En un acceso vehicular la placa es el identificador de la visita, no una
-    // captura opcional: el flujo la exige siempre, así que el toggle va fijo.
-    document.getElementById("cfg-placa-visitante").checked  = esPeatonal ? false : true;
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
     document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
@@ -1723,20 +1867,12 @@
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
 
-    // El toggle de placa para visitante no se puede tocar en ningún caso: en
-    // peatonal no aplica y en vehicular es obligatorio. El de invitado sí es
-    // configurable, pero solo en vehicular.
-    const rowPlacaVis = document.getElementById("cfg-row-placa-visitante");
     const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
-    if (rowPlacaVis) rowPlacaVis.style.opacity = esPeatonal ? "0.35" : "1";
     if (rowPlacaInv) rowPlacaInv.style.opacity = esPeatonal ? "0.35" : "1";
-    document.getElementById("cfg-placa-visitante").disabled = true;
-    document.getElementById("cfg-placa-invitado").disabled  = esPeatonal;
+    document.getElementById("cfg-placa-invitado").disabled = esPeatonal;
 
-    // El visitante vehicular no pasa por INE: la fila de rostro es la única
-    // captura opcional que le queda.
-    const notaVehicular = document.getElementById("cfg-nota-vehicular");
-    if (notaVehicular) notaVehicular.hidden = esPeatonal;
+    // Renderizar pipeline arrastrable
+    renderPipeline(cfg, esPeatonal);
 
     document.getElementById("cfg-error").hidden   = true;
     document.getElementById("cfg-success").hidden = true;
@@ -1751,12 +1887,31 @@
     errEl.hidden = true;
     okEl.hidden  = true;
 
+    const listEl = document.getElementById("cfg-pipeline-list");
+    const activeSteps = [];
+    let fotoRostro = false, fotoPlaca = false, fotoIne = false;
+
+    if (listEl) {
+      listEl.querySelectorAll(".pipeline-item").forEach((item) => {
+        const stepId = item.dataset.stepId;
+        const toggle = item.querySelector(".pipeline-toggle");
+        if (toggle && toggle.checked) {
+          activeSteps.push(stepId);
+          if (stepId === "ROSTRO") fotoRostro = true;
+          if (stepId === "PLACA") fotoPlaca = true;
+          if (stepId === "INE") fotoIne = true;
+        }
+      });
+    }
+
     const payload = {
       color_kiosko:          document.getElementById("cfg-color").value,
       idioma_kiosko:         document.getElementById("cfg-idioma").value,
       mensaje_bienvenida:    document.getElementById("cfg-mensaje").value,
-      foto_rostro_visitante: document.getElementById("cfg-rostro-visitante").checked,
-      foto_placa_visitante:  document.getElementById("cfg-placa-visitante").checked,
+      foto_rostro_visitante: fotoRostro,
+      foto_placa_visitante:  fotoPlaca,
+      foto_ine_visitante:    fotoIne,
+      pasos_sin_invitacion:  activeSteps,
       foto_ine_invitado:     document.getElementById("cfg-ine-invitado").checked,
       foto_rostro_invitado:  document.getElementById("cfg-rostro-invitado").checked,
       foto_placa_invitado:   document.getElementById("cfg-placa-invitado").checked,

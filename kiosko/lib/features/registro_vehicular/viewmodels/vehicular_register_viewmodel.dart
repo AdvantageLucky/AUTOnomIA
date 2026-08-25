@@ -51,18 +51,22 @@ class VehicularRegisterViewModel extends ChangeNotifier {
     registrationData.casaDestino = casaDestino;
     final invitado = registrationData.esInvitado;
 
+    final sinInvPasos = <PasoVehicular>[];
+    for (final p in config.pasosSinInvitacion) {
+      if (p == 'INE' && config.fotoIneVisitante) sinInvPasos.add(PasoVehicular.ine);
+      if (p == 'ROSTRO' && config.fotoRostroVisitante) sinInvPasos.add(PasoVehicular.rostro);
+    }
+    if (sinInvPasos.isEmpty && config.fotoRostroVisitante) {
+      sinInvPasos.add(PasoVehicular.rostro);
+    }
+
     pasos = invitado
         ? [
             // Al invitado su QR ya lo identifica; lo demás depende de la config.
             if (config.ineObligatorioInvitado) PasoVehicular.ine,
             if (config.fotoRostroInvitado) PasoVehicular.rostro,
           ]
-        : [
-            // En un acceso vehicular no se pide INE: el conductor no baja del
-            // coche. La placa la identifica en su lugar (ADR-0024), pero ya no
-            // es un paso de la UI — se lee sola en paralelo, ver [leerPlaca].
-            if (config.fotoRostroVisitante) PasoVehicular.rostro,
-          ];
+        : sinInvPasos;
 
     steps = pasos.map(_descripcionDe).toList();
 

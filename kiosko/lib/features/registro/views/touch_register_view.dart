@@ -12,25 +12,26 @@ import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart'
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_rostro_widget.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
+import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
-
-
 class TouchRegisterView extends StatefulWidget {
-  const TouchRegisterView({super.key});
+  final KioskoConfig? config;
+  const TouchRegisterView({super.key, this.config});
 
   @override
   State<TouchRegisterView> createState() => _TouchRegisterViewState();
 }
 
 class _TouchRegisterViewState extends State<TouchRegisterView> {
-  final TouchRegisterViewModel viewModel = TouchRegisterViewModel();
+  late final TouchRegisterViewModel viewModel;
   final TextToSpeakServicio _textToSpeakServicio = TextToSpeakServicio();
   bool _isSpeaking = false;
 
   @override
   void initState() {
     super.initState();
+    viewModel = TouchRegisterViewModel(widget.config);
     viewModel.addListener(_refresh);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,124 +70,33 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   }
 
   Future<void> _continueProcess() async {
-  if (viewModel.isProcessingIne) return;
+    if (viewModel.isProcessingIne || viewModel.isProcessingRostro) return;
 
-  // Si estamos en el paso de la INE (Paso 0)
-    if (viewModel.currentStep == 0) {
+    if (viewModel.pasoActual == PasoTouch.ine) {
       bool esIneValida = false;
-
-        // Bucle/Ciclo: Mientras no sea un INE válido, seguirá pidiendo capturar
-        while (!esIneValida) {
-          if (!mounted) return;
-
-          // 1. Abrir la cámara
-          _speakText(AppLocalizations.t(context, 'voice_instruction_ine'));
-          final String? pathFoto = await Navigator.push<String>(
-            context,
-            MaterialPageRoute(builder: (_) => const EscaneoInePage()), // Usa el nombre exacto de tu clase
-          );
-
-          // Si el usuario presiona el botón de regresar (cancela), rompemos el bucle
-          if (pathFoto == null) break;
-
-          // 2. Procesar con el ViewModel e IA local
-          final bool exito = await viewModel.procesarEscaneoIne(pathFoto);
-
-          if (exito) {
-            esIneValida = true;
-            _speakText(AppLocalizations.t(context, 'ine_detected_title'));
-            viewModel.nextStep(); // Avanzamos al paso de la foto de rostro
-          } else {
-            // 3. Mostrar mensaje de error si no es un INE
-            _speakText(AppLocalizations.t(context, 'ine_invalid_message'));
-            if (mounted) {
-              await showDialog(
-                context: context,
-                barrierDismissible: false, // Obliga a interactuar con el botón
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    backgroundColor: const Color(0xFF211D1D),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                    title: Row(
-                      children: [
-                        const Icon(Icons.error_outline_rounded, color: Color(0xFFFF542F), size: 28),
-                        const SizedBox(width: 12),
-                        Flexible(child: Text(AppLocalizations.t(context, 'ine_invalid_error_title'), style: const TextStyle(color: Colors.white))),
-                      ],
-                    ),
-                    content: Text(
-                      AppLocalizations.t(context, 'ine_invalid_error_content'),
-                      style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          AppLocalizations.t(context, 'retry_button_text'),
-                          style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              );
-            }
-            // Al no cumplirse 'esIneValida = true', el ciclo 'while' se repite
-            // y vuelve a abrir la cámara inmediatamente tras cerrar la alerta.
-          }
-        }
-
-    // Paso 1 - reconocimiento facial
-    } else if (viewModel.currentStep == 1) {
-      bool esRostroValido = false;
-
-      // NUEVO: Mientras no se detecte un rostro válido, sigue pidiendo capturar
-      while (!esRostroValido) {
+      while (!esIneValida) {
         if (!mounted) return;
 
-        _speakText(AppLocalizations.t(context, 'voice_instruction_face'));
-        // NUEVO: 1. Abrir la cámara frontal
+        _speakText(AppLocalizations.t(context, 'voice_instruction_ine'));
         final String? pathFoto = await Navigator.push<String>(
           context,
-          MaterialPageRoute(builder: (_) => const EscaneoRostro()),
+          MaterialPageRoute(builder: (_) => const EscaneoInePage()),
         );
 
-        // NUEVO: Si el usuario cancela, rompemos el bucle
         if (pathFoto == null) break;
 
-        // NUEVO: 2. Procesar con el ViewModel y el detector de rostros
-        final bool exito = await viewModel.procesarEscaneoRostro(pathFoto);
-
+        final bool exito = await viewModel.procesarEscaneoIne(pathFoto);
         if (exito) {
-          _speakText(AppLocalizations.t(context, 'registration_complete_message'));
-          esRostroValido = true;
-          // 3. Rostro válido -> pedimos casa y mostramos el resumen final.
-          // Si el usuario da "atrás", cancelamos toda la solicitud y regresamos
-          // al inicio del wizard (no hay a dónde "reanudar").
-          if (!mounted) return;
-          final String? casa = await Navigator.push<String>(
-            context,
-            MaterialPageRoute(builder: (_) => const CasaDestinoView()),
-          );
-          if (casa == null) {
-            if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
-            return;
+          esIneValida = true;
+          if (mounted) _speakText(AppLocalizations.t(context, 'ine_detected_title'));
+          if (viewModel.isLastStep) {
+            _irACasaDestino();
+          } else {
+            viewModel.nextStep();
           }
-          viewModel.registrationData.casaDestino = casa;
-
-          if (!mounted) return;
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ResumenSolicitudView(
-                registrationData: viewModel.registrationData,
-              ),
-            ),
-          );
         } else {
-          // NUEVO: 4. Mostrar mensaje de error si no se detectó un rostro
-          _speakText(AppLocalizations.t(context, 'face_not_detected_message'));
           if (mounted) {
+            _speakText(AppLocalizations.t(context, 'ine_invalid_message'));
             await showDialog(
               context: context,
               barrierDismissible: false,
@@ -196,13 +106,13 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   title: Row(
                     children: [
-                      const Icon(Icons.face_retouching_off, color: Color(0xFFFF542F), size: 28),
+                      const Icon(Icons.error_outline_rounded, color: Color(0xFFFF542F), size: 28),
                       const SizedBox(width: 12),
-                      Flexible(child: Text(AppLocalizations.t(context, 'face_not_detected_error_title'), style: const TextStyle(color: Colors.white))),
+                      Flexible(child: Text(AppLocalizations.t(context, 'ine_invalid_error_title'), style: const TextStyle(color: Colors.white))),
                     ],
                   ),
                   content: Text(
-                    AppLocalizations.t(context, 'face_not_detected_error_content'),
+                    AppLocalizations.t(context, 'ine_invalid_error_content'),
                     style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
                   ),
                   actions: [
@@ -218,12 +128,95 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               },
             );
           }
-          // NUEVO: Al no cumplirse 'esRostroValido = true', el ciclo 'while' se repite
-          // y vuelve a abrir la cámara inmediatamente tras cerrar la alerta.
+        }
+      }
+    } else if (viewModel.pasoActual == PasoTouch.rostro) {
+      bool esRostroValido = false;
+      while (!esRostroValido) {
+        if (!mounted) return;
+
+        _speakText(AppLocalizations.t(context, 'voice_instruction_face'));
+        final String? pathFoto = await Navigator.push<String>(
+          context,
+          MaterialPageRoute(builder: (_) => const EscaneoRostro()),
+        );
+
+        if (pathFoto == null) break;
+
+        final bool exito = await viewModel.procesarEscaneoRostro(pathFoto);
+
+        if (exito) {
+          esRostroValido = true;
+          if (mounted) _speakText(AppLocalizations.t(context, 'registration_complete_message'));
+          if (viewModel.isLastStep) {
+            _irACasaDestino();
+          } else {
+            viewModel.nextStep();
+          }
+        } else {
+          if (mounted) {
+            _speakText(AppLocalizations.t(context, 'face_not_detected_message'));
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  backgroundColor: const Color(0xFF211D1D),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.face_retouching_off, color: Color(0xFFFF542F), size: 28),
+                      const SizedBox(width: 12),
+                      Flexible(child: Text(AppLocalizations.t(context, 'face_not_detected_title'), style: const TextStyle(color: Colors.white))),
+                    ],
+                  ),
+                  content: Text(
+                    AppLocalizations.t(context, 'face_not_detected_content'),
+                    style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        AppLocalizations.t(context, 'retry_button_text'),
+                        style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
         }
       }
     }
-}
+  }
+
+  Future<void> _irACasaDestino() async {
+    if (!mounted) return;
+    final String? casa = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CasaDestinoView(totalSteps: viewModel.indicatorTotalSteps),
+      ),
+    );
+    if (casa == null) {
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+    viewModel.registrationData.casaDestino = casa;
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResumenSolicitudView(
+          registrationData: viewModel.registrationData,
+          totalSteps: viewModel.indicatorTotalSteps,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +268,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
                       StepIndicator(
                         currentStep: viewModel.indicatorStep,
-                        totalSteps: TouchRegisterViewModel.indicatorTotalSteps,
+                        totalSteps: viewModel.indicatorTotalSteps,
                       ),
 
                       const SizedBox(height: 44),
@@ -375,7 +368,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         ),
         child: ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(24)),
-          child: viewModel.currentStep == 0
+          child: viewModel.pasoActual == PasoTouch.ine
               ? const IneApproachAnimation()
               : const FaceApproachAnimation(),
         ),

@@ -16,7 +16,7 @@ import 'package:kigo_kiosco/features/registro_vehicular/views/vehicular_register
 abstract final class RegistroRouter {
   /// Flujo para quien llega sin invitación.
   static Widget paraVisitante(KioskoConfig config) {
-    if (config.tipo != TipoKiosko.vehicular) return const TouchRegisterView();
+    if (config.tipo != TipoKiosko.vehicular) return TouchRegisterView(config: config);
 
     return VehicularRegisterView(
       viewModel: VehicularRegisterViewModel(config),

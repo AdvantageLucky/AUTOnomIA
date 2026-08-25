@@ -2303,3 +2303,156 @@ textarea { resize: vertical; }
   padding: 10px 24px;
   font-size: 15px;
 }
+
+/* ── Pipeline de Pasos (Drag & Drop) ────────────────────────── */
+.pipeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.pipeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pipeline-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+}
+
+.pipeline-item.dragging {
+  opacity: 0.5;
+  border-color: var(--brand);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.pipeline-item.drag-over {
+  border-color: var(--brand);
+  background: var(--surface-2);
+  transform: translateY(2px);
+}
+
+.pipeline-item.disabled {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.pipeline-handle {
+  cursor: grab;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  font-size: 18px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.pipeline-handle:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.pipeline-handle:active {
+  cursor: grabbing;
+}
+
+.pipeline-order-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pipeline-item:not(.disabled) .pipeline-order-badge {
+  background: rgba(255, 84, 47, 0.15);
+  color: var(--brand);
+}
+
+.pipeline-icon {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+
+.pipeline-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pipeline-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pipeline-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.pipeline-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.pipeline-move-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pipeline-btn-move {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.pipeline-btn-move:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.pipeline-preview-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.5;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border-left: 2px solid var(--brand);
+}
+

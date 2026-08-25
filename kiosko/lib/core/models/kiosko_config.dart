@@ -15,6 +15,8 @@ class KioskoConfig {
   final TipoKiosko tipo;
   final bool fotoPlacaVisitante;
   final bool fotoRostroVisitante;
+  final bool fotoIneVisitante;
+  final List<String> pasosSinInvitacion;
   final bool fotoPlacaInvitado;
   final bool fotoRostroInvitado;
   final bool ineObligatorioInvitado;
@@ -31,6 +33,8 @@ class KioskoConfig {
     this.tipo = TipoKiosko.peatonal,
     required this.fotoPlacaVisitante,
     required this.fotoRostroVisitante,
+    this.fotoIneVisitante = false,
+    this.pasosSinInvitacion = const ['ROSTRO', 'DESTINO'],
     required this.fotoPlacaInvitado,
     required this.fotoRostroInvitado,
     required this.ineObligatorioInvitado,
@@ -46,14 +50,25 @@ class KioskoConfig {
 
   factory KioskoConfig.fromJson(Map<String, dynamic> json) {
     final colorStr = json['color_kiosko'] as String? ?? 'oscuro';
+    final tipoEnum = (json['tipo'] as String?) == 'VEHICULAR'
+        ? TipoKiosko.vehicular
+        : TipoKiosko.peatonal;
+
+    final defaultPasos = tipoEnum == TipoKiosko.vehicular
+        ? const ['PLACA', 'ROSTRO', 'DESTINO']
+        : const ['ROSTRO', 'DESTINO'];
+
+    final rawPasos = json['pasos_sin_invitacion'] as List<dynamic>?;
+    final pasos = rawPasos != null
+        ? rawPasos.map((e) => e.toString().toUpperCase()).toList()
+        : defaultPasos;
+
     return KioskoConfig(
-      // Ante un backend viejo que no manda 'tipo', peatonal es el default seguro:
-      // es el flujo que no exige capturas que la terminal quizá no pueda tomar.
-      tipo: (json['tipo'] as String?) == 'VEHICULAR'
-          ? TipoKiosko.vehicular
-          : TipoKiosko.peatonal,
+      tipo: tipoEnum,
       fotoPlacaVisitante: json['foto_placa_visitante'] as bool? ?? false,
       fotoRostroVisitante: json['foto_rostro_visitante'] as bool? ?? true,
+      fotoIneVisitante: json['foto_ine_visitante'] as bool? ?? false,
+      pasosSinInvitacion: pasos,
       fotoPlacaInvitado: json['foto_placa_invitado'] as bool? ?? false,
       fotoRostroInvitado: json['foto_rostro_invitado'] as bool? ?? false,
       ineObligatorioInvitado: json['foto_ine_invitado'] as bool? ?? false,
@@ -72,6 +87,8 @@ class KioskoConfig {
         tipo: TipoKiosko.peatonal,
         fotoPlacaVisitante: false,
         fotoRostroVisitante: true,
+        fotoIneVisitante: false,
+        pasosSinInvitacion: ['ROSTRO', 'DESTINO'],
         fotoPlacaInvitado: false,
         fotoRostroInvitado: false,
         ineObligatorioInvitado: false,
