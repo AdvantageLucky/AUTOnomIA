@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/services/placa_detector_servicio.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Respaldo manual cuando la lectura automática de placa (hardware dedicado,
 /// ver PlacaLectorServicio) no resolvió a tiempo — deja escribirla a mano.
@@ -63,7 +64,7 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
 
   void _confirmar() {
     if (!PlacaDetectorServicio.pareceValida(_placa)) {
-      setState(() => _error = 'Escribe la placa completa (5 a 8 caracteres)');
+      setState(() => _error = AppLocalizations.t(context, 'placa_error_incompleta'));
       return;
     }
     Navigator.pop(context, _placa);
@@ -117,7 +118,9 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
         ),
         const SizedBox(height: 12),
         Text(
-          _fueLeida ? 'Confirma tu placa' : 'Escribe tu placa',
+          _fueLeida
+              ? AppLocalizations.t(context, 'confirma_tu_placa')
+              : AppLocalizations.t(context, 'escribe_tu_placa'),
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: KigoDesign.textPrimary,
@@ -128,8 +131,8 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
         const SizedBox(height: 8),
         Text(
           _fueLeida
-              ? 'Si algún carácter no coincide, corrígelo con el teclado.'
-              : 'No pudimos detectar tu placa automáticamente. Escríbela aquí.',
+              ? AppLocalizations.t(context, 'corrige_caracter_no_coincide')
+              : AppLocalizations.t(context, 'no_detectamos_placa_escribela'),
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: KigoDesign.textSecondary,
@@ -283,10 +286,10 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: KigoDesign.border, width: 1.2),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Cancelar',
-                  style: TextStyle(
+                  AppLocalizations.t(context, 'cancelar_button'),
+                  style: const TextStyle(
                     color: KigoDesign.textSecondary,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -307,10 +310,10 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
                 color: KigoDesign.brand,
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Confirmar',
-                  style: TextStyle(
+                  AppLocalizations.t(context, 'continue_button_text'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
