@@ -87,13 +87,19 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Paso 1 del onboarding: pide el código OTP para un teléfono.
-  Future<void> solicitarOtp(String telefono) async {
+  /// Paso 1 del onboarding: pide el código OTP para un teléfono. [correo] es
+  /// opcional — si viene, el backend manda el código por correo en vez de
+  /// SMS (mientras no haya un proveedor de SMS real configurado); el
+  /// teléfono sigue siendo el ancla de identidad de la Persona.
+  Future<void> solicitarOtp(String telefono, {String? correo}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      await ApiService().post('/personas/registro/solicitar-otp', {'telefono': telefono});
+      await ApiService().post('/personas/registro/solicitar-otp', {
+        'telefono': telefono,
+        if (correo != null && correo.isNotEmpty) 'correo': correo,
+      });
       _telefono = telefono;
       _isLoading = false;
       notifyListeners();

@@ -34,6 +34,10 @@ type Config struct {
 	PublicURL               string
 	FirebaseCredentialsPath string
 	GoogleClientID          string
+	SMTPHost                string
+	SMTPPort                string
+	SMTPUser                string
+	SMTPPassword            string
 }
 
 func Load() (*Config, error) {
@@ -52,6 +56,10 @@ func Load() (*Config, error) {
 		PublicURL:               getEnv("PUBLIC_URL", "http://localhost:8080"),
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
 		GoogleClientID:          getEnv("GOOGLE_CLIENT_ID", ""),
+		SMTPHost:                getEnv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:                getEnv("SMTP_PORT", "587"),
+		SMTPUser:                getEnv("SMTP_USER", ""),
+		SMTPPassword:            getEnv("SMTP_PASSWORD", ""),
 	}
 
 	return cfg, nil

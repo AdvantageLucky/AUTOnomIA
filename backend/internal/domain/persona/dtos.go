@@ -8,6 +8,11 @@ import (
 
 type SolicitarOtpRequest struct {
 	Telefono string `json:"telefono" binding:"required"`
+	// Correo es opcional — si viene, el código se manda por correo en vez
+	// de SMS. El teléfono sigue siendo el ancla de identidad; esto solo
+	// cambia el canal de entrega del código mientras no haya un proveedor
+	// de SMS real configurado.
+	Correo string `json:"correo"`
 }
 
 type VerificarOtpRequest struct {

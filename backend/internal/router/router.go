@@ -37,7 +37,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
 	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
-	registerPersonaRoutes(api, db, cfg.JWTSecret, cfg.QRMasterSecret, cfg.UploadsDir)
+	registerPersonaRoutes(api, db, cfg)
 	registerTenantRoutes(api, db, cfg.JWTSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
@@ -155,6 +155,21 @@ func pushSender(cfg *configs.Config) residente.PushSender {
 		return residente.LogPushSender{}
 	}
 	return sender
+}
+
+// emailOtpSender decide entre correo real por SMTP y el falso que solo
+// loguea — sin SMTP_USER/SMTP_PASSWORD configurados, sigue con el falso en
+// vez de fallar cada solicitud que pida enviar el código por correo.
+func emailOtpSender(cfg *configs.Config) persona.OtpSender {
+	if cfg.SMTPUser == "" || cfg.SMTPPassword == "" {
+		return persona.LogOtpSender{}
+	}
+	return persona.EmailOtpSender{
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		User:     cfg.SMTPUser,
+		Password: cfg.SMTPPassword,
+	}
 }
 
 // registerVisitaRoutes registra las rutas de visitas: registro desde el kiosko (sesion) y
@@ -311,7 +326,7 @@ func registerTenantRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 
 // registerPersonaRoutes registra las rutas de la app Kigo: registro/login
 // por teléfono+OTP (público) y el QR personal (autenticado).
-func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMasterSecret, uploadsDir string) {
+func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config) {
 	personaRepo := persona.NewRepository(db)
 	otpRepo := persona.NewOtpRepository(db)
 	membresiaRepo := residente.NewMembresiaRepository(db)
@@ -320,15 +335,16 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMaster
 	visitaRepo := visitas.NewRepository(db)
 	destinoRepo := destinos.NewRepository(db)
 	personaHandler := persona.NewHandler(
-		personaRepo, otpRepo, persona.LogOtpSender{}, jwtSecret, qrMasterSecret,
-		membresiaRepo, tenantRepo, invitacionRepo, visitaRepo, destinoRepo, uploadsDir,
+		personaRepo, otpRepo, persona.LogOtpSender{}, emailOtpSender(cfg),
+		cfg.JWTSecret, cfg.QRMasterSecret,
+		membresiaRepo, tenantRepo, invitacionRepo, visitaRepo, destinoRepo, cfg.UploadsDir,
 	)
 
 	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)
 	rg.POST("/personas/registro/verificar-otp", personaHandler.VerificarOTP)
 
 	p := rg.Group("/personas/me")
-	p.Use(auth.RequirePersona(jwtSecret))
+	p.Use(auth.RequirePersona(cfg.JWTSecret))
 	{
 		p.GET("", personaHandler.GetMe)
 		p.PATCH("", personaHandler.PatchMe)
@@ -343,7 +359,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMaster
 	}
 
 	pv := rg.Group("/personas/me/visitas")
-	pv.Use(auth.RequirePersona(jwtSecret))
+	pv.Use(auth.RequirePersona(cfg.JWTSecret))
 	{
 		pv.GET("/pendientes", personaHandler.ListarVisitasPendientes)
 		pv.PATCH("/:id/estado", personaHandler.ResponderVisita)
@@ -357,7 +373,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, qrMaster
 	}
 
 	a := rg.Group("/membresias")
-	a.Use(auth.RequireAdmin(jwtSecret))
+	a.Use(auth.RequireAdmin(cfg.JWTSecret))
 	{
 		membresiaHandler := residente.NewMembresiaHandler(membresiaRepo)
 		a.GET("/pendientes", membresiaHandler.ListarPendientes)
