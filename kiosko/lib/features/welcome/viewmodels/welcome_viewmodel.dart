@@ -8,13 +8,13 @@ class WelcomeViewModel extends ChangeNotifier {
   final List<RegisterOptionModel> options = [
     RegisterOptionModel(
       id: 'residente',
-      title: 'Residente',
+      titleKey: 'residente_label',
       subtitle: '',
       icon: Icons.home_rounded,
     ),
     RegisterOptionModel(
       id: 'visitante',
-      title: 'Visitante',
+      titleKey: 'visitante_label',
       subtitle: '',
       icon: Icons.person_rounded,
     ),

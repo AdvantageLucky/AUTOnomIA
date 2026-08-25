@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 
 class RegisterOptionModel {
   final String id;
-  final String title;
+
+  /// Clave de l10n para el título — el ViewModel no tiene BuildContext, así
+  /// que la vista resuelve el texto en render con AppLocalizations.t(context, titleKey).
+  final String titleKey;
   final String subtitle;
   final IconData icon;
 
   RegisterOptionModel({
     required this.id,
-    required this.title,
+    required this.titleKey,
     required this.subtitle,
     required this.icon,
   });

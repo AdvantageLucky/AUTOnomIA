@@ -151,6 +151,10 @@ class AppLocalizations {
           'Para dudas relacionadas con el uso de tus datos, contacta a la administración '
           'del sitio.',
       'cerrar_button': 'Cerrar',
+
+      // Pantalla de bienvenida
+      'bienvenido_title': 'Bienvenido',
+      'selecciona_como_continuar': 'SELECCIONA CÓMO QUIERES CONTINUAR',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -280,6 +284,10 @@ class AppLocalizations {
           'For questions about the use of your data, contact the site '
           'administration.',
       'cerrar_button': 'Close',
+
+      // Pantalla de bienvenida
+      'bienvenido_title': 'Welcome',
+      'selecciona_como_continuar': 'CHOOSE HOW YOU WANT TO CONTINUE',
     },
   };
 
