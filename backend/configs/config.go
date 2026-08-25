@@ -33,6 +33,7 @@ type Config struct {
 	LLMUrl                  string
 	PublicURL               string
 	FirebaseCredentialsPath string
+	GoogleClientID          string
 }
 
 func Load() (*Config, error) {
@@ -50,6 +51,7 @@ func Load() (*Config, error) {
 		LLMUrl:                  getEnv("LLM_URL", "http://localhost:8081"),
 		PublicURL:               getEnv("PUBLIC_URL", "http://localhost:8080"),
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
+		GoogleClientID:          getEnv("GOOGLE_CLIENT_ID", ""),
 	}
 
 	return cfg, nil

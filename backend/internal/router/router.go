@@ -50,6 +50,14 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 		c.Header("Cache-Control", "no-store")
 		c.Next()
 	})
+	// El botón de Google del dashboard lee window.__GOOGLE_CLIENT_ID__ — se
+	// sirve como JS generado en vez de hardcodearlo en index.html para que
+	// sea la misma variable de entorno la que valida el backend
+	// (auth.LoginWithGoogle), nunca dos copias que se puedan desalinear.
+	adminAssets.GET("/config.js", func(c *gin.Context) {
+		c.Header("Content-Type", "application/javascript")
+		c.String(200, "window.__GOOGLE_CLIENT_ID__ = %q;", cfg.GoogleClientID)
+	})
 	adminAssets.Static("/", "./web/admin")
 
 	r.Static("/uploads/visitantes", cfg.UploadsDir)
