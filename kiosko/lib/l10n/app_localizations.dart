@@ -156,6 +156,14 @@ class AppLocalizations {
       'bienvenido_title': 'Bienvenido',
       'selecciona_como_continuar': 'SELECCIONA CÓMO QUIERES CONTINUAR',
       'bienvenido_exclamacion': '¡Bienvenido!',
+
+      // Confirmación manual de placa
+      'placa_error_incompleta': 'Escribe la placa completa (5 a 8 caracteres)',
+      'confirma_tu_placa': 'Confirma tu placa',
+      'escribe_tu_placa': 'Escribe tu placa',
+      'corrige_caracter_no_coincide': 'Si algún carácter no coincide, corrígelo con el teclado.',
+      'no_detectamos_placa_escribela': 'No pudimos detectar tu placa automáticamente. Escríbela aquí.',
+      'cancelar_button': 'Cancelar',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -290,6 +298,14 @@ class AppLocalizations {
       'bienvenido_title': 'Welcome',
       'selecciona_como_continuar': 'CHOOSE HOW YOU WANT TO CONTINUE',
       'bienvenido_exclamacion': 'Welcome!',
+
+      // Confirmación manual de placa
+      'placa_error_incompleta': 'Type the full plate (5 to 8 characters)',
+      'confirma_tu_placa': 'Confirm your plate',
+      'escribe_tu_placa': 'Type your plate',
+      'corrige_caracter_no_coincide': "If a character doesn't match, correct it with the keyboard.",
+      'no_detectamos_placa_escribela': "We couldn't detect your plate automatically. Type it here.",
+      'cancelar_button': 'Cancel',
     },
   };
 
