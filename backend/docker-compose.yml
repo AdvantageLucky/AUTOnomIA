@@ -33,6 +33,9 @@ services:
       LLM_URL: ${LLM_URL}
       PUBLIC_URL: ${PUBLIC_URL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      # La credencial se monta como archivo (abajo), no como variable —
+      # nunca debe viajar como valor plano de entorno.
+      FIREBASE_CREDENTIALS_PATH: /app/firebase-adminsdk.json
     # 10000, no 8080: es uno de los 3 puertos que Tailscale Funnel permite
     # exponer al internet público (443/8443/10000) — el 8443 ya está en uso
     # para otra cosa en este homelab.
@@ -40,6 +43,9 @@ services:
       - "10000:8080"
     volumes:
       - uploads_data:/app/web/uploads
+      # Ruta fija en el host (fuera del repo) — se coloca a mano en el
+      # deploy, nunca se commitea. Ver .env.example para cómo generarla.
+      - ${FIREBASE_CREDENTIALS_HOST_PATH}:/app/firebase-adminsdk.json:ro
 
 volumes:
   db_data:
