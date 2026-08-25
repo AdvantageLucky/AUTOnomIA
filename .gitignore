@@ -31,6 +31,9 @@ web/uploads/visitantes/*
 # al repo
 /backend/*firebase-adminsdk*.json
 
+# credencial de cliente OAuth de Google (trae client_secret) — secreto real
+/backend/client_secret*.json
+
 # =========================
 # Claude Code / superpowers
 # =========================
