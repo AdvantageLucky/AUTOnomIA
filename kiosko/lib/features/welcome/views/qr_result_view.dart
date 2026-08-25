@@ -5,6 +5,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_result_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/verdict_ring.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class QrResultView extends StatefulWidget {
   final QrResultViewModel viewModel;
@@ -82,17 +83,17 @@ class _QrResultViewState extends State<QrResultView> {
   }
 
   Widget _buildCargando() {
-    return const Column(
+    return Column(
       children: [
-        SizedBox(
+        const SizedBox(
           width: 64,
           height: 64,
           child: CircularProgressIndicator(color: KigoDesign.brand, strokeWidth: 3),
         ),
-        SizedBox(height: 36),
+        const SizedBox(height: 36),
         Text(
-          'Verificando invitación...',
-          style: TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
+          AppLocalizations.t(context, 'verificando_invitacion'),
+          style: const TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -106,7 +107,7 @@ class _QrResultViewState extends State<QrResultView> {
       children: [
         VerdictRing(color: KigoDesign.success, icon: Icons.check_rounded, size: iconSize),
         SizedBox(height: gap),
-        Text('¡Acceso concedido!', style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.048).clamp(22.0, 38.0), fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.t(context, 'acceso_concedido'), style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.048).clamp(22.0, 38.0), fontWeight: FontWeight.w800)),
         SizedBox(height: gap * 0.4),
         if (widget.viewModel.titular != null)
           Text(
@@ -121,10 +122,10 @@ class _QrResultViewState extends State<QrResultView> {
           ),
         ],
         SizedBox(height: gap),
-        const Text(
-          'Puedes ingresar al evento.\nBienvenido.',
+        Text(
+          AppLocalizations.t(context, 'puedes_ingresar_evento_bienvenido'),
           textAlign: TextAlign.center,
-          style: TextStyle(color: KigoDesign.textSecondary, fontSize: 17, height: 1.6),
+          style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 17, height: 1.6),
         ),
       ],
     );
@@ -138,10 +139,10 @@ class _QrResultViewState extends State<QrResultView> {
       children: [
         VerdictRing(color: KigoDesign.error, icon: Icons.close_rounded, size: iconSize),
         SizedBox(height: gap),
-        Text('Acceso denegado', style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.044).clamp(20.0, 34.0), fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.t(context, 'acceso_denegado'), style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.044).clamp(20.0, 34.0), fontWeight: FontWeight.w800)),
         SizedBox(height: gap * 0.4),
         Text(
-          widget.viewModel.errorMsg ?? 'La invitación no es válida',
+          widget.viewModel.errorMsg ?? AppLocalizations.t(context, 'invitacion_no_valida'),
           textAlign: TextAlign.center,
           style: const TextStyle(color: KigoDesign.error, fontSize: 16, height: 1.5),
         ),
@@ -162,7 +163,7 @@ class _QrResultViewState extends State<QrResultView> {
               borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
               border: Border.all(color: KigoDesign.border),
             ),
-            child: const Text('Volver a intentar', style: TextStyle(color: KigoDesign.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.t(context, 'volver_a_intentar'), style: const TextStyle(color: KigoDesign.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
       ],
@@ -170,9 +171,9 @@ class _QrResultViewState extends State<QrResultView> {
   }
 
   Widget _buildFooter() {
-    return const Text(
-      'POWERED BY KIGO · FEPRO 2026',
-      style: TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
+      style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
     );
   }
 }
