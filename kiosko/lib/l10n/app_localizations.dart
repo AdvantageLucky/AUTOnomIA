@@ -180,6 +180,18 @@ class AppLocalizations {
       'modo_operador': 'MODO OPERADOR',
       'ingresa_pin_salir_kiosko': 'Ingresa el PIN para salir del modo kiosko',
       'pin_incorrecto_intenta_de_nuevo': 'PIN incorrecto, intenta de nuevo',
+
+      // Escáner de QR (entrada principal del kiosko)
+      'codigo_detectado': 'Código detectado',
+      'apunta_al_codigo_qr': 'Apunta al código QR',
+      'codigo_personal_o_invitacion': 'Tu código personal o el de tu invitación',
+      'no_tengo_app_o_qr': 'No tengo la app Kigo o código QR',
+
+      // Captura de rostro con óvalo guía
+      'apunta_a_tu_rostro': 'Apunta a tu rostro',
+      'centra_rostro_ovalo': 'Centra tu rostro dentro del óvalo',
+      'apunta_a_tu_ine': 'Apunta a tu INE',
+      'deteccion_automatica_ine': 'Detección automática — mantén la INE dentro del recuadro',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -338,6 +350,18 @@ class AppLocalizations {
       'modo_operador': 'OPERATOR MODE',
       'ingresa_pin_salir_kiosko': 'Enter the PIN to exit kiosk mode',
       'pin_incorrecto_intenta_de_nuevo': 'Incorrect PIN, try again',
+
+      // Escáner de QR (entrada principal del kiosko)
+      'codigo_detectado': 'Code detected',
+      'apunta_al_codigo_qr': 'Point at the QR code',
+      'codigo_personal_o_invitacion': 'Your personal code or your invitation code',
+      'no_tengo_app_o_qr': "I don't have the Kigo app or a QR code",
+
+      // Captura de rostro con óvalo guía
+      'apunta_a_tu_rostro': 'Point at your face',
+      'centra_rostro_ovalo': 'Center your face inside the oval',
+      'apunta_a_tu_ine': 'Point at your ID',
+      'deteccion_automatica_ine': 'Automatic detection — keep the ID inside the frame',
     },
   };
 
