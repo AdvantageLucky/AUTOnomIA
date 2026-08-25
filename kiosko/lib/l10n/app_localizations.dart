@@ -102,6 +102,10 @@ class AppLocalizations {
           'puede ingresar con su PIN.',
       'aceptar_button': 'Aceptar',
       'residente_label': 'Residente',
+
+      // Acceso de residente por PIN
+      'ingresa_tu_numero': 'Ingresa tu número',
+      'confirmar_button_caps': 'CONFIRMAR',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -182,6 +186,10 @@ class AppLocalizations {
           'with your PIN.',
       'aceptar_button': 'Accept',
       'residente_label': 'Resident',
+
+      // Acceso de residente por PIN
+      'ingresa_tu_numero': 'Enter your number',
+      'confirmar_button_caps': 'CONFIRM',
     },
   };
 

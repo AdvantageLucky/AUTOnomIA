@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/resident_welcome_view.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class ResidentPinView extends StatefulWidget {
   final ResidentPinViewModel viewModel;
@@ -104,21 +105,21 @@ class _ResidentPinViewState extends State<ResidentPinView> {
           ),
         ),
         const SizedBox(width: 14),
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Kigo',
-              style: TextStyle(
+              AppLocalizations.t(context, 'kigo_label'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 29,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
-              'SELF CHECK-IN',
-              style: TextStyle(
+              AppLocalizations.t(context, 'self_checkin_label'),
+              style: const TextStyle(
                 color: KigoDesign.textSecondary,
                 fontSize: 14,
                 letterSpacing: 4,
@@ -141,9 +142,9 @@ class _ResidentPinViewState extends State<ResidentPinView> {
 
     return Column(
       children: [
-        const Text(
-          'Ingresa tu número',
-          style: TextStyle(
+        Text(
+          AppLocalizations.t(context, 'ingresa_tu_numero'),
+          style: const TextStyle(
             color: KigoDesign.textSecondary,
             fontSize: 16,
             letterSpacing: 2,
@@ -327,7 +328,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                       MaterialPageRoute(
                         builder: (_) => ResidentWelcomeView(
                           viewModel: ResidentWelcomeViewModel(
-                            nombre: vm.nombreResidente ?? 'Residente',
+                            nombre: vm.nombreResidente ?? AppLocalizations.t(context, 'residente_label'),
                             casaDestino: vm.casaDestino ?? '',
                           ),
                         ),
@@ -352,7 +353,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                     )
                   : Text(
-                      'CONFIRMAR',
+                      AppLocalizations.t(context, 'confirmar_button_caps'),
                       style: TextStyle(
                         color: vm.puedeConfirmar ? Colors.white : KigoDesign.textTertiary,
                         fontSize: 18,
@@ -368,9 +369,9 @@ class _ResidentPinViewState extends State<ResidentPinView> {
   }
 
   Widget _buildFooter() {
-    return const Text(
-      'POWERED BY KIGO · FEPRO 2026',
-      style: TextStyle(
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
+      style: const TextStyle(
         color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,
