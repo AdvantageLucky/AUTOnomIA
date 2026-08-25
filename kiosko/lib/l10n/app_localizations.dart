@@ -85,6 +85,23 @@ class AppLocalizations {
       'casa_destino_label': 'Casa destino',
       'no_especificado': 'No especificado',
       'placa_label': 'Placa',
+
+      // Acceso de residente por reconocimiento facial
+      'no_se_pudo_activar_camara': 'No se pudo activar la cámara',
+      'mira_camara_identificarte': 'Mira a la cámara para identificarte',
+      'detectando_rostro_automaticamente': 'Detectando rostro automáticamente',
+      'activando_camara': 'Activando cámara...',
+      'o_bien': 'O bien,',
+      'acceder_por_pin': 'Acceder por PIN...',
+      'self_checkin_label': 'SELF CHECK-IN',
+      'aviso_privacidad_title': 'Aviso de privacidad',
+      'aviso_privacidad_content': 'Su rostro se analiza en este dispositivo para generar una huella digital '
+          'matemática; la imagen nunca se transmite ni se almacena. Esa huella se '
+          'compara de forma segura contra los residentes registrados del edificio '
+          'para verificar su identidad. Si prefiere no usar reconocimiento facial, '
+          'puede ingresar con su PIN.',
+      'aceptar_button': 'Aceptar',
+      'residente_label': 'Residente',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -148,6 +165,23 @@ class AppLocalizations {
       'casa_destino_label': 'Destination',
       'no_especificado': 'Not specified',
       'placa_label': 'License plate',
+
+      // Acceso de residente por reconocimiento facial
+      'no_se_pudo_activar_camara': 'Could not activate the camera',
+      'mira_camara_identificarte': 'Look at the camera to identify yourself',
+      'detectando_rostro_automaticamente': 'Automatically detecting face',
+      'activando_camara': 'Activating camera...',
+      'o_bien': 'Or,',
+      'acceder_por_pin': 'Access with PIN...',
+      'self_checkin_label': 'SELF CHECK-IN',
+      'aviso_privacidad_title': 'Privacy notice',
+      'aviso_privacidad_content': 'Your face is analyzed on this device to generate a mathematical '
+          'fingerprint; the image is never transmitted or stored. That fingerprint is '
+          "securely compared against the building's registered residents to verify "
+          'your identity. If you prefer not to use facial recognition, you can enter '
+          'with your PIN.',
+      'aceptar_button': 'Accept',
+      'residente_label': 'Resident',
     },
   };
 
