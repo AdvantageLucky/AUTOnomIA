@@ -2,6 +2,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/modo_kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/operator_exit_viewmodel.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class OperatorExitPinView extends StatefulWidget {
   final OperatorExitViewModel viewModel;
@@ -98,9 +99,9 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
 
         const Icon(Icons.lock_outline_rounded, color: Color(0xFFFF542F), size: 24),
         const SizedBox(width: 10),
-        const Text(
-          'MODO OPERADOR',
-          style: TextStyle(
+        Text(
+          AppLocalizations.t(context, 'modo_operador'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -121,10 +122,10 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
 
     return Column(
       children: [
-        const Text(
-          'Ingresa el PIN para salir del modo kiosko',
+        Text(
+          AppLocalizations.t(context, 'ingresa_pin_salir_kiosko'),
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: KigoDesign.textSecondary,
             fontSize: 16,
             letterSpacing: 1,
@@ -158,9 +159,9 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
 
         if (viewModel.pinIncorrecto) ...[
           const SizedBox(height: 18),
-          const Text(
-            'PIN incorrecto, intenta de nuevo',
-            style: TextStyle(
+          Text(
+            AppLocalizations.t(context, 'pin_incorrecto_intenta_de_nuevo'),
+            style: const TextStyle(
               color: Color(0xFFFF542F),
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -294,9 +295,9 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
   }
 
   Widget _buildFooter() {
-    return const Text(
-      'POWERED BY KIGO · FEPRO 2026',
-      style: TextStyle(
+    return Text(
+      AppLocalizations.t(context, 'footer_text'),
+      style: const TextStyle(
         color: KigoDesign.textTertiary,
         fontSize: 14,
         letterSpacing: 2,
