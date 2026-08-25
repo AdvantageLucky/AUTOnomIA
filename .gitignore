@@ -27,6 +27,10 @@ web/uploads/visitantes/*
 # proyecto
 /backend/llama.cpp/
 
+# credencial de cuenta de servicio de Firebase (FCM) — secreto real, nunca
+# al repo
+/backend/*firebase-adminsdk*.json
+
 # =========================
 # Claude Code / superpowers
 # =========================
