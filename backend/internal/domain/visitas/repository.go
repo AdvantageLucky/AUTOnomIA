@@ -60,6 +60,7 @@ func (r *Repository) joinVisitasDeAdmin(adminID uint) *gorm.DB {
 type VisitaFiltros struct {
 	KioskoID      *uint
 	TipoDocumento *TipoDocumento
+	TipoVisitante *TipoVisitante
 	Estado        *EstadoVisita
 	Q             string // ILIKE parcial sobre titular y curp
 }
@@ -76,6 +77,9 @@ func (r *Repository) FindAllByAdminID(
 		}
 		if filtros.TipoDocumento != nil {
 			q = q.Where("visitas.tipo_documento = ?", *filtros.TipoDocumento)
+		}
+		if filtros.TipoVisitante != nil {
+			q = q.Where("visitas.tipo_visitante = ?", *filtros.TipoVisitante)
 		}
 		if filtros.Estado != nil {
 			q = q.Where("visitas.estado = ?", *filtros.Estado)

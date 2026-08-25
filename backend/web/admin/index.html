@@ -191,7 +191,7 @@
     <nav class="topbar-nav">
       <button class="nav-btn" data-nav="dashboard" data-i18n="nav_inicio">Inicio</button>
       <button class="nav-btn" data-nav="solicitudes"><span data-i18n="nav_solicitudes">Solicitudes</span><span class="nav-badge" id="nav-badge-solicitudes" hidden>0</span></button>
-      <button class="nav-btn" data-nav="visitas" data-i18n="nav_visitas">Visitas</button>
+      <button class="nav-btn" data-nav="visitas" data-i18n="nav_entradas">Entradas</button>
       <button class="nav-btn" data-nav="residentes" data-i18n="nav_residentes">Residentes</button>
       <button class="nav-btn" data-nav="kioskos" data-i18n="nav_kioskos">Kioskos</button>
       <button class="nav-btn" data-nav="instalacion" data-i18n="nav_instalacion">Centro</button>
@@ -280,7 +280,7 @@
             </div>
             <div>
               <div class="quick-title" data-i18n="q_visitas_title">Ver bitácora completa</div>
-              <div class="quick-sub" data-i18n="q_visitas_sub">Filtros por estado y documento</div>
+              <div class="quick-sub">Filtros por tipo: residente, invitado o sin app</div>
             </div>
           </button>
         </div>
@@ -299,7 +299,7 @@
     <section id="screen-visitas" class="screen" hidden>
       <div class="screen-header">
         <div>
-          <div class="screen-title" data-i18n="nav_visitas">Visitas</div>
+          <div class="screen-title" data-i18n="nav_entradas">Entradas</div>
           <div class="screen-sub" id="vis-subtitle" data-i18n="vis_sub">Bitácora de registros</div>
         </div>
       </div>
@@ -310,16 +310,17 @@
             <input id="vis-quick-search" type="text" placeholder="Buscar por nombre, CURP, clave, casa o placa…">
           </div>
           <select id="vis-filter-tipo" class="search-select">
-            <option value="" data-i18n="all_docs">Todos los documentos</option>
-            <option value="INE">INE</option>
-            <option value="PASAPORTE" data-i18n="pasaporte">Pasaporte</option>
-            <option value="LICENCIA" data-i18n="licencia">Licencia</option>
+            <option value="">Todos los tipos</option>
+            <option value="VISITANTE">Sin invitación (sin app)</option>
+            <option value="INVITADO">Con invitación QR</option>
+            <option value="RESIDENTE">Residente</option>
           </select>
           <select id="vis-filter-estado" class="search-select">
             <option value="" data-i18n="all_states">Todos los estados</option>
             <option value="PENDIENTE" data-i18n="pendiente">Pendiente</option>
             <option value="APROBADO" data-i18n="aprobado">Aprobado</option>
             <option value="RECHAZADO" data-i18n="rechazado">Rechazado</option>
+            <option value="REVISION">Revisión</option>
           </select>
         </div>
 
@@ -358,7 +359,7 @@
       <div class="screen-header screen-header--back">
         <button class="back-btn" data-nav="visitas">
           <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="3" x2="4" y2="9"/><line x1="4" y1="9" x2="12" y2="15"/></svg>
-          <span data-i18n="nav_visitas">Visitas</span>
+          <span data-i18n="nav_entradas">Entradas</span>
         </button>
         <div class="header-div"></div>
         <div class="screen-title" data-i18n="detail_title">Detalle de visita</div>

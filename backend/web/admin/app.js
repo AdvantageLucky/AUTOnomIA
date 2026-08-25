@@ -26,6 +26,7 @@
       nav_general: "General",
       nav_dashboard: "Inicio",
       nav_visitas: "Visitas",
+      nav_entradas: "Entradas",
       nav_config: "Configuración",
       nav_accesos: "Accesos",
       nav_perfil: "Perfil",
@@ -41,7 +42,8 @@
       recent_title: "Visitas recientes",
       see_all: "Ver todas ›",
       vis_sub: "Bitácora de registros",
-      all_docs: "Todos los documentos",
+      all_docs: "Todos los tipos",
+      all_tipos: "Todos los tipos",
       pasaporte: "Pasaporte",
       licencia: "Licencia",
       all_states: "Todos los estados",
@@ -146,6 +148,7 @@
       nav_general: "General",
       nav_dashboard: "Home",
       nav_visitas: "Visits",
+      nav_entradas: "Entries",
       nav_config: "Settings",
       nav_accesos: "Entries",
       nav_perfil: "Profile",
@@ -160,8 +163,9 @@
       q_visitas_sub: "Complete paginated log",
       recent_title: "Recent visits",
       see_all: "See all ›",
-      vis_sub: "Visit log",
-      all_docs: "All documents",
+      vis_sub: "Entry log",
+      all_docs: "All types",
+      all_tipos: "All types",
       pasaporte: "Passport",
       licencia: "Driver's license",
       all_states: "All statuses",
@@ -305,6 +309,17 @@
   const MESES_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   const TIPO_BADGE  = { INE: "badge--ine", PASAPORTE: "badge--pasaporte", LICENCIA: "badge--licencia" };
+  const TIPO_VIS_BADGE = { RESIDENTE: "badge--ine", INVITADO: "badge--pasaporte", VISITANTE: "badge--licencia" };
+  const TIPO_VIS_LABEL = {
+    RESIDENTE: { es: "Residente",  en: "Resident" },
+    INVITADO:  { es: "Con QR",     en: "QR Guest" },
+    VISITANTE: { es: "Sin app",    en: "Walk-in" },
+  };
+  function tipoVisLabel(tv) {
+    const entry = TIPO_VIS_LABEL[tv];
+    if (!entry) return tv || "—";
+    return entry[lang] || entry.es;
+  }
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado", REVISION: "badge--revision" };
 
   const RUTAS_POR_ROL = {
@@ -730,7 +745,7 @@
 
   /* ─── Dashboard ─────────────────────────── */
   async function loadDashboard() {
-    const res = await api("/visitas/?page_size=50");
+    const res = await api("/visitas/?page_size=100");
     if (!res || !res.ok) return;
     const data = await res.json();
 
@@ -742,12 +757,17 @@
 
     const hoyCount      = visitas.filter(v => new Date(v.created_at) >= hoy).length;
     const semanaCount   = visitas.filter(v => new Date(v.created_at) >= sieteDias).length;
-    const pendCount     = visitas.filter(v => v.estado === "PENDIENTE").length;
+    const pendCount     = visitas.filter(v => v.estado === "PENDIENTE" || v.estado === "REVISION").length;
+    const aprobHoyCount = visitas.filter(v => new Date(v.created_at) >= hoy && v.estado === "APROBADO").length;
 
-    animateStat("stat-hoy",       hoyCount);
-    animateStat("stat-semana",    semanaCount);
-    animateStat("stat-total",     total);
-    animateStat("stat-pendientes", pendCount);
+    animateStat("stat-hoy",         hoyCount);
+    animateStat("stat-pendientes",  pendCount);
+    animateStat("stat-semana",       semanaCount);
+    animateStat("stat-total",        total);
+
+    // Actualizar subtítulos de stats con contexto
+    const statAprobEl = document.getElementById("stat-label-aprobadas");
+    if (statAprobEl) statAprobEl.textContent = aprobHoyCount + " aprobadas hoy";
 
     const container = document.getElementById("dash-recent-rows");
     const recent = visitas.slice(0, 8);
@@ -811,7 +831,7 @@
     const q      = document.getElementById("vis-quick-search").value.trim();
 
     let params = `?page=${page}&page_size=${state.visPageSize}`;
-    if (tipo)   params += `&tipo_documento=${tipo}`;
+    if (tipo)   params += `&tipo_visitante=${tipo}`;
     if (estado) params += `&estado=${estado}`;
     if (q)      params += `&q=${encodeURIComponent(q)}`;
 
@@ -858,9 +878,11 @@
 
   function renderVisRow(v, i) {
     const acceso = state.accesosById.get(v.kiosko_id);
+    const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
+    const tvLabel = tipoVisLabel(v.tipo_visitante);
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
       <div><div class="row-name">${esc(v.titular)}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
-      <div><span class="badge ${TIPO_BADGE[v.tipo_documento] || ""}">${v.tipo_documento}</span></div>
+      <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
       <div class="row-date">${fmtDateShort(v.created_at)}</div>

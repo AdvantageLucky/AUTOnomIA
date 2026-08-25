@@ -157,17 +157,23 @@ func (r *Repository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&Residente{}).Where("id = ?", id).Update("status", status).Error
 }
 
-// FindAllByAdminID devuelve todos los residentes de todos los kioskos del admin.
+// FindAllByAdminID devuelve todos los residentes activos del tenant del admin.
+//
+// Bug anterior: usaba INNER JOIN kioskos ON kioskos.id = residentes.kiosko_id,
+// lo que descartaba silenciosamente a todos los residentes con kiosko_id NULL
+// (auto-registros aprobados que aún no tienen kiosko asignado).
+// La solución correcta es filtrar por tenant_id + status directamente.
 func (r *Repository) FindAllByAdminID(adminID uint) ([]Residente, error) {
 	var list []Residente
-	if err := r.db.Scopes(ByTenantFor("residentes")).
-		Joins("JOIN kioskos ON kioskos.id = residentes.kiosko_id").
-		Where("kioskos.admin_id = ? AND kioskos.deleted_at IS NULL", adminID).
+	if err := r.db.Scopes(ByTenant).
+		Where("status = ?", ResidenteStatusActivo).
+		Order("created_at DESC").
 		Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
 }
+
 
 // BuscarCentroPorCodigo devuelve el id y nombre del centro con ese código público.
 func (r *Repository) BuscarCentroPorCodigo(codigo string) (id uint, nombre, direccion string, err error) {
