@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
+import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'consent_dialog.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
@@ -16,8 +18,11 @@ class EscaneoInePage extends StatefulWidget {
 
 class _EscaneoInePageState extends State<EscaneoInePage> {
   CameraController? _controller;
-  List<CameraDescription>? _cameras;
   bool _isInitialized = false;
+
+  /// false cuando la lente es de foco fijo: no hay nada que dirigir y al
+  /// visitante hay que decirle que acerque o aleje el documento.
+  bool _hayEnfoque = true;
 
   // Auto-captura: cada pocos segundos se toma una foto silenciosa y se sondea
   // con el OCR local; en cuanto aparece una CURP válida, la pantalla se cierra
@@ -46,29 +51,54 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
     }
   }
 
-  // Inicializa la cámara trasera del dispositivo
+  // Inicializa la cámara de documento con los ajustes propios del hardware.
+  // Ojo: el kiosko no tiene lente trasera, así que aquí cae la misma cámara
+  // frontal RGB. El índice se fija con --dart-define=KIOSKO_CAM_DOCUMENTO.
   Future<void> _initCamera() async {
-    _cameras = await availableCameras();
-    if (_cameras != null && _cameras!.isNotEmpty) {
-      // Seleccionamos la cámara trasera (index 0 usualmente)
-      _controller = CameraController(
-        _cameras![0],
-        ResolutionPreset.high, // Buena resolución para que el OCR no falle
-        enableAudio: false,    // Apagamos el audio ya que solo queremos foto
+    try {
+      final camara = await CamaraKiosko.paraDocumento();
+      final controller = CamaraKiosko.controlador(
+        camara,
+        AjustesCamara.resolucionDocumento,
       );
 
-      try {
-        await _controller!.initialize();
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-          });
-          _iniciarAutoCaptura();
-        }
-      } catch (e) {
-        debugPrint("Error al inicializar la cámara: $e");
+      await CamaraKiosko.inicializar(controller);
+
+      if (!mounted) {
+        await controller.dispose();
+        return;
       }
+
+      setState(() {
+        _controller = controller;
+        _isInitialized = true;
+      });
+
+      // El recuadro guía está centrado, así que ahí es donde debe enfocar.
+      _hayEnfoque = await CamaraKiosko.enfocarEn(controller, const Offset(0.5, 0.5));
+      if (mounted) setState(() {});
+
+      _iniciarAutoCaptura();
+    } catch (e) {
+      debugPrint("Error al inicializar la cámara: $e");
     }
+  }
+
+  /// Reenfoca donde el operador toque la vista previa.
+  Future<void> _enfocarDondeTocaron(TapDownDetails detalles) async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    final tam = context.size;
+    if (tam == null) return;
+
+    await CamaraKiosko.enfocarEn(
+      controller,
+      Offset(
+        (detalles.localPosition.dx / tam.width).clamp(0.0, 1.0),
+        (detalles.localPosition.dy / tam.height).clamp(0.0, 1.0),
+      ),
+    );
   }
 
   void _iniciarAutoCaptura() {
@@ -155,7 +185,10 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: CameraPreview(_controller!),
+            child: GestureDetector(
+              onTapDown: _hayEnfoque ? _enfocarDondeTocaron : null,
+              child: VistaPreviaCamara(_controller!),
+            ),
           ),
           // Tu recuadro verde guía...
           Center(
@@ -190,7 +223,11 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      AppLocalizations.t(context, 'deteccion_automatica_ine'),
+                      // Con lente de foco fijo no hay nada que dirigir: lo
+                      // único que enfoca el documento es la distancia.
+                      _hayEnfoque
+                          ? AppLocalizations.t(context, 'deteccion_automatica_ine')
+                          : AppLocalizations.t(context, 'acerca_aleja_ine'),
                       style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
@@ -40,22 +41,20 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KigoDesign.bgDark,
-      body: SizedBox.expand(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-          child: Column(
-            children: [
-              _buildHeader(),
+      body: PantallaAdaptable(
+        padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+        child: Column(
+          children: [
+            _buildHeader(),
 
-              const Spacer(),
+            const Spacer(),
 
-              _buildWelcomeContent(),
+            _buildWelcomeContent(),
 
-              const Spacer(),
+            const Spacer(),
 
-              _buildFooter(),
-            ],
-          ),
+            _buildFooter(),
+          ],
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
@@ -35,30 +36,28 @@ class _ResidentPinViewState extends State<ResidentPinView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KigoDesign.bgDark,
-      body: SizedBox.expand(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-          child: Column(
-            children: [
-              _buildHeader(context),
+      body: PantallaAdaptable(
+        padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+        child: Column(
+          children: [
+            _buildHeader(context),
 
-              const Spacer(),
+            const Spacer(),
 
-              _buildDisplay(),
+            _buildDisplay(),
 
-              const SizedBox(height: 48),
+            const SizedBox(height: 48),
 
-              _buildKeypad(),
+            _buildKeypad(),
 
-              const SizedBox(height: 28),
+            const SizedBox(height: 28),
 
-              _buildConfirmar(),
+            _buildConfirmar(),
 
-              const Spacer(),
+            const Spacer(),
 
-              _buildFooter(),
-            ],
-          ),
+            _buildFooter(),
+          ],
         ),
       ),
     );

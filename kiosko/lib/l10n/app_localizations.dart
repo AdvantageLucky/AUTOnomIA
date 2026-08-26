@@ -192,6 +192,7 @@ class AppLocalizations {
       'centra_rostro_ovalo': 'Centra tu rostro dentro del óvalo',
       'apunta_a_tu_ine': 'Apunta a tu INE',
       'deteccion_automatica_ine': 'Detección automática — mantén la INE dentro del recuadro',
+      'acerca_aleja_ine': 'Acerca o aleja la INE hasta que se vea nítida',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -362,6 +363,7 @@ class AppLocalizations {
       'centra_rostro_ovalo': 'Center your face inside the oval',
       'apunta_a_tu_ine': 'Point at your ID',
       'deteccion_automatica_ine': 'Automatic detection — keep the ID inside the frame',
+      'acerca_aleja_ine': 'Move the ID closer or farther until it looks sharp',
     },
   };
 
