@@ -17,10 +17,17 @@ class ComunidadBadge extends StatefulWidget {
   /// recuadro sobre el fondo negro.
   final double escala;
 
+  /// Qué hacer cuando el nombre no cabe en un renglón. `false` lo corta con
+  /// puntos suspensivos; `true` lo pasa al siguiente renglón, que es lo que
+  /// quiere la pantalla de escaneo: ahí el nombre del fraccionamiento es la
+  /// única pista de dónde está parado el visitante y tiene que leerse entero.
+  final bool envolverTexto;
+
   const ComunidadBadge({
     super.key,
     required this.mensaje,
     this.escala = 1,
+    this.envolverTexto = false,
   });
 
   @override
@@ -83,14 +90,21 @@ class _ComunidadBadgeState extends State<ComunidadBadge>
           Flexible(
             child: Text(
               widget.mensaje,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: KigoDesign.brandHover,
                 fontSize: 16 * e,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3 * e,
+                height: widget.envolverTexto ? 1.25 : null,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              // Sin tope de renglones no hay nada que recortar: el texto crece
+              // hacia abajo y, si la pastilla ya no cabe en su hueco, el
+              // FittedBox de quien la monta la escala.
+              maxLines: widget.envolverTexto ? null : 1,
+              overflow: widget.envolverTexto
+                  ? TextOverflow.clip
+                  : TextOverflow.ellipsis,
             ),
           ),
           SizedBox(width: 10 * e),

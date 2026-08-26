@@ -361,6 +361,7 @@ class _QrScannerViewState extends State<QrScannerView>
                                   child: ComunidadBadge(
                                     mensaje: mensaje,
                                     escala: 1.7,
+                                    envolverTexto: true,
                                   ),
                                 ),
                               ),
