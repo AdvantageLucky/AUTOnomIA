@@ -226,6 +226,25 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 	// La validacion condicional vive en visitas y es la misma que usa el registro
 	// sin invitacion: asi un solo lugar decide que exige cada config de kiosko.
 	visitaRepo := visitas.NewRepository(h.db).WithContext(c.Request.Context())
+
+	if req.ClientID != "" {
+		existente, err := visitaRepo.FindByClientID(tenantID, req.ClientID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if existente != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"titular":      existente.Titular,
+				"casa_destino": existente.CasaDestino,
+				"visita_id":    existente.ID,
+				"estado":       existente.Estado,
+				"placa":        existente.Placa,
+			})
+			return
+		}
+	}
+
 	cfg, err := visitaRepo.GetKioskoConfig(uint(kioskoID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo obtener la configuracion del kiosko"})
@@ -282,6 +301,7 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 		Placa:            strings.ToUpper(strings.TrimSpace(req.Placa)),
 		Estado:           visitas.EstadoAprobado,
 		KioskoID:         uint(kioskoID),
+		ClientID:         visitas.ClientIDPtr(req.ClientID),
 	}
 	if err := h.db.Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})
