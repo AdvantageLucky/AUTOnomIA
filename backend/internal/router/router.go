@@ -12,6 +12,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/persona"
 	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/domain/sync"
 	"kigo-autonomia-backend/internal/domain/tenant"
 	"kigo-autonomia-backend/internal/domain/visitas"
 	"kigo-autonomia-backend/internal/platform/sse"
@@ -37,6 +38,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
 	registerResidenteRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
 	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
+	registerSyncRoutes(api, db)
 	registerPersonaRoutes(api, db, cfg)
 	registerTenantRoutes(api, db, cfg.JWTSecret)
 
@@ -230,6 +232,23 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 		a.POST("/", destinoHandler.CrearDestino)
 		a.POST("/lote", destinoHandler.CrearDestinosLote)
 		a.DELETE("/:id", destinoHandler.EliminarDestino)
+	}
+}
+
+// registerSyncRoutes registra el endpoint de solo lectura que arma el
+// snapshot offline del kiosko: destinos, residentes con huella facial e
+// invitaciones activas del tenant.
+func registerSyncRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+	destinoRepo := destinos.NewRepository(db)
+	residenteRepo := residente.NewRepository(db)
+	invitacionRepo := invitaciones.NewRepository(db)
+	syncHandler := sync.NewHandler(destinoRepo, residenteRepo, invitacionRepo)
+	sesionRepo := auth.NewSesionRepository(db)
+
+	k := rg.Group("/kioskos/:id/sync")
+	k.Use(auth.RequireKiosko(sesionRepo))
+	{
+		k.GET("/snapshot", syncHandler.GetSnapshot)
 	}
 }
 
