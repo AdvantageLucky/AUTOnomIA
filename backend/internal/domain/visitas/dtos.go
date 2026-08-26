@@ -32,6 +32,7 @@ type VisitaRequest struct {
 	Curp          string                `form:"curp"`
 	CasaDestino   string                `form:"casa_destino"   binding:"required"`
 	Placa         string                `form:"placa"`
+	ClientID      string                `form:"client_id"` // idempotencia: reenvios del kiosko tras sync offline
 	FotoDocumento *multipart.FileHeader `form:"foto_documento"` // Content-Type image
 	FotoRostro    *multipart.FileHeader `form:"foto_rostro"`    // Content-Type image
 	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`     // Content-Type image
