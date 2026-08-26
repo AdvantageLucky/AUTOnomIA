@@ -199,4 +199,11 @@ class VehicularRegisterViewModel extends ChangeNotifier {
         );
     }
   }
+
+
+  @override
+  void dispose() {
+    _faceDetectorServicio.dispose();
+    super.dispose();
+  }
 }

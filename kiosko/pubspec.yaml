@@ -37,7 +37,7 @@ dependencies:
   path_provider: ^2.1.5   # Para acceder al sistema de archivos del dispositivo
   http: ^1.2.2           # Para hacer solicitudes HTTP a la API de OpenAI
   http_parser: ^4.1.2    # Para construir MediaType al subir archivos multipart
-  camera: ^0.10.5+9          # Para abrir y controlar la cámara del teléfono
+  camera: ^0.12.0             # Backend CameraX en Android: el HAL del kiosko no funciona con Camera2
   google_mlkit_text_recognition: ^0.13.0 # El motor de IA local para leer texto
   google_mlkit_face_detection: ^0.11.0 # Detección de rostros en local
   mobile_scanner: ^5.2.3               # Escaner de QR/códigos de barras

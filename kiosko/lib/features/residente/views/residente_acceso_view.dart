@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
+import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/residente/services/reconocimiento_facial_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
@@ -21,7 +23,8 @@ class ResidenteAccesoView extends StatefulWidget {
   State<ResidenteAccesoView> createState() => _ResidenteAccesoViewState();
 }
 
-class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
+class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
+    with WidgetsBindingObserver {
   static const _storage = FlutterSecureStorage();
   static const _keyConsentTs = 'cara_consent_ts';
 
@@ -32,7 +35,6 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
   bool _camaraInicializando = false;
   String? _camaraError;
 
-  final _faceDetectorServicio = FaceDetectorServicio();
   final _reconocimientoServicio = ReconocimientoFacialServicio();
   Timer? _timerVerificacion;
   bool _verificandoRostro = false;
@@ -46,7 +48,27 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _verificarConsent();
+  }
+
+  // El kiosko corre 24/7 y Android le quita la cámara cada vez que algo pasa a
+  // primer plano (MDM, protector de pantalla). Sin esto la vista previa vuelve
+  // congelada para siempre: hay que soltar el controlador y volver a abrirlo.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _timerVerificacion?.cancel();
+      _cameraController = null;
+      controller.dispose();
+      if (mounted) setState(() {});
+    } else if (state == AppLifecycleState.resumed && _consentDado) {
+      _iniciarCamara();
+    }
   }
 
   Future<void> _verificarConsent() async {
@@ -88,23 +110,13 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
     });
 
     try {
-      final camaras = await availableCameras();
-      if (camaras.isEmpty) {
-        throw CameraException('sin_camara', 'No hay cámaras disponibles');
-      }
-
-      final frontal = camaras.firstWhere(
-        (c) => c.lensDirection == CameraLensDirection.front,
-        orElse: () => camaras.first,
+      final camara = await CamaraKiosko.paraRostro();
+      final controller = CamaraKiosko.controlador(
+        camara,
+        AjustesCamara.resolucionRostro,
       );
 
-      final controller = CameraController(
-        frontal,
-        ResolutionPreset.medium,
-        enableAudio: false,
-      );
-
-      await controller.initialize();
+      await CamaraKiosko.inicializar(controller);
 
       if (!mounted) {
         await controller.dispose();
@@ -145,12 +157,8 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
     try {
       foto = await controller.takePicture();
 
-      final tieneRostro = await _faceDetectorServicio.tieneRostroValido(foto.path);
-      if (!tieneRostro) {
-        _coincidenciasConsecutivas = 0;
-        return;
-      }
-
+      // Una sola pasada de ML Kit por foto: calcularEmbedding ya detecta el
+      // rostro y descarta los que vienen demasiado pequeños.
       final embedding = await _reconocimientoServicio.calcularEmbedding(foto.path);
       if (embedding == null) {
         _coincidenciasConsecutivas = 0;
@@ -203,8 +211,9 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timerVerificacion?.cancel();
-    _reconocimientoServicio.dispose();
+    unawaited(_reconocimientoServicio.dispose());
     _cameraController?.dispose();
     super.dispose();
   }
@@ -228,20 +237,18 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
 
     return Scaffold(
       backgroundColor: KigoDesign.bgDark,
-      body: SizedBox.expand(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-          child: Column(
-            children: [
-              _buildHeader(context),
-              const Spacer(),
-              _buildAreaFacial(),
-              const SizedBox(height: 40),
-              _buildPinFallback(),
-              const Spacer(),
-              _buildFooter(),
-            ],
-          ),
+      body: PantallaAdaptable(
+        padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+        child: Column(
+          children: [
+            _buildHeader(context),
+            const Spacer(),
+            _buildAreaFacial(),
+            const SizedBox(height: 40),
+            _buildPinFallback(),
+            const Spacer(),
+            _buildFooter(),
+          ],
         ),
       ),
     );
@@ -347,7 +354,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView> {
         child: SizedBox(
           width: controller.value.previewSize?.height ?? 320,
           height: controller.value.previewSize?.width ?? 320,
-          child: CameraPreview(controller),
+          child: VistaPreviaCamara(controller),
         ),
       );
     }

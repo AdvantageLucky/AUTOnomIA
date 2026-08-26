@@ -1,6 +1,5 @@
 /* VISTA PRINCIPAL DE BIENVENIDA */
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:kigo_kiosco/features/registro/views/touch_register_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/operator_exit_pin_view.dart';
@@ -11,7 +10,9 @@ import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/routing/registro_router.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
+import 'package:kigo_kiosco/features/welcome/views/widgets/comunidad_badge.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 class WelcomeView extends StatefulWidget {
@@ -105,29 +106,27 @@ class _WelcomeViewState extends State<WelcomeView>
         onTapDown: (_) => _iniciarConteoSalidaOperador(),
         onTapUp: (_) => _cancelarConteoSalidaOperador(),
         onTapCancel: _cancelarConteoSalidaOperador,
-        child: SizedBox.expand(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-            child: Column(
-              children: [
-                _buildHeader(context),
-                const Spacer(),
-                FadeTransition(
-                  opacity: _fadeAnim,
-                  child: SlideTransition(
-                    position: _slideAnim,
-                    child: _buildWelcomeSection(mensaje),
-                  ),
+        child: PantallaAdaptable(
+          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+          child: Column(
+            children: [
+              _buildHeader(context),
+              const Spacer(),
+              FadeTransition(
+                opacity: _fadeAnim,
+                child: SlideTransition(
+                  position: _slideAnim,
+                  child: _buildWelcomeSection(mensaje),
                 ),
-                const SizedBox(height: 56),
-                FadeTransition(
-                  opacity: _fadeAnim,
-                  child: _buildBotones(context),
-                ),
-                const Spacer(),
-                _buildFooter(),
-              ],
-            ),
+              ),
+              const SizedBox(height: 56),
+              FadeTransition(
+                opacity: _fadeAnim,
+                child: _buildBotones(context),
+              ),
+              const Spacer(),
+              _buildFooter(),
+            ],
           ),
         ),
       ),
@@ -194,7 +193,7 @@ class _WelcomeViewState extends State<WelcomeView>
         // Nombre de la comunidad desde la config
         if (mensaje.isNotEmpty) ...[
           const SizedBox(height: 16),
-          _ComunidadBadge(mensaje: mensaje),
+          ComunidadBadge(mensaje: mensaje),
         ],
 
         const SizedBox(height: 18),
@@ -398,101 +397,6 @@ class _WelcomeViewState extends State<WelcomeView>
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-}
-
-/// Badge animado con el nombre de la comunidad que viene de la config del kiosko.
-class _ComunidadBadge extends StatefulWidget {
-  final String mensaje;
-  const _ComunidadBadge({required this.mensaje});
-
-  @override
-  State<_ComunidadBadge> createState() => _ComunidadBadgeState();
-}
-
-class _ComunidadBadgeState extends State<_ComunidadBadge>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _shimmerCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _shimmerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2600),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _shimmerCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _shimmerCtrl,
-      builder: (_, child) {
-        final angle = _shimmerCtrl.value * 2 * math.pi;
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(40),
-            gradient: LinearGradient(
-              begin: Alignment(math.cos(angle), math.sin(angle)),
-              end: Alignment(-math.cos(angle), -math.sin(angle)),
-              colors: [
-                KigoDesign.brand.withValues(alpha: 0.13),
-                KigoDesign.brand.withValues(alpha: 0.04),
-                KigoDesign.brand.withValues(alpha: 0.13),
-              ],
-            ),
-            border: Border.all(
-              color: KigoDesign.brand.withValues(alpha: 0.3),
-              width: 1.2,
-            ),
-          ),
-          child: child,
-        );
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: KigoDesign.brand,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              widget.mensaje,
-              style: const TextStyle(
-                color: KigoDesign.brandHover,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: KigoDesign.brand,
-            ),
-          ),
-        ],
       ),
     );
   }

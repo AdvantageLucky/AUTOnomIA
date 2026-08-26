@@ -1,6 +1,8 @@
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
+import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'consent_dialog.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
@@ -13,7 +15,6 @@ class EscaneoRostro extends StatefulWidget {
 
 class _EscaneoRostroState extends State<EscaneoRostro> {
   CameraController? _controller;
-  List<CameraDescription>? _cameras;
   bool _isInitialized = false;
 
   @override
@@ -35,32 +36,30 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
     }
   }
 
-  // Inicializa la cámara frontal del dispositivo (para el rostro del usuario)
+  // Inicializa la cámara de rostro con los ajustes propios del hardware.
+  // En el kiosko la lente correcta y la resolución vienen de AjustesCamara:
+  // pedir `high` a un sensor de 2MP hace que la vista previa se congele.
   Future<void> _initCamera() async {
-    _cameras = await availableCameras();
-    if (_cameras != null && _cameras!.isNotEmpty) {
-      // Buscamos la cámara frontal; si no existe, usamos la primera disponible
-      final frontal = _cameras!.firstWhere(
-        (c) => c.lensDirection == CameraLensDirection.front,
-        orElse: () => _cameras!.first,
+    try {
+      final camara = await CamaraKiosko.paraRostro();
+      final controller = CamaraKiosko.controlador(
+        camara,
+        AjustesCamara.resolucionRostro,
       );
 
-      _controller = CameraController(
-        frontal,
-        ResolutionPreset.high,
-        enableAudio: false, // Apagamos el audio ya que solo queremos foto
-      );
+      await CamaraKiosko.inicializar(controller);
 
-      try {
-        await _controller!.initialize();
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-          });
-        }
-      } catch (e) {
-        debugPrint("Error al inicializar la cámara: $e");
+      if (!mounted) {
+        await controller.dispose();
+        return;
       }
+
+      setState(() {
+        _controller = controller;
+        _isInitialized = true;
+      });
+    } catch (e) {
+      debugPrint("Error al inicializar la cámara: $e");
     }
   }
 
@@ -112,7 +111,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: CameraPreview(_controller!),
+            child: VistaPreviaCamara(_controller!),
           ),
 
           // Overlay oscuro con recorte oval

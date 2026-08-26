@@ -156,4 +156,10 @@ class TouchRegisterViewModel extends ChangeNotifier {
       return false;
     }
   }
+
+  @override
+  void dispose() {
+    _faceDetectorServicio.dispose();
+    super.dispose();
+  }
 }

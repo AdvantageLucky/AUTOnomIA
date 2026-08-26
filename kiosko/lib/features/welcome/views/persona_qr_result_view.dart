@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/verdict_ring.dart';
@@ -49,23 +50,15 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final vPad = (constraints.maxHeight * 0.06).clamp(16.0, 48.0);
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 34, vertical: vPad),
-              child: Column(
-                children: [
-                  const KigoWordmark(color: KigoDesign.textPrimary),
-                  const Spacer(),
-                  _buildContent(),
-                  const Spacer(),
-                  _buildFooter(),
-                ],
-              ),
-            );
-          },
+      body: PantallaAdaptable(
+        child: Column(
+          children: [
+            const KigoWordmark(color: KigoDesign.textPrimary),
+            const Spacer(),
+            _buildContent(),
+            const Spacer(),
+            _buildFooter(),
+          ],
         ),
       ),
     );

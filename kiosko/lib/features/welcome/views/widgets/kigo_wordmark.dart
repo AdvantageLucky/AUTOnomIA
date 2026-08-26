@@ -7,31 +7,51 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 /// esto solo confirma en qué app estás, en voz baja.
 class KigoWordmark extends StatelessWidget {
   final Color color;
-  const KigoWordmark({super.key, this.color = Colors.white});
+
+  /// Multiplica el lockup completo. Las pantallas de resultado lo dejan en 1
+  /// —ahí la marca va en voz baja—; la de escaneo lo sube, porque sobre el
+  /// fondo negro es lo único que acompaña al recuadro.
+  final double escala;
+
+  const KigoWordmark({
+    super.key,
+    this.color = Colors.white,
+    this.escala = 1,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final lado = 26 * escala;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 26,
-          height: 26,
+          width: lado,
+          height: lado,
           decoration: BoxDecoration(
             color: KigoDesign.brand,
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: BorderRadius.circular(7 * escala),
           ),
-          child: const Center(
+          child: Center(
             child: Text(
               'K',
-              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14 * escala,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8 * escala),
         Text(
           'Kigo',
-          style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+          style: TextStyle(
+            color: color,
+            fontSize: 15 * escala,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2 * escala,
+          ),
         ),
       ],
     );
