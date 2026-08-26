@@ -582,10 +582,26 @@ func (h *Handler) VerificarRostroDesdeKiosko(c *gin.Context) {
 
 	var req struct {
 		Embedding []float64 `json:"embedding" binding:"required"`
+		ClientID  string    `json:"client_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || len(req.Embedding) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "embedding inválido"})
 		return
+	}
+
+	if req.ClientID != "" {
+		existente, err := h.visitaRepo.WithContext(c.Request.Context()).FindByClientID(tenantID, req.ClientID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if existente != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"nombre":       existente.Titular,
+				"casa_destino": existente.CasaDestino,
+			})
+			return
+		}
 	}
 
 	repoCtx := h.repo.WithContext(c.Request.Context())
@@ -609,6 +625,7 @@ func (h *Handler) VerificarRostroDesdeKiosko(c *gin.Context) {
 		CasaDestino:   mejor.CasaDestino,
 		Estado:        visitas.EstadoAprobado,
 		KioskoID:      uint(kioskoID),
+		ClientID:      visitas.ClientIDPtr(req.ClientID),
 	}
 
 	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
