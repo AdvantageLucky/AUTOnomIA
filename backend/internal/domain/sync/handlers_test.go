@@ -1,0 +1,94 @@
+package sync
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
+	"kigo-autonomia-backend/internal/domain/destinos"
+	"kigo-autonomia-backend/internal/domain/invitaciones"
+	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/platform/ctxkeys"
+)
+
+func setupTestDB(t *testing.T) *gorm.DB {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("no se pudo abrir sqlite en memoria: %v", err)
+	}
+	if err := db.AutoMigrate(&destinos.Destino{}, &residente.Residente{}, &invitaciones.Invitacion{}); err != nil {
+		t.Fatalf("no se pudo migrar: %v", err)
+	}
+	return db
+}
+
+func injectTestCtx(c *gin.Context, key string, val any) {
+	c.Set(key, val)
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), key, val))
+}
+
+func TestGetSnapshot(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupTestDB(t)
+
+	// Destino y residente activo (con embedding) del tenant 1
+	db.Create(&destinos.Destino{TenantID: 1, Nombre: "Casa 1", Calle: "Roble", Tipo: "casa", Numero: "1", Titular: "Ana"})
+	db.Create(&residente.Residente{
+		TenantID: 1, Nombre: "Ana", ApellidoPaterno: "Ruiz", ApellidoMaterno: "Diaz",
+		Pin: "hash", CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo,
+		Embedding: residente.FloatArray{1.0, 0.0, 0.0},
+	})
+	// Residente pendiente (sin embedding) del mismo tenant — no debe aparecer
+	db.Create(&residente.Residente{
+		TenantID: 1, Nombre: "Luis", ApellidoPaterno: "Gomez", ApellidoMaterno: "Perez",
+		Pin: "hash2", CasaDestino: "Casa 2", Status: residente.ResidenteStatusPendiente,
+	})
+	// Invitación activa del tenant 1
+	db.Create(&invitaciones.Invitacion{TenantID: 1, Token: "tok-1", Titular: "Invitado", ResidenteID: 1, DestinoID: 1})
+	// Destino de otro tenant — no debe aparecer
+	db.Create(&destinos.Destino{TenantID: 2, Nombre: "Casa X", Calle: "Pino", Tipo: "casa", Numero: "9", Titular: "Otro"})
+
+	destinoRepo := destinos.NewRepository(db)
+	residenteRepo := residente.NewRepository(db)
+	invitacionRepo := invitaciones.NewRepository(db)
+	h := NewHandler(destinoRepo, residenteRepo, invitacionRepo)
+
+	router := gin.New()
+	router.GET("/kioskos/:id/sync/snapshot", func(c *gin.Context) {
+		injectTestCtx(c, ctxkeys.TenantID, uint(1))
+		injectTestCtx(c, ctxkeys.KioskoID, uint(1))
+		h.GetSnapshot(c)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/kioskos/1/sync/snapshot", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp SnapshotResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("no se pudo parsear la respuesta: %v", err)
+	}
+
+	if len(resp.Destinos) != 1 {
+		t.Errorf("esperaba 1 destino, got %d: %+v", len(resp.Destinos), resp.Destinos)
+	}
+	if len(resp.Residentes) != 1 {
+		t.Errorf("esperaba 1 residente (solo el activo con embedding), got %d: %+v", len(resp.Residentes), resp.Residentes)
+	}
+	if len(resp.Invitaciones) != 1 {
+		t.Errorf("esperaba 1 invitacion, got %d: %+v", len(resp.Invitaciones), resp.Invitaciones)
+	}
+	if len(resp.Residentes) == 1 && resp.Residentes[0].CasaDestino != "Casa 1" {
+		t.Errorf("residente con casa_destino inesperada: %+v", resp.Residentes[0])
+	}
+}
