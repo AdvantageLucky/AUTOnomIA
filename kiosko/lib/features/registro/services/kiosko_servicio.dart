@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show SocketException;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:uuid/uuid.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
+import 'package:kigo_kiosco/core/services/coincidencia_facial_local.dart';
+import 'package:kigo_kiosco/core/services/connectivity_service.dart';
+import 'package:kigo_kiosco/core/services/local_cache_db.dart';
 import 'package:kigo_kiosco/features/activacion/models/device_solicitud.dart';
 
 class DeviceNotActivatedException implements Exception {}
@@ -27,6 +32,28 @@ class KioskoServicio {
 
   String? _sessionToken;
   int? _kioskoId;
+
+  final _uuid = const Uuid();
+  ConnectivityService? _connectivity;
+  LocalCacheDb? _cache;
+
+  /// Debe llamarse una vez al arrancar la app (ver main.dart) antes de que
+  /// cualquier flujo de registro intente usar el modo offline. Sin esto,
+  /// KioskoServicio se comporta exactamente como antes (siempre en línea).
+  void configurarOffline(ConnectivityService connectivity, LocalCacheDb cache) {
+    _connectivity = connectivity;
+    _cache = cache;
+  }
+
+  /// true solo cuando un error de RED (no una respuesta de rechazo del
+  /// servidor, como "PIN incorrecto" o "rostro no reconocido") interrumpió
+  /// la llamada — es la única categoría de falla que debe caer al modo
+  /// offline en vez de propagarse como el rechazo legítimo que es.
+  bool _esFalloDeRed(Object error) {
+    return error is SocketException ||
+        error is TimeoutException ||
+        error is http.ClientException;
+  }
 
   Future<void> _ensureLogin() async {
     if (_sessionToken != null) return;
@@ -229,19 +256,93 @@ class KioskoServicio {
     String? pathFotoIne,
     String? pathFotoRostro,
     String? pathFotoPlaca,
+    String? clientId,
   }) async {
-    await _ensureLogin();
-    return _enviarRegistro(
-      titular: titular,
-      curp: curp,
-      casaDestino: casaDestino,
-      placa: placa,
-      tipoVisitante: 'VISITANTE',
-      pathFotoIne: pathFotoIne,
-      pathFotoRostro: pathFotoRostro,
-      pathFotoPlaca: pathFotoPlaca,
-      reintento: false,
+    final connectivity = _connectivity;
+    final cache = _cache;
+    if (connectivity != null && cache != null && connectivity.isOffline) {
+      return _encolarVisitante(
+        cache: cache,
+        titular: titular,
+        curp: curp,
+        casaDestino: casaDestino,
+        placa: placa,
+        pathFotoIne: pathFotoIne,
+        pathFotoRostro: pathFotoRostro,
+        pathFotoPlaca: pathFotoPlaca,
+      );
+    }
+
+    try {
+      await _ensureLogin();
+      return await _enviarRegistro(
+        titular: titular,
+        curp: curp,
+        casaDestino: casaDestino,
+        placa: placa,
+        tipoVisitante: 'VISITANTE',
+        pathFotoIne: pathFotoIne,
+        pathFotoRostro: pathFotoRostro,
+        pathFotoPlaca: pathFotoPlaca,
+        reintento: false,
+        clientId: clientId,
+      );
+    } catch (e) {
+      // La red parecía disponible pero la llamada falló a medio camino — si
+      // fue un fallo de red real (no un rechazo legítimo del servidor), no
+      // se pierde el registro: se encola igual que si hubiéramos detectado
+      // el corte de antemano.
+      if (cache != null && _esFalloDeRed(e)) {
+        return _encolarVisitante(
+          cache: cache,
+          titular: titular,
+          curp: curp,
+          casaDestino: casaDestino,
+          placa: placa,
+          pathFotoIne: pathFotoIne,
+          pathFotoRostro: pathFotoRostro,
+          pathFotoPlaca: pathFotoPlaca,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> _encolarVisitante({
+    required LocalCacheDb cache,
+    required String titular,
+    required String curp,
+    required String casaDestino,
+    required String placa,
+    String? pathFotoIne,
+    String? pathFotoRostro,
+    String? pathFotoPlaca,
+  }) async {
+    final clientId = _uuid.v4();
+    await cache.encolarVisita(
+      clientId: clientId,
+      tipo: 'visitante_nuevo',
+      payload: {
+        'titular': titular,
+        'curp': curp,
+        'casa_destino': casaDestino,
+        'placa': placa,
+      },
+      fotoPaths: {
+        if (pathFotoIne != null) 'ine': pathFotoIne,
+        if (pathFotoRostro != null) 'rostro': pathFotoRostro,
+        if (pathFotoPlaca != null) 'placa': pathFotoPlaca,
+      },
     );
+    // Respuesta sintetizada localmente — misma forma que ya arma
+    // _enviarRegistro para RegisterVisita: la UI (resumen_solicitud_view)
+    // no distingue "encolado" de "enviado".
+    return {
+      'id': null,
+      'estado': 'PENDIENTE',
+      'client_id': clientId,
+      'created_at': DateTime.now().toIso8601String(),
+    };
   }
 
   /// Valida un token de invitación sin consumirlo. El kiosko lo usa al escanear
@@ -275,11 +376,54 @@ class KioskoServicio {
     String? pathFotoIne,
     String? pathFotoRostro,
     String? pathFotoPlaca,
+    String? clientId,
+  }) async {
+    final connectivity = _connectivity;
+    final cache = _cache;
+    if (connectivity != null && cache != null && connectivity.isOffline) {
+      return _usarInvitacionOffline(
+        cache, token,
+        placa: placa, curp: curp,
+        pathFotoIne: pathFotoIne, pathFotoRostro: pathFotoRostro, pathFotoPlaca: pathFotoPlaca,
+      );
+    }
+
+    try {
+      return await _usarInvitacionRemota(
+        token,
+        placa: placa, curp: curp,
+        pathFotoIne: pathFotoIne, pathFotoRostro: pathFotoRostro, pathFotoPlaca: pathFotoPlaca,
+        clientId: clientId,
+      );
+    } catch (e) {
+      if (cache != null && _esFalloDeRed(e)) {
+        return _usarInvitacionOffline(
+          cache, token,
+          placa: placa, curp: curp,
+          pathFotoIne: pathFotoIne, pathFotoRostro: pathFotoRostro, pathFotoPlaca: pathFotoPlaca,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> _usarInvitacionRemota(
+    String token, {
+    required String placa,
+    String? curp,
+    String? pathFotoIne,
+    String? pathFotoRostro,
+    String? pathFotoPlaca,
+    String? clientId,
   }) async {
     await _ensureLogin();
     final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/invitaciones/$token/usar');
 
-    final sinCapturas = placa.isEmpty &&
+    // Con client_id (reproduciendo un registro offline) siempre se manda
+    // multipart aunque no haya capturas: el backend solo lee client_id del
+    // form-data, no de un POST sin cuerpo.
+    final sinCapturas = clientId == null &&
+        placa.isEmpty &&
         curp == null &&
         pathFotoIne == null &&
         pathFotoRostro == null &&
@@ -295,7 +439,8 @@ class KioskoServicio {
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $_sessionToken'
         ..fields['placa'] = placa
-        ..fields['curp'] = curp ?? '';
+        ..fields['curp'] = curp ?? ''
+        ..fields['client_id'] = clientId ?? '';
 
       for (final foto in [
         ('foto_documento', pathFotoIne),
@@ -323,6 +468,47 @@ class KioskoServicio {
     }
     final body = jsonDecode(response.body);
     throw Exception(body['error'] ?? 'Error al procesar invitación (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> _usarInvitacionOffline(
+    LocalCacheDb cache,
+    String token, {
+    required String placa,
+    String? curp,
+    String? pathFotoIne,
+    String? pathFotoRostro,
+    String? pathFotoPlaca,
+  }) async {
+    final invitacionLocal = await cache.obtenerInvitacionPorToken(token);
+    if (invitacionLocal == null) {
+      throw Exception('Invitación no válida, expirada o agotada');
+    }
+
+    final clientId = _uuid.v4();
+    await cache.marcarInvitacionConsumidaLocal(token);
+    await cache.encolarVisita(
+      clientId: clientId,
+      tipo: 'invitacion',
+      payload: {
+        'token': token,
+        'placa': placa,
+        'curp': curp,
+        'titular': invitacionLocal['titular'],
+        'casa_destino': invitacionLocal['casa_destino'],
+      },
+      fotoPaths: {
+        if (pathFotoIne != null) 'ine': pathFotoIne,
+        if (pathFotoRostro != null) 'rostro': pathFotoRostro,
+        if (pathFotoPlaca != null) 'placa': pathFotoPlaca,
+      },
+    );
+    return {
+      'titular': invitacionLocal['titular'],
+      'casa_destino': invitacionLocal['casa_destino'],
+      'visita_id': null,
+      'estado': 'APROBADO',
+      'placa': placa,
+    };
   }
 
   /// Verifica el QR personal de una Persona (app Kigo): valida su firma y,
@@ -373,7 +559,30 @@ class KioskoServicio {
     throw Exception('Error al validar PIN (${response.statusCode})');
   }
 
-  Future<Map<String, dynamic>> verificarRostroResidente(List<double> embedding) async {
+  Future<Map<String, dynamic>> verificarRostroResidente(
+    List<double> embedding, {
+    String? clientId,
+  }) async {
+    final connectivity = _connectivity;
+    final cache = _cache;
+    if (connectivity != null && cache != null && connectivity.isOffline) {
+      return _verificarRostroOffline(cache, embedding);
+    }
+
+    try {
+      return await _verificarRostroRemoto(embedding, clientId: clientId);
+    } catch (e) {
+      if (cache != null && _esFalloDeRed(e)) {
+        return _verificarRostroOffline(cache, embedding);
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> _verificarRostroRemoto(
+    List<double> embedding, {
+    String? clientId,
+  }) async {
     await _ensureLogin();
     final response = await http.post(
       Uri.parse('$_baseUrl/kioskos/$_kioskoId/residentes/verificar-rostro'),
@@ -381,7 +590,7 @@ class KioskoServicio {
         'Authorization': 'Bearer $_sessionToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'embedding': embedding}),
+      body: jsonEncode({'embedding': embedding, 'client_id': clientId ?? ''}),
     ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode == 200) {
@@ -391,6 +600,33 @@ class KioskoServicio {
       throw Exception('Rostro no reconocido');
     }
     throw Exception('Error al verificar rostro (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> _verificarRostroOffline(
+    LocalCacheDb cache,
+    List<double> embedding,
+  ) async {
+    final residentes = await cache.obtenerResidentes();
+    final match = mejorCoincidenciaLocal(residentes, embedding);
+    if (match == null) {
+      throw Exception('Rostro no reconocido');
+    }
+    final clientId = _uuid.v4();
+    final nombreCompleto = '${match['nombre']} ${match['apellido_paterno']}';
+    await cache.encolarVisita(
+      clientId: clientId,
+      tipo: 'rostro_residente',
+      payload: {
+        'embedding': embedding,
+        'nombre': nombreCompleto,
+        'casa_destino': match['casa_destino'],
+      },
+      fotoPaths: const {},
+    );
+    return {
+      'nombre': nombreCompleto,
+      'casa_destino': match['casa_destino'],
+    };
   }
 
   Future<List<Map<String, dynamic>>> obtenerDestinos() async {
@@ -405,6 +641,19 @@ class KioskoServicio {
       return list.cast<Map<String, dynamic>>();
     }
     throw Exception('Error al obtener destinos (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> obtenerSnapshot() async {
+    await _ensureLogin();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/kioskos/$_kioskoId/sync/snapshot'),
+      headers: {'Authorization': 'Bearer $_sessionToken'},
+    ).timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Error al obtener snapshot (${response.statusCode})');
   }
 
   Future<Map<String, dynamic>> obtenerEstadoVisita(int visitaId) async {
@@ -430,6 +679,7 @@ class KioskoServicio {
     String? pathFotoRostro,
     String? pathFotoPlaca,
     required bool reintento,
+    String? clientId,
   }) async {
     final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/visitas/');
     // Sin INE capturada, lo que respalda la visita es la placa: en un acceso
@@ -442,7 +692,8 @@ class KioskoServicio {
       ..fields['tipo_documento'] = tipoDocumento
       ..fields['curp'] = curp
       ..fields['casa_destino'] = casaDestino
-      ..fields['placa'] = placa;
+      ..fields['placa'] = placa
+      ..fields['client_id'] = clientId ?? '';
 
     if (pathFotoIne != null) {
       request.files.add(
@@ -489,6 +740,7 @@ class KioskoServicio {
           pathFotoIne: pathFotoIne, pathFotoRostro: pathFotoRostro,
           pathFotoPlaca: pathFotoPlaca,
           reintento: true,
+          clientId: clientId,
         );
       }
       await cerrarSesion();
