@@ -116,3 +116,16 @@ func (r *Repository) IncrementarUso(id uint) error {
 		return nil
 	})
 }
+
+// FindActivasNoExpiradasByTenant lista las invitaciones utilizables de un
+// tenant — para el snapshot offline del kiosko: solo las que un kiosko sin
+// red podria consumir validamente si el usuario las trae.
+func (r *Repository) FindActivasNoExpiradasByTenant(tenantID uint) ([]Invitacion, error) {
+	var lista []Invitacion
+	err := r.db.
+		Where("tenant_id = ?", tenantID).
+		Where("expires_at IS NULL OR expires_at > ?", time.Now()).
+		Where("max_usos IS NULL OR conteo_usos < max_usos").
+		Find(&lista).Error
+	return lista, err
+}
