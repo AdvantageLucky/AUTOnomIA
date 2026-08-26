@@ -124,6 +124,18 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 
 	repoCtx := h.repo.WithContext(c.Request.Context())
 
+	if req.ClientID != "" {
+		existente, err := repoCtx.FindByClientID(tenantID, req.ClientID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if existente != nil {
+			c.JSON(http.StatusCreated, toVisitaResponse(*existente))
+			return
+		}
+	}
+
 	cfg, err := repoCtx.GetKioskoConfig(uint(kioskoID))
 	if err != nil {
 		c.JSON(
@@ -219,6 +231,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		Placa:            placa,
 		Estado:           EstadoPendiente,
 		KioskoID:         uint(kioskoID),
+		ClientID:         ClientIDPtr(req.ClientID),
 	}
 
 	if err := repoCtx.Create(v); err != nil {
