@@ -14,6 +14,17 @@ import 'package:kigo_kiosco/features/activacion/models/device_solicitud.dart';
 
 class DeviceNotActivatedException implements Exception {}
 
+/// Token de invitación inválido, expirado, agotado o ya consumido. Tipado
+/// aparte (en vez de un Exception genérico) para que SyncWorker pueda
+/// distinguirlo de un fallo de red al reproducir un registro offline — este
+/// es un rechazo legítimo del backend, no algo que deba reintentarse.
+class InvitacionInvalidaException implements Exception {
+  final String mensaje;
+  InvitacionInvalidaException([this.mensaje = 'Invitación no válida, expirada o agotada']);
+  @override
+  String toString() => mensaje;
+}
+
 class DeviceAuthorizationPendingException implements Exception {}
 
 class DeviceExpiredException implements Exception {}
@@ -464,7 +475,7 @@ class KioskoServicio {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
     if (response.statusCode == 404) {
-      throw Exception('Invitación no válida, expirada o agotada');
+      throw InvitacionInvalidaException();
     }
     final body = jsonDecode(response.body);
     throw Exception(body['error'] ?? 'Error al procesar invitación (${response.statusCode})');
@@ -481,7 +492,7 @@ class KioskoServicio {
   }) async {
     final invitacionLocal = await cache.obtenerInvitacionPorToken(token);
     if (invitacionLocal == null) {
-      throw Exception('Invitación no válida, expirada o agotada');
+      throw InvitacionInvalidaException();
     }
 
     final clientId = _uuid.v4();
@@ -641,6 +652,63 @@ class KioskoServicio {
       return list.cast<Map<String, dynamic>>();
     }
     throw Exception('Error al obtener destinos (${response.statusCode})');
+  }
+
+  // ── Reproducción de la cola offline (solo para SyncWorker) ─────────────────
+  //
+  // A diferencia de registrarVisitante/usarInvitacion/verificarRostroResidente,
+  // estos métodos NO reencolan ante un fallo de red: si lo hicieran, un corte
+  // a medio-drenado se tragaría el error silenciosamente y crearía un
+  // duplicado en la cola en vez de dejar que SyncWorker detenga el drenado y
+  // reintente el mismo client_id en el siguiente ciclo.
+
+  Future<Map<String, dynamic>> reproducirVisitanteNuevo({
+    required String titular,
+    required String curp,
+    required String casaDestino,
+    required String placa,
+    String? pathFotoIne,
+    String? pathFotoRostro,
+    String? pathFotoPlaca,
+    required String clientId,
+  }) async {
+    await _ensureLogin();
+    return _enviarRegistro(
+      titular: titular,
+      curp: curp,
+      casaDestino: casaDestino,
+      placa: placa,
+      tipoVisitante: 'VISITANTE',
+      pathFotoIne: pathFotoIne,
+      pathFotoRostro: pathFotoRostro,
+      pathFotoPlaca: pathFotoPlaca,
+      reintento: false,
+      clientId: clientId,
+    );
+  }
+
+  Future<Map<String, dynamic>> reproducirInvitacion(
+    String token, {
+    required String placa,
+    String? curp,
+    String? pathFotoIne,
+    String? pathFotoRostro,
+    String? pathFotoPlaca,
+    required String clientId,
+  }) {
+    return _usarInvitacionRemota(
+      token,
+      placa: placa, curp: curp,
+      pathFotoIne: pathFotoIne, pathFotoRostro: pathFotoRostro, pathFotoPlaca: pathFotoPlaca,
+      clientId: clientId,
+    );
+  }
+
+  Future<Map<String, dynamic>> reproducirVerificacionRostro(
+    List<double> embedding, {
+    required String clientId,
+  }) {
+    return _verificarRostroRemoto(embedding, clientId: clientId);
   }
 
   Future<Map<String, dynamic>> obtenerSnapshot() async {
