@@ -54,6 +54,7 @@ type Visita struct {
 	Estado              EstadoVisita `gorm:"not null;default:'PENDIENTE'"`
 	Intervenida         bool         `gorm:"not null;default:false"`
 	KioskoID            uint         `gorm:"not null;index"`
+	ClientID            *string      `gorm:"column:client_id;uniqueIndex"`
 	AutorizadoPorTipo   string       `gorm:"column:autorizado_por_tipo"`
 	AutorizadoPorNombre string       `gorm:"column:autorizado_por_nombre"`
 }

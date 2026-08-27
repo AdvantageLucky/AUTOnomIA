@@ -1,4 +1,4 @@
-package residente
+package persona
 
 import "math"
 
@@ -23,14 +23,17 @@ func cosineSimilarity(a, b []float64) float64 {
 	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
 }
 
-// mejorCoincidencia recorre los candidatos y regresa el de mayor similitud
-// contra el embedding capturado en vivo, junto con su score. Si candidatos
-// está vacío regresa (nil, -1).
-func mejorCoincidencia(candidatos []Residente, embedding []float64) (*Residente, float64) {
-	var mejor *Residente
+// mejorCandidatoRostro recorre los candidatos y regresa el de mayor
+// similitud contra el embedding capturado en vivo, junto con su score. Si
+// candidatos está vacío regresa (nil, -1).
+func mejorCandidatoRostro(candidatos []CandidatoKiosko, embedding []float64) (*CandidatoKiosko, float64) {
+	var mejor *CandidatoKiosko
 	mejorScore := -1.0
 
 	for i := range candidatos {
+		if len(candidatos[i].Embedding) == 0 {
+			continue
+		}
 		score := cosineSimilarity(candidatos[i].Embedding, embedding)
 		if score > mejorScore {
 			mejorScore = score

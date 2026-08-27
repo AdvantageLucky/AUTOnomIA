@@ -21,14 +21,6 @@ func (r *Repository) Create(inv *Invitacion) error {
 	return r.db.Create(inv).Error
 }
 
-func (r *Repository) FindByResidenteID(residenteID uint) ([]Invitacion, error) {
-	var list []Invitacion
-	err := r.db.Where("residente_id = ?", residenteID).
-		Order("created_at DESC").
-		Find(&list).Error
-	return list, err
-}
-
 // FindByToken busca una invitacion activa por su token
 // Devuelve ErrInvitacionNoValida si está revocada, expirada o agotada.
 func (r *Repository) FindByToken(token string) (*Invitacion, error) {
@@ -43,18 +35,6 @@ func (r *Repository) FindByToken(token string) (*Invitacion, error) {
 		return nil, ErrInvitacionNoValida
 	}
 	return &inv, nil
-}
-
-// RevocarByID hace soft-delete comprobando que la invitación pertenece al residente
-func (r *Repository) RevocarByID(id, residenteID uint) error {
-	result := r.db.Where("id = ? AND residente_id = ?", id, residenteID).Delete(&Invitacion{})
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
 }
 
 // FindByPersonaCreadora lista las invitaciones activas creadas por una Persona.
@@ -115,4 +95,17 @@ func (r *Repository) IncrementarUso(id uint) error {
 		}
 		return nil
 	})
+}
+
+// FindActivasNoExpiradasByTenant lista las invitaciones utilizables de un
+// tenant — para el snapshot offline del kiosko: solo las que un kiosko sin
+// red podria consumir validamente si el usuario las trae.
+func (r *Repository) FindActivasNoExpiradasByTenant(tenantID uint) ([]Invitacion, error) {
+	var lista []Invitacion
+	err := r.db.
+		Where("tenant_id = ?", tenantID).
+		Where("expires_at IS NULL OR expires_at > ?", time.Now()).
+		Where("max_usos IS NULL OR conteo_usos < max_usos").
+		Find(&lista).Error
+	return lista, err
 }

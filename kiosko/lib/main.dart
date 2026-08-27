@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,9 @@ import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/routing/observador_rutas.dart';
+import 'package:kigo_kiosco/core/services/connectivity_service.dart';
+import 'package:kigo_kiosco/core/services/local_cache_db.dart';
+import 'package:kigo_kiosco/core/services/sync_worker.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_error.dart';
 import 'package:kigo_kiosco/core/widgets/sonda_diagnostico.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
@@ -28,16 +32,99 @@ void main() {
   final servicio = KioskoServicio();
   final configNotifier = KioskoConfigNotifier(servicio);
 
+  final connectivityService = ConnectivityService();
+  final localCacheDb = LocalCacheDb();
+  servicio.configurarOffline(connectivityService, localCacheDb);
+  final syncWorker = SyncWorker(
+    cache: localCacheDb,
+    connectivity: connectivityService,
+    refrescarSnapshot: () => _refrescarSnapshot(servicio, localCacheDb),
+    reproducirRegistro: (registro) => _reproducirRegistroContraBackend(servicio, registro),
+  );
+
   runApp(MultiProvider(
     providers: [
       Provider<KioskoServicio>.value(value: servicio),
       ChangeNotifierProvider<KioskoConfigNotifier>.value(value: configNotifier),
+      ChangeNotifierProvider<ConnectivityService>.value(value: connectivityService),
     ],
     child: const _RaizReiniciable(),
   ));
 
   // Se inicializa después de runApp para que el splash ya sea visible
   configNotifier.inicializar();
+  _iniciarModoOffline(localCacheDb, connectivityService, syncWorker);
+}
+
+/// LocalCacheDb debe abrirse antes de que ConnectivityService/SyncWorker
+/// intenten usarla — por eso este orden, no porque haya una dependencia
+/// circular entre los tres.
+Future<void> _iniciarModoOffline(
+  LocalCacheDb cache,
+  ConnectivityService connectivity,
+  SyncWorker syncWorker,
+) async {
+  await cache.iniciar();
+  await connectivity.iniciar();
+  await syncWorker.iniciar();
+}
+
+Future<void> _refrescarSnapshot(KioskoServicio servicio, LocalCacheDb cache) async {
+  final snapshot = await servicio.obtenerSnapshot();
+  await cache.reemplazarDestinos((snapshot['destinos'] as List).cast<Map<String, dynamic>>());
+  await cache.reemplazarResidentes((snapshot['residentes'] as List).cast<Map<String, dynamic>>());
+  await cache.reemplazarInvitaciones((snapshot['invitaciones'] as List).cast<Map<String, dynamic>>());
+}
+
+/// Reproduce un registro de visitas_queue contra el backend real. Se llama
+/// solo cuando SyncWorker ya confirmó que hay red — usa los métodos
+/// "reproducir*" de KioskoServicio (sin el fallback automático a cola) para
+/// que un fallo de red aquí se propague tal cual y detenga el drenado, en
+/// vez de tragárselo y reencolar un duplicado silenciosamente.
+Future<Map<String, dynamic>> _reproducirRegistroContraBackend(
+  KioskoServicio servicio,
+  Map<String, dynamic> registro,
+) async {
+  final tipo = registro['tipo'] as String;
+  final payload = jsonDecode(registro['payload_json'] as String) as Map<String, dynamic>;
+  final fotoPaths = (jsonDecode(registro['foto_paths_json'] as String) as Map).cast<String, dynamic>();
+  final clientId = registro['client_id'] as String;
+
+  switch (tipo) {
+    case 'visitante_nuevo':
+      return servicio.reproducirVisitanteNuevo(
+        titular: payload['titular'] as String? ?? '',
+        curp: payload['curp'] as String? ?? '',
+        casaDestino: payload['casa_destino'] as String? ?? '',
+        placa: payload['placa'] as String? ?? '',
+        pathFotoIne: fotoPaths['ine'] as String?,
+        pathFotoRostro: fotoPaths['rostro'] as String?,
+        pathFotoPlaca: fotoPaths['placa'] as String?,
+        clientId: clientId,
+      );
+    case 'invitacion':
+      try {
+        return await servicio.reproducirInvitacion(
+          payload['token'] as String,
+          placa: payload['placa'] as String? ?? '',
+          curp: payload['curp'] as String?,
+          pathFotoIne: fotoPaths['ine'] as String?,
+          pathFotoRostro: fotoPaths['rostro'] as String?,
+          pathFotoPlaca: fotoPaths['placa'] as String?,
+          clientId: clientId,
+        );
+      } on InvitacionInvalidaException catch (e) {
+        // El token ya se consumió (posiblemente en otro kiosko offline al
+        // mismo tiempo) — es un rechazo legítimo del backend, no un fallo
+        // de red: SyncWorker debe marcarlo como conflicto, no reintentarlo.
+        throw SyncConflictException(e.mensaje);
+      }
+    case 'rostro_residente':
+      final embedding = (payload['embedding'] as List).cast<double>();
+      return servicio.reproducirVerificacionRostro(embedding, clientId: clientId);
+    default:
+      throw StateError('tipo de registro offline desconocido: $tipo');
+  }
 }
 
 /// Deja los errores en pantalla en vez de la pantalla gris de release.

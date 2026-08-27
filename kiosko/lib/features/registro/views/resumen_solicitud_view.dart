@@ -42,7 +42,11 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   void initState() {
     super.initState();
     _kioskoServicio = context.read<KioskoServicio>();
-    _registrarVisita();
+    // _registrarVisita() puede resolver AppLocalizations.t(context, ...) de
+    // forma sincrona (rama sin identificador, antes de cualquier await) — eso
+    // dispara dependOnInheritedWidgetOfExactType antes de que initState()
+    // termine. Se difiere al primer frame para evitarlo.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registrarVisita());
   }
 
   @override

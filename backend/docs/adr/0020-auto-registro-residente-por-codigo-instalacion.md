@@ -1,7 +1,13 @@
 # 0020 - Auto-registro de residentes por código de instalación
 
 ## Status
-Accepted (reemplaza a [0008](0008-auth-residente-por-pin.md))
+Superseded — el modelo `Residente` y sus rutas (incluidas las de este ADR) fueron eliminados por
+completo; kigo-app migró su identidad a `Persona` (teléfono + OTP) y la afiliación a un centro pasó
+a modelarse como `Membresia`. El login/registro por PIN o rostro desde el kiosko sigue existiendo
+bajo las mismas rutas `POST /kioskos/:id/residentes/{login,verificar-rostro}`, pero ahora resuelve
+contra `Persona`+`Membresia` (ver `internal/domain/persona/kiosko_login_handler.go`).
+
+(Reemplazaba a [0008](0008-auth-residente-por-pin.md))
 
 ## Context
 [0008](0008-auth-residente-por-pin.md) definió dos reglas que la operación real invalidó:

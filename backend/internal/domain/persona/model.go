@@ -23,6 +23,7 @@ type Persona struct {
 	FotoCaraUrl          string
 	Curp                 string `gorm:"not null;default:''"`
 	FotoIneUrl           string
+	DeviceToken          *string
 }
 
 func (Persona) TableName() string { return "personas" }
