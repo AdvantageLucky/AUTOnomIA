@@ -283,61 +283,6 @@ func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, upl
 	}
 }
 
-// registerResidenteRoutes registra rutas de residente: auto-registro público, login, y
-// endpoints autenticados para la app del residente y el dashboard admin.
-func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string, uploadsDir string) {
-	residenteRepo := residente.NewRepository(db)
-	destinoRepo := destinos.NewRepository(db)
-	visitaRepo := visitas.NewRepository(db)
-	residenteHandler := residente.NewHandler(residenteRepo, destinoRepo, jwtSecret, db, uploadsDir, visitaRepo)
-
-	// público: búsqueda de centro, auto-registro y consulta de estado
-	rg.GET("/centros/buscar", residenteHandler.BuscarCentro)
-	rg.GET("/centros/:codigo/destinos", residenteHandler.ListarDestinosPublico)
-	rg.POST("/centros/:codigo/residentes/auto-registro", residenteHandler.AutoRegistrar)
-	rg.GET("/centros/:codigo/residentes/estado", residenteHandler.ConsultarEstado)
-	rg.POST("/centros/:codigo/residentes/login", residenteHandler.LoginResidentePublico)
-
-	// login público
-	rg.POST("/auth/residente/login", residenteHandler.LoginResidente)
-
-	// app residente: rutas protegidas por JWT de residente
-	r := rg.Group("/residentes")
-	r.Use(auth.RequireResidente(jwtSecret))
-	{
-		r.GET("/me", residenteHandler.GetMe)
-		r.POST("/me/device-token", residenteHandler.RegistrarDeviceToken)
-		r.GET("/me/visitas/pendientes", residenteHandler.ListarVisitasPendientes)
-		r.PATCH("/me/visitas/:id/estado", residenteHandler.ResponderVisita)
-	}
-
-	// kiosko: valida PIN de residente usando la sesión del kiosko
-	sesionRepo := auth.NewSesionRepository(db)
-	kPin := rg.Group("/kioskos/:id/residentes")
-	kPin.Use(auth.RequireKiosko(sesionRepo))
-	{
-		kPin.POST("/login", residenteHandler.LoginResidenteDesdeKiosko)
-		kPin.POST("/verificar-rostro", residenteHandler.VerificarRostroDesdeKiosko)
-	}
-
-	// admin: crea residentes y los lista por kiosko
-	a := rg.Group("/kioskos/:id/residentes")
-	a.Use(auth.RequireAdmin(jwtSecret))
-	{
-		a.GET("/", residenteHandler.ListarResidentesPorAcceso)
-	}
-
-	adminR := rg.Group("/residentes")
-	adminR.Use(auth.RequireAdmin(jwtSecret))
-	{
-		adminR.POST("/", residenteHandler.CrearResidente)
-		adminR.GET("/", residenteHandler.ListarResidentesAdmin)
-		adminR.GET("/pendientes", residenteHandler.ListarPendientes)
-		adminR.POST("/:id/aprobar", residenteHandler.AprobarResidente)
-		adminR.POST("/:id/rechazar", residenteHandler.RechazarResidente)
-	}
-}
-
 // registerTenantRoutes registra las rutas para la gestión de fraccionamientos (tenants).
 func registerTenantRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	tenantRepo := tenant.NewRepository(db)
