@@ -6,7 +6,7 @@ import (
 
 	"kigo-autonomia-backend/internal/domain/destinos"
 	"kigo-autonomia-backend/internal/domain/invitaciones"
-	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/domain/persona"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
@@ -14,12 +14,12 @@ import (
 
 type Handler struct {
 	destinoRepo    *destinos.Repository
-	residenteRepo  *residente.Repository
+	personaRepo    *persona.Repository
 	invitacionRepo *invitaciones.Repository
 }
 
-func NewHandler(destinoRepo *destinos.Repository, residenteRepo *residente.Repository, invitacionRepo *invitaciones.Repository) *Handler {
-	return &Handler{destinoRepo: destinoRepo, residenteRepo: residenteRepo, invitacionRepo: invitacionRepo}
+func NewHandler(destinoRepo *destinos.Repository, personaRepo *persona.Repository, invitacionRepo *invitaciones.Repository) *Handler {
+	return &Handler{destinoRepo: destinoRepo, personaRepo: personaRepo, invitacionRepo: invitacionRepo}
 }
 
 // GetSnapshot arma en una sola respuesta todo lo que el kiosko necesita
@@ -45,7 +45,7 @@ func (h *Handler) GetSnapshot(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	residentesList, err := h.residenteRepo.WithContext(c.Request.Context()).FindActivosConEmbeddingPorTenant(tenantID)
+	residentesList, err := h.personaRepo.FindActivasPorTenant(tenantID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -72,13 +72,13 @@ func (h *Handler) GetSnapshot(c *gin.Context) {
 		})
 	}
 	for _, r := range residentesList {
-		emb := []float64(r.Embedding)
+		emb := r.Embedding
 		if emb == nil {
 			emb = []float64{}
 		}
 		resp.Residentes = append(resp.Residentes, ResidenteSnapshot{
-			ID: r.ID, Nombre: r.Nombre, ApellidoPaterno: r.ApellidoPaterno,
-			CasaDestino: r.CasaDestino, PinHash: r.Pin, Embedding: emb,
+			ID: r.MembresiaID, Nombre: r.Nombre, ApellidoPaterno: r.ApellidoPaterno,
+			CasaDestino: r.CasaDestino, PinHash: r.PinHash, Embedding: emb,
 		})
 	}
 	for _, inv := range invitacionesList {

@@ -13,6 +13,7 @@ import (
 
 	"kigo-autonomia-backend/internal/domain/destinos"
 	"kigo-autonomia-backend/internal/domain/invitaciones"
+	"kigo-autonomia-backend/internal/domain/persona"
 	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 )
@@ -22,7 +23,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("no se pudo abrir sqlite en memoria: %v", err)
 	}
-	if err := db.AutoMigrate(&destinos.Destino{}, &residente.Residente{}, &invitaciones.Invitacion{}); err != nil {
+	if err := db.AutoMigrate(&destinos.Destino{}, &persona.Persona{}, &residente.Membresia{}, &invitaciones.Invitacion{}); err != nil {
 		t.Fatalf("no se pudo migrar: %v", err)
 	}
 	return db
@@ -37,27 +38,23 @@ func TestGetSnapshot(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db := setupTestDB(t)
 
-	// Destino y residente activo (con embedding) del tenant 1
 	db.Create(&destinos.Destino{TenantID: 1, Nombre: "Casa 1", Calle: "Roble", Tipo: "casa", Numero: "1", Titular: "Ana"})
-	db.Create(&residente.Residente{
-		TenantID: 1, Nombre: "Ana", ApellidoPaterno: "Ruiz", ApellidoMaterno: "Diaz",
-		Pin: "hash", CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo,
-		Embedding: residente.FloatArray{1.0, 0.0, 0.0},
-	})
-	// Residente pendiente (sin embedding) del mismo tenant — no debe aparecer
-	db.Create(&residente.Residente{
-		TenantID: 1, Nombre: "Luis", ApellidoPaterno: "Gomez", ApellidoMaterno: "Perez",
-		Pin: "hash2", CasaDestino: "Casa 2", Status: residente.ResidenteStatusPendiente,
-	})
-	// Invitación activa del tenant 1
+
+	p := &persona.Persona{Telefono: "+525500000001", Nombre: "Ana", ApellidoPaterno: "Ruiz", Embedding: []float64{1.0, 0.0, 0.0}}
+	db.Create(p)
+	db.Create(&residente.Membresia{PersonaID: p.ID, TenantID: 1, CasaDestino: "Casa 1", Pin: "hash", Status: "activo"})
+
+	pPendiente := &persona.Persona{Telefono: "+525500000002", Nombre: "Luis", ApellidoPaterno: "Gomez"}
+	db.Create(pPendiente)
+	db.Create(&residente.Membresia{PersonaID: pPendiente.ID, TenantID: 1, CasaDestino: "Casa 2", Pin: "hash2", Status: "pendiente"})
+
 	db.Create(&invitaciones.Invitacion{TenantID: 1, Token: "tok-1", Titular: "Invitado", ResidenteID: 1, DestinoID: 1})
-	// Destino de otro tenant — no debe aparecer
 	db.Create(&destinos.Destino{TenantID: 2, Nombre: "Casa X", Calle: "Pino", Tipo: "casa", Numero: "9", Titular: "Otro"})
 
 	destinoRepo := destinos.NewRepository(db)
-	residenteRepo := residente.NewRepository(db)
+	personaRepo := persona.NewRepository(db)
 	invitacionRepo := invitaciones.NewRepository(db)
-	h := NewHandler(destinoRepo, residenteRepo, invitacionRepo)
+	h := NewHandler(destinoRepo, personaRepo, invitacionRepo)
 
 	router := gin.New()
 	router.GET("/kioskos/:id/sync/snapshot", func(c *gin.Context) {
@@ -83,7 +80,7 @@ func TestGetSnapshot(t *testing.T) {
 		t.Errorf("esperaba 1 destino, got %d: %+v", len(resp.Destinos), resp.Destinos)
 	}
 	if len(resp.Residentes) != 1 {
-		t.Errorf("esperaba 1 residente (solo el activo con embedding), got %d: %+v", len(resp.Residentes), resp.Residentes)
+		t.Errorf("esperaba 1 residente (solo la membresia activa), got %d: %+v", len(resp.Residentes), resp.Residentes)
 	}
 	if len(resp.Invitaciones) != 1 {
 		t.Errorf("esperaba 1 invitacion, got %d: %+v", len(resp.Invitaciones), resp.Invitaciones)

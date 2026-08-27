@@ -36,7 +36,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerKioskoRoutes(api, db, cfg.JWTSecret)
 	registerVisitaRoutes(api, db, cfg, hub)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
-	registerResidenteRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
+	registerKioskoLoginRoutes(api, db)
 	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
 	registerSyncRoutes(api, db)
 	registerPersonaRoutes(api, db, cfg)
@@ -240,15 +240,32 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 // invitaciones activas del tenant.
 func registerSyncRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	destinoRepo := destinos.NewRepository(db)
-	residenteRepo := residente.NewRepository(db)
+	personaRepo := persona.NewRepository(db)
 	invitacionRepo := invitaciones.NewRepository(db)
-	syncHandler := sync.NewHandler(destinoRepo, residenteRepo, invitacionRepo)
+	syncHandler := sync.NewHandler(destinoRepo, personaRepo, invitacionRepo)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	k := rg.Group("/kioskos/:id/sync")
 	k.Use(auth.RequireKiosko(sesionRepo))
 	{
 		k.GET("/snapshot", syncHandler.GetSnapshot)
+	}
+}
+
+// registerKioskoLoginRoutes registra el login del kiosko por PIN y por
+// rostro — mismos paths que antes, ahora resuelven contra Persona+Membresia
+// en vez de Residente (ver spec 2026-08-26-eliminar-residente-legacy-design.md).
+func registerKioskoLoginRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+	personaRepo := persona.NewRepository(db)
+	visitaRepo := visitas.NewRepository(db)
+	kioskoLoginHandler := persona.NewKioskoLoginHandler(personaRepo, visitaRepo, db)
+	sesionRepo := auth.NewSesionRepository(db)
+
+	kPin := rg.Group("/kioskos/:id/residentes")
+	kPin.Use(auth.RequireKiosko(sesionRepo))
+	{
+		kPin.POST("/login", kioskoLoginHandler.LoginDesdeKiosko)
+		kPin.POST("/verificar-rostro", kioskoLoginHandler.VerificarRostroDesdeKiosko)
 	}
 }
 
