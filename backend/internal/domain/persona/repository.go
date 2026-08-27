@@ -27,6 +27,24 @@ func (r *Repository) Update(p *Persona) error {
 	return r.db.Save(p).Error
 }
 
+func (r *Repository) UpdateDeviceToken(id uint, token string) error {
+	return r.db.Model(&Persona{}).Where("id = ?", id).Update("device_token", token).Error
+}
+
+// FindActivasPorCasaDestino resuelve a quién notificar cuando llega una
+// visita a una casa — reemplaza a residente.Repository.FindActivosPorCasaDestino
+// (Residente ya no se llena para altas nuevas, ver spec 2026-08-26).
+func (r *Repository) FindActivasPorCasaDestino(tenantID uint, casaDestino string) ([]Persona, error) {
+	var list []Persona
+	err := r.db.
+		Joins("JOIN membresias ON membresias.persona_id = personas.id").
+		Where("membresias.tenant_id = ? AND membresias.casa_destino = ? AND membresias.status = ?",
+			tenantID, casaDestino, residente.ResidenteStatusActivo).
+		Where("membresias.deleted_at IS NULL").
+		Find(&list).Error
+	return list, err
+}
+
 func (r *Repository) FindByID(id uint) (*Persona, error) {
 	var p Persona
 	if err := r.db.First(&p, id).Error; err != nil {
