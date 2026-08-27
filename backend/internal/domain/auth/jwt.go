@@ -71,38 +71,6 @@ func ParseAdminToken(tokenStr, secret string) (uint, string, uint, error) {
 	return claims.AdminID, claims.Rol, claims.TenantID, nil
 }
 
-// residenteClaims son los claims del JWT de un Residente autenticado en la app
-type residenteClaims struct {
-	ResidenteID uint `json:"residente_id"`
-	TenantID    uint `json:"tenant_id"`
-	jwt.RegisteredClaims
-}
-
-// GenerateResidenteToken firma un JWT (HS256) para el Residente autenticado, válido 7 días
-func GenerateResidenteToken(residenteID uint, tenantID uint, secret string) (string, error) {
-	claims := residenteClaims{
-		ResidenteID: residenteID,
-		TenantID:    tenantID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
-}
-
-// ParseResidenteToken valida el JWT del residente y devuelve (residenteID, tenantID, error)
-func ParseResidenteToken(tokenStr, secret string) (uint, uint, error) {
-	claims := &residenteClaims{}
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
-		return []byte(secret), nil
-	})
-	if err != nil || !token.Valid {
-		return 0, 0, errors.New("token invalido o expirado")
-	}
-	return claims.ResidenteID, claims.TenantID, nil
-}
 
 // personaClaims son los claims del JWT de una Persona autenticada en la app
 // Kigo — a diferencia de admin/residente, Persona no lleva tenant_id: es
