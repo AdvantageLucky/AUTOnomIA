@@ -6,6 +6,13 @@ import "gorm.io/gorm"
 const (
 	MembresiaRolTitular  = "titular"
 	MembresiaRolFamiliar = "familiar"
+
+	// Reusadas por Membresia.Status (y antes por Residente.Status, ya
+	// eliminado) — el ciclo de aprobación activo/pendiente/rechazado es el
+	// mismo para ambos.
+	ResidenteStatusActivo    = "activo"
+	ResidenteStatusPendiente = "pendiente"
+	ResidenteStatusRechazado = "rechazado"
 )
 
 // Membresia es la relación de una Persona (internal/domain/persona) con un
@@ -14,8 +21,8 @@ const (
 // quedan aquí, porque son propios de cada centro habitacional). Ver spec
 // 2026-08-16-persona-identidad-kigo-design.md §2.
 //
-// Status reusa las constantes ResidenteStatus* ya definidas en model.go
-// (activo | pendiente | rechazado) — el ciclo de aprobación es el mismo.
+// Status reusa las constantes ResidenteStatus* de arriba (activo |
+// pendiente | rechazado) — el ciclo de aprobación es el mismo.
 type Membresia struct {
 	gorm.Model
 	PersonaID                   uint   `gorm:"column:persona_id;not null;index"`
