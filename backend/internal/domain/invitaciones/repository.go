@@ -21,14 +21,6 @@ func (r *Repository) Create(inv *Invitacion) error {
 	return r.db.Create(inv).Error
 }
 
-func (r *Repository) FindByResidenteID(residenteID uint) ([]Invitacion, error) {
-	var list []Invitacion
-	err := r.db.Where("residente_id = ?", residenteID).
-		Order("created_at DESC").
-		Find(&list).Error
-	return list, err
-}
-
 // FindByToken busca una invitacion activa por su token
 // Devuelve ErrInvitacionNoValida si está revocada, expirada o agotada.
 func (r *Repository) FindByToken(token string) (*Invitacion, error) {
@@ -43,18 +35,6 @@ func (r *Repository) FindByToken(token string) (*Invitacion, error) {
 		return nil, ErrInvitacionNoValida
 	}
 	return &inv, nil
-}
-
-// RevocarByID hace soft-delete comprobando que la invitación pertenece al residente
-func (r *Repository) RevocarByID(id, residenteID uint) error {
-	result := r.db.Where("id = ? AND residente_id = ?", id, residenteID).Delete(&Invitacion{})
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
 }
 
 // FindByPersonaCreadora lista las invitaciones activas creadas por una Persona.
