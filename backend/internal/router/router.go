@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"log"
+	"net/http"
 
 	"kigo-autonomia-backend/configs"
 	"kigo-autonomia-backend/internal/domain/admin"
@@ -26,6 +27,13 @@ import (
 // Setup registra todas las rutas del server
 func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	r := gin.Default()
+
+	// ping de disponibilidad: el kiosko lo consulta para decidir si opera en
+	// linea u offline. Va fuera de /api/v1 porque el cliente pega a la raiz.
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	api := r.Group("/api/v1")
 
 	hub := sse.NewHub()
