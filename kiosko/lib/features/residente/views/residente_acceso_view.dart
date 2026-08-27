@@ -263,12 +263,12 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: KigoDesign.surface2,
+              color: KigoDesign.brand,
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: KigoDesign.textSecondary,
+              color: Colors.white,
               size: 18,
             ),
           ),
