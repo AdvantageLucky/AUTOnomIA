@@ -368,6 +368,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.GET("", personaHandler.GetMe)
 		p.PATCH("", personaHandler.PatchMe)
 		p.POST("/identidad", personaHandler.CompletarIdentidad)
+		p.POST("/device-token", personaHandler.RegistrarDeviceToken)
 		p.GET("/qr", personaHandler.GetQR)
 		p.POST("/membresias", personaHandler.UnirseCentro)
 		p.GET("/membresias", personaHandler.ListarMisMembresias)

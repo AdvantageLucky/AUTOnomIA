@@ -92,6 +92,10 @@ func toPersonaMeResponse(p *Persona) PersonaMeResponse {
 	}
 }
 
+type DeviceTokenRequest struct {
+	DeviceToken string `json:"device_token" binding:"required"`
+}
+
 type PatchPersonaMeRequest struct {
 	Nombre          string `json:"nombre"`
 	ApellidoPaterno string `json:"apellido_paterno"`
