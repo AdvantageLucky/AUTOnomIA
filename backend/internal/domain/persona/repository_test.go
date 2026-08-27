@@ -70,3 +70,39 @@ func TestFindActivasPorCasaDestino(t *testing.T) {
 		t.Fatalf("esperaba solo la persona activa correcta, got %+v", lista)
 	}
 }
+
+func TestFindActivasPorTenant(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	embedding := []float64{1.0, 0.5, 0.0}
+	pActiva := &Persona{Telefono: "+525500000001", Embedding: embedding}
+	repo.Create(pActiva)
+	db.Create(&residente.Membresia{PersonaID: pActiva.ID, TenantID: 1, CasaDestino: "Casa 1", Pin: "hash-pin-1", Status: "activo"})
+
+	pPendiente := &Persona{Telefono: "+525500000002"}
+	repo.Create(pPendiente)
+	db.Create(&residente.Membresia{PersonaID: pPendiente.ID, TenantID: 1, CasaDestino: "Casa 1", Pin: "hash-pin-2", Status: "pendiente"})
+
+	pOtroTenant := &Persona{Telefono: "+525500000003"}
+	repo.Create(pOtroTenant)
+	db.Create(&residente.Membresia{PersonaID: pOtroTenant.ID, TenantID: 2, CasaDestino: "Casa 1", Pin: "hash-pin-3", Status: "activo"})
+
+	lista, err := repo.FindActivasPorTenant(1)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(lista) != 1 {
+		t.Fatalf("esperaba 1 candidato, got %d: %+v", len(lista), lista)
+	}
+	c := lista[0]
+	if c.PinHash != "hash-pin-1" {
+		t.Errorf("esperaba PinHash='hash-pin-1', got %q", c.PinHash)
+	}
+	if c.CasaDestino != "Casa 1" {
+		t.Errorf("esperaba CasaDestino='Casa 1', got %q", c.CasaDestino)
+	}
+	if len(c.Embedding) != 3 || c.Embedding[0] != 1.0 {
+		t.Errorf("esperaba embedding [1.0, 0.5, 0.0], got %+v", c.Embedding)
+	}
+}

@@ -88,3 +88,54 @@ func (r *Repository) UpdateEmbedding(id uint, embedding []float64) error {
 	return r.db.Model(&Persona{}).Where("id = ?", id).
 		Update("embedding", residente.FloatArray(embedding)).Error
 }
+
+// CandidatoKiosko es la forma minima que necesita el kiosko para
+// reconocer a alguien por PIN o por rostro — reemplaza lo que antes leia
+// de Residente, ahora sale de Persona+Membresia via join.
+type CandidatoKiosko struct {
+	MembresiaID     uint
+	Nombre          string
+	ApellidoPaterno string
+	CasaDestino     string
+	PinHash         string
+	Embedding       []float64
+}
+
+// candidatoKioskoFila es el destino intermedio del join en
+// FindActivasPorTenant — un tipo con nombre (no un struct anónimo), porque
+// GORM necesita poder resolver el esquema del campo Embedding
+// (residente.FloatArray, con Value()/Scan() propios) y falla al hacerlo
+// sobre un struct anónimo declarado inline.
+type candidatoKioskoFila struct {
+	MembresiaID     uint
+	Nombre          string
+	ApellidoPaterno string
+	CasaDestino     string
+	PinHash         string
+	Embedding       residente.FloatArray `gorm:"type:float[]"`
+}
+
+// FindActivasPorTenant trae los candidatos de un tenant para el login del
+// kiosko (PIN o rostro) y para el snapshot offline — un solo query
+// reusado por los tres. Solo Membresias activas.
+func (r *Repository) FindActivasPorTenant(tenantID uint) ([]CandidatoKiosko, error) {
+	var filas []candidatoKioskoFila
+	err := r.db.Table("membresias").
+		Select("membresias.id AS membresia_id, personas.nombre AS nombre, personas.apellido_paterno AS apellido_paterno, membresias.casa_destino AS casa_destino, membresias.pin AS pin_hash, personas.embedding AS embedding").
+		Joins("JOIN personas ON personas.id = membresias.persona_id").
+		Where("membresias.tenant_id = ? AND membresias.status = ?", tenantID, residente.ResidenteStatusActivo).
+		Where("membresias.deleted_at IS NULL AND personas.deleted_at IS NULL").
+		Scan(&filas).Error
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]CandidatoKiosko, len(filas))
+	for i, f := range filas {
+		out[i] = CandidatoKiosko{
+			MembresiaID: f.MembresiaID, Nombre: f.Nombre, ApellidoPaterno: f.ApellidoPaterno,
+			CasaDestino: f.CasaDestino, PinHash: f.PinHash, Embedding: []float64(f.Embedding),
+		}
+	}
+	return out, nil
+}
