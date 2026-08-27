@@ -108,8 +108,9 @@ class _FaceApproachAnimationState extends State<FaceApproachAnimation>
 
   // Busto simple estilo ilustración plana: torso/hombros, cuello, cabeza,
   // cabello, ojos ovalados negros y una sonrisa de "media luna" blanca.
-  // El hombre lleva saco y corbata con cabello corto abundante; la mujer
-  // lleva una blusa con cabello largo que cae detrás de todo el cuerpo.
+  // El hombre lleva saco y corbata, y su cabello son solo los dos óvalos
+  // largos de la frente; la mujer lleva una blusa con cabello largo que cae
+  // detrás de todo el cuerpo.
   Widget _buildFace({required bool isMan}) {
     const cx = 115.0;
     const headCy = 100.0;
@@ -148,29 +149,37 @@ class _FaceApproachAnimationState extends State<FaceApproachAnimation>
             color: _skinColor,
             radius: r * 0.08,
           ),
-          if (isMan)
-            _rect(x1: cx - r * 1.0, y1: headCy - r * 1.4, x2: cx + r * 0.9, y2: headCy + r * 0.15, color: _hairColor, radius: r * 0.55)
-          else
+          if (!isMan)
             _rect(x1: cx - r * 1.2, y1: headCy - r * 1.3, x2: cx + r * 1.2, y2: headCy + r * 1.0, color: _hairColor, radius: r * 0.7),
           _circle(cx: cx, cy: headCy, r: r, color: _skinColor),
-          if (isMan)
-            Positioned(
-              left: cx - r * 0.98,
-              top: headCy - r * 0.9,
-              child: Transform.rotate(
-                angle: -18 * pi / 180,
-                child: Container(
-                  width: r * 0.85,
-                  height: r * 0.42,
-                  decoration: BoxDecoration(color: _hairColor, borderRadius: BorderRadius.circular(r * 0.22)),
-                ),
-              ),
-            ),
+          ..._buildForeheadHair(isMan: isMan, cx: cx, cy: headCy, r: r),
           for (final side in [-1, 1]) _buildEye(cx: cx, cy: headCy, r: r, side: side),
           _halfMoonMouth(cx: cx, topY: headCy + r * 0.38, width: r * 0.55, fullHeight: r * 0.4, color: _whiteColor),
         ],
       ),
     );
+  }
+
+  // Óvalos de cabello sobre la frente. La mujer lleva un solo casquete ancho,
+  // con el nacimiento del cabello liso. El hombre lleva dos óvalos largos
+  // inclinados que se cruzan arriba y abren hacia abajo una cuña de frente.
+  List<Widget> _buildForeheadHair({required bool isMan, required double cx, required double cy, required double r}) {
+    if (!isMan) {
+      return [
+        _oval(cx: cx, cy: cy - r * 0.80, width: r * 1.75, height: r * 1.05, color: _hairColor),
+      ];
+    }
+    return [
+      for (final side in [-1, 1])
+        _oval(
+          cx: cx + side * r * 0.42,
+          cy: cy - r * 0.58,
+          width: r * 1.24,
+          height: r * 0.74,
+          color: _hairColor,
+          angleDeg: side * 45.0,
+        ),
+    ];
   }
 
   List<Widget> _buildCollarAndTie({required double cx, required double headCy, required double r}) {
@@ -277,18 +286,26 @@ class _FaceApproachAnimationState extends State<FaceApproachAnimation>
     );
   }
 
-  Widget _oval({required double cx, required double cy, required double width, required double height, required Color color}) {
+  Widget _oval({
+    required double cx,
+    required double cy,
+    required double width,
+    required double height,
+    required Color color,
+    double angleDeg = 0,
+  }) {
+    final Widget oval = Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.all(Radius.elliptical(width / 2, height / 2)),
+      ),
+    );
     return Positioned(
       left: cx - width / 2,
       top: cy - height / 2,
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.all(Radius.elliptical(width / 2, height / 2)),
-        ),
-      ),
+      child: angleDeg == 0 ? oval : Transform.rotate(angle: angleDeg * pi / 180, child: oval),
     );
   }
 }
