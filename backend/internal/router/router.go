@@ -178,7 +178,7 @@ func emailOtpSender(cfg *configs.Config) persona.OtpSender {
 // consulta del admin (JWT).
 func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config, hub *sse.Hub) {
 	visitaRepo := visitas.NewRepository(db)
-	notificador := residente.NewPushNotificador(residente.NewRepository(db), pushSender(cfg))
+	notificador := persona.NewPushNotificador(persona.NewRepository(db), pushSender(cfg))
 	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub, notificador)
 	sesionRepo := auth.NewSesionRepository(db)
 
