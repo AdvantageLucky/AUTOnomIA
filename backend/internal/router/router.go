@@ -274,15 +274,6 @@ func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, upl
 	invHandler := invitaciones.NewHandler(invRepo, db, uploadsDir)
 	sesionRepo := auth.NewSesionRepository(db)
 
-	// app residente: crea, lista y revoca sus invitaciones
-	r := rg.Group("/residentes/me/invitaciones")
-	r.Use(auth.RequireResidente(jwtSecret))
-	{
-		r.POST("/", invHandler.CrearInvitacion)
-		r.GET("/", invHandler.ListarInvitaciones)
-		r.DELETE("/:id", invHandler.RevocarInvitacion)
-	}
-
 	// kiosko: valida un token y registra su uso
 	k := rg.Group("/kioskos/:id/invitaciones")
 	k.Use(auth.RequireKiosko(sesionRepo))
