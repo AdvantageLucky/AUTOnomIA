@@ -78,27 +78,6 @@ func RequireKiosko(sesionRepo *SesionRepository) gin.HandlerFunc {
 	}
 }
 
-// RequireResidente valida el JWT del residente y mete el residente_id y tenant_id en el contexto
-func RequireResidente(secret string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		token := bearerToken(c)
-		if token == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token requerido"})
-			return
-		}
-
-		residenteID, tenantID, err := ParseResidenteToken(token, secret)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token invalido o expirado"})
-			return
-		}
-
-		injectCtx(c, ctxkeys.ResidenteID, residenteID)
-		injectCtx(c, ctxkeys.TenantID, tenantID)
-		c.Next()
-	}
-}
-
 // RequirePersona valida el JWT de la app Kigo y mete el persona_id en el
 // contexto de gin y del request. A diferencia de RequireAdmin/RequireKiosko/
 // RequireResidente, no inyecta tenant_id — Persona es global.
