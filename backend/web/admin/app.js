@@ -328,7 +328,7 @@
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado", REVISION: "badge--revision" };
 
   const RUTAS_POR_ROL = {
-    admin:     ["dashboard","solicitudes","visitas","detalle","residentes","residente-detalle","kioskos","configuracion","instalacion","perfil"],
+    admin:     ["dashboard","solicitudes","visitas","detalle","residentes","kioskos","configuracion","instalacion","perfil"],
     vigilante: ["solicitudes","perfil"],
   };
 
@@ -346,8 +346,6 @@
     visSearchTimeout: null,
     solPollingId: null,
     sseSource: null,
-    residentesFull: [],
-    resSearchTimeout: null,
   };
 
   /* ─── Auth helpers ──────────────────────── */
@@ -476,7 +474,7 @@
     if (screen === "dashboard")     loadDashboard();
     if (screen === "visitas")       loadVisitas(1);
     if (screen === "solicitudes")   startSolPolling();
-    if (screen === "residentes")    { loadResidentes(); loadResidentesPendientesBadge(); }
+    if (screen === "residentes")    { loadResidentesPendientes(); loadResidentesPendientesBadge(); }
     if (screen === "kioskos")       loadAccesos();
     if (screen === "instalacion")   { loadDestinosSection(); }
     if (screen === "configuracion") loadConfigAccesos();
@@ -728,16 +726,6 @@
     });
   });
 
-  document.querySelectorAll('#screen-residentes .tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-      switchTab('screen-residentes', tab,
-        tab === 'res-activos'     ? loadResidentes :
-        tab === 'res-solicitudes' ? loadResidentesPendientes : null
-      );
-    });
-  });
-
   document.querySelectorAll('#screen-instalacion .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
@@ -750,21 +738,12 @@
 
   /* ─── Dashboard ─────────────────────────── */
   async function loadDashboard() {
-    const [resVisitas, resResidentes] = await Promise.all([
-      api("/visitas/?page_size=100"),
-      api("/residentes/")
-    ]);
+    const resVisitas = await api("/visitas/?page_size=100");
 
     let visitas = [];
     if (resVisitas && resVisitas.ok) {
       const data = await resVisitas.json();
       visitas = data.visitas || [];
-    }
-
-    let residentesCount = 0;
-    if (resResidentes && resResidentes.ok) {
-      const resList = await resResidentes.json();
-      residentesCount = Array.isArray(resList) ? resList.length : 0;
     }
 
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
@@ -778,7 +757,6 @@
     animateStat("stat-hoy",        hoyCount);
     animateStat("stat-pendientes", pendCount);
     animateStat("stat-aprobadas",  aprobHoyCount);
-    animateStat("stat-residentes", residentesCount);
 
     const subPend = document.getElementById("stat-sub-pendientes");
     if (subPend) {
@@ -1153,211 +1131,6 @@
     });
     if (res && res.ok) loadSolicitudes();
   }
-
-  /* ─── Residentes ────────────────────────── */
-  async function loadResidentes() {
-    const loadEl  = document.getElementById("res-loading");
-    const emptyEl = document.getElementById("res-empty");
-    const gridEl  = document.getElementById("res-grid");
-
-    if (loadEl)  loadEl.hidden = false;
-    if (emptyEl) emptyEl.hidden = true;
-    if (gridEl)  gridEl.innerHTML = "";
-
-    const res = await api("/residentes/");
-    if (loadEl) loadEl.hidden = true;
-
-    if (!res || !res.ok) {
-      if (gridEl) gridEl.innerHTML = `<div class="empty-title">${t("load_err_title")}</div>`;
-      return;
-    }
-
-    state.residentesFull = await res.json();
-    renderResidentesGrid(state.residentesFull);
-  }
-
-  function renderResidentesGrid(list) {
-    const emptyEl = document.getElementById("res-empty");
-    const gridEl  = document.getElementById("res-grid");
-
-    if (list.length === 0) {
-      if (emptyEl) emptyEl.hidden = false;
-      if (gridEl)  gridEl.innerHTML = "";
-      return;
-    }
-    if (emptyEl) emptyEl.hidden = true;
-    if (gridEl) {
-      gridEl.innerHTML = list.map((r, i) => renderResidenteCard(r, i)).join("");
-      gridEl.querySelectorAll("[data-residente-id]").forEach(card => {
-        card.addEventListener("click", () => loadResidenteDetalle(card.dataset.residenteId));
-      });
-    }
-  }
-
-  function renderResidenteCard(r, i) {
-    const initials = ((r.nombre?.[0] || "") + (r.apellido_paterno?.[0] || "")).toUpperCase();
-    const nombre   = [r.nombre, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(" ");
-    return `<div class="residente-card" style="animation-delay:${i*30}ms" data-residente-id="${r.id}">
-      <div class="avatar avatar--lg">${esc(initials) || "·"}</div>
-      <div class="residente-card-info">
-        <div class="residente-card-nombre">${esc(nombre)}</div>
-        <div class="residente-card-casa">${esc(r.casa_destino || "—")}</div>
-        ${r.telefono ? `<div class="row-sub">${esc(r.telefono)}</div>` : ""}
-      </div>
-      <div class="residente-card-arrow">›</div>
-    </div>`;
-  }
-
-  document.getElementById("res-search")?.addEventListener("input", e => {
-    clearTimeout(state.resSearchTimeout);
-    state.resSearchTimeout = setTimeout(() => {
-      const q = e.target.value.toLowerCase();
-      const filtered = state.residentesFull.filter(r => {
-        const nombre = [r.nombre, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(" ").toLowerCase();
-        return nombre.includes(q) || (r.casa_destino || "").toLowerCase().includes(q);
-      });
-      renderResidentesGrid(filtered);
-    }, 250);
-  });
-
-  async function loadResidenteDetalle(residenteId) {
-    navTo("residente-detalle");
-    const body = document.getElementById("residente-detalle-body");
-    body.innerHTML = `<div class="loading-state"><div class="spinner"></div></div>`;
-
-    const res = await api(`/residentes/${residenteId}/me`.replace("/me",""));
-
-    let r = state.residentesFull.find(x => String(x.id) === String(residenteId));
-    if (!r) {
-      body.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`;
-      return;
-    }
-
-    const nombre   = [r.nombre, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(" ");
-    const initials = ((r.nombre?.[0] || "") + (r.apellido_paterno?.[0] || "")).toUpperCase();
-    const accesoNombre = state.accesosById.get(r.kiosko_id)?.nombre || `Kiosko #${r.kiosko_id || "—"}`;
-
-    body.innerHTML = `
-      <div class="panel panel-padded" style="margin-bottom:16px">
-        <div class="profile-head">
-          <div class="avatar avatar--lg">${esc(initials) || "·"}</div>
-          <div>
-            <div class="profile-name">${esc(nombre)}</div>
-            <div class="profile-role">${esc(accesoNombre)} · ${esc(r.casa_destino || "—")}</div>
-          </div>
-        </div>
-        <div class="detalle-campos" style="margin-top:16px">
-          <div><div class="campo-label">Casa / Destino</div><div class="campo-value">${esc(r.casa_destino || "—")}</div></div>
-          ${r.telefono ? `<div><div class="campo-label">Teléfono</div><div class="campo-value">${esc(r.telefono)}</div></div>` : ""}
-          ${r.tiempo_espera_seg !== undefined && r.tiempo_espera_seg !== null
-            ? `<div><div class="campo-label">Tiempo de espera</div><div class="campo-value">${r.tiempo_espera_seg} s</div></div>`
-            : ""}
-        </div>
-      </div>
-
-      <div class="panel panel-padded" style="margin-bottom:16px">
-        <div class="panel-header" style="margin-bottom:12px">
-          <div class="panel-title">Invitación QR</div>
-          <span class="row-sub">Placeholder — invitaciones aún no implementadas</span>
-        </div>
-        <div id="qr-placeholder" style="display:flex;align-items:center;gap:16px">
-          <canvas id="qr-canvas" width="120" height="120" style="border-radius:8px;background:var(--bg-2)"></canvas>
-          <div class="row-sub" style="font-size:12px">El QR real se generará cuando se implemente el modelo de invitaciones.<br>Este es un QR de demostración con el ID del residente.</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">Historial de visitas</div>
-        </div>
-        <div id="residente-visitas-rows">
-          <div class="loading-state"><div class="spinner"></div></div>
-        </div>
-      </div>`;
-
-    renderQRPlaceholder(r.id, "qr-canvas");
-    loadResidenteVisitas(r);
-  }
-
-  function renderQRPlaceholder(id, canvasId) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const size = canvas.width;
-    const cellSize = 4;
-    const cols = Math.floor(size / cellSize);
-
-    const data = `AUTONOMIA:RESIDENTE:${id}`;
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) hash = (Math.imul(31, hash) + data.charCodeAt(i)) | 0;
-
-    const isDark = document.documentElement.dataset.theme === "dark";
-    const fg = isDark ? "#FFFFFF" : "#111111";
-    const bg = isDark ? "#1a1a1a" : "#F5F5F5";
-
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = fg;
-
-    for (let y = 0; y < cols; y++) {
-      for (let x = 0; x < cols; x++) {
-        const bit = (hash ^ (x * 7 + y * 13) ^ (x ^ y)) & 1;
-        if (bit) ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
-      }
-    }
-
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, 28, 28);
-    ctx.fillRect(size - 28, 0, 28, 28);
-    ctx.fillRect(0, size - 28, 28, 28);
-    ctx.fillStyle = fg;
-    [0, size - 28, 0].forEach((ox, i) => {
-      const oy = i === 2 ? size - 28 : i * (size - 28);
-      ctx.fillRect(ox, oy, 24, 24);
-      ctx.fillStyle = bg;
-      ctx.fillRect(ox + 4, oy + 4, 16, 16);
-      ctx.fillStyle = fg;
-      ctx.fillRect(ox + 8, oy + 8, 8, 8);
-    });
-  }
-
-  async function loadResidenteVisitas(r) {
-    const container = document.getElementById("residente-visitas-rows");
-    if (!container) return;
-
-    const q = [r.nombre, r.apellido_paterno].filter(Boolean).join(" ");
-    const res = await api(`/visitas/?q=${encodeURIComponent(q)}&page_size=20`);
-    if (!res || !res.ok) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`;
-      return;
-    }
-
-    const data = await res.json();
-    const visitas = (data.visitas || []).filter(v => v.kiosko_id === r.kiosko_id);
-
-    if (visitas.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg></div><div class="empty-title">Sin entradas registradas</div><div class="empty-text">Este residente aún no registra entradas ni invitaciones.</div></div>`;
-      return;
-    }
-
-    container.innerHTML = visitas.map((v, i) => `
-      <div class="row-item" style="grid-template-columns:2fr 1fr 80px;animation-delay:${i*30}ms" data-id="${v.id}">
-        <div>
-          <div class="row-name">${esc(v.titular)}</div>
-          <div class="row-sub">${esc(v.casa_destino || "—")}</div>
-        </div>
-        <div class="row-date">${fmtDate(v.created_at)}</div>
-        <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
-      </div>`).join("");
-
-    container.querySelectorAll("[data-id]").forEach(row => {
-      row.addEventListener("click", () => loadDetalle(row.dataset.id));
-    });
-  }
-
-  document.getElementById("btn-nuevo-residente")?.addEventListener("click", () => {
-    alert("Formulario de nuevo residente — próximamente.");
-  });
 
   /* ─── Accesos ────────────────────────────── */
   async function loadAccesos() {
@@ -2417,15 +2190,8 @@
 
   async function loadResidentesPendientesBadge() {
     try {
-      const [resRes, resMem] = await Promise.all([
-        api('/residentes/pendientes'),
-        api('/membresias/pendientes'),
-      ]);
+      const resMem = await api('/membresias/pendientes');
       let n = 0;
-      if (resRes && resRes.ok) {
-        const d = await resRes.json();
-        n += (Array.isArray(d) ? d : (d.residentes || [])).length;
-      }
       if (resMem && resMem.ok) {
         const d = await resMem.json();
         n += (Array.isArray(d) ? d : (d.membresias || [])).length;
@@ -2447,24 +2213,13 @@
     if (emptyEl) emptyEl.hidden = true;
     if (loadEl)  loadEl.hidden = false;
 
-    let resResidentes = null, resMembresias = null;
+    let resMembresias = null;
     try {
-      [resResidentes, resMembresias] = await Promise.all([
-        api('/residentes/pendientes'),
-        api('/membresias/pendientes'),
-      ]);
+      resMembresias = await api('/membresias/pendientes');
     } catch (e) {
       console.error('Error fetching pendientes:', e);
     }
     if (loadEl) loadEl.hidden = true;
-
-    let residentes = [];
-    if (resResidentes && resResidentes.ok) {
-      try {
-        const d = await resResidentes.json();
-        residentes = Array.isArray(d) ? d : (d.residentes || []);
-      } catch (e) { console.error(e); }
-    }
 
     let membresias = [];
     if (resMembresias && resMembresias.ok) {
@@ -2474,30 +2229,11 @@
       } catch (e) { console.error(e); }
     }
 
-    if (!residentes.length && !membresias.length) {
+    if (!membresias.length) {
       if (emptyEl) emptyEl.hidden = false;
       return;
     }
     if (emptyEl) emptyEl.hidden = true;
-
-    const filasResidentes = residentes.map(r => {
-      const fecha = new Date(r.created_at).toLocaleDateString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-      const foto  = r.foto_cara_url
-        ? `<img src="${esc(r.foto_cara_url)}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-right:12px" alt="foto">`
-        : `<div style="width:48px;height:48px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:20px">👤</div>`;
-      return `
-        <div class="equipo-row" style="align-items:center">
-          ${foto}
-          <div class="equipo-info" style="flex:1">
-            <div class="equipo-name">${esc(r.nombre)} ${esc(r.apellido_paterno)} ${esc(r.apellido_materno)}</div>
-            <div class="equipo-sub">${esc(r.casa_destino)}${r.telefono ? ' · ' + esc(r.telefono) : ''} · Solicitado: ${fecha}</div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn-primary" data-aprobar-res="${r.id}">Aprobar</button>
-            <button class="btn-ghost" data-rechazar-res="${r.id}" style="color:var(--danger,#e55)">Rechazar</button>
-          </div>
-        </div>`;
-    }).join('');
 
     const filasMembresias = membresias.map(m => `
         <div class="equipo-row" style="align-items:center">
@@ -2512,26 +2248,7 @@
           </div>
         </div>`).join('');
 
-    rowsEl.innerHTML = filasMembresias + filasResidentes;
-
-    rowsEl.querySelectorAll('[data-aprobar-res]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.aprobarRes;
-        const res = await api(`/residentes/${id}/aprobar`, { method: 'POST' });
-        if (res && res.ok) { mostrarToast('Residente aprobado', 'ok'); loadResidentesPendientes(); }
-        else mostrarToast('Error al aprobar', 'err');
-      });
-    });
-
-    rowsEl.querySelectorAll('[data-rechazar-res]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.rechazarRes;
-        if (!confirm('¿Rechazar esta solicitud?')) return;
-        const res = await api(`/residentes/${id}/rechazar`, { method: 'POST' });
-        if (res && res.ok) { mostrarToast('Solicitud rechazada', 'ok'); loadResidentesPendientes(); }
-        else mostrarToast('Error al rechazar', 'err');
-      });
-    });
+    rowsEl.innerHTML = filasMembresias;
 
     rowsEl.querySelectorAll('[data-aprobar-mem]').forEach(btn => {
       btn.addEventListener('click', async () => {

@@ -258,10 +258,6 @@
 							<div class="stat-label" data-i18n="stat_approved">Aprobadas hoy</div>
 							<div class="stat-value" id="stat-aprobadas">—</div>
 						</div>
-						<div class="stat-card">
-							<div class="stat-label" data-i18n="stat_residents">Residentes activos</div>
-							<div class="stat-value" id="stat-residentes">—</div>
-						</div>
 					</div>
 
 					<div class="screen-inner">
@@ -406,69 +402,22 @@
 					<div class="screen-header">
 						<div>
 							<div class="screen-title" data-i18n="res_title">Residentes</div>
-							<div class="screen-sub">Personas registradas en el centro habitacional</div>
-						</div>
-						<button class="btn-primary" id="btn-nuevo-residente"><span class="plus">+</span>
-						Nuevo residente</button>
-					</div>
-
-					<div class="tab-bar">
-						<div class="tab-bar-inner">
-							<button class="tab-btn active" data-tab="res-activos" data-i18n="tab_activos">Activos</button>
-							<button class="tab-btn" data-tab="res-solicitudes"><span data-i18n="tab_solicitudes">Solicitudes</span><span class="tab-badge" id="tab-badge-res-sol" hidden>0</span></button>
+							<div class="screen-sub">Solicitudes de acceso desde la app Kigo</div>
 						</div>
 					</div>
 
-					<!-- Tab: activos -->
-					<div id="res-activos">
-						<div class="screen-body">
-							<div class="search-row">
-								<div class="search-wrap">
-									<svg class="search-icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
-									<input id="res-search" type="text" placeholder="Buscar por nombre o casa…">
-								</div>
-							</div>
-							<div id="res-loading" class="loading-state" hidden>
-								<div class="spinner"></div>
-								<div class="loading-text">Cargando residentes…</div>
-							</div>
-							<div id="res-empty" class="empty-state" hidden>
-								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
-								<div class="empty-title">Sin residentes registrados</div>
-								<div class="empty-text">Agrega el primer residente para que pueda usar la app y generar invitaciones.</div>
-							</div>
-							<div id="res-grid" class="residente-grid"></div>
+					<div class="screen-body">
+						<div id="resp-loading" class="loading-state" hidden>
+							<div class="spinner"></div>
+							<div class="loading-text">Cargando solicitudes…</div>
 						</div>
-					</div>
-
-					<!-- Tab: solicitudes de kigo-app -->
-					<div id="res-solicitudes" hidden>
-						<div class="screen-body">
-							<div id="resp-loading" class="loading-state" hidden>
-								<div class="spinner"></div>
-								<div class="loading-text">Cargando solicitudes…</div>
-							</div>
-							<div id="resp-empty" class="empty-state" hidden>
-								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
-								<div class="empty-title">Sin solicitudes pendientes</div>
-								<div class="empty-text">Cuando un habitante solicite unirse desde la app, aparecerá aquí para tu aprobación.</div>
-							</div>
-							<div id="resp-rows"></div>
+						<div id="resp-empty" class="empty-state" hidden>
+							<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
+							<div class="empty-title">Sin solicitudes pendientes</div>
+							<div class="empty-text">Cuando un habitante solicite unirse desde la app, aparecerá aquí para tu aprobación.</div>
 						</div>
+						<div id="resp-rows"></div>
 					</div>
-				</section>
-
-				<!-- DETALLE DE RESIDENTE -->
-				<section id="screen-residente-detalle" class="screen" hidden>
-					<div class="screen-header screen-header--back">
-						<button class="back-btn" data-nav="residentes">
-							<svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="3" x2="4" y2="9"/><line x1="4" y1="9" x2="12" y2="15"/></svg>
-							<span>Residentes</span>
-						</button>
-						<div class="header-div"></div>
-						<div class="screen-title">Detalle de residente</div>
-					</div>
-					<div class="screen-body screen-body--narrow" id="residente-detalle-body"></div>
 				</section>
 
 				<!-- KIOSKOS (multi-tab: lista · activar · equipo) -->
