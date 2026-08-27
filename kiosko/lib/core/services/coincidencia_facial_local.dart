@@ -2,8 +2,8 @@ import 'dart:math';
 
 /// Compara un embedding facial en vivo contra la lista de residentes
 /// cacheados localmente — replica en Dart la misma comparacion 1:N por
-/// similitud coseno que hace el backend (cosineSimilarity + mejorCoincidencia
-/// en backend/internal/domain/residente/matching.go), necesaria porque en
+/// similitud coseno que hace el backend (cosineSimilarity + mejorCandidatoRostro
+/// en backend/internal/domain/persona/matching.go), necesaria porque en
 /// modo offline no hay backend al que preguntarle.
 ///
 /// Regresa el mapa del residente (mismo shape que entrega LocalCacheDb) si
