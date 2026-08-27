@@ -41,104 +41,6 @@ func GenerarToken() (string, error) {
 	return generarToken()
 }
 
-// CrearInvitacion crea una invitación y devuelve el token
-//
-// @Summary Crear invitación
-// @Tags invitaciones
-// @Accept json
-// @Produce json
-// @Param body body CreateInvitacionRequest true "Datos de la invitación"
-// @Success 201 {object} InvitacionResponse
-// @Failure 400 {object} map[string]string
-// @Router /residentes/me/invitaciones [post]
-func (h *Handler) CrearInvitacion(c *gin.Context) {
-	residenteID := c.MustGet(ctxkeys.ResidenteID).(uint)
-	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
-
-	var req CreateInvitacionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	token, err := generarToken()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error generando token"})
-		return
-	}
-
-	inv := &Invitacion{
-		Token:       token,
-		Tipo:        req.Tipo,
-		Titular:     req.Titular,
-		ResidenteID: residenteID,
-		TenantID:    tenantID,
-		DestinoID:   req.DestinoID,
-		MaxUsos:     req.MaxUsos,
-		ExpiresAt:   req.ExpiresAt,
-	}
-
-	if err := h.repo.Create(inv); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, toInvitacionResponse(inv, true))
-}
-
-// ListarInvitaciones lista las invitaciones activas del residente autenticado
-//
-// @Summary Listar invitaciones
-// @Tags invitaciones
-// @Produce json
-// @Success 200 {array} InvitacionResponse
-// @Router /residentes/me/invitaciones [get]
-func (h *Handler) ListarInvitaciones(c *gin.Context) {
-	residenteID := c.MustGet(ctxkeys.ResidenteID).(uint)
-
-	list, err := h.repo.FindByResidenteID(residenteID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	resp := make([]InvitacionResponse, len(list))
-	for i, inv := range list {
-		resp[i] = toInvitacionResponse(&inv, false)
-	}
-	c.JSON(http.StatusOK, resp)
-}
-
-// RevocarInvitacion revoca (soft-delete) una invitacion del residente
-//
-// @Summary Revocar invitación
-// @Tags invitaciones
-// @Produce json
-// @Param id path int true "ID de la invitación"
-// @Success 200 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /residentes/me/invitaciones/{id} [delete]
-func (h *Handler) RevocarInvitacion(c *gin.Context) {
-	residenteID := c.MustGet(ctxkeys.ResidenteID).(uint)
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
-		return
-	}
-
-	if err := h.repo.RevocarByID(uint(id), residenteID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no encontrada"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "invitacion revocada"})
-}
-
 // ValidarInvitacion valida un token QR
 // El kiosko llama este endpoint al escanear el QR para pre-llenar el formulario
 //
@@ -226,6 +128,25 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 	// La validacion condicional vive en visitas y es la misma que usa el registro
 	// sin invitacion: asi un solo lugar decide que exige cada config de kiosko.
 	visitaRepo := visitas.NewRepository(h.db).WithContext(c.Request.Context())
+
+	if req.ClientID != "" {
+		existente, err := visitaRepo.FindByClientID(tenantID, req.ClientID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if existente != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"titular":      existente.Titular,
+				"casa_destino": existente.CasaDestino,
+				"visita_id":    existente.ID,
+				"estado":       existente.Estado,
+				"placa":        existente.Placa,
+			})
+			return
+		}
+	}
+
 	cfg, err := visitaRepo.GetKioskoConfig(uint(kioskoID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo obtener la configuracion del kiosko"})
@@ -282,6 +203,7 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 		Placa:            strings.ToUpper(strings.TrimSpace(req.Placa)),
 		Estado:           visitas.EstadoAprobado,
 		KioskoID:         uint(kioskoID),
+		ClientID:         visitas.ClientIDPtr(req.ClientID),
 	}
 	if err := h.db.Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})

@@ -2,6 +2,7 @@ package visitas
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"kigo-autonomia-backend/internal/domain/kiosko"
@@ -46,6 +47,32 @@ func ByTenantFor(table string) func(*gorm.DB) *gorm.DB {
 
 func (r *Repository) Create(v *Visita) error {
 	return r.db.Create(v).Error
+}
+
+// FindByClientID busca una visita ya creada con este client_id, para
+// idempotencia: si el kiosko reenvía el mismo registro tras un corte de
+// red a medio sync, regresa la visita existente en vez de duplicarla.
+// nil, nil significa "no existe todavía" — no es un error.
+func (r *Repository) FindByClientID(tenantID uint, clientID string) (*Visita, error) {
+	var v Visita
+	err := r.db.Where("tenant_id = ? AND client_id = ?", tenantID, clientID).First(&v).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &v, nil
+}
+
+// ClientIDPtr regresa nil si el client_id viene vacío (idempotencia
+// opcional), o un puntero al valor si viene — evita guardar strings vacíos
+// en una columna con unique index parcial (WHERE client_id IS NOT NULL).
+func ClientIDPtr(clientID string) *string {
+	if clientID == "" {
+		return nil
+	}
+	return &clientID
 }
 
 // Los métodos que escanean a Visita deben encadenar Select("visitas.*") para evitar que las columnas

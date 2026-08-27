@@ -742,6 +742,23 @@ func (h *Handler) ListarMisMembresias(c *gin.Context) {
 
 // PatchMe completa o actualiza nombre/apellidos de la Persona autenticada
 // — usado por la app cuando GetMe devuelve un perfil vacío.
+func (h *Handler) RegistrarDeviceToken(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	var req DeviceTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.repo.UpdateDeviceToken(personaID, req.DeviceToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 func (h *Handler) PatchMe(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
 

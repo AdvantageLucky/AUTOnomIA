@@ -38,11 +38,14 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
   @override
   Widget build(BuildContext context) {
     final settingsVM = context.watch<SettingsViewModel>();
 
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'Kigo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

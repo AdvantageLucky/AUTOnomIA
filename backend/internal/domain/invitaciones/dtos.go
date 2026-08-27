@@ -23,6 +23,7 @@ import (
 type UsarInvitacionRequest struct {
 	Curp          string                `form:"curp"`
 	Placa         string                `form:"placa"`
+	ClientID      string                `form:"client_id"` // idempotencia: reenvios del kiosko tras sync offline
 	FotoDocumento *multipart.FileHeader `form:"foto_documento"`
 	FotoRostro    *multipart.FileHeader `form:"foto_rostro"`
 	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`

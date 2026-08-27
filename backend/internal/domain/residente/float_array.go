@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"gorm.io/gorm"
 )
 
 // FloatArray es un []float64 que se lee/escribe como el literal nativo de un
@@ -61,30 +59,3 @@ func (a *FloatArray) Scan(src any) error {
 	*a = resultado
 	return nil
 }
-
-// Residente es un habitante del fraccionamiento que puede aprobar o rechazar visitas
-// que lleguen a su casa/departamento a través del kiosko.
-type Residente struct {
-	gorm.Model
-	TenantID        uint   `gorm:"column:tenant_id;not null;index"`
-	Nombre          string `gorm:"not null"`
-	ApellidoPaterno string `gorm:"not null"`
-	ApellidoMaterno string `gorm:"not null"`
-	Pin             string `gorm:"not null"` // bcrypt hash del PIN de 4-6 dígitos
-	CasaDestino     string `gorm:"not null"` // "Torre B, Depto 102" — coincide con Destino.Nombre
-	Telefono        string
-	KioskoID        *uint      `gorm:"index"` // nullable: auto-registros no tienen kiosko asignado
-	TiempoEsperaMin *int       // nil = usar el del KioskoConfig del kiosko
-	Status          string     `gorm:"not null;default:'activo'"` // pendiente | activo | rechazado
-	FotoCaraUrl     string     // ruta relativa bajo /static/caras/
-	Embedding       FloatArray `gorm:"type:float[]"` // vector MobileFaceNet 192-dim; nil si no tiene huella facial capturada
-	DeviceToken     *string    // token FCM del dispositivo de la app residente; nil si nunca lo registró
-}
-
-func (Residente) TableName() string { return "residentes" }
-
-const (
-	ResidenteStatusActivo    = "activo"
-	ResidenteStatusPendiente = "pendiente"
-	ResidenteStatusRechazado = "rechazado"
-)

@@ -12,6 +12,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/persona"
 	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/domain/sync"
 	"kigo-autonomia-backend/internal/domain/tenant"
 	"kigo-autonomia-backend/internal/domain/visitas"
 	"kigo-autonomia-backend/internal/platform/sse"
@@ -35,8 +36,9 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerKioskoRoutes(api, db, cfg.JWTSecret)
 	registerVisitaRoutes(api, db, cfg, hub)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
-	registerResidenteRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
+	registerKioskoLoginRoutes(api, db)
 	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
+	registerSyncRoutes(api, db)
 	registerPersonaRoutes(api, db, cfg)
 	registerTenantRoutes(api, db, cfg.JWTSecret)
 
@@ -176,7 +178,7 @@ func emailOtpSender(cfg *configs.Config) persona.OtpSender {
 // consulta del admin (JWT).
 func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config, hub *sse.Hub) {
 	visitaRepo := visitas.NewRepository(db)
-	notificador := residente.NewPushNotificador(residente.NewRepository(db), pushSender(cfg))
+	notificador := persona.NewPushNotificador(persona.NewRepository(db), pushSender(cfg))
 	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub, notificador)
 	sesionRepo := auth.NewSesionRepository(db)
 
@@ -233,19 +235,44 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 	}
 }
 
+// registerSyncRoutes registra el endpoint de solo lectura que arma el
+// snapshot offline del kiosko: destinos, residentes con huella facial e
+// invitaciones activas del tenant.
+func registerSyncRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+	destinoRepo := destinos.NewRepository(db)
+	personaRepo := persona.NewRepository(db)
+	invitacionRepo := invitaciones.NewRepository(db)
+	syncHandler := sync.NewHandler(destinoRepo, personaRepo, invitacionRepo)
+	sesionRepo := auth.NewSesionRepository(db)
+
+	k := rg.Group("/kioskos/:id/sync")
+	k.Use(auth.RequireKiosko(sesionRepo))
+	{
+		k.GET("/snapshot", syncHandler.GetSnapshot)
+	}
+}
+
+// registerKioskoLoginRoutes registra el login del kiosko por PIN y por
+// rostro — mismos paths que antes, ahora resuelven contra Persona+Membresia
+// en vez de Residente (ver spec 2026-08-26-eliminar-residente-legacy-design.md).
+func registerKioskoLoginRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+	personaRepo := persona.NewRepository(db)
+	visitaRepo := visitas.NewRepository(db)
+	kioskoLoginHandler := persona.NewKioskoLoginHandler(personaRepo, visitaRepo, db)
+	sesionRepo := auth.NewSesionRepository(db)
+
+	kPin := rg.Group("/kioskos/:id/residentes")
+	kPin.Use(auth.RequireKiosko(sesionRepo))
+	{
+		kPin.POST("/login", kioskoLoginHandler.LoginDesdeKiosko)
+		kPin.POST("/verificar-rostro", kioskoLoginHandler.VerificarRostroDesdeKiosko)
+	}
+}
+
 func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, uploadsDir string) {
 	invRepo := invitaciones.NewRepository(db)
 	invHandler := invitaciones.NewHandler(invRepo, db, uploadsDir)
 	sesionRepo := auth.NewSesionRepository(db)
-
-	// app residente: crea, lista y revoca sus invitaciones
-	r := rg.Group("/residentes/me/invitaciones")
-	r.Use(auth.RequireResidente(jwtSecret))
-	{
-		r.POST("/", invHandler.CrearInvitacion)
-		r.GET("/", invHandler.ListarInvitaciones)
-		r.DELETE("/:id", invHandler.RevocarInvitacion)
-	}
 
 	// kiosko: valida un token y registra su uso
 	k := rg.Group("/kioskos/:id/invitaciones")
@@ -253,61 +280,6 @@ func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, upl
 	{
 		k.GET("/validar", invHandler.ValidarInvitacion)
 		k.POST("/:token/usar", invHandler.UsarInvitacion)
-	}
-}
-
-// registerResidenteRoutes registra rutas de residente: auto-registro público, login, y
-// endpoints autenticados para la app del residente y el dashboard admin.
-func registerResidenteRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string, uploadsDir string) {
-	residenteRepo := residente.NewRepository(db)
-	destinoRepo := destinos.NewRepository(db)
-	visitaRepo := visitas.NewRepository(db)
-	residenteHandler := residente.NewHandler(residenteRepo, destinoRepo, jwtSecret, db, uploadsDir, visitaRepo)
-
-	// público: búsqueda de centro, auto-registro y consulta de estado
-	rg.GET("/centros/buscar", residenteHandler.BuscarCentro)
-	rg.GET("/centros/:codigo/destinos", residenteHandler.ListarDestinosPublico)
-	rg.POST("/centros/:codigo/residentes/auto-registro", residenteHandler.AutoRegistrar)
-	rg.GET("/centros/:codigo/residentes/estado", residenteHandler.ConsultarEstado)
-	rg.POST("/centros/:codigo/residentes/login", residenteHandler.LoginResidentePublico)
-
-	// login público
-	rg.POST("/auth/residente/login", residenteHandler.LoginResidente)
-
-	// app residente: rutas protegidas por JWT de residente
-	r := rg.Group("/residentes")
-	r.Use(auth.RequireResidente(jwtSecret))
-	{
-		r.GET("/me", residenteHandler.GetMe)
-		r.POST("/me/device-token", residenteHandler.RegistrarDeviceToken)
-		r.GET("/me/visitas/pendientes", residenteHandler.ListarVisitasPendientes)
-		r.PATCH("/me/visitas/:id/estado", residenteHandler.ResponderVisita)
-	}
-
-	// kiosko: valida PIN de residente usando la sesión del kiosko
-	sesionRepo := auth.NewSesionRepository(db)
-	kPin := rg.Group("/kioskos/:id/residentes")
-	kPin.Use(auth.RequireKiosko(sesionRepo))
-	{
-		kPin.POST("/login", residenteHandler.LoginResidenteDesdeKiosko)
-		kPin.POST("/verificar-rostro", residenteHandler.VerificarRostroDesdeKiosko)
-	}
-
-	// admin: crea residentes y los lista por kiosko
-	a := rg.Group("/kioskos/:id/residentes")
-	a.Use(auth.RequireAdmin(jwtSecret))
-	{
-		a.GET("/", residenteHandler.ListarResidentesPorAcceso)
-	}
-
-	adminR := rg.Group("/residentes")
-	adminR.Use(auth.RequireAdmin(jwtSecret))
-	{
-		adminR.POST("/", residenteHandler.CrearResidente)
-		adminR.GET("/", residenteHandler.ListarResidentesAdmin)
-		adminR.GET("/pendientes", residenteHandler.ListarPendientes)
-		adminR.POST("/:id/aprobar", residenteHandler.AprobarResidente)
-		adminR.POST("/:id/rechazar", residenteHandler.RechazarResidente)
 	}
 }
 
@@ -349,6 +321,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.GET("", personaHandler.GetMe)
 		p.PATCH("", personaHandler.PatchMe)
 		p.POST("/identidad", personaHandler.CompletarIdentidad)
+		p.POST("/device-token", personaHandler.RegistrarDeviceToken)
 		p.GET("/qr", personaHandler.GetQR)
 		p.POST("/membresias", personaHandler.UnirseCentro)
 		p.GET("/membresias", personaHandler.ListarMisMembresias)
