@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/membresia_model.dart';
 import '../services/api_service.dart';
+import '../services/push_service.dart';
 import '../utils/constants.dart';
 
 enum MembresiaEstado { ninguna, pendiente, rechazada, activa }
@@ -72,6 +73,7 @@ class AuthViewModel extends ChangeNotifier {
     try {
       await _cargarPerfilYMembresia();
       _isAuthenticated = true;
+      PushService().iniciar(); // fire-and-forget, no bloquea el arranque
     } on ApiException catch (e) {
       if (e.statusCode == 401) {
         // sesión realmente inválida o expirada
@@ -135,6 +137,7 @@ class AuthViewModel extends ChangeNotifier {
       await _cargarPerfilYMembresia();
       _isAuthenticated = true;
       _isLoading = false;
+      PushService().iniciar(); // fire-and-forget, no bloquea el login
       notifyListeners();
     } on ApiException catch (e) {
       await _revertirJwtParcial();
