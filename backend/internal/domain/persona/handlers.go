@@ -536,6 +536,7 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 			CasaDestino:   destino.Nombre,
 			Estado:        visitas.EstadoAprobado,
 			KioskoID:      kioskoID,
+			PersonaID:     &req.PersonaID,
 		}
 		if err := h.visitaRepo.WithContext(c.Request.Context()).Create(v); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando la visita"})
