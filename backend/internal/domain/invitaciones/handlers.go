@@ -204,6 +204,7 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 		Estado:           visitas.EstadoAprobado,
 		KioskoID:         uint(kioskoID),
 		ClientID:         visitas.ClientIDPtr(req.ClientID),
+		PersonaID:        inv.PersonaInvitadaID,
 	}
 	if err := h.db.Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})

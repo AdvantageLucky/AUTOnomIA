@@ -26,7 +26,8 @@ func setupHandlerTestDB(t *testing.T) *gorm.DB {
 	db.Create(&kiosko.KioskoConfig{KioskoID: 1, TenantID: 1})
 	db.Model(&kiosko.KioskoConfig{}).Where("kiosko_id = ?", 1).Update("foto_rostro_invitado", false)
 	db.Create(&destinos.Destino{Model: gorm.Model{ID: 1}, TenantID: 1, Nombre: "Casa 1", Calle: "Roble", Numero: "1", Titular: "Ana"})
-	db.Create(&Invitacion{Model: gorm.Model{ID: 1}, TenantID: 1, Token: "tok-1", Titular: "Ana Invitada", ResidenteID: 1, DestinoID: 1})
+	personaInvitadaID := uint(42)
+	db.Create(&Invitacion{Model: gorm.Model{ID: 1}, TenantID: 1, Token: "tok-1", Titular: "Ana Invitada", ResidenteID: 1, DestinoID: 1, PersonaInvitadaID: &personaInvitadaID})
 	return db
 }
 
@@ -87,5 +88,11 @@ func TestUsarInvitacion_Idempotente(t *testing.T) {
 	db.First(&inv, 1)
 	if inv.ConteoUsos != 1 {
 		t.Errorf("esperaba ConteoUsos=1 (solo la primera llamada incrementa), got %d", inv.ConteoUsos)
+	}
+
+	var creada visitas.Visita
+	db.First(&creada)
+	if creada.PersonaID == nil || *creada.PersonaID != 42 {
+		t.Errorf("esperaba PersonaID=42 en la visita creada, got %v", creada.PersonaID)
 	}
 }
