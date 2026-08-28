@@ -810,14 +810,27 @@ class KioskoServicio {
 
     try {
       await _ensureLogin();
-      final response = await http.get(
+      var response = await http.get(
         Uri.parse('$_baseUrl/kioskos/$_kioskoId/destinos/'),
         headers: {'Authorization': 'Bearer $_sessionToken'},
       ).timeout(const Duration(seconds: 5));
 
+      if (response.statusCode == 401) {
+        _sessionToken = null;
+        if (await _reLogin()) {
+          response = await http.get(
+            Uri.parse('$_baseUrl/kioskos/$_kioskoId/destinos/'),
+            headers: {'Authorization': 'Bearer $_sessionToken'},
+          ).timeout(const Duration(seconds: 5));
+        }
+      }
+
       if (response.statusCode == 200) {
-        final list = jsonDecode(response.body) as List;
-        return list.cast<Map<String, dynamic>>();
+        final list = (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+        if (cache != null && list.isNotEmpty) {
+          cache.reemplazarDestinos(list).ignore();
+        }
+        return list;
       }
       if (cache != null) {
         final destinosLocales = await cache.obtenerDestinos();
@@ -924,10 +937,20 @@ class KioskoServicio {
 
   Future<Map<String, dynamic>> obtenerSnapshot() async {
     await _ensureLogin();
-    final response = await http.get(
+    var response = await http.get(
       Uri.parse('$_baseUrl/kioskos/$_kioskoId/sync/snapshot'),
       headers: {'Authorization': 'Bearer $_sessionToken'},
     ).timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 401) {
+      _sessionToken = null;
+      if (await _reLogin()) {
+        response = await http.get(
+          Uri.parse('$_baseUrl/kioskos/$_kioskoId/sync/snapshot'),
+          headers: {'Authorization': 'Bearer $_sessionToken'},
+        ).timeout(const Duration(seconds: 15));
+      }
+    }
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;

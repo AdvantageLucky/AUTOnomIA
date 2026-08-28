@@ -221,12 +221,16 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
               onPressed: _cargarDestinos,
               style: ElevatedButton.styleFrom(
                 backgroundColor: KigoDesign.brand,
-                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              child: Text(AppLocalizations.t(context, 'retry_button_text'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              child: Text(
+                AppLocalizations.t(context, 'reintentar'),
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+              ),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildBotonNoEncuentroDestino(),
         ],
       );
     }
