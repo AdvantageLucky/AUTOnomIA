@@ -39,7 +39,7 @@ func (r *MembresiaRepository) FindByPersonaAndTenant(personaID, tenantID uint) (
 func (r *MembresiaRepository) FindByCasaDestinoYTenant(tenantID uint, casaDestino string) ([]Membresia, error) {
 	var list []Membresia
 	if err := r.db.
-		Where("tenant_id = ? AND casa_destino = ?", tenantID, casaDestino).
+		Where("tenant_id = ? AND UPPER(casa_destino) = UPPER(?)", tenantID, casaDestino).
 		Find(&list).Error; err != nil {
 		return nil, err
 	}
