@@ -269,7 +269,6 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 
 		sc := AnalizarVisita(historialPrevio, visitaCopy, cfg.UmbralConfianzaVisitas)
 		resumen, _ := GenerarResumen(ctx, h.llmURL, sc)
-		sc.ResumenTexto = resumen
 
 		tieneAnomalias := sc.AnomaliaMatricula || sc.CambioModalidad || sc.HorarioInusual ||
 			sc.RechazadoPrevio || sc.OCRSospechoso
@@ -281,15 +280,23 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 			nuevoEstado = EstadoRevision
 		}
 
+		scoreIA, _ := json.Marshal(sc.AScoreIA())
+		var estadoParaGuardar *EstadoVisita
 		if nuevoEstado != EstadoPendiente {
-			scoreIA, _ := json.Marshal(sc.AScoreIA())
-			if err := asyncRepo.GuardarAnalisisIA(visitaCopy.ID, sc.ResumenTexto, scoreIA, &nuevoEstado); err != nil {
-				log.Printf("GuardarAnalisisIA visita %d: %v", visitaCopy.ID, err)
-			}
+			estadoParaGuardar = &nuevoEstado
+		}
+		if err := asyncRepo.GuardarAnalisisIA(visitaCopy.ID, resumen, scoreIA, estadoParaGuardar); err != nil {
+			log.Printf("GuardarAnalisisIA visita %d: %v", visitaCopy.ID, err)
 		}
 
-		if h.sseHub != nil && (nuevoEstado == EstadoRevision || nuevoEstado == EstadoPendiente) {
+		// A diferencia de antes, el broadcast dispara siempre que el análisis
+		// termina (no solo si el estado cambió a REVISION/PENDIENTE) — el
+		// dashboard en vivo necesita el resumen/score aunque la visita haya
+		// quedado APROBADA por auto-pass.
+		if h.sseHub != nil {
 			visitaCopy.Estado = nuevoEstado
+			visitaCopy.ResumenIA = resumen
+			visitaCopy.ScoreIA = scoreIA
 			if jsonData, err := json.Marshal(toVisitaResponse(visitaCopy)); err == nil {
 				h.sseHub.Broadcast(jsonData)
 			}
