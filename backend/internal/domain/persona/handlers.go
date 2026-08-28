@@ -636,7 +636,15 @@ func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
 
 	items := make([]visitas.VisitaResponse, 0, len(visitasPendientes))
 	for _, v := range visitasPendientes {
-		items = append(items, visitas.ToVisitaResponse(v))
+		item := visitas.ToVisitaResponse(v)
+		// El residente no debe ver el análisis de IA (resumen/heurísticas) de
+		// sus solicitudes pendientes — es información para el dashboard admin,
+		// no para la app de residente. rechazado_previo en particular podría
+		// filtrar que hubo un rechazo en otra casa del mismo tenant.
+		item.ResumenIA = nil
+		item.ScoreIA = nil
+		item.Estadisticas = nil
+		items = append(items, item)
 	}
 	c.JSON(http.StatusOK, gin.H{"visitas": items})
 }
