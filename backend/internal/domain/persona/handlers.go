@@ -659,10 +659,13 @@ func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"visitas": items})
 }
 
-// ListarHistorialVisitas devuelve las visitas que un residente aprobo desde
-// la app para la casa de su Membresia activa, de la mas reciente a la mas
-// vieja. Es el complemento de ListarVisitasPendientes: alli va lo que falta
-// autorizar, aqui a quien ya se dejo entrar.
+// ListarHistorialVisitas devuelve las visitas que la Persona autenticada
+// aprobo o rechazo desde la app, de la mas reciente a la mas vieja. Es el
+// complemento de ListarVisitasPendientes: alli va lo que falta autorizar,
+// aqui lo que uno mismo ya resolvio.
+//
+// La membresia se sigue comprobando aunque el filtro no use la casa: sin ella
+// la Persona no tiene por que leer nada de ese tenant.
 func (h *Handler) ListarHistorialVisitas(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
 
@@ -696,7 +699,7 @@ func (h *Handler) ListarHistorialVisitas(c *gin.Context) {
 	}
 
 	historial, total, err := h.visitaRepo.WithContext(c.Request.Context()).
-		FindHistorialByCasaDestino(tenantID, m.CasaDestino, page, pageSize)
+		FindHistorialResueltasPorPersona(tenantID, personaID, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -781,7 +784,7 @@ func (h *Handler) ResponderVisita(c *gin.Context) {
 	}
 	nombre := p.Nombre + " " + p.ApellidoPaterno
 
-	if err := visitaRepoCtx.UpdateEstado(uint(id), estado, visitas.AutorizadorResidente, nombre); err != nil {
+	if err := visitaRepoCtx.UpdateEstadoPorResidente(uint(id), estado, personaID, nombre); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

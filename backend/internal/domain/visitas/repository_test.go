@@ -233,16 +233,19 @@ func TestEstadisticasPorPersona_AislaPorTenant(t *testing.T) {
 	}
 }
 
-// El historial es "a quien deje entrar yo": solo lo aprobado por un residente
-// desde la app. Todo lo demas que pasa en la misma casa queda fuera.
-func TestFindHistorialByCasaDestino_SoloAprobadasPorResidente(t *testing.T) {
+// El historial responde "que resolvi yo": lo que esa Persona aprobo o rechazo
+// desde la app. Todo lo demas que pasa en la misma casa queda fuera, incluido
+// lo que resolvieron los otros miembros del domicilio.
+func TestFindHistorialResueltasPorPersona_SoloLoDeEsaPersona(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 
-	crear := func(titular string, estado EstadoVisita, autorizador, casa string, tenant uint) {
+	var yo, otroResidente uint = 10, 11
+
+	crear := func(titular string, estado EstadoVisita, autorizador string, quien *uint, tenant uint) {
 		v := &Visita{
-			TenantID: tenant, Titular: titular, CasaDestino: casa, Estado: estado,
-			AutorizadoPorTipo: autorizador, KioskoID: 1,
+			TenantID: tenant, Titular: titular, CasaDestino: "Casa 4", Estado: estado,
+			AutorizadoPorTipo: autorizador, AutorizadoPorPersonaID: quien, KioskoID: 1,
 			TipoVisitante: TipoVisitante("VISITANTE"),
 			TipoDocumento: TipoDocumento("SIN_DOCUMENTO"),
 		}
@@ -250,44 +253,84 @@ func TestFindHistorialByCasaDestino_SoloAprobadasPorResidente(t *testing.T) {
 			t.Fatalf("no se pudo crear la visita %s: %v", titular, err)
 		}
 	}
+	mia := &yo
 
-	// Las dos que si cuentan (la segunda, con la casa en minusculas).
-	crear("Aprobada por residente", EstadoAprobado, AutorizadorResidente, "Casa 4", 1)
-	crear("Aprobada en otro caso", EstadoAprobado, AutorizadorResidente, "casa 4", 1)
+	// Lo mio: aprobado y rechazado cuentan por igual.
+	crear("La aprobe yo", EstadoAprobado, AutorizadorResidente, mia, 1)
+	crear("La rechace yo", EstadoRechazado, AutorizadorResidente, mia, 1)
 
 	// Todo lo que debe quedar fuera.
-	crear("Rechazada", EstadoRechazado, AutorizadorResidente, "Casa 4", 1)
-	crear("Pendiente", EstadoPendiente, "", "Casa 4", 1)
-	crear("Aprobada por el admin", EstadoAprobado, AutorizadorAdmin, "Casa 4", 1)
-	crear("Aprobada por el agente", EstadoAprobado, AutorizadorAgente, "Casa 4", 1)
-	crear("Aprobada por el sistema", EstadoAprobado, AutorizadorSistema, "Casa 4", 1)
-	crear("Otra casa", EstadoAprobado, AutorizadorResidente, "Casa 9", 1)
-	crear("Otro tenant", EstadoAprobado, AutorizadorResidente, "Casa 4", 2)
+	crear("La aprobo otro residente", EstadoAprobado, AutorizadorResidente, &otroResidente, 1)
+	crear("Sigue pendiente", EstadoPendiente, "", nil, 1)
+	crear("La aprobo el admin", EstadoAprobado, AutorizadorAdmin, nil, 1)
+	crear("La aprobo el agente", EstadoAprobado, AutorizadorAgente, nil, 1)
+	crear("La escalo el sistema", EstadoRevision, AutorizadorSistema, nil, 1)
+	crear("Otro tenant", EstadoAprobado, AutorizadorResidente, mia, 2)
 
-	list, total, err := repo.FindHistorialByCasaDestino(1, "CASA 4", 1, 30)
+	list, total, err := repo.FindHistorialResueltasPorPersona(1, yo, 1, 30)
 	if err != nil {
 		t.Fatalf("no esperaba error, got %v", err)
 	}
 	if total != 2 || len(list) != 2 {
-		t.Fatalf("esperaba 2 visitas, got total=%d len=%d", total, len(list))
+		t.Fatalf("esperaba 2 visitas mias, got total=%d len=%d", total, len(list))
 	}
 	for _, v := range list {
-		if v.Estado != EstadoAprobado || v.AutorizadoPorTipo != AutorizadorResidente {
-			t.Errorf("se colo %q (estado=%s, autorizador=%s)",
-				v.Titular, v.Estado, v.AutorizadoPorTipo)
+		if v.AutorizadoPorPersonaID == nil || *v.AutorizadoPorPersonaID != yo {
+			t.Errorf("se colo %q, resuelta por %v", v.Titular, v.AutorizadoPorPersonaID)
 		}
 	}
 }
 
-func TestFindHistorialByCasaDestino_Pagina(t *testing.T) {
+// UpdateEstadoPorResidente es lo que alimenta ese filtro: si no dejara la
+// persona anotada, el historial saldria vacio para todo el mundo.
+func TestUpdateEstadoPorResidente_AnotaQuienResolvio(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 
+	v := &Visita{
+		TenantID: 1, Titular: "Ana", CasaDestino: "Casa 4", Estado: EstadoPendiente,
+		KioskoID: 1, TipoVisitante: TipoVisitante("VISITANTE"),
+		TipoDocumento: TipoDocumento("SIN_DOCUMENTO"),
+	}
+	if err := repo.Create(v); err != nil {
+		t.Fatalf("no se pudo crear: %v", err)
+	}
+
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, uint(1))
+	if err := repo.WithContext(ctx).
+		UpdateEstadoPorResidente(v.ID, EstadoRechazado, 10, "Ana Martinez"); err != nil {
+		t.Fatalf("no se pudo actualizar: %v", err)
+	}
+
+	var guardada Visita
+	if err := db.First(&guardada, v.ID).Error; err != nil {
+		t.Fatalf("no se pudo releer: %v", err)
+	}
+	if guardada.Estado != EstadoRechazado {
+		t.Errorf("esperaba RECHAZADO, got %s", guardada.Estado)
+	}
+	if guardada.AutorizadoPorTipo != AutorizadorResidente {
+		t.Errorf("esperaba tipo RESIDENTE, got %s", guardada.AutorizadoPorTipo)
+	}
+	if guardada.AutorizadoPorPersonaID == nil || *guardada.AutorizadoPorPersonaID != 10 {
+		t.Errorf("esperaba persona 10, got %v", guardada.AutorizadoPorPersonaID)
+	}
+	if guardada.AutorizadoPorNombre != "Ana Martinez" {
+		t.Errorf("esperaba el nombre guardado, got %q", guardada.AutorizadoPorNombre)
+	}
+}
+
+func TestFindHistorialResueltasPorPersona_Pagina(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	var yo uint = 10
 	for i := 0; i < 5; i++ {
+		quien := yo
 		v := &Visita{
 			TenantID: 1, Titular: "V", CasaDestino: "Casa 4", Estado: EstadoAprobado,
-			AutorizadoPorTipo: AutorizadorResidente, KioskoID: 1,
-			TipoVisitante: TipoVisitante("VISITANTE"),
+			AutorizadoPorTipo: AutorizadorResidente, AutorizadoPorPersonaID: &quien,
+			KioskoID: 1, TipoVisitante: TipoVisitante("VISITANTE"),
 			TipoDocumento: TipoDocumento("SIN_DOCUMENTO"),
 		}
 		if err := repo.Create(v); err != nil {
@@ -295,7 +338,7 @@ func TestFindHistorialByCasaDestino_Pagina(t *testing.T) {
 		}
 	}
 
-	list, total, err := repo.FindHistorialByCasaDestino(1, "Casa 4", 2, 2)
+	list, total, err := repo.FindHistorialResueltasPorPersona(1, yo, 2, 2)
 	if err != nil {
 		t.Fatalf("no esperaba error, got %v", err)
 	}

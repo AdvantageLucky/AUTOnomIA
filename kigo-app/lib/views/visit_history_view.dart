@@ -6,10 +6,10 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/visit_history_viewmodel.dart';
 import '../widgets/visita_foto.dart';
 
-/// Historial de los visitantes que el residente aprobó desde la app. Lo
-/// rechazado, lo que sigue pendiente y lo que resolvió el vigilante desde el
-/// dashboard no entran: el backend ya los filtra. Las solicitudes por resolver
-/// viven en Inicio, con sus botones de aprobar y rechazar.
+/// Historial de lo que este residente resolvió desde su app, aprobado o
+/// rechazado. No entra lo que sigue pendiente, lo que resolvieron los otros
+/// miembros del domicilio ni lo que despachó el vigilante: el backend filtra
+/// por la persona autenticada. Las solicitudes por resolver viven en Inicio.
 class VisitHistoryView extends StatefulWidget {
   const VisitHistoryView({super.key});
 
@@ -60,8 +60,8 @@ class _VisitHistoryViewState extends State<VisitHistoryView> {
           else if (vm.visitas.isEmpty)
             const _Aviso(
               icono: Icons.history_rounded,
-              titulo: 'Todavía no has aprobado ninguna visita',
-              detalle: 'Aquí aparecerán los visitantes que dejes entrar desde Inicio.',
+              titulo: 'Todavía no has resuelto ninguna visita',
+              detalle: 'Aquí aparecerán las solicitudes que apruebes o rechaces desde Inicio.',
             )
           else
             for (final v in vm.visitas) ...[

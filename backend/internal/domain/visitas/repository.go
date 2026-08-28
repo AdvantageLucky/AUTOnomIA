@@ -213,24 +213,24 @@ func (r *Repository) FindPendientesByCasaDestino(tenantID uint, casaDestino stri
 	return list, nil
 }
 
-// FindHistorialByCasaDestino devuelve, paginadas y de la mas reciente a la
-// mas vieja, las visitas a una casa que aprobo un residente desde la app.
+// FindHistorialResueltasPorPersona devuelve, paginadas y de la mas reciente a
+// la mas vieja, las visitas que esa Persona aprobo o rechazo desde la app.
 //
-// Deja fuera a proposito lo rechazado, lo que sigue pendiente y lo que
-// resolvio alguien mas (el vigilante desde el dashboard, o el agente y el
-// sistema por su cuenta): el historial responde "a quien deje entrar yo", no
-// "que paso en mi puerta".
-func (r *Repository) FindHistorialByCasaDestino(
+// El filtro es por autorizado_por_persona_id y no por casa ni por rol: el
+// historial responde "que resolvi yo". Asi quedan fuera lo que sigue
+// pendiente, lo que resolvieron los demas miembros del domicilio y lo que
+// despacharon el vigilante, el agente o el sistema — ninguno de ellos escribe
+// esa columna.
+func (r *Repository) FindHistorialResueltasPorPersona(
 	tenantID uint,
-	casaDestino string,
+	personaID uint,
 	page, pageSize int,
 ) ([]Visita, int64, error) {
 	query := func() *gorm.DB {
 		return r.db.Model(&Visita{}).
 			Where(
-				`tenant_id = ? AND UPPER(casa_destino) = UPPER(?)
-				 AND estado = ? AND autorizado_por_tipo = ?`,
-				tenantID, casaDestino, EstadoAprobado, AutorizadorResidente,
+				"tenant_id = ? AND autorizado_por_persona_id = ?",
+				tenantID, personaID,
 			)
 	}
 
@@ -262,6 +262,32 @@ func (r *Repository) FindByIDAndCasaDestino(id, tenantID uint, casaDestino strin
 		return nil, err
 	}
 	return &v, nil
+}
+
+// UpdateEstadoPorResidente resuelve una visita desde la app y deja anotado
+// que Persona lo hizo, no solo que fue "un residente".
+//
+// Va aparte de UpdateEstado porque el resto de autorizadores (admin, agente,
+// sistema) no son una Persona y no tienen id que guardar aqui.
+func (r *Repository) UpdateEstadoPorResidente(
+	id uint,
+	estado EstadoVisita,
+	personaID uint,
+	nombre string,
+) error {
+	result := r.db.Scopes(ByTenant).Model(&Visita{}).Where("id = ?", id).Updates(map[string]any{
+		"estado":                    estado,
+		"autorizado_por_tipo":       AutorizadorResidente,
+		"autorizado_por_nombre":     nombre,
+		"autorizado_por_persona_id": personaID,
+	})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // UpdateEstado cambia el estado de una visita y deja constancia de quién
