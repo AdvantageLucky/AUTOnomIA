@@ -57,6 +57,10 @@ type Visita struct {
 	ClientID            *string      `gorm:"column:client_id;uniqueIndex"`
 	AutorizadoPorTipo   string       `gorm:"column:autorizado_por_tipo"`
 	AutorizadoPorNombre string       `gorm:"column:autorizado_por_nombre"`
+	// Quien resolvio, cuando fue una Persona desde la app. El tipo dice el rol
+	// ("RESIDENTE"), pero no cual de los residentes de la casa: eso hace falta
+	// para que el historial de cada quien liste solo lo suyo.
+	AutorizadoPorPersonaID *uint `gorm:"column:autorizado_por_persona_id;index"`
 	ResumenIA           string       `gorm:"column:resumen_ia"`
 	ScoreIA             []byte       `gorm:"column:score_ia;type:jsonb"`
 	PersonaID           *uint        `gorm:"column:persona_id;index"`
