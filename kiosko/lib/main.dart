@@ -29,8 +29,6 @@ void main() {
   _activarModoInmersivo();
 
   final servicio = KioskoServicio();
-  final configNotifier = KioskoConfigNotifier(servicio);
-
   final connectivityService = ConnectivityService();
   final localCacheDb = LocalCacheDb();
   servicio.configurarOffline(connectivityService, localCacheDb);
@@ -40,19 +38,24 @@ void main() {
     refrescarSnapshot: () => _refrescarSnapshot(servicio, localCacheDb),
     reproducirRegistro: (registro) => _reproducirRegistroContraBackend(servicio, registro),
   );
+  final configNotifier = KioskoConfigNotifier(
+    servicio,
+    onSesionValida: () => syncWorker.sincronizarAhora(),
+  );
 
   runApp(MultiProvider(
     providers: [
       Provider<KioskoServicio>.value(value: servicio),
       ChangeNotifierProvider<KioskoConfigNotifier>.value(value: configNotifier),
       ChangeNotifierProvider<ConnectivityService>.value(value: connectivityService),
+      Provider<SyncWorker>.value(value: syncWorker),
     ],
     child: const _RaizReiniciable(),
   ));
 
   // Se inicializa después de runApp para que el splash ya sea visible
-  configNotifier.inicializar();
   _iniciarModoOffline(localCacheDb, connectivityService, syncWorker);
+  configNotifier.inicializar();
 }
 
 /// LocalCacheDb debe abrirse antes de que ConnectivityService/SyncWorker
@@ -254,7 +257,15 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
           home: Builder(builder: (context) {
             if (cfg.cargando) return const _SplashScreen();
             if (cfg.necesitaActivacion) {
-              return ActivacionView(onActivado: () => cfg.reinicializar());
+              return ActivacionView(
+                onActivado: () async {
+                  await cfg.reinicializar();
+                  if (context.mounted) {
+                    final worker = context.read<SyncWorker>();
+                    await worker.sincronizarAhora();
+                  }
+                },
+              );
             }
             return QrScannerView(
               viewModel: QrScannerViewModel(),

@@ -12,8 +12,9 @@ class KioskoConfigNotifier extends ChangeNotifier {
   bool get necesitaActivacion => _necesitaActivacion;
 
   final KioskoServicio _servicio;
+  final Future<void> Function()? onSesionValida;
 
-  KioskoConfigNotifier(this._servicio);
+  KioskoConfigNotifier(this._servicio, {this.onSesionValida});
 
   Future<void> inicializar() async {
     _cargando = true;
@@ -26,6 +27,7 @@ class KioskoConfigNotifier extends ChangeNotifier {
           .timeout(const Duration(seconds: 5));
       _cargando = false;
       notifyListeners();
+      onSesionValida?.call();
       _servicio.escucharConfigStream(
         (cfg) {
           _config = cfg;
