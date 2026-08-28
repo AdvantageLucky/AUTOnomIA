@@ -3,6 +3,7 @@ package visitas
 import (
 	"context"
 	"testing"
+	"time"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -150,5 +151,84 @@ func TestGuardarAnalisisIA_SinCambioDeEstado(t *testing.T) {
 	}
 	if found.AutorizadoPorTipo != "" {
 		t.Errorf("esperaba autorizado_por_tipo vacío, got %q", found.AutorizadoPorTipo)
+	}
+}
+
+func TestEstadisticasPorPersona_ConHistorial(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	personaID := uint(7)
+	base := time.Now().Add(-72 * time.Hour)
+	visitas := []*Visita{
+		{TenantID: 1, Titular: "Ana", CasaDestino: "Casa 1", Estado: EstadoAprobado, KioskoID: 1, PersonaID: &personaID},
+		{TenantID: 1, Titular: "Ana", CasaDestino: "Casa 1", Estado: EstadoAprobado, KioskoID: 1, PersonaID: &personaID},
+		{TenantID: 1, Titular: "Ana", CasaDestino: "Casa 2", Estado: EstadoAprobado, KioskoID: 1, PersonaID: &personaID},
+	}
+	for i, v := range visitas {
+		if err := repo.Create(v); err != nil {
+			t.Fatalf("no se pudo crear la visita %d: %v", i, err)
+		}
+		// CreatedAt lo pone GORM al Create; lo desplazamos a mano para
+		// poder distinguir "última visita" de forma determinista.
+		db.Model(v).UpdateColumn("created_at", base.Add(time.Duration(i)*time.Hour))
+	}
+
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, uint(1))
+	repoCtx := repo.WithContext(ctx)
+
+	stats, err := repoCtx.EstadisticasPorPersona(personaID)
+	if err != nil {
+		t.Fatalf("no esperaba error: %v", err)
+	}
+	if stats.VecesVisitado != 3 {
+		t.Errorf("esperaba VecesVisitado=3, got %d", stats.VecesVisitado)
+	}
+	if stats.CasaHabitual != "Casa 1" {
+		t.Errorf("esperaba CasaHabitual='Casa 1' (2 de 3), got %q", stats.CasaHabitual)
+	}
+	if stats.UltimaVisita == nil {
+		t.Fatal("esperaba UltimaVisita no nil")
+	}
+}
+
+func TestEstadisticasPorPersona_SinHistorial(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, uint(1))
+	repoCtx := repo.WithContext(ctx)
+
+	stats, err := repoCtx.EstadisticasPorPersona(999)
+	if err != nil {
+		t.Fatalf("no esperaba error: %v", err)
+	}
+	if stats.VecesVisitado != 0 {
+		t.Errorf("esperaba VecesVisitado=0, got %d", stats.VecesVisitado)
+	}
+	if stats.UltimaVisita != nil {
+		t.Errorf("esperaba UltimaVisita nil, got %v", stats.UltimaVisita)
+	}
+}
+
+func TestEstadisticasPorPersona_AislaPorTenant(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	personaID := uint(7)
+	v := &Visita{TenantID: 2, Titular: "Ana", CasaDestino: "Casa 1", Estado: EstadoAprobado, KioskoID: 1, PersonaID: &personaID}
+	if err := repo.Create(v); err != nil {
+		t.Fatalf("no se pudo crear la visita: %v", err)
+	}
+
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, uint(1))
+	repoCtx := repo.WithContext(ctx)
+
+	stats, err := repoCtx.EstadisticasPorPersona(personaID)
+	if err != nil {
+		t.Fatalf("no esperaba error: %v", err)
+	}
+	if stats.VecesVisitado != 0 {
+		t.Errorf("esperaba VecesVisitado=0 (la visita es de otro tenant), got %d", stats.VecesVisitado)
 	}
 }

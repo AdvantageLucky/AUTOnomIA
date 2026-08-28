@@ -309,3 +309,51 @@ func (r *Repository) ListarEnPeriodo(inicio, fin time.Time) ([]Visita, error) {
 	err := r.db.Scopes(ByTenant).Where("created_at BETWEEN ? AND ?", inicio, fin).Find(&visitas).Error
 	return visitas, err
 }
+
+// EstadisticasPersona agrega el historial de una Persona dentro del tenant
+// actual — veces que ha entrado, cuándo fue la última vez, y la casa/destino
+// que más se repite en su historial.
+type EstadisticasPersona struct {
+	VecesVisitado int        `json:"veces_visitado"`
+	UltimaVisita  *time.Time `json:"ultima_visita,omitempty"`
+	CasaHabitual  string     `json:"casa_habitual,omitempty"`
+}
+
+// EstadisticasPorPersona calcula EstadisticasPersona al leer (no al crear
+// la visita) — no penaliza la latencia de login por PIN/rostro/QR, que es
+// tiempo real con alguien esperando frente al kiosko. Nunca regresa error
+// solo porque no hay historial: VecesVisitado=0 es una respuesta válida.
+func (r *Repository) EstadisticasPorPersona(personaID uint) (*EstadisticasPersona, error) {
+	stats := &EstadisticasPersona{}
+
+	var count int64
+	countQuery := r.db.Scopes(ByTenant).Model(&Visita{}).Where("persona_id = ?", personaID)
+	if err := countQuery.Count(&count).Error; err != nil {
+		return nil, err
+	}
+	stats.VecesVisitado = int(count)
+	if count == 0 {
+		return stats, nil
+	}
+
+	var ultima Visita
+	if err := r.db.Scopes(ByTenant).Where("persona_id = ?", personaID).
+		Order("created_at DESC").First(&ultima).Error; err != nil {
+		return nil, err
+	}
+	stats.UltimaVisita = &ultima.CreatedAt
+
+	var casaHabitual string
+	if err := r.db.Scopes(ByTenant).Model(&Visita{}).
+		Select("casa_destino").
+		Where("persona_id = ?", personaID).
+		Group("casa_destino").
+		Order("COUNT(*) DESC").
+		Limit(1).
+		Scan(&casaHabitual).Error; err != nil {
+		return nil, err
+	}
+	stats.CasaHabitual = casaHabitual
+
+	return stats, nil
+}
