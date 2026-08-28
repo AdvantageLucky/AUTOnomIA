@@ -64,6 +64,12 @@ func TestLoginDesdeKiosko(t *testing.T) {
 	if count != 1 {
 		t.Errorf("esperaba 1 visita creada, hay %d", count)
 	}
+
+	var creada visitas.Visita
+	db.First(&creada)
+	if creada.PersonaID == nil || *creada.PersonaID != p.ID {
+		t.Errorf("esperaba PersonaID=%d en la visita creada, got %v", p.ID, creada.PersonaID)
+	}
 }
 
 func TestVerificarRostroDesdeKiosko(t *testing.T) {
@@ -96,5 +102,11 @@ func TestVerificarRostroDesdeKiosko(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var creada visitas.Visita
+	db.First(&creada)
+	if creada.PersonaID == nil || *creada.PersonaID != p.ID {
+		t.Errorf("esperaba PersonaID=%d en la visita creada, got %v", p.ID, creada.PersonaID)
 	}
 }
