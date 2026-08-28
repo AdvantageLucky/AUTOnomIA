@@ -266,8 +266,8 @@ func (r *Repository) HistorialDeVisitante(v Visita) ([]Visita, error) {
 // GuardarAnalisisIA persiste el resultado del análisis de patrones (resumen
 // narrativo del LLM + heurísticas de anomalía) de una visita walk-in. Si
 // nuevoEstado no es nil, también actualiza el estado y queda registrado
-// como AutorizadorAgente en la bitácora — mismo caso de uso que el
-// ActualizarEstadoConScore anterior, ahora extendido para no descartar el
+// como AutorizadorAgente en la bitácora — mismo caso de uso que antes
+// actualizaba solo el estado, ahora extendido para no descartar el
 // resumen ni el score.
 func (r *Repository) GuardarAnalisisIA(id uint, resumenIA string, scoreIA []byte, nuevoEstado *EstadoVisita) error {
 	updates := map[string]any{
