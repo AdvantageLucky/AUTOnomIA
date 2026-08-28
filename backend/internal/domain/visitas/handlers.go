@@ -282,8 +282,9 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 
 		if nuevoEstado != EstadoPendiente {
-			if err := asyncRepo.ActualizarEstadoConScore(visitaCopy.ID, nuevoEstado, false); err != nil {
-				log.Printf("ActualizarEstadoConScore visita %d: %v", visitaCopy.ID, err)
+			scoreIA, _ := json.Marshal(sc.AScoreIA())
+			if err := asyncRepo.GuardarAnalisisIA(visitaCopy.ID, sc.ResumenTexto, scoreIA, &nuevoEstado); err != nil {
+				log.Printf("GuardarAnalisisIA visita %d: %v", visitaCopy.ID, err)
 			}
 		}
 
