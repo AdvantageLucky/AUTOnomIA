@@ -7,6 +7,7 @@ Representan peticiones y respuestas de los endpoints de visitas
 package visitas
 
 import (
+	"encoding/json"
 	"mime/multipart"
 	"time"
 )
@@ -32,7 +33,7 @@ type VisitaRequest struct {
 	Curp          string                `form:"curp"`
 	CasaDestino   string                `form:"casa_destino"   binding:"required"`
 	Placa         string                `form:"placa"`
-	ClientID      string                `form:"client_id"` // idempotencia: reenvios del kiosko tras sync offline
+	ClientID      string                `form:"client_id"`      // idempotencia: reenvios del kiosko tras sync offline
 	FotoDocumento *multipart.FileHeader `form:"foto_documento"` // Content-Type image
 	FotoRostro    *multipart.FileHeader `form:"foto_rostro"`    // Content-Type image
 	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`     // Content-Type image
@@ -40,37 +41,43 @@ type VisitaRequest struct {
 
 // VisitaResponse DTO de respuesta completo para una visita
 type VisitaResponse struct {
-	ID                  uint          `json:"id"`
-	Titular             string        `json:"titular"`
-	TipoDocumento       TipoDocumento `json:"tipo_documento"`
-	TipoVisitante       TipoVisitante `json:"tipo_visitante"`
-	Curp                string        `json:"curp"`
-	FotoDocumentoURL    string        `json:"foto_documento_url"`
-	FotoRostroURL       string        `json:"foto_rostro_url"`
-	FotoPlacaURL        string        `json:"foto_placa_url,omitempty"`
-	CasaDestino         string        `json:"casa_destino"`
-	Placa               string        `json:"placa"`
-	Estado              EstadoVisita  `json:"estado"`
-	Intervenida         bool          `json:"intervenida"`
-	KioskoID            uint          `json:"kiosko_id"`
-	AutorizadoPorTipo   string        `json:"autorizado_por_tipo,omitempty"`
-	AutorizadoPorNombre string        `json:"autorizado_por_nombre,omitempty"`
-	CreatedAt           time.Time     `json:"created_at"`
+	ID                  uint                 `json:"id"`
+	Titular             string               `json:"titular"`
+	TipoDocumento       TipoDocumento        `json:"tipo_documento"`
+	TipoVisitante       TipoVisitante        `json:"tipo_visitante"`
+	Curp                string               `json:"curp"`
+	FotoDocumentoURL    string               `json:"foto_documento_url"`
+	FotoRostroURL       string               `json:"foto_rostro_url"`
+	FotoPlacaURL        string               `json:"foto_placa_url,omitempty"`
+	CasaDestino         string               `json:"casa_destino"`
+	Placa               string               `json:"placa"`
+	Estado              EstadoVisita         `json:"estado"`
+	Intervenida         bool                 `json:"intervenida"`
+	KioskoID            uint                 `json:"kiosko_id"`
+	AutorizadoPorTipo   string               `json:"autorizado_por_tipo,omitempty"`
+	AutorizadoPorNombre string               `json:"autorizado_por_nombre,omitempty"`
+	CreatedAt           time.Time            `json:"created_at"`
+	ResumenIA           *string              `json:"resumen_ia,omitempty"`
+	ScoreIA             *ScoreIA             `json:"score_ia,omitempty"`
+	Estadisticas        *EstadisticasPersona `json:"estadisticas,omitempty"`
 }
 
 // VisitaListItemResponse DTO reducido para el listado del dashboard (omite CURP y clave_lector)
 type VisitaListItemResponse struct {
-	ID                  uint          `json:"id"`
-	Titular             string        `json:"titular"`
-	TipoDocumento       TipoDocumento `json:"tipo_documento"`
-	TipoVisitante       TipoVisitante `json:"tipo_visitante"`
-	CasaDestino         string        `json:"casa_destino"`
-	Estado              EstadoVisita  `json:"estado"`
-	Intervenida         bool          `json:"intervenida"`
-	KioskoID            uint          `json:"kiosko_id"`
-	AutorizadoPorTipo   string        `json:"autorizado_por_tipo,omitempty"`
-	AutorizadoPorNombre string        `json:"autorizado_por_nombre,omitempty"`
-	CreatedAt           time.Time     `json:"created_at"`
+	ID                  uint                 `json:"id"`
+	Titular             string               `json:"titular"`
+	TipoDocumento       TipoDocumento        `json:"tipo_documento"`
+	TipoVisitante       TipoVisitante        `json:"tipo_visitante"`
+	CasaDestino         string               `json:"casa_destino"`
+	Estado              EstadoVisita         `json:"estado"`
+	Intervenida         bool                 `json:"intervenida"`
+	KioskoID            uint                 `json:"kiosko_id"`
+	AutorizadoPorTipo   string               `json:"autorizado_por_tipo,omitempty"`
+	AutorizadoPorNombre string               `json:"autorizado_por_nombre,omitempty"`
+	CreatedAt           time.Time            `json:"created_at"`
+	ResumenIA           *string              `json:"resumen_ia,omitempty"`
+	ScoreIA             *ScoreIA             `json:"score_ia,omitempty"`
+	Estadisticas        *EstadisticasPersona `json:"estadisticas,omitempty"`
 }
 
 // VisitasPaginadasResponse DTO para el listado paginado
@@ -96,7 +103,7 @@ func ToVisitaResponse(v Visita) VisitaResponse {
 
 // helper func para convertir una Visita (DB Model) a DTO Response
 func toVisitaResponse(v Visita) VisitaResponse {
-	return VisitaResponse{
+	resp := VisitaResponse{
 		ID:                  v.ID,
 		Titular:             v.Titular,
 		TipoDocumento:       v.TipoDocumento,
@@ -114,12 +121,14 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		AutorizadoPorNombre: v.AutorizadoPorNombre,
 		CreatedAt:           v.CreatedAt,
 	}
+	aplicarAnalisisIA(&resp.ResumenIA, &resp.ScoreIA, v)
+	return resp
 }
 
 // helper func para convertir una Visita (DB Model) a DTO VisitaListItemResponse
 // pensado para iterar visitas y retornar []VisitaListItemResponse
 func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
-	return VisitaListItemResponse{
+	item := VisitaListItemResponse{
 		ID:                  v.ID,
 		Titular:             v.Titular,
 		TipoVisitante:       v.TipoVisitante,
@@ -132,4 +141,23 @@ func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 		AutorizadoPorNombre: v.AutorizadoPorNombre,
 		CreatedAt:           v.CreatedAt,
 	}
+	aplicarAnalisisIA(&item.ResumenIA, &item.ScoreIA, v)
+	return item
+}
+
+// aplicarAnalisisIA rellena resumen_ia/score_ia solo si el análisis walk-in
+// ya terminó (ambos campos persistidos) — deliberadamente no toca
+// Estadisticas, que requiere una consulta aparte y la rellena el caller
+// cuando v.PersonaID no es nil (ver ListarVisitas/GetVisitaByID).
+func aplicarAnalisisIA(resumenIA **string, scoreIA **ScoreIA, v Visita) {
+	if v.ResumenIA == "" || v.ScoreIA == nil {
+		return
+	}
+	var score ScoreIA
+	if err := json.Unmarshal(v.ScoreIA, &score); err != nil {
+		return
+	}
+	resumen := v.ResumenIA
+	*resumenIA = &resumen
+	*scoreIA = &score
 }
