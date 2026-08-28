@@ -90,6 +90,7 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 		CasaDestino:   mejor.CasaDestino,
 		Estado:        visitas.EstadoAprobado,
 		KioskoID:      uint(kioskoID),
+		PersonaID:     &mejor.PersonaID,
 	}
 	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})
@@ -163,6 +164,7 @@ func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
 		Estado:        visitas.EstadoAprobado,
 		KioskoID:      uint(kioskoID),
 		ClientID:      visitas.ClientIDPtr(req.ClientID),
+		PersonaID:     &mejor.PersonaID,
 	}
 	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})

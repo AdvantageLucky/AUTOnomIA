@@ -89,11 +89,12 @@ func (r *Repository) UpdateEmbedding(id uint, embedding []float64) error {
 		Update("embedding", residente.FloatArray(embedding)).Error
 }
 
-// CandidatoKiosko es la forma minima que necesita el kiosko para
-// reconocer a alguien por PIN o por rostro — reemplaza lo que antes leia
+// CandidatoKiosko es un residente activo candidato a que el kiosko lo
+// reconozca por PIN o por rostro — reemplaza lo que antes leia
 // de Residente, ahora sale de Persona+Membresia via join.
 type CandidatoKiosko struct {
 	MembresiaID     uint
+	PersonaID       uint
 	Nombre          string
 	ApellidoPaterno string
 	CasaDestino     string
@@ -108,6 +109,7 @@ type CandidatoKiosko struct {
 // sobre un struct anónimo declarado inline.
 type candidatoKioskoFila struct {
 	MembresiaID     uint
+	PersonaID       uint
 	Nombre          string
 	ApellidoPaterno string
 	CasaDestino     string
@@ -121,7 +123,7 @@ type candidatoKioskoFila struct {
 func (r *Repository) FindActivasPorTenant(tenantID uint) ([]CandidatoKiosko, error) {
 	var filas []candidatoKioskoFila
 	err := r.db.Table("membresias").
-		Select("membresias.id AS membresia_id, personas.nombre AS nombre, personas.apellido_paterno AS apellido_paterno, membresias.casa_destino AS casa_destino, membresias.pin AS pin_hash, personas.embedding AS embedding").
+		Select("membresias.id AS membresia_id, membresias.persona_id AS persona_id, personas.nombre AS nombre, personas.apellido_paterno AS apellido_paterno, membresias.casa_destino AS casa_destino, membresias.pin AS pin_hash, personas.embedding AS embedding").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ?", tenantID, residente.ResidenteStatusActivo).
 		Where("membresias.deleted_at IS NULL AND personas.deleted_at IS NULL").
@@ -133,7 +135,7 @@ func (r *Repository) FindActivasPorTenant(tenantID uint) ([]CandidatoKiosko, err
 	out := make([]CandidatoKiosko, len(filas))
 	for i, f := range filas {
 		out[i] = CandidatoKiosko{
-			MembresiaID: f.MembresiaID, Nombre: f.Nombre, ApellidoPaterno: f.ApellidoPaterno,
+			MembresiaID: f.MembresiaID, PersonaID: f.PersonaID, Nombre: f.Nombre, ApellidoPaterno: f.ApellidoPaterno,
 			CasaDestino: f.CasaDestino, PinHash: f.PinHash, Embedding: []float64(f.Embedding),
 		}
 	}
