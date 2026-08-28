@@ -57,6 +57,12 @@ class SyncWorker {
     try {
       await refrescarSnapshot();
       await _drenarCola();
+    } catch (_) {
+      // El kiosko todavia no esta activado (no hay sesion con la que pedir el
+      // snapshot) o la red fallo a media sincronizacion. En ambos casos se
+      // reintenta en el siguiente ciclo — esto corre durante el arranque, y
+      // dejar escapar la excepcion tumba la app antes de la pantalla de
+      // activacion.
     } finally {
       _sincronizando = false;
     }
