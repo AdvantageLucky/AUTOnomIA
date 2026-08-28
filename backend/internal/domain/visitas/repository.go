@@ -263,19 +263,22 @@ func (r *Repository) HistorialDeVisitante(v Visita) ([]Visita, error) {
 	return nil, nil
 }
 
-// ActualizarEstadoConScore actualiza estado e intervenida de una visita —
-// usado por el agente de análisis de patrones, así que siempre queda
-// registrado como AutorizadorAgente en la bitácora.
-func (r *Repository) ActualizarEstadoConScore(
-	id uint,
-	estado EstadoVisita,
-	intervenida bool,
-) error {
-	return r.db.Scopes(ByTenant).Model(&Visita{}).Where("id = ?", id).Updates(map[string]any{
-		"estado":              estado,
-		"intervenida":         intervenida,
-		"autorizado_por_tipo": AutorizadorAgente,
-	}).Error
+// GuardarAnalisisIA persiste el resultado del análisis de patrones (resumen
+// narrativo del LLM + heurísticas de anomalía) de una visita walk-in. Si
+// nuevoEstado no es nil, también actualiza el estado y queda registrado
+// como AutorizadorAgente en la bitácora — mismo caso de uso que el
+// ActualizarEstadoConScore anterior, ahora extendido para no descartar el
+// resumen ni el score.
+func (r *Repository) GuardarAnalisisIA(id uint, resumenIA string, scoreIA []byte, nuevoEstado *EstadoVisita) error {
+	updates := map[string]any{
+		"resumen_ia": resumenIA,
+		"score_ia":   scoreIA,
+	}
+	if nuevoEstado != nil {
+		updates["estado"] = *nuevoEstado
+		updates["autorizado_por_tipo"] = AutorizadorAgente
+	}
+	return r.db.Scopes(ByTenant).Model(&Visita{}).Where("id = ?", id).Updates(updates).Error
 }
 
 // GetKioskoConfig devuelve la config del kiosko, o valores por defecto si no existe aún
