@@ -13,7 +13,6 @@ import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/services/local_cache_db.dart';
 import 'package:kigo_kiosco/core/services/sync_worker.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_error.dart';
-import 'package:kigo_kiosco/core/widgets/sonda_diagnostico.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/activacion/views/activacion_view.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
@@ -240,14 +239,7 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
           theme: esClaro ? KigoDesign.lightTheme : KigoDesign.darkTheme,
           navigatorKey: navegadorKigo,
           navigatorObservers: [observadorDeRutas],
-          // La sonda va por encima de TODAS las rutas, barreras modales
-          // incluidas, y dentro de un IgnorePointer para no robar toques.
-          builder: (context, child) => Stack(
-            children: [
-              ?child,
-              const IgnorePointer(child: SondaDiagnostico()),
-            ],
-          ),
+          builder: (context, child) => child ?? const SizedBox.shrink(),
           home: Builder(builder: (context) {
             if (cfg.cargando) return const _SplashScreen();
             if (cfg.necesitaActivacion) {
