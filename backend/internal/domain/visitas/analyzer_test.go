@@ -1,6 +1,8 @@
 package visitas
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -125,5 +127,40 @@ func TestAnalizarVisita_HorarioInusual_MedianocheWrap(t *testing.T) {
 
 	if sc.HorarioInusual {
 		t.Error("llegada a las 00:10 cuando historial es 23:50 no debe marcar HorarioInusual (cruce de medianoche)")
+	}
+}
+
+func TestScoreContexto_AScoreIA(t *testing.T) {
+	ahora := time.Now()
+	sc := ScoreContexto{
+		VecesVisitado:     3,
+		UltimaVisita:      &ahora,
+		AnomaliaMatricula: true,
+		CambioModalidad:   true, // no debe aparecer en ScoreIA
+		HorarioInusual:    false,
+		RechazadoPrevio:   true,
+		OCRSospechoso:     false,
+		Confiable:         false,
+		ResumenTexto:      "texto que tampoco debe aparecer",
+	}
+
+	got := sc.AScoreIA()
+
+	if got.VecesVisitado != 3 || got.UltimaVisita != &ahora {
+		t.Errorf("VecesVisitado/UltimaVisita no se copiaron bien: %+v", got)
+	}
+	if !got.AnomaliaMatricula || !got.RechazadoPrevio {
+		t.Errorf("anomalías no se copiaron bien: %+v", got)
+	}
+	if got.HorarioInusual || got.Confiable {
+		t.Errorf("esperaba HorarioInusual/Confiable en false, got %+v", got)
+	}
+
+	data, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("no esperaba error al serializar: %v", err)
+	}
+	if strings.Contains(string(data), "cambio_modalidad") || strings.Contains(string(data), "resumen") {
+		t.Errorf("ScoreIA no debe exponer cambio_modalidad ni resumen: %s", data)
 	}
 }

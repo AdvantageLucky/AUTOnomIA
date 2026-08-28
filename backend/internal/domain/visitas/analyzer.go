@@ -21,6 +21,34 @@ type ScoreContexto struct {
 	ResumenTexto      string
 }
 
+// ScoreIA es el subconjunto serializable de ScoreContexto que se persiste y
+// expone al dashboard — sin CambioModalidad (nunca se calcula, siempre
+// false, exponerlo mentiría "sin cambios") ni ResumenTexto (va en su propia
+// columna resumen_ia, no duplicado dentro del score).
+type ScoreIA struct {
+	VecesVisitado     int        `json:"veces_visitado"`
+	UltimaVisita      *time.Time `json:"ultima_visita,omitempty"`
+	AnomaliaMatricula bool       `json:"anomalia_matricula"`
+	HorarioInusual    bool       `json:"horario_inusual"`
+	RechazadoPrevio   bool       `json:"rechazado_previo"`
+	OCRSospechoso     bool       `json:"ocr_sospechoso"`
+	Confiable         bool       `json:"confiable"`
+}
+
+// AScoreIA convierte el resultado interno del análisis al subconjunto que
+// se persiste y se expone al dashboard.
+func (sc ScoreContexto) AScoreIA() ScoreIA {
+	return ScoreIA{
+		VecesVisitado:     sc.VecesVisitado,
+		UltimaVisita:      sc.UltimaVisita,
+		AnomaliaMatricula: sc.AnomaliaMatricula,
+		HorarioInusual:    sc.HorarioInusual,
+		RechazadoPrevio:   sc.RechazadoPrevio,
+		OCRSospechoso:     sc.OCRSospechoso,
+		Confiable:         sc.Confiable,
+	}
+}
+
 // AnalizarVisita compara la visita nueva contra el historial y devuelve el ScoreContexto.
 // umbral es el número mínimo de aprobaciones consecutivas para marcar Confiable.
 // historial debe estar ordenado de más reciente a más antiguo.
