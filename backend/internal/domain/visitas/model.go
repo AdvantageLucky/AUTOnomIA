@@ -57,6 +57,9 @@ type Visita struct {
 	ClientID            *string      `gorm:"column:client_id;uniqueIndex"`
 	AutorizadoPorTipo   string       `gorm:"column:autorizado_por_tipo"`
 	AutorizadoPorNombre string       `gorm:"column:autorizado_por_nombre"`
+	ResumenIA           string       `gorm:"column:resumen_ia"`
+	ScoreIA             []byte       `gorm:"column:score_ia;type:jsonb"`
+	PersonaID           *uint        `gorm:"column:persona_id;index"`
 }
 
 func (Visita) TableName() string { return "visitas" }
