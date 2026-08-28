@@ -210,7 +210,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: KigoDesign.surfaceCard,
+        backgroundColor: context.kSurfaceCard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
         ),
@@ -219,13 +219,13 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
             Icon(icono, color: KigoDesign.brand, size: 28),
             const SizedBox(width: 12),
             Flexible(
-              child: Text(titulo, style: const TextStyle(color: KigoDesign.textPrimary)),
+              child: Text(titulo, style: TextStyle(color: context.kTextPrimary)),
             ),
           ],
         ),
         content: Text(
           mensaje,
-          style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 16),
+          style: TextStyle(color: context.kTextSecondary, fontSize: 16),
         ),
         actions: [
           TextButton(
@@ -249,14 +249,14 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   @override
   Widget build(BuildContext context) {
     if (viewModel.pasos.isEmpty) {
-      return const Scaffold(
-        backgroundColor: KigoDesign.bgDark,
+      return Scaffold(
+        backgroundColor: context.kBg,
         body: Center(child: CircularProgressIndicator(color: KigoDesign.brand)),
       );
     }
 
     return Scaffold(
-      backgroundColor: KigoDesign.bgDark,
+      backgroundColor: context.kBg,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: _buildVoiceWaveButton(),
       body: SizedBox.expand(
@@ -350,7 +350,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         const SizedBox(width: 18),
         Text(
           AppLocalizations.t(context, 'kigo_label'),
-          style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800),
+          style: TextStyle(color: context.kTextPrimary, fontSize: 34, fontWeight: FontWeight.w800),
         ),
       ],
     );
@@ -362,7 +362,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: const Color(0xFF0F0D0D),
+          color: context.kSurface1,
           borderRadius: BorderRadius.circular(24),
         ),
         child: ClipRRect(
@@ -467,9 +467,9 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         width: double.infinity,
         height: 62,
         decoration: BoxDecoration(
-          color: KigoDesign.surface2,
+          color: context.kSurface2,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF393333), width: 1.2),
+          border: Border.all(color: context.kBorder, width: 1.2),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -478,7 +478,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
             const SizedBox(width: 10),
             Text(
               AppLocalizations.t(context, 'back_button_text'),
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+              style: TextStyle(color: context.kTextPrimary, fontSize: 18, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -491,7 +491,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       AppLocalizations.t(context, 'footer_text'),
       textAlign: TextAlign.center,
       style: TextStyle(
-        color: KigoDesign.textTertiary,
+        color: context.kTextTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

@@ -14,7 +14,7 @@ class ComunidadBadge extends StatefulWidget {
 
   /// Multiplica la pastilla completa. La bienvenida la deja en 1; la pantalla
   /// de escaneo la sube, porque ahí el mensaje es lo único que acompaña al
-  /// recuadro sobre el fondo negro.
+  /// recuadro sobre el fondo de la pantalla.
   final double escala;
 
   /// Qué hacer cuando el nombre no cabe en un renglón. `false` lo corta con

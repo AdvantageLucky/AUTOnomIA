@@ -136,12 +136,12 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KigoDesign.bgDark,
+      backgroundColor: context.kBg,
       appBar: AppBar(
-        backgroundColor: KigoDesign.bgDark,
+        backgroundColor: context.kBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.kTextPrimary),
           onPressed: _regresar,
         ),
       ),
@@ -157,12 +157,12 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                 totalSteps: widget.totalSteps,
               ),
               const SizedBox(height: 42),
-              Text(_titulo(), style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800)),
+              Text(_titulo(), style: TextStyle(color: context.kTextPrimary, fontSize: 34, fontWeight: FontWeight.w800)),
               if (_subtitulo() != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   _subtitulo()!,
-                  style: const TextStyle(color: Color(0xFF999494), fontSize: 17),
+                  style: TextStyle(color: context.kTextSecondary, fontSize: 17),
                 ),
               ],
               const SizedBox(height: 32),
@@ -198,7 +198,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 60),
-        child: Center(child: CircularProgressIndicator(color: Color(0xFFFF542F))),
+        child: Center(child: CircularProgressIndicator(color: KigoDesign.brand)),
       );
     }
 
@@ -206,12 +206,12 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
       return Column(
         children: [
           const SizedBox(height: 20),
-          const Icon(Icons.wifi_off_rounded, color: Color(0xFF8F8989), size: 48),
+          Icon(Icons.wifi_off_rounded, color: context.kTextSecondary, size: 48),
           const SizedBox(height: 16),
           Text(
             _error!,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 18),
+            style: TextStyle(color: context.kTextSecondary, fontSize: 18),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -220,7 +220,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
             child: ElevatedButton(
               onPressed: _cargarDestinos,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF542F),
+                backgroundColor: KigoDesign.brand,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
@@ -238,7 +238,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
           child: Text(
             AppLocalizations.t(context, 'sin_casas_registradas'),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF999494), fontSize: 18),
+            style: TextStyle(color: context.kTextSecondary, fontSize: 18),
           ),
         ),
       );
@@ -289,11 +289,11 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         onPressed: _escribirDestinoManual,
         child: Text(
           AppLocalizations.t(context, 'no_encuentro_mi_destino'),
-          style: const TextStyle(
-            color: Color(0xFF999494),
+          style: TextStyle(
+            color: context.kTextSecondary,
             fontSize: 15,
             decoration: TextDecoration.underline,
-            decorationColor: Color(0xFF999494),
+            decorationColor: context.kTextSecondary,
           ),
         ),
       ),
@@ -305,18 +305,18 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
     final destino = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF211D1D),
+        backgroundColor: context.kSurfaceCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           AppLocalizations.t(context, 'escribe_tu_destino'),
-          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF302A2A))),
+          style: TextStyle(color: context.kTextPrimary),
+          decoration: InputDecoration(
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.kBorder)),
             focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: KigoDesign.brand)),
           ),
         ),
@@ -324,7 +324,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(AppLocalizations.t(context, 'cancelar_button'),
-                style: const TextStyle(color: Color(0xFF999494), fontWeight: FontWeight.bold)),
+                style: TextStyle(color: context.kTextSecondary, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
@@ -347,9 +347,9 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
         decoration: BoxDecoration(
-          color: const Color(0xFF1F1B1B),
+          color: context.kSurfaceCard,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF302A2A), width: 1.2),
+          border: Border.all(color: context.kBorder, width: 1.2),
         ),
         child: Row(
           children: [
@@ -357,19 +357,19 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFF3A2420),
+                color: context.kChipMarca,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(icono, color: const Color(0xFFFF542F), size: 28),
+              child: Icon(icono, color: KigoDesign.brand, size: 28),
             ),
             const SizedBox(width: 20),
             Expanded(
               child: Text(
                 titulo,
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+                style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.w700),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F8989), size: 28),
+            Icon(Icons.chevron_right_rounded, color: context.kTextSecondary, size: 28),
           ],
         ),
       ),

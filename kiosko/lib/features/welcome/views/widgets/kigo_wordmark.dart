@@ -6,22 +6,26 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 /// pantalla (escaneando / acceso concedido / denegado) es el protagonista;
 /// esto solo confirma en qué app estás, en voz baja.
 class KigoWordmark extends StatelessWidget {
-  final Color color;
+  /// Color del texto "Kigo". `null` lo resuelve contra el tema activo, que es
+  /// lo que quieren las pantallas montadas sobre el fondo de la app; las que
+  /// van sobre la cámara siguen pasando un color fijo.
+  final Color? color;
 
   /// Multiplica el lockup completo. Las pantallas de resultado lo dejan en 1
   /// —ahí la marca va en voz baja—; la de escaneo lo sube, porque sobre el
-  /// fondo negro es lo único que acompaña al recuadro.
+  /// fondo liso es lo único que acompaña al recuadro.
   final double escala;
 
   const KigoWordmark({
     super.key,
-    this.color = Colors.white,
+    this.color,
     this.escala = 1,
   });
 
   @override
   Widget build(BuildContext context) {
     final lado = 26 * escala;
+    final colorTexto = color ?? context.kTextPrimary;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -47,7 +51,7 @@ class KigoWordmark extends StatelessWidget {
         Text(
           'Kigo',
           style: TextStyle(
-            color: color,
+            color: colorTexto,
             fontSize: 15 * escala,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2 * escala,

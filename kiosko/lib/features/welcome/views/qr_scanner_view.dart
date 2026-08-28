@@ -296,7 +296,10 @@ class _QrScannerViewState extends State<QrScannerView>
     final bottomRecuadro = (topRecuadro + lado).clamp(0.0, pantalla.height);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      // Fuera del recuadro no se ve la vista previa: el fondo del Scaffold y
+      // el velo del painter son el mismo color del tema, para que el modo
+      // claro no deje un marco negro alrededor del encuadre.
+      backgroundColor: context.kBg,
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
@@ -325,6 +328,7 @@ class _QrScannerViewState extends State<QrScannerView>
                 painter: _QrOverlayPainter(
                   scanned: widget.viewModel.isScanned,
                   pulso: _anilloCtrl.value,
+                  colorVelo: context.kBg,
                 ),
                 child: const SizedBox.expand(),
               ),
@@ -416,7 +420,7 @@ class _QrScannerViewState extends State<QrScannerView>
             style: TextStyle(
               color: widget.viewModel.isScanned
                   ? KigoDesign.success
-                  : Colors.white,
+                  : context.kTextPrimary,
               fontSize: 34,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
@@ -428,7 +432,7 @@ class _QrScannerViewState extends State<QrScannerView>
           AppLocalizations.t(context, 'codigo_personal_o_invitacion'),
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: context.kTextSecondary,
             fontSize: 20,
             fontWeight: FontWeight.w500,
           ),
@@ -490,14 +494,23 @@ class _QrScannerViewState extends State<QrScannerView>
 class _QrOverlayPainter extends CustomPainter {
   final bool scanned;
   final double pulso;
-  const _QrOverlayPainter({required this.scanned, required this.pulso});
+
+  /// Color con el que se tapa todo lo que queda fuera del encuadre. Lo pone
+  /// quien construye el painter a partir del tema activo.
+  final Color colorVelo;
+
+  const _QrOverlayPainter({
+    required this.scanned,
+    required this.pulso,
+    required this.colorVelo,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Negro sólido, no un velo: fuera del recuadro no se ve nada de la vista
+    // Sólido, no translúcido: fuera del recuadro no se ve nada de la vista
     // previa. Deja el encuadre como único punto de atención y evita que la
     // sala de fondo compita con el texto.
-    final overlayPaint = Paint()..color = Colors.black;
+    final overlayPaint = Paint()..color = colorVelo;
 
     final cutBase = _ladoRecuadro(size);
     // Respiración sutil (0.97–1.0) mientras espera; sólido y estable ya detectado.
@@ -535,5 +548,7 @@ class _QrOverlayPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_QrOverlayPainter oldDelegate) =>
-      oldDelegate.scanned != scanned || oldDelegate.pulso != pulso;
+      oldDelegate.scanned != scanned ||
+      oldDelegate.pulso != pulso ||
+      oldDelegate.colorVelo != colorVelo;
 }

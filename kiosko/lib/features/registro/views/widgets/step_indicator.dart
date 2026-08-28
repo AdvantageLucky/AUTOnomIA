@@ -28,8 +28,8 @@ class StepIndicator extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             color: completed || active
-                ? const Color(0xFFFF542F)
-                : KigoDesign.surface2,
+                ? KigoDesign.brand
+                : context.kSurface2,
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -42,7 +42,7 @@ class StepIndicator extends StatelessWidget {
                 : Text(
                     '${index + 1}',
                     style: TextStyle(
-                      color: active ? Colors.white : KigoDesign.textSecondary,
+                      color: active ? Colors.white : context.kTextSecondary,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
@@ -61,8 +61,8 @@ class StepIndicator extends StatelessWidget {
               height: 3,
               margin: const EdgeInsets.symmetric(horizontal: 4),
               color: index < currentStep
-                  ? const Color(0xFFFF542F)
-                  : const Color(0xFF3A3434),
+                  ? KigoDesign.brand
+                  : context.kBorder,
             ),
           ),
         );

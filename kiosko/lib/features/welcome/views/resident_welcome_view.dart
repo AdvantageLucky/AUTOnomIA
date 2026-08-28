@@ -40,7 +40,7 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KigoDesign.bgDark,
+      backgroundColor: context.kBg,
       body: PantallaAdaptable(
         padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
         child: Column(
@@ -68,7 +68,7 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFFFF542F),
+            color: KigoDesign.brand,
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Center(
@@ -88,8 +88,8 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
           children: [
             Text(
               AppLocalizations.t(context, 'kigo_label'),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.kTextPrimary,
                 fontSize: 29,
                 fontWeight: FontWeight.w800,
               ),
@@ -97,8 +97,8 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
             const SizedBox(height: 2),
             Text(
               AppLocalizations.t(context, 'self_checkin_label'),
-              style: const TextStyle(
-                color: KigoDesign.textSecondary,
+              style: TextStyle(
+                color: context.kTextSecondary,
                 fontSize: 14,
                 letterSpacing: 4,
                 fontWeight: FontWeight.w500,
@@ -117,16 +117,16 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: const Color(0xFFFF542F).withValues(alpha: 0.12),
+            color: KigoDesign.brand.withValues(alpha: 0.12),
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFFFF542F).withValues(alpha: 0.4),
+              color: KigoDesign.brand.withValues(alpha: 0.4),
               width: 2,
             ),
           ),
           child: const Icon(
             Icons.home_rounded,
-            color: Color(0xFFFF542F),
+            color: KigoDesign.brand,
             size: 52,
           ),
         ),
@@ -135,8 +135,8 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
 
         Text(
           AppLocalizations.t(context, 'bienvenido_exclamacion'),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.kTextPrimary,
             fontSize: 46,
             fontWeight: FontWeight.w800,
           ),
@@ -147,8 +147,8 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
         Text(
           viewModel.nombre,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.kTextPrimary,
             fontSize: 26,
             fontWeight: FontWeight.w700,
           ),
@@ -158,8 +158,8 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
           const SizedBox(height: 8),
           Text(
             viewModel.casaDestino,
-            style: const TextStyle(
-              color: KigoDesign.textSecondary,
+            style: TextStyle(
+              color: context.kTextSecondary,
               fontSize: 18,
               letterSpacing: 2,
               fontWeight: FontWeight.w500,
@@ -174,8 +174,8 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
   Widget _buildFooter() {
     return Text(
       AppLocalizations.t(context, 'footer_text'),
-      style: const TextStyle(
-        color: KigoDesign.textTertiary,
+      style: TextStyle(
+        color: context.kTextTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

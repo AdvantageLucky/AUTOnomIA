@@ -18,10 +18,17 @@ class RegisterOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color orange = const Color(0xFFFF542F);
-    final Color orangeLight = const Color(0xFFFF714D);
-    final Color gray = KigoDesign.surface2;
-    final Color iconGray = const Color(0xFF3A2420);
+    final Color orange = KigoDesign.brand;
+    final Color orangeLight = KigoDesign.brandHover;
+    final Color gray = context.kSurface2;
+    // Hueco del ícono y burbuja decorativa: en oscuro son grises calientes;
+    // en claro tienen que ser un tinte de marca para no volverse manchas
+    // negras sobre la tarjeta blanca.
+    final Color iconGray =
+        context.esTemaClaro ? orange.withValues(alpha: 0.12) : context.kChipMarca;
+    final Color burbuja = context.esTemaClaro
+        ? orange.withValues(alpha: 0.07)
+        : const Color(0xFF3A2925).withValues(alpha: 0.65);
 
     return GestureDetector(
       onTap: onTap,
@@ -46,7 +53,7 @@ class RegisterOptionCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? orangeLight.withValues(alpha: 0.55)
-                      : const Color(0xFF3A2925).withValues(alpha: 0.65),
+                      : burbuja,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -82,8 +89,8 @@ class RegisterOptionCard extends StatelessWidget {
                       children: [
                         Text(
                           AppLocalizations.t(context, option.titleKey),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : context.kTextPrimary,
                             fontSize: 23,
                             fontWeight: FontWeight.w800,
                           ),
@@ -94,7 +101,7 @@ class RegisterOptionCard extends StatelessWidget {
                           style: TextStyle(
                             color: isSelected
                                 ? Colors.white.withValues(alpha: 0.92)
-                                : const Color(0xFFA8A3A3),
+                                : context.kTextSecondary,
                             fontSize: 17,
                             fontWeight: FontWeight.w400,
                           ),

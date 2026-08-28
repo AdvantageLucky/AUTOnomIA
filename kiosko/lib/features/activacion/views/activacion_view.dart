@@ -99,7 +99,7 @@ class _ActivacionViewState extends State<ActivacionView> {
               Text(
                 AppLocalizations.t(context, 'activar_dispositivo_subtitle'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 16),
+                style: TextStyle(color: context.kTextSecondary, fontSize: 16),
               ),
               const SizedBox(height: 40),
               if (isWide)
@@ -108,10 +108,10 @@ class _ActivacionViewState extends State<ActivacionView> {
                 _buildQrYCodigoVertical(solicitud, qrData),
               const SizedBox(height: 32),
               Text(solicitud.verificationUri,
-                  style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 13)),
+                  style: TextStyle(color: context.kTextSecondary, fontSize: 13)),
               const SizedBox(height: 8),
               Text('${AppLocalizations.t(context, 'expira_en_prefix')} $countdown',
-                  style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 14)),
+                  style: TextStyle(color: context.kTextSecondary, fontSize: 14)),
               const SizedBox(height: 24),
               const SizedBox(
                 width: 24,
@@ -146,12 +146,12 @@ class _ActivacionViewState extends State<ActivacionView> {
         _buildQr(qrData),
         const SizedBox(height: 28),
         Row(children: [
-          const Expanded(child: Divider(color: KigoDesign.border, thickness: 1)),
+          Expanded(child: Divider(color: context.kBorder, thickness: 1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Text(AppLocalizations.t(context, 'o_separador'), style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 13)),
+            child: Text(AppLocalizations.t(context, 'o_separador'), style: TextStyle(color: context.kTextTertiary, fontSize: 13)),
           ),
-          const Expanded(child: Divider(color: KigoDesign.border, thickness: 1)),
+          Expanded(child: Divider(color: context.kBorder, thickness: 1)),
         ]),
         const SizedBox(height: 28),
         _buildCodigo(solicitud.userCode),
@@ -179,12 +179,12 @@ class _ActivacionViewState extends State<ActivacionView> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 1, height: 55, color: KigoDesign.border),
+        Container(width: 1, height: 55, color: context.kBorder),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(AppLocalizations.t(context, 'o_separador'), style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 13)),
+          child: Text(AppLocalizations.t(context, 'o_separador'), style: TextStyle(color: context.kTextTertiary, fontSize: 13)),
         ),
-        Container(width: 1, height: 55, color: KigoDesign.border),
+        Container(width: 1, height: 55, color: context.kBorder),
       ],
     );
   }
@@ -194,20 +194,20 @@ class _ActivacionViewState extends State<ActivacionView> {
       children: [
         Text(
           AppLocalizations.t(context, 'codigo_label'),
-          style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 13, letterSpacing: 1.5),
+          style: TextStyle(color: context.kTextSecondary, fontSize: 13, letterSpacing: 1.5),
         ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           decoration: BoxDecoration(
-            color: KigoDesign.surface2,
+            color: context.kSurface2,
             borderRadius: BorderRadius.circular(KigoDesign.radius),
             border: Border.all(color: KigoDesign.brand, width: 1.5),
           ),
           child: Text(
             userCode,
-            style: const TextStyle(
-              color: KigoDesign.textPrimary,
+            style: TextStyle(
+              color: context.kTextPrimary,
               fontSize: 34,
               fontWeight: FontWeight.w900,
               fontFamily: 'monospace',
@@ -225,10 +225,10 @@ class _ActivacionViewState extends State<ActivacionView> {
       children: [
         Text(
           AppLocalizations.t(context, 'codigo_expirado_title'),
-          style: const TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w600),
+          style: TextStyle(color: context.kTextPrimary, fontSize: 22, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        Text(AppLocalizations.t(context, 'codigo_expirado_subtitle'), style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 15)),
+        Text(AppLocalizations.t(context, 'codigo_expirado_subtitle'), style: TextStyle(color: context.kTextSecondary, fontSize: 15)),
         const SizedBox(height: 32),
         ElevatedButton(
           onPressed: _vm.iniciar,
@@ -247,7 +247,7 @@ class _ActivacionViewState extends State<ActivacionView> {
         Text(
           _vm.errorMsg ?? AppLocalizations.t(context, 'error_desconocido'),
           textAlign: TextAlign.center,
-          style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 15),
+          style: TextStyle(color: context.kTextSecondary, fontSize: 15),
         ),
         const SizedBox(height: 32),
         ElevatedButton(
@@ -258,5 +258,6 @@ class _ActivacionViewState extends State<ActivacionView> {
     );
   }
 
-  static const _estiloSubtitulo = TextStyle(color: KigoDesign.textSecondary, fontSize: 16);
+  TextStyle get _estiloSubtitulo =>
+      TextStyle(color: context.kTextSecondary, fontSize: 16);
 }

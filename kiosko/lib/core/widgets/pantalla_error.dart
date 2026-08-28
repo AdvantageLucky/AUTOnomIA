@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 
 /// Cuenta de reinicios del árbol de widgets. Cambiarla vuelve a construir la
 /// app entera sin reinstalar ni matar el proceso.
@@ -21,11 +22,19 @@ class PantallaError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sin MaterialApp encima: ErrorWidget puede dispararse por debajo de él.
+    // Sin MaterialApp encima: ErrorWidget puede dispararse por debajo de él,
+    // así que el modo claro/oscuro se lee de la bandera que deja main.dart y
+    // no de `Theme.of`.
+    final claro = kigoTemaClaroActivo;
+    final fondo = claro ? KigoDesign.bgLight : KigoDesign.bgDark;
+    final textoPrincipal = claro ? KigoDesign.textDark : KigoDesign.textPrimary;
+    final textoSecundario =
+        claro ? KigoDesign.textSecondaryLight : KigoDesign.textSecondary;
+
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(
-        color: const Color(0xFF09090D),
+        color: fondo,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -35,23 +44,23 @@ class PantallaError extends StatelessWidget {
                 const Text(
                   'La aplicación encontró un error',
                   style: TextStyle(
-                    color: Color(0xFFFF542F),
+                    color: KigoDesign.brand,
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Muestra esta pantalla a soporte técnico.',
-                  style: TextStyle(color: Color(0xFF888AA6), fontSize: 13),
+                  style: TextStyle(color: textoSecundario, fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 Expanded(
                   child: SingleChildScrollView(
                     child: SelectableText(
                       detalle == null ? mensaje : '$mensaje\n\n$detalle',
-                      style: const TextStyle(
-                        color: Color(0xFFECEAF4),
+                      style: TextStyle(
+                        color: textoPrincipal,
                         fontSize: 12,
                         fontFamily: 'monospace',
                         height: 1.4,
@@ -65,7 +74,7 @@ class PantallaError extends StatelessWidget {
                   height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF542F),
+                      backgroundColor: KigoDesign.brand,
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () {

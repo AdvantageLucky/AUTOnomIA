@@ -89,9 +89,9 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _controller == null) {
-      return const Scaffold(
-        backgroundColor: KigoDesign.bgDark,
-        body: Center(child: CircularProgressIndicator(color: Color(0xFFFF542F))),
+      return Scaffold(
+        backgroundColor: context.kBg,
+        body: Center(child: CircularProgressIndicator(color: KigoDesign.brand)),
       );
     }
 
@@ -101,10 +101,10 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: KigoDesign.bgDark,
-        title: Text(AppLocalizations.t(context, 'apunta_a_tu_rostro'), style: const TextStyle(color: Colors.white)),
+        backgroundColor: context.kBg,
+        title: Text(AppLocalizations.t(context, 'apunta_a_tu_rostro'), style: TextStyle(color: context.kTextPrimary)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.kTextPrimary),
           onPressed: () => Navigator.pop(context), // Botón físico/virtual para regresar
         ),
       ),
@@ -151,7 +151,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
             right: 0,
             child: Center(
               child: FloatingActionButton(
-                backgroundColor: const Color(0xFFFF542F), // naranja de Kigo
+                backgroundColor: KigoDesign.brand, // naranja de Kigo
                 onPressed: _tomarFotoYProcesar,
                 child: const Icon(Icons.camera_alt, color: Colors.white),
               ),
@@ -191,7 +191,7 @@ class _OvaloGuiaPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFFF542F)
+      ..color = KigoDesign.brand
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
     final rect = Offset.zero & size;
