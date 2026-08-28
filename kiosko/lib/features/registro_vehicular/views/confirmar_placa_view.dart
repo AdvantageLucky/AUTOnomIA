@@ -73,7 +73,7 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KigoDesign.bgDark,
+      backgroundColor: context.kBg,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -122,8 +122,8 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
               ? AppLocalizations.t(context, 'confirma_tu_placa')
               : AppLocalizations.t(context, 'escribe_tu_placa'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: KigoDesign.textPrimary,
+          style: TextStyle(
+            color: context.kTextPrimary,
             fontSize: 28,
             fontWeight: FontWeight.w800,
           ),
@@ -134,8 +134,8 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
               ? AppLocalizations.t(context, 'corrige_caracter_no_coincide')
               : AppLocalizations.t(context, 'no_detectamos_placa_escribela'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: KigoDesign.textSecondary,
+          style: TextStyle(
+            color: context.kTextSecondary,
             fontSize: 16,
             height: 1.4,
           ),
@@ -149,7 +149,7 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
       decoration: BoxDecoration(
-        color: KigoDesign.surface2,
+        color: context.kSurface2,
         borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
         border: Border.all(
           color: _error != null
@@ -162,7 +162,7 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
         _placa.isEmpty ? 'ABC123D' : _placa,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: _placa.isEmpty ? KigoDesign.textTertiary : KigoDesign.textPrimary,
+          color: _placa.isEmpty ? context.kTextTertiary : context.kTextPrimary,
           fontSize: 40,
           fontWeight: FontWeight.w800,
           letterSpacing: 8,
@@ -243,8 +243,8 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
         height: 62,
         decoration: BoxDecoration(
           color: presionado
-              ? (esBorrar ? const Color(0xFF3D2020) : KigoDesign.brandHover)
-              : KigoDesign.surface2,
+              ? (esBorrar ? context.kTeclaPresionada : KigoDesign.brandHover)
+              : context.kSurface2,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: presionado
@@ -257,13 +257,13 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
           child: esBorrar
               ? Icon(
                   Icons.backspace_outlined,
-                  color: presionado ? KigoDesign.brand : KigoDesign.textSecondary,
+                  color: presionado ? KigoDesign.brand : context.kTextSecondary,
                   size: 24,
                 )
               : Text(
                   caracter,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.kTextPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
                   ),
@@ -282,15 +282,15 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
             child: Container(
               height: 64,
               decoration: BoxDecoration(
-                color: KigoDesign.surface2,
+                color: context.kSurface2,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: KigoDesign.border, width: 1.2),
+                border: Border.all(color: context.kBorder, width: 1.2),
               ),
               child: Center(
                 child: Text(
                   AppLocalizations.t(context, 'cancelar_button'),
-                  style: const TextStyle(
-                    color: KigoDesign.textSecondary,
+                  style: TextStyle(
+                    color: context.kTextSecondary,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),

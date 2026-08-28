@@ -189,30 +189,30 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF211D1D),
+        backgroundColor: context.kSurfaceCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF542F), size: 32),
+            const Icon(Icons.hourglass_top_rounded, color: KigoDesign.brand, size: 32),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 AppLocalizations.t(context, 'revision_manual_dialog_title'),
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
         content: Text(
           AppLocalizations.t(context, 'revision_manual_dialog_content'),
-          style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 18, height: 1.5),
+          style: TextStyle(color: context.kTextSecondary, fontSize: 18, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               AppLocalizations.t(context, 'entendido_button'),
-              style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ],
@@ -223,7 +223,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KigoDesign.bgDark,
+      backgroundColor: context.kBg,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -254,12 +254,12 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   Widget _buildErrorState() {
     return Column(
       children: [
-        const Icon(Icons.error_outline_rounded, color: Color(0xFFFF542F), size: 56),
+        const Icon(Icons.error_outline_rounded, color: KigoDesign.brand, size: 56),
         const SizedBox(height: 18),
         Text(
           _submitError!,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 18),
+          style: TextStyle(color: context.kTextSecondary, fontSize: 18),
         ),
         const SizedBox(height: 28),
         SizedBox(
@@ -268,7 +268,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           child: ElevatedButton(
             onPressed: _errorRequiereRegresar ? _regresarABienvenida : _registrarVisita,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF542F),
+              backgroundColor: KigoDesign.brand,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             ),
@@ -291,7 +291,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             height: 90,
             child: LoadingIndicator(
               indicatorType: Indicator.circleStrokeSpin,
-              colors: [Color(0xFFFF542F)],
+              colors: [KigoDesign.brand],
               strokeWidth: 3,
               backgroundColor: Colors.transparent,
               pathBackgroundColor: Colors.transparent,
@@ -302,13 +302,13 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             _isSubmitting
                 ? AppLocalizations.t(context, 'enviando_solicitud')
                 : AppLocalizations.t(context, 'esperando_aprobacion'),
-            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+            style: TextStyle(color: context.kTextPrimary, fontSize: 26, fontWeight: FontWeight.w800),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
           Text(
             AppLocalizations.t(context, 'esperando_aprobacion_subtitle'),
-            style: const TextStyle(color: Color(0xFF999494), fontSize: 17, fontWeight: FontWeight.w400),
+            style: TextStyle(color: context.kTextSecondary, fontSize: 17, fontWeight: FontWeight.w400),
             textAlign: TextAlign.center,
           ),
         ],
@@ -318,17 +318,17 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     if (_estado == 'REVISION') {
       return Column(
         children: [
-          const Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF542F), size: 80),
+          const Icon(Icons.hourglass_top_rounded, color: KigoDesign.brand, size: 80),
           const SizedBox(height: 18),
           Text(
             AppLocalizations.t(context, 'en_revision_manual_title'),
-            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+            style: TextStyle(color: context.kTextPrimary, fontSize: 28, fontWeight: FontWeight.w800),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
           Text(
             AppLocalizations.t(context, 'en_revision_manual_subtitle'),
-            style: const TextStyle(color: Color(0xFF999494), fontSize: 17, fontWeight: FontWeight.w400),
+            style: TextStyle(color: context.kTextSecondary, fontSize: 17, fontWeight: FontWeight.w400),
             textAlign: TextAlign.center,
           ),
         ],
@@ -340,7 +340,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       children: [
         Icon(
           aprobado ? Icons.check_circle_outline_rounded : Icons.cancel_outlined,
-          color: aprobado ? const Color(0xFF4CAF50) : const Color(0xFFFF542F),
+          color: aprobado ? const Color(0xFF4CAF50) : KigoDesign.brand,
           size: 80,
         ),
         const SizedBox(height: 18),
@@ -348,7 +348,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           aprobado
               ? AppLocalizations.t(context, 'acceso_aprobado')
               : AppLocalizations.t(context, 'acceso_no_autorizado'),
-          style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+          style: TextStyle(color: context.kTextPrimary, fontSize: 28, fontWeight: FontWeight.w800),
           textAlign: TextAlign.center,
         ),
       ],
@@ -362,9 +362,9 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       width: double.infinity,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F1B1B),
+        color: context.kSurfaceCard,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF302A2A), width: 1.2),
+        border: Border.all(color: context.kBorder, width: 1.2),
       ),
       child: Column(
         children: [
@@ -380,8 +380,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
                 : Container(
                     width: 140,
                     height: 140,
-                    color: KigoDesign.surface2,
-                    child: const Icon(Icons.person_outline, color: Color(0xFF8F8989), size: 56),
+                    color: context.kSurface2,
+                    child: Icon(Icons.person_outline, color: context.kTextSecondary, size: 56),
                   ),
           ),
           const SizedBox(height: 20),
@@ -389,7 +389,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             // Sin INE no hay nombre: se muestra la placa, que es como el
             // vigilante va a identificar esta visita.
             data.nombreCompleto ?? data.placa ?? AppLocalizations.t(context, 'visitante_label'),
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(color: context.kTextPrimary, fontSize: 24, fontWeight: FontWeight.w800),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -408,15 +408,15 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       padding: const EdgeInsets.only(top: 16),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFFFF542F), size: 22),
+          Icon(icon, color: KigoDesign.brand, size: 22),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(color: Color(0xFF8F8989), fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(label, style: TextStyle(color: context.kTextSecondary, fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text(valor, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+                Text(valor, style: TextStyle(color: context.kTextPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
               ],
             ),
           ),

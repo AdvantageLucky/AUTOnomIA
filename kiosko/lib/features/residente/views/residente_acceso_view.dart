@@ -227,16 +227,16 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   @override
   Widget build(BuildContext context) {
     if (_verificandoConsent) {
-      return const Scaffold(
-        backgroundColor: KigoDesign.bgDark,
+      return Scaffold(
+        backgroundColor: context.kBg,
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFFFF542F), strokeWidth: 2.5),
+          child: CircularProgressIndicator(color: KigoDesign.brand, strokeWidth: 2.5),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: KigoDesign.bgDark,
+      backgroundColor: context.kBg,
       body: PantallaAdaptable(
         padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
         child: Column(
@@ -278,7 +278,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFFFF542F),
+            color: KigoDesign.brand,
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Center(
@@ -293,10 +293,10 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(AppLocalizations.t(context, 'kigo_label'),
-                style: const TextStyle(color: Colors.white, fontSize: 29, fontWeight: FontWeight.w800)),
+                style: TextStyle(color: context.kTextPrimary, fontSize: 29, fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
             Text(AppLocalizations.t(context, 'self_checkin_label'),
-                style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 14, letterSpacing: 4, fontWeight: FontWeight.w500)),
+                style: TextStyle(color: context.kTextSecondary, fontSize: 14, letterSpacing: 4, fontWeight: FontWeight.w500)),
           ],
         ),
         const Spacer(),
@@ -311,8 +311,8 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         Text(
           AppLocalizations.t(context, 'mira_camara_identificarte'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.kTextPrimary,
             fontSize: 26,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -327,8 +327,8 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: KigoDesign.surface2,
-            border: Border.all(color: const Color(0xFFFF542F).withValues(alpha: 0.35), width: 2.5),
+            color: context.kSurface2,
+            border: Border.all(color: KigoDesign.brand.withValues(alpha: 0.35), width: 2.5),
           ),
           child: _buildContenidoCamara(),
         ),
@@ -336,8 +336,8 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         const SizedBox(height: 20),
         Text(
           _textoEstadoCamara(),
-          style: const TextStyle(
-            color: KigoDesign.textTertiary,
+          style: TextStyle(
+            color: context.kTextTertiary,
             fontSize: 13,
             letterSpacing: 1.5,
           ),
@@ -364,13 +364,13 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         child: Icon(
           Icons.videocam_off_outlined,
           size: 64,
-          color: const Color(0xFFFF542F).withValues(alpha: 0.5),
+          color: KigoDesign.brand.withValues(alpha: 0.5),
         ),
       );
     }
 
     return const Center(
-      child: CircularProgressIndicator(color: Color(0xFFFF542F), strokeWidth: 2.5),
+      child: CircularProgressIndicator(color: KigoDesign.brand, strokeWidth: 2.5),
     );
   }
 
@@ -389,7 +389,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
       children: [
         Text(
           AppLocalizations.t(context, 'o_bien'),
-          style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 15),
+          style: TextStyle(color: context.kTextTertiary, fontSize: 15),
         ),
         const SizedBox(height: 12),
         GestureDetector(
@@ -397,18 +397,18 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFFF542F).withValues(alpha: 0.5), width: 1.5),
+              border: Border.all(color: KigoDesign.brand.withValues(alpha: 0.5), width: 1.5),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.dialpad_rounded, color: Color(0xFFFF542F), size: 22),
+                const Icon(Icons.dialpad_rounded, color: KigoDesign.brand, size: 22),
                 const SizedBox(width: 10),
                 Text(
                   AppLocalizations.t(context, 'acceder_por_pin'),
                   style: const TextStyle(
-                    color: Color(0xFFFF542F),
+                    color: KigoDesign.brand,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                   ),
@@ -424,7 +424,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   Widget _buildFooter() {
     return Text(
       AppLocalizations.t(context, 'footer_text'),
-      style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
+      style: TextStyle(color: context.kTextTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
     );
   }
 }
@@ -435,7 +435,7 @@ Future<bool> _mostrarConsentimientoFacial(BuildContext context) async {
     context: context,
     barrierDismissible: false,
     builder: (context) => AlertDialog(
-      backgroundColor: const Color(0xFF211D1D),
+      backgroundColor: context.kSurfaceCard,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       titlePadding: const EdgeInsets.fromLTRB(28, 28, 28, 14),
@@ -443,30 +443,30 @@ Future<bool> _mostrarConsentimientoFacial(BuildContext context) async {
       actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
       title: Row(
         children: [
-          const Icon(Icons.face_outlined, color: Color(0xFFFF542F), size: 36),
+          const Icon(Icons.face_outlined, color: KigoDesign.brand, size: 36),
           const SizedBox(width: 14),
           Expanded(
             child: Text(
               AppLocalizations.t(context, 'aviso_privacidad_title'),
-              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(color: context.kTextPrimary, fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ),
         ],
       ),
       content: Text(
         AppLocalizations.t(context, 'aviso_privacidad_content'),
-        style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 18, height: 1.6),
+        style: TextStyle(color: context.kTextSecondary, fontSize: 18, height: 1.6),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
           child: Text(AppLocalizations.t(context, 'back_button_text'),
-              style: const TextStyle(color: Color(0xFF999494), fontWeight: FontWeight.bold, fontSize: 18)),
+              style: TextStyle(color: context.kTextSecondary, fontWeight: FontWeight.bold, fontSize: 18)),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
           child: Text(AppLocalizations.t(context, 'aceptar_button'),
-              style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 18)),
+              style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 18)),
         ),
       ],
     ),

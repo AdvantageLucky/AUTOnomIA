@@ -102,25 +102,25 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               barrierDismissible: false,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  backgroundColor: const Color(0xFF211D1D),
+                  backgroundColor: context.kSurfaceCard,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   title: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded, color: Color(0xFFFF542F), size: 28),
+                      const Icon(Icons.error_outline_rounded, color: KigoDesign.brand, size: 28),
                       const SizedBox(width: 12),
-                      Flexible(child: Text(AppLocalizations.t(context, 'ine_invalid_error_title'), style: const TextStyle(color: Colors.white))),
+                      Flexible(child: Text(AppLocalizations.t(context, 'ine_invalid_error_title'), style: TextStyle(color: context.kTextPrimary))),
                     ],
                   ),
                   content: Text(
                     AppLocalizations.t(context, 'ine_invalid_error_content'),
-                    style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
+                    style: TextStyle(color: context.kTextSecondary, fontSize: 16),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         AppLocalizations.t(context, 'retry_button_text'),
-                        style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                   ],
@@ -161,25 +161,25 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               barrierDismissible: false,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  backgroundColor: const Color(0xFF211D1D),
+                  backgroundColor: context.kSurfaceCard,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   title: Row(
                     children: [
-                      const Icon(Icons.face_retouching_off, color: Color(0xFFFF542F), size: 28),
+                      const Icon(Icons.face_retouching_off, color: KigoDesign.brand, size: 28),
                       const SizedBox(width: 12),
-                      Flexible(child: Text(AppLocalizations.t(context, 'face_not_detected_title'), style: const TextStyle(color: Colors.white))),
+                      Flexible(child: Text(AppLocalizations.t(context, 'face_not_detected_title'), style: TextStyle(color: context.kTextPrimary))),
                     ],
                   ),
                   content: Text(
                     AppLocalizations.t(context, 'face_not_detected_content'),
-                    style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16),
+                    style: TextStyle(color: context.kTextSecondary, fontSize: 16),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         AppLocalizations.t(context, 'retry_button_text'),
-                        style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                   ],
@@ -222,14 +222,14 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   Widget build(BuildContext context) {
     // Si el ViewModel no tiene pasos cargados aún, mostramos carga
     if (viewModel.steps.isEmpty) {
-      return const Scaffold(backgroundColor: KigoDesign.bgDark, body: Center(child: CircularProgressIndicator()));
+      return Scaffold(backgroundColor: context.kBg, body: Center(child: CircularProgressIndicator()));
     }
 
     final step = viewModel.currentStepData;
 
     return Scaffold(
-      //Fondo negro unificado para toda la pantalla
-      backgroundColor: KigoDesign.bgDark,
+      // Fondo unificado para toda la pantalla, en el tema que toque
+      backgroundColor: context.kBg,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: _buildVoiceWaveButton(),
       body: SizedBox.expand(
@@ -279,7 +279,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
                       // --- BOTÓN PRINCIPAL CON LOADER ---
                       viewModel.isProcessingIne
-                        ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF542F)))
+                        ? const Center(child: CircularProgressIndicator(color: KigoDesign.brand))
                         : _buildMainButton(AppLocalizations.t(context, step.buttonTextKey)),
 
                       if (viewModel.currentStep > 1) ...[
@@ -330,7 +330,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           width: 54,
           height: 54,
           decoration: BoxDecoration(
-            color: const Color(0xFFFF542F),
+            color: KigoDesign.brand,
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Center(
@@ -347,8 +347,8 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         const SizedBox(width: 18),
         Text(
           AppLocalizations.t(context, 'kigo_label'),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.kTextPrimary,
             fontSize: 34,
             fontWeight: FontWeight.w800,
           ),
@@ -363,7 +363,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: const Color(0xFF0F0D0D),
+          color: context.kSurface1,
           borderRadius: BorderRadius.circular(24),
         ),
         child: ClipRRect(
@@ -385,7 +385,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         width: 260,
         height: 260,
         decoration: const BoxDecoration(
-          color: Color(0xFFFF542F),
+          color: KigoDesign.brand,
           shape: BoxShape.circle,
         ),
         child: ClipOval(
@@ -398,7 +398,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                   width: 170,
                   height: 170,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF714D).withValues(alpha: 0.55),
+                    color: KigoDesign.brandHover.withValues(alpha: 0.55),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -445,7 +445,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
       child: FloatingActionButton(
         onPressed: _isSpeaking ? null : () => _speakText(AppLocalizations.t(context, 'listening_message')),
-        backgroundColor: const Color(0xFFFF542F),
+        backgroundColor: KigoDesign.brand,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
@@ -471,10 +471,10 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         width: double.infinity,
         height: 62,
         decoration: BoxDecoration(
-          color: KigoDesign.surface2,
+          color: context.kSurface2,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: const Color(0xFF393333),
+            color: context.kBorder,
             width: 1.2,
           ),
         ),
@@ -483,14 +483,14 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           children: [
             const Icon(
               Icons.arrow_back_rounded,
-              color: Color(0xFFFF542F),
+              color: KigoDesign.brand,
               size: 24,
             ),
             const SizedBox(width: 10),
             Text(
               AppLocalizations.t(context, 'back_button_text'),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.kTextPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -506,7 +506,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       AppLocalizations.t(context, 'footer_text'),
       textAlign: TextAlign.center,
       style: TextStyle(
-        color: KigoDesign.textTertiary,
+        color: context.kTextTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

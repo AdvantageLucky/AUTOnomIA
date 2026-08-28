@@ -181,8 +181,8 @@ class _WelcomeViewState extends State<WelcomeView>
         // Título principal
         Text(
           AppLocalizations.t(context, 'bienvenido_title'),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.kTextPrimary,
             fontSize: 52,
             fontWeight: FontWeight.w900,
             letterSpacing: -1.5,
@@ -211,8 +211,8 @@ class _WelcomeViewState extends State<WelcomeView>
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: KigoDesign.textTertiary,
+                  style: TextStyle(
+                    color: context.kTextTertiary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 2.5,
@@ -233,7 +233,7 @@ class _WelcomeViewState extends State<WelcomeView>
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: [
             Colors.transparent,
-            KigoDesign.textTertiary.withValues(alpha: 0.5),
+            context.kTextTertiary.withValues(alpha: 0.5),
           ]),
         ),
       );
@@ -257,7 +257,7 @@ class _WelcomeViewState extends State<WelcomeView>
       BuildContext context, String id, IconData icono, String label) {
     const orange = KigoDesign.brand;
     const orangeLight = KigoDesign.brandHover;
-    const gray = KigoDesign.surface2;
+    final gray = context.kSurface2;
 
     final bool presionado = _presionadoId == id;
 
@@ -318,7 +318,7 @@ class _WelcomeViewState extends State<WelcomeView>
             Text(
               label,
               style: TextStyle(
-                color: presionado ? Colors.white : KigoDesign.textPrimary,
+                color: presionado ? Colors.white : context.kTextPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1,
@@ -370,14 +370,14 @@ class _WelcomeViewState extends State<WelcomeView>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(AppLocalizations.t(context, 'kigo_label'),
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: context.kTextPrimary,
                     fontSize: 29,
                     fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
             Text(AppLocalizations.t(context, 'self_checkin_label'),
-                style: const TextStyle(
-                    color: KigoDesign.textSecondary,
+                style: TextStyle(
+                    color: context.kTextSecondary,
                     fontSize: 14,
                     letterSpacing: 4,
                     fontWeight: FontWeight.w500)),
@@ -392,8 +392,8 @@ class _WelcomeViewState extends State<WelcomeView>
   Widget _buildFooter() {
     return Text(
       AppLocalizations.t(context, 'footer_text'),
-      style: const TextStyle(
-        color: KigoDesign.textTertiary,
+      style: TextStyle(
+        color: context.kTextTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

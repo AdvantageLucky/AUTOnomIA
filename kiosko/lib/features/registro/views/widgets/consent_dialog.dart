@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 
 /// Segundos antes de aceptar automáticamente el consentimiento.
 const int _segundosParaAceptarAuto = 6;
@@ -49,7 +50,7 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
           }
 
           return AlertDialog(
-            backgroundColor: const Color(0xFF211D1D),
+            backgroundColor: context.kSurfaceCard,
             insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             titlePadding: const EdgeInsets.fromLTRB(28, 28, 28, 14),
@@ -57,12 +58,12 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
             actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
             title: Row(
               children: [
-                const Icon(Icons.privacy_tip_outlined, color: Color(0xFFFF542F), size: 36),
+                const Icon(Icons.privacy_tip_outlined, color: KigoDesign.brand, size: 36),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
                     AppLocalizations.t(context, 'consentimiento_datos_title'),
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: context.kTextPrimary, fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -71,7 +72,7 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
               width: anchoDialogo,
               child: Text(
                 AppLocalizations.t(context, 'consentimiento_datos_content'),
-                style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 21, height: 1.5),
+                style: TextStyle(color: context.kTextSecondary, fontSize: 21, height: 1.5),
               ),
             ),
             actionsAlignment: MainAxisAlignment.center,
@@ -99,7 +100,7 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
                             ),
                             child: Text(
                               AppLocalizations.t(context, 'aceptar_button'),
-                              style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 22),
+                              style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 22),
                             ),
                           ),
                           if (!timerDetenido) ...[
@@ -107,7 +108,7 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
                             Text(
                               '($segundosRestantes)',
                               style: const TextStyle(
-                                color: Color(0xFFFF542F),
+                                color: KigoDesign.brand,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
                               ),
@@ -127,7 +128,7 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
                         ),
                         child: Text(
                           AppLocalizations.t(context, 'back_button_text'),
-                          style: const TextStyle(color: Color(0xFF999494), fontWeight: FontWeight.bold, fontSize: 22),
+                          style: TextStyle(color: context.kTextSecondary, fontWeight: FontWeight.bold, fontSize: 22),
                         ),
                       ),
                     ],
@@ -142,11 +143,11 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
                     },
                     child: Text(
                       AppLocalizations.t(context, 'terminos_y_condiciones'),
-                      style: const TextStyle(
-                        color: Color(0xFF999494),
+                      style: TextStyle(
+                        color: context.kTextSecondary,
                         fontSize: 15,
                         decoration: TextDecoration.underline,
-                        decorationColor: Color(0xFF999494),
+                        decorationColor: context.kTextSecondary,
                       ),
                     ),
                   ),
@@ -170,7 +171,7 @@ Future<void> mostrarTerminosYCondiciones(BuildContext context) async {
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        backgroundColor: const Color(0xFF211D1D),
+        backgroundColor: context.kSurfaceCard,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titlePadding: const EdgeInsets.fromLTRB(28, 28, 28, 14),
@@ -179,12 +180,12 @@ Future<void> mostrarTerminosYCondiciones(BuildContext context) async {
         actionsAlignment: MainAxisAlignment.center,
         title: Row(
           children: [
-            const Icon(Icons.description_outlined, color: Color(0xFFFF542F), size: 32),
+            const Icon(Icons.description_outlined, color: KigoDesign.brand, size: 32),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 AppLocalizations.t(context, 'terminos_y_condiciones'),
-                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                style: TextStyle(color: context.kTextPrimary, fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -196,7 +197,7 @@ Future<void> mostrarTerminosYCondiciones(BuildContext context) async {
             child: SingleChildScrollView(
               child: Text(
                 AppLocalizations.t(context, 'terminos_y_condiciones_content'),
-                style: const TextStyle(color: Color(0xFFC5BFBF), fontSize: 16, height: 1.6),
+                style: TextStyle(color: context.kTextSecondary, fontSize: 16, height: 1.6),
               ),
             ),
           ),
@@ -209,7 +210,7 @@ Future<void> mostrarTerminosYCondiciones(BuildContext context) async {
             ),
             child: Text(
               AppLocalizations.t(context, 'cerrar_button'),
-              style: const TextStyle(color: Color(0xFFFF542F), fontWeight: FontWeight.bold, fontSize: 18),
+              style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ),
         ],

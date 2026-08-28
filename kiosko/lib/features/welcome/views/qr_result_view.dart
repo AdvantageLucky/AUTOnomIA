@@ -53,7 +53,7 @@ class _QrResultViewState extends State<QrResultView> {
       body: PantallaAdaptable(
         child: Column(
           children: [
-            const KigoWordmark(color: KigoDesign.textPrimary),
+            const KigoWordmark(),
             const Spacer(),
             _buildContent(),
             const Spacer(),
@@ -86,7 +86,7 @@ class _QrResultViewState extends State<QrResultView> {
         const SizedBox(height: 36),
         Text(
           AppLocalizations.t(context, 'verificando_invitacion'),
-          style: const TextStyle(color: KigoDesign.textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
+          style: TextStyle(color: context.kTextPrimary, fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -100,7 +100,7 @@ class _QrResultViewState extends State<QrResultView> {
       children: [
         VerdictRing(color: KigoDesign.success, icon: Icons.check_rounded, size: iconSize),
         SizedBox(height: gap),
-        Text(AppLocalizations.t(context, 'acceso_concedido'), style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.048).clamp(22.0, 38.0), fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.t(context, 'acceso_concedido'), style: TextStyle(color: context.kTextPrimary, fontSize: (h * 0.048).clamp(22.0, 38.0), fontWeight: FontWeight.w800)),
         SizedBox(height: gap * 0.4),
         if (widget.viewModel.titular != null)
           Text(
@@ -111,14 +111,14 @@ class _QrResultViewState extends State<QrResultView> {
           SizedBox(height: gap * 0.22),
           Text(
             widget.viewModel.casaDestino!,
-            style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 16, letterSpacing: 2),
+            style: TextStyle(color: context.kTextSecondary, fontSize: 16, letterSpacing: 2),
           ),
         ],
         SizedBox(height: gap),
         Text(
           AppLocalizations.t(context, 'puedes_ingresar_evento_bienvenido'),
           textAlign: TextAlign.center,
-          style: const TextStyle(color: KigoDesign.textSecondary, fontSize: 17, height: 1.6),
+          style: TextStyle(color: context.kTextSecondary, fontSize: 17, height: 1.6),
         ),
       ],
     );
@@ -132,7 +132,7 @@ class _QrResultViewState extends State<QrResultView> {
       children: [
         VerdictRing(color: KigoDesign.error, icon: Icons.close_rounded, size: iconSize),
         SizedBox(height: gap),
-        Text(AppLocalizations.t(context, 'acceso_denegado'), style: TextStyle(color: KigoDesign.textPrimary, fontSize: (h * 0.044).clamp(20.0, 34.0), fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.t(context, 'acceso_denegado'), style: TextStyle(color: context.kTextPrimary, fontSize: (h * 0.044).clamp(20.0, 34.0), fontWeight: FontWeight.w800)),
         SizedBox(height: gap * 0.4),
         Text(
           widget.viewModel.errorMsg ?? AppLocalizations.t(context, 'invitacion_no_valida'),
@@ -152,11 +152,11 @@ class _QrResultViewState extends State<QrResultView> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             decoration: BoxDecoration(
-              color: KigoDesign.surface2,
+              color: context.kSurface2,
               borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
-              border: Border.all(color: KigoDesign.border),
+              border: Border.all(color: context.kBorder),
             ),
-            child: Text(AppLocalizations.t(context, 'volver_a_intentar'), style: const TextStyle(color: KigoDesign.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.t(context, 'volver_a_intentar'), style: TextStyle(color: context.kTextPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
       ],
@@ -166,7 +166,7 @@ class _QrResultViewState extends State<QrResultView> {
   Widget _buildFooter() {
     return Text(
       AppLocalizations.t(context, 'footer_text'),
-      style: const TextStyle(color: KigoDesign.textTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
+      style: TextStyle(color: context.kTextTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
     );
   }
 }

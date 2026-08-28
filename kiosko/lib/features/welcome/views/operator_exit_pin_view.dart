@@ -50,7 +50,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KigoDesign.bgDark,
+      backgroundColor: context.kBg,
       body: PantallaAdaptable(
         padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
         child: Column(
@@ -96,12 +96,12 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
 
         const Spacer(),
 
-        const Icon(Icons.lock_outline_rounded, color: Color(0xFFFF542F), size: 24),
+        const Icon(Icons.lock_outline_rounded, color: KigoDesign.brand, size: 24),
         const SizedBox(width: 10),
         Text(
           AppLocalizations.t(context, 'modo_operador'),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.kTextPrimary,
             fontSize: 17,
             fontWeight: FontWeight.w800,
             letterSpacing: 2,
@@ -124,8 +124,8 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
         Text(
           AppLocalizations.t(context, 'ingresa_pin_salir_kiosko'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: KigoDesign.textSecondary,
+          style: TextStyle(
+            color: context.kTextSecondary,
             fontSize: 16,
             letterSpacing: 1,
             fontWeight: FontWeight.w500,
@@ -144,11 +144,11 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
               height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: lleno ? const Color(0xFFFF542F) : KigoDesign.surface2,
+                color: lleno ? KigoDesign.brand : context.kSurface2,
                 border: Border.all(
                   color: viewModel.pinIncorrecto
-                      ? const Color(0xFFFF542F)
-                      : const Color(0xFF3D3838),
+                      ? KigoDesign.brand
+                      : context.kBorder,
                   width: 1.5,
                 ),
               ),
@@ -161,7 +161,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
           Text(
             AppLocalizations.t(context, 'pin_incorrecto_intenta_de_nuevo'),
             style: const TextStyle(
-              color: Color(0xFFFF542F),
+              color: KigoDesign.brand,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -216,9 +216,9 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
   }
 
   Widget _buildTecla(String digit) {
-    const orange = Color(0xFFFF542F);
-    const orangeLight = Color(0xFFFF714D);
-    const gray = KigoDesign.surface2;
+    const orange = KigoDesign.brand;
+    const orangeLight = KigoDesign.brandHover;
+    final gray = context.kSurface2;
 
     final bool presionado = _presionadoId == digit;
 
@@ -244,8 +244,8 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
         child: Center(
           child: Text(
             digit,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: presionado ? Colors.white : context.kTextPrimary,
               fontSize: 26,
               fontWeight: FontWeight.w600,
             ),
@@ -256,8 +256,8 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
   }
 
   Widget _buildTeclaBorrar() {
-    const orange = Color(0xFFFF542F);
-    const gray = KigoDesign.surface2;
+    const orange = KigoDesign.brand;
+    final gray = context.kSurface2;
 
     final bool presionado = _presionadoId == 'borrar';
 
@@ -273,7 +273,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
         curve: Curves.easeOut,
         height: 72,
         decoration: BoxDecoration(
-          color: presionado ? const Color(0xFF3D2020) : gray,
+          color: presionado ? context.kTeclaPresionada : gray,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: presionado
@@ -285,7 +285,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
         child: Center(
           child: Icon(
             Icons.backspace_outlined,
-            color: presionado ? orange : KigoDesign.textSecondary,
+            color: presionado ? orange : context.kTextSecondary,
             size: 26,
           ),
         ),
@@ -296,8 +296,8 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
   Widget _buildFooter() {
     return Text(
       AppLocalizations.t(context, 'footer_text'),
-      style: const TextStyle(
-        color: KigoDesign.textTertiary,
+      style: TextStyle(
+        color: context.kTextTertiary,
         fontSize: 14,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,

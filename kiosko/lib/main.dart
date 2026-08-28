@@ -222,6 +222,10 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
         final esClaro = cfg.config.colorTema == KioskoColorTema.claro;
         final locale = Locale(cfg.config.idioma);
 
+        // PantallaError puede dibujarse por debajo de este MaterialApp, donde
+        // no hay Theme del que leer el modo; se lo dejamos aquí.
+        kigoTemaClaroActivo = esClaro;
+
         return MaterialApp(
           title: 'Kigo',
           debugShowCheckedModeBanner: false,
