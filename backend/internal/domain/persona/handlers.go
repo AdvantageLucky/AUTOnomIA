@@ -304,6 +304,16 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		return
 	}
 
+	candidatos, err := h.repo.FindActivasPorTenant(t.ID)
+	if err == nil {
+		for _, cnd := range candidatos {
+			if cnd.PersonaID != personaID && cnd.PinHash != "" && bcrypt.CompareHashAndPassword([]byte(cnd.PinHash), []byte(req.Pin)) == nil {
+				c.JSON(http.StatusConflict, gin.H{"error": "Ese PIN ya está en uso en este fraccionamiento. Por favor elige otro por seguridad."})
+				return
+			}
+		}
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Pin), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error procesando pin"})

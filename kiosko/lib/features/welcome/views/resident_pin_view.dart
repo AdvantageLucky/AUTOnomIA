@@ -34,6 +34,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
 
   @override
   Widget build(BuildContext context) {
+    final vm = widget.viewModel;
     return Scaffold(
       backgroundColor: context.kBg,
       body: PantallaAdaptable(
@@ -46,13 +47,15 @@ class _ResidentPinViewState extends State<ResidentPinView> {
 
             _buildDisplay(),
 
-            const SizedBox(height: 48),
+            const SizedBox(height: 36),
 
-            _buildKeypad(),
-
-            const SizedBox(height: 28),
-
-            _buildConfirmar(),
+            if (vm.tieneColisionPin)
+              _buildSeleccionCandidato()
+            else ...[
+              _buildKeypad(),
+              const SizedBox(height: 28),
+              _buildConfirmar(),
+            ],
 
             const Spacer(),
 
@@ -364,6 +367,131 @@ class _ResidentPinViewState extends State<ResidentPinView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSeleccionCandidato() {
+    final vm = widget.viewModel;
+    final candidatos = vm.candidatos ?? [];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.kSurface2,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: KigoDesign.brand.withValues(alpha: 0.4), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.people_alt_outlined, color: KigoDesign.brand, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Varios residentes comparten este PIN. Selecciona tu casa:',
+                  style: TextStyle(
+                    color: context.kTextPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...candidatos.map((c) {
+            final int personaId = c['persona_id'] as int? ?? 0;
+            final String nombre = c['nombre'] as String? ?? '';
+            final String casa = c['casa_destino'] as String? ?? '';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                onTap: vm.isCargando
+                    ? null
+                    : () async {
+                        final ok = await vm.confirmar(personaId: personaId);
+                        if (ok && mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ResidentWelcomeView(
+                                viewModel: ResidentWelcomeViewModel(
+                                  nombre: vm.nombreResidente ?? AppLocalizations.t(context, 'residente_label'),
+                                  casaDestino: vm.casaDestino ?? '',
+                                ),
+                              ),
+                            ),
+                          ).then((_) => vm.clear());
+                        }
+                      },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: context.kSurface1,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: context.kBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: KigoDesign.brand.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.home_outlined, color: KigoDesign.brand, size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              casa.isEmpty ? 'Sin casa asignada' : casa,
+                              style: TextStyle(
+                                color: context.kTextPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (nombre.isNotEmpty)
+                              Text(
+                                nombre,
+                                style: TextStyle(
+                                  color: context.kTextSecondary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: KigoDesign.brand),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: vm.isCargando ? null : () => vm.cancelarSeleccion(),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: context.kTextSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

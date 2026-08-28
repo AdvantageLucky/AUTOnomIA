@@ -37,6 +37,11 @@ web/uploads/visitantes/*
 # contraseña de aplicación de Gmail (SMTP para OTP por correo) — secreto real
 /backend/password_gmail.txt
 
+# colección Postman de Kigo Verify (API de enrolamiento facial) — trae una
+# x-api-key real de dev con permiso para crear enrolamientos y descargar
+# los rostros de todo el proyecto Fepro; secreto real, nunca al repo
+/api
+
 # =========================
 # Claude Code / superpowers
 # =========================
