@@ -233,16 +233,17 @@ func TestEstadisticasPorPersona_AislaPorTenant(t *testing.T) {
 	}
 }
 
-// El historial del residente tiene que traer lo ya resuelto — es lo que
-// distingue a esta consulta de FindPendientesByCasaDestino.
-func TestFindHistorialByCasaDestino_IncluyeResueltas(t *testing.T) {
+// El historial es "a quien deje entrar yo": solo lo aprobado por un residente
+// desde la app. Todo lo demas que pasa en la misma casa queda fuera.
+func TestFindHistorialByCasaDestino_SoloAprobadasPorResidente(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 
-	crear := func(titular string, estado EstadoVisita, casa string, tenant uint) {
+	crear := func(titular string, estado EstadoVisita, autorizador, casa string, tenant uint) {
 		v := &Visita{
 			TenantID: tenant, Titular: titular, CasaDestino: casa, Estado: estado,
-			KioskoID: 1, TipoVisitante: TipoVisitante("VISITANTE"),
+			AutorizadoPorTipo: autorizador, KioskoID: 1,
+			TipoVisitante: TipoVisitante("VISITANTE"),
 			TipoDocumento: TipoDocumento("SIN_DOCUMENTO"),
 		}
 		if err := repo.Create(v); err != nil {
@@ -250,27 +251,30 @@ func TestFindHistorialByCasaDestino_IncluyeResueltas(t *testing.T) {
 		}
 	}
 
-	crear("Aprobada", EstadoAprobado, "Casa 4", 1)
-	crear("Rechazada", EstadoRechazado, "casa 4", 1) // case-insensitive
-	crear("Pendiente", EstadoPendiente, "Casa 4", 1)
-	crear("Otra casa", EstadoAprobado, "Casa 9", 1)
-	crear("Otro tenant", EstadoAprobado, "Casa 4", 2)
+	// Las dos que si cuentan (la segunda, con la casa en minusculas).
+	crear("Aprobada por residente", EstadoAprobado, AutorizadorResidente, "Casa 4", 1)
+	crear("Aprobada en otro caso", EstadoAprobado, AutorizadorResidente, "casa 4", 1)
+
+	// Todo lo que debe quedar fuera.
+	crear("Rechazada", EstadoRechazado, AutorizadorResidente, "Casa 4", 1)
+	crear("Pendiente", EstadoPendiente, "", "Casa 4", 1)
+	crear("Aprobada por el admin", EstadoAprobado, AutorizadorAdmin, "Casa 4", 1)
+	crear("Aprobada por el agente", EstadoAprobado, AutorizadorAgente, "Casa 4", 1)
+	crear("Aprobada por el sistema", EstadoAprobado, AutorizadorSistema, "Casa 4", 1)
+	crear("Otra casa", EstadoAprobado, AutorizadorResidente, "Casa 9", 1)
+	crear("Otro tenant", EstadoAprobado, AutorizadorResidente, "Casa 4", 2)
 
 	list, total, err := repo.FindHistorialByCasaDestino(1, "CASA 4", 1, 30)
 	if err != nil {
 		t.Fatalf("no esperaba error, got %v", err)
 	}
-	if total != 3 || len(list) != 3 {
-		t.Fatalf("esperaba 3 visitas de la casa, got total=%d len=%d", total, len(list))
+	if total != 2 || len(list) != 2 {
+		t.Fatalf("esperaba 2 visitas, got total=%d len=%d", total, len(list))
 	}
-
-	vistos := map[string]bool{}
 	for _, v := range list {
-		vistos[v.Titular] = true
-	}
-	for _, esperado := range []string{"Aprobada", "Rechazada", "Pendiente"} {
-		if !vistos[esperado] {
-			t.Errorf("falta %q en el historial: %v", esperado, vistos)
+		if v.Estado != EstadoAprobado || v.AutorizadoPorTipo != AutorizadorResidente {
+			t.Errorf("se colo %q (estado=%s, autorizador=%s)",
+				v.Titular, v.Estado, v.AutorizadoPorTipo)
 		}
 	}
 }
@@ -282,7 +286,8 @@ func TestFindHistorialByCasaDestino_Pagina(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		v := &Visita{
 			TenantID: 1, Titular: "V", CasaDestino: "Casa 4", Estado: EstadoAprobado,
-			KioskoID: 1, TipoVisitante: TipoVisitante("VISITANTE"),
+			AutorizadoPorTipo: AutorizadorResidente, KioskoID: 1,
+			TipoVisitante: TipoVisitante("VISITANTE"),
 			TipoDocumento: TipoDocumento("SIN_DOCUMENTO"),
 		}
 		if err := repo.Create(v); err != nil {
