@@ -76,6 +76,35 @@ func (r *MembresiaRepository) FindPendientesPorTenant(tenantID uint) ([]Membresi
 	return list, err
 }
 
+// MembresiaActivaConPersona es una fila de FindActivasPorTenant — mismo
+// shape que MembresiaPendienteConPersona, para la lista de residentes ya
+// aprobados que ve el admin en el dashboard.
+type MembresiaActivaConPersona struct {
+	ID          uint   `json:"id"`
+	PersonaID   uint   `json:"persona_id" gorm:"column:persona_id"`
+	Nombre      string `json:"nombre"`
+	Telefono    string `json:"telefono"`
+	CasaDestino string `json:"casa_destino" gorm:"column:casa_destino"`
+	Rol         string `json:"rol"`
+	Status      string `json:"status"`
+}
+
+// FindActivasPorTenant devuelve las membresías activas (ya aprobadas) de un
+// tenant, con el nombre y teléfono de la Persona — para la lista de
+// "residentes activos" del dashboard.
+func (r *MembresiaRepository) FindActivasPorTenant(tenantID uint) ([]MembresiaActivaConPersona, error) {
+	var list []MembresiaActivaConPersona
+	err := r.db.Table("membresias").
+		Select("membresias.id, membresias.persona_id, "+
+			"trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre, "+
+			"personas.telefono, membresias.casa_destino, membresias.rol, membresias.status").
+		Joins("JOIN personas ON personas.id = membresias.persona_id").
+		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusActivo).
+		Order("membresias.created_at DESC").
+		Scan(&list).Error
+	return list, err
+}
+
 // FindByTenantAndID busca una membresía por ID, comprobando que pertenece al tenant.
 func (r *MembresiaRepository) FindByTenantAndID(tenantID, id uint) (*Membresia, error) {
 	var m Membresia

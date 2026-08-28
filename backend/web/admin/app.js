@@ -474,7 +474,7 @@
     if (screen === "dashboard")     loadDashboard();
     if (screen === "visitas")       loadVisitas(1);
     if (screen === "solicitudes")   startSolPolling();
-    if (screen === "residentes")    { loadResidentesPendientes(); loadResidentesPendientesBadge(); }
+    if (screen === "residentes")    { loadResidentesActivos(); loadResidentesPendientesBadge(); }
     if (screen === "kioskos")       loadAccesos();
     if (screen === "instalacion")   { loadDestinosSection(); }
     if (screen === "configuracion") loadConfigAccesos();
@@ -722,6 +722,16 @@
       switchTab('screen-kioskos', tab,
         tab === 'kio-lista'   ? loadAccesos :
         tab === 'kio-equipo'  ? loadEquipo : null
+      );
+    });
+  });
+
+  document.querySelectorAll('#screen-residentes .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      switchTab('screen-residentes', tab,
+        tab === 'res-activos'     ? loadResidentesActivos :
+        tab === 'res-solicitudes' ? loadResidentesPendientes : null
       );
     });
   });
@@ -2186,7 +2196,47 @@
     else mostrarToast('Error al guardar', 'err');
   });
 
-  /* ─── Residentes pendientes (modelo viejo Residente + Membresia de la app Kigo) ─── */
+  /* ─── Residentes (Persona + Membresia) ─── */
+
+  async function loadResidentesActivos() {
+    const loadEl  = document.getElementById('resa-loading');
+    const emptyEl = document.getElementById('resa-empty');
+    const rowsEl  = document.getElementById('resa-rows');
+    if (!rowsEl) return;
+
+    rowsEl.innerHTML = '';
+    if (emptyEl) emptyEl.hidden = true;
+    if (loadEl)  loadEl.hidden = false;
+
+    const res = await api('/membresias/');
+    if (loadEl) loadEl.hidden = true;
+
+    if (!res || !res.ok) {
+      rowsEl.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`;
+      return;
+    }
+
+    let activos = [];
+    try {
+      const d = await res.json();
+      activos = Array.isArray(d) ? d : (d.membresias || []);
+    } catch (e) { console.error(e); }
+
+    if (!activos.length) {
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
+    if (emptyEl) emptyEl.hidden = true;
+
+    rowsEl.innerHTML = activos.map(m => `
+      <div class="equipo-row" style="align-items:center">
+        <div style="width:48px;height:48px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:20px">👤</div>
+        <div class="equipo-info" style="flex:1">
+          <div class="equipo-name">${esc(m.nombre || 'Sin nombre')}</div>
+          <div class="equipo-sub">${esc(m.casa_destino)}${m.telefono ? ' · ' + esc(m.telefono) : ''}</div>
+        </div>
+      </div>`).join('');
+  }
 
   async function loadResidentesPendientesBadge() {
     try {

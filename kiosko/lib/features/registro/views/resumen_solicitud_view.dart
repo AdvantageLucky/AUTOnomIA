@@ -34,6 +34,10 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
   bool _isSubmitting = true;
   String? _submitError;
+  // Cuando el dato faltante es el identificador (INE/placa), reintentar el
+  // mismo POST siempre va a fallar igual -- registrationData no cambia solo.
+  // El unico camino real es regresar y recapturar.
+  bool _errorRequiereRegresar = false;
   String _estado = 'PENDIENTE';
   int? _visitaId;
   DateTime _horaSolicitud = DateTime.now();
@@ -60,6 +64,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     setState(() {
       _isSubmitting = true;
       _submitError = null;
+      _errorRequiereRegresar = false;
     });
 
     final data = widget.registrationData;
@@ -70,6 +75,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       setState(() {
         _isSubmitting = false;
         _submitError = AppLocalizations.t(context, 'faltan_datos_registro');
+        _errorRequiereRegresar = true;
       });
       return;
     }
@@ -260,13 +266,16 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           width: double.infinity,
           height: 68,
           child: ElevatedButton(
-            onPressed: _registrarVisita,
+            onPressed: _errorRequiereRegresar ? _regresarABienvenida : _registrarVisita,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF542F),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             ),
-            child: Text(AppLocalizations.t(context, 'retry_button_text'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            child: Text(
+              AppLocalizations.t(context, _errorRequiereRegresar ? 'back_button_text' : 'retry_button_text'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
           ),
         ),
       ],

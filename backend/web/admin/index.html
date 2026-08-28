@@ -402,21 +402,45 @@
 					<div class="screen-header">
 						<div>
 							<div class="screen-title" data-i18n="res_title">Residentes</div>
-							<div class="screen-sub">Solicitudes de acceso desde la app Kigo</div>
+							<div class="screen-sub">Miembros del centro habitacional</div>
 						</div>
 					</div>
 
-					<div class="screen-body">
-						<div id="resp-loading" class="loading-state" hidden>
-							<div class="spinner"></div>
-							<div class="loading-text">Cargando solicitudes…</div>
+					<div class="tab-bar">
+						<div class="tab-bar-inner">
+							<button class="tab-btn active" data-tab="res-activos" data-i18n="tab_activos">Activos</button>
+							<button class="tab-btn" data-tab="res-solicitudes" data-i18n="tab_solicitudes">Solicitudes</button>
 						</div>
-						<div id="resp-empty" class="empty-state" hidden>
-							<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
-							<div class="empty-title">Sin solicitudes pendientes</div>
-							<div class="empty-text">Cuando un habitante solicite unirse desde la app, aparecerá aquí para tu aprobación.</div>
+					</div>
+
+					<div id="res-activos">
+						<div class="screen-body">
+							<div id="resa-loading" class="loading-state" hidden>
+								<div class="spinner"></div>
+								<div class="loading-text">Cargando residentes…</div>
+							</div>
+							<div id="resa-empty" class="empty-state" hidden>
+								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
+								<div class="empty-title">Sin residentes activos</div>
+								<div class="empty-text">Cuando apruebes una solicitud, la persona aparecerá aquí.</div>
+							</div>
+							<div id="resa-rows"></div>
 						</div>
-						<div id="resp-rows"></div>
+					</div>
+
+					<div id="res-solicitudes" hidden>
+						<div class="screen-body">
+							<div id="resp-loading" class="loading-state" hidden>
+								<div class="spinner"></div>
+								<div class="loading-text">Cargando solicitudes…</div>
+							</div>
+							<div id="resp-empty" class="empty-state" hidden>
+								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
+								<div class="empty-title">Sin solicitudes pendientes</div>
+								<div class="empty-text">Cuando un habitante solicite unirse desde la app, aparecerá aquí para tu aprobación.</div>
+							</div>
+							<div id="resp-rows"></div>
+						</div>
 					</div>
 				</section>
 
