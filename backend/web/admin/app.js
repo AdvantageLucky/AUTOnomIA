@@ -1317,11 +1317,9 @@
           <div class="acceso-id">ID ${a.id} · ${esc(a.tipo || "—")}</div>
         </div>
         <div class="acceso-actions">
-          <button class="btn-ghost" data-cfg-acceso="${a.id}" title="Configuración">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </button>
-          <button class="btn-ghost" data-edit-acceso="${a.id}" title="Editar">
-            <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l3 3-9 9H3v-3z"/></svg>
+          <button class="btn-cancel" data-cfg-acceso="${a.id}" style="font-size:12.5px;padding:6px 14px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px" title="Configurar kiosko">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Configuración
           </button>
           <button class="btn-ghost" data-del-acceso="${a.id}" style="color:var(--red)" title="Eliminar">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
@@ -1331,9 +1329,6 @@
 
     container.querySelectorAll("[data-cfg-acceso]").forEach(btn => {
       btn.addEventListener("click", () => openConfigParaAcceso(parseInt(btn.dataset.cfgAcceso)));
-    });
-    container.querySelectorAll("[data-edit-acceso]").forEach(btn => {
-      btn.addEventListener("click", () => openAccesoModal(parseInt(btn.dataset.editAcceso)));
     });
     container.querySelectorAll("[data-del-acceso]").forEach(btn => {
       btn.addEventListener("click", () => openDeleteModal(parseInt(btn.dataset.delAcceso)));
@@ -1769,15 +1764,16 @@
 
     const cfg = await res.json();
     const acceso = state.accesosById.get(accesoId);
-    const esPeatonal = acceso?.tipo === "PEATONAL";
 
-    // badge de tipo
-    const tipoBadge = document.getElementById("cfg-tipo-badge");
-    if (tipoBadge) {
-      tipoBadge.textContent = acceso?.tipo || "—";
-      tipoBadge.style.background = esPeatonal ? "#1e3a2f" : "#1e2d3a";
-      tipoBadge.style.color      = esPeatonal ? "#4ade80" : "#60a5fa";
-    }
+    // Cargar datos principales del kiosko
+    const nombreEl = document.getElementById("cfg-nombre");
+    const tipoEl = document.getElementById("cfg-tipo");
+    const ubiEl = document.getElementById("cfg-ubicacion");
+    if (nombreEl) nombreEl.value = acceso?.nombre || "";
+    if (tipoEl) tipoEl.value = acceso?.tipo || "PEATONAL";
+    if (ubiEl) ubiEl.value = acceso?.ubicacion || "";
+
+    const esPeatonal = (tipoEl ? tipoEl.value : acceso?.tipo) === "PEATONAL";
 
     document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
@@ -1802,6 +1798,17 @@
     wrap.hidden = false;
   }
 
+  document.getElementById("cfg-tipo")?.addEventListener("change", (e) => {
+    const esPeatonal = e.target.value === "PEATONAL";
+    const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
+    if (rowPlacaInv) rowPlacaInv.style.opacity = esPeatonal ? "0.35" : "1";
+    const placaChk = document.getElementById("cfg-placa-invitado");
+    if (placaChk) {
+      placaChk.disabled = esPeatonal;
+      if (esPeatonal) placaChk.checked = false;
+    }
+  });
+
   document.getElementById("cfg-save-btn")?.addEventListener("click", async () => {
     if (!cfgAccesoId) return;
     const errEl = document.getElementById("cfg-error");
@@ -1809,6 +1816,42 @@
     errEl.hidden = true;
     okEl.hidden  = true;
 
+    const nombreVal = document.getElementById("cfg-nombre")?.value.trim() || "";
+    const tipoVal   = document.getElementById("cfg-tipo")?.value || "PEATONAL";
+    const ubiVal    = document.getElementById("cfg-ubicacion")?.value.trim() || "";
+
+    if (!nombreVal) {
+      errEl.textContent = "El nombre del kiosko es obligatorio";
+      errEl.hidden = false;
+      return;
+    }
+
+    // 1. Guardar datos principales del kiosko (nombre, tipo, ubicacion)
+    const resKiosko = await api(`/kioskos/${cfgAccesoId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ nombre: nombreVal, tipo: tipoVal, ubicacion: ubiVal }),
+    });
+
+    if (!resKiosko || !resKiosko.ok) {
+      const data = resKiosko ? await resKiosko.json() : {};
+      errEl.textContent = data.error || "Error al actualizar información del kiosko";
+      errEl.hidden = false;
+      return;
+    }
+
+    const kioskoActualizado = await resKiosko.json();
+    state.accesosById.set(cfgAccesoId, kioskoActualizado);
+
+    // Actualizar texto en el dropdown de selección de kiosko
+    const select = document.getElementById("cfg-acceso-select");
+    if (select) {
+      const opt = select.querySelector(`option[value="${cfgAccesoId}"]`);
+      if (opt) {
+        opt.textContent = `${kioskoActualizado.nombre}${kioskoActualizado.ubicacion ? ` (${kioskoActualizado.ubicacion})` : ""}`;
+      }
+    }
+
+    // 2. Guardar parámetros de configuración
     const listEl = document.getElementById("cfg-pipeline-list");
     const activeSteps = [];
     let fotoRostro = false, fotoPlaca = false, fotoIne = false;
@@ -1850,11 +1893,12 @@
     if (!res) return;
     if (!res.ok) {
       const data = await res.json();
-      errEl.textContent = data.error || "Error al guardar";
+      errEl.textContent = data.error || "Error al guardar configuración";
       errEl.hidden = false;
       return;
     }
     okEl.hidden = false;
+    mostrarToast("Kiosko y configuración guardados correctamente", "ok");
     setTimeout(() => { okEl.hidden = true; }, 3000);
   });
 
