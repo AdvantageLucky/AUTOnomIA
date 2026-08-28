@@ -50,8 +50,10 @@ class UserRegistrationModel {
 
   /// true si la visita se puede identificar después en la bitácora.
   ///
-  /// En el flujo peatonal eso significa INE; en el vehicular, donde no se pide
-  /// documento, la placa es el identificador (ADR-0024).
+  /// En el flujo peatonal puede ser INE o foto de rostro; en el vehicular,
+  /// la placa o foto de rostro es el identificador (ADR-0024).
   bool get tieneIdentificador =>
-      tieneDatosIne || (placa != null && placa!.isNotEmpty);
+      tieneDatosIne ||
+      (placa != null && placa!.isNotEmpty) ||
+      (pathFotoRostro != null && pathFotoRostro!.isNotEmpty);
 }

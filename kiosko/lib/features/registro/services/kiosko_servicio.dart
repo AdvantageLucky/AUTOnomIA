@@ -340,9 +340,9 @@ class KioskoServicio {
         'placa': placa,
       },
       fotoPaths: {
-        if (pathFotoIne != null) 'ine': pathFotoIne,
-        if (pathFotoRostro != null) 'rostro': pathFotoRostro,
-        if (pathFotoPlaca != null) 'placa': pathFotoPlaca,
+        'ine': ?pathFotoIne,
+        'rostro': ?pathFotoRostro,
+        'placa': ?pathFotoPlaca,
       },
     );
     // Respuesta sintetizada localmente — misma forma que ya arma
@@ -508,9 +508,9 @@ class KioskoServicio {
         'casa_destino': invitacionLocal['casa_destino'],
       },
       fotoPaths: {
-        if (pathFotoIne != null) 'ine': pathFotoIne,
-        if (pathFotoRostro != null) 'rostro': pathFotoRostro,
-        if (pathFotoPlaca != null) 'placa': pathFotoPlaca,
+        'ine': ?pathFotoIne,
+        'rostro': ?pathFotoRostro,
+        'placa': ?pathFotoPlaca,
       },
     );
     return {
