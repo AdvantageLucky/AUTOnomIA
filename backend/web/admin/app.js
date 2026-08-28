@@ -2372,37 +2372,37 @@
     if (emptyEl) emptyEl.hidden = true;
 
     rowsEl.innerHTML = activos.map(m => {
+      const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
       const inicial = (m.nombre || 'R')[0].toUpperCase();
       const avatarHtml = m.foto_cara_url
-        ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(m.nombre)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+        ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
         : `<div class="res-avatar">${inicial}</div>`;
 
-      const rolBadge = m.rol === 'titular'
-        ? '<span class="badge badge--aprobado" style="font-size:11px">Titular</span>'
-        : `<span class="badge" style="font-size:11px">${esc(m.rol || 'Residente')}</span>`;
-
-      const tieneRostro = m.tiene_rostro;
-      const tienePin = m.tiene_pin;
+      const contacto = m.telefono ? `📞 ${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : 'Residente activo');
+      const fechaAlta = m.created_at ? fmtDateShort(m.created_at) : '—';
 
       return `
         <div class="res-row" data-res-id="${m.id}">
           ${avatarHtml}
           <div class="res-info-main">
-            <div class="res-name">${esc(m.nombre || 'Sin nombre')} ${esc(m.apellido_paterno || '')}</div>
-            <div class="res-sub">${esc(m.casa_destino)}${m.telefono ? ' · 📞 ' + esc(m.telefono) : ''}</div>
+            <div class="res-name">${esc(nombreCompleto)}</div>
+            <div class="res-sub">${contacto}</div>
           </div>
-          <div class="res-badges">
-            <span class="badge--method ${tieneRostro ? 'active' : ''}" title="${tieneRostro ? 'Reconocimiento facial activo' : 'Sin rostro registrado'}">
-              👤 ${tieneRostro ? 'Rostro' : 'Sin rostro'}
-            </span>
-            <span class="badge--method ${tienePin ? 'active' : ''}" title="${tienePin ? 'PIN configurado' : 'Sin PIN'}">
-              🔢 PIN
-            </span>
-            <span class="badge--method active" title="App Kigo vinculada">
-              📱 QR
+          <div class="res-dest-col">
+            <span class="badge badge--aprobado" style="font-size:12px;padding:4px 10px;font-weight:600">
+              🏠 ${esc(m.casa_destino || 'Sin casa')}
             </span>
           </div>
-          <div>${rolBadge}</div>
+          <div class="res-date-col">
+            <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Alta</div>
+            <div style="font-size:12.5px;color:var(--text-2);font-weight:500">${fechaAlta}</div>
+          </div>
+          <div class="res-action-col">
+            <button type="button" class="btn-cancel" style="padding:6px 12px;font-size:12px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+              Ver detalle
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
+            </button>
+          </div>
         </div>`;
     }).join('');
 
