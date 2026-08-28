@@ -145,19 +145,19 @@ func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 	return item
 }
 
-// aplicarAnalisisIA rellena resumen_ia/score_ia solo si el análisis walk-in
-// ya terminó (ambos campos persistidos) — deliberadamente no toca
-// Estadisticas, que requiere una consulta aparte y la rellena el caller
-// cuando v.PersonaID no es nil (ver ListarVisitas/GetVisitaByID).
+// aplicarAnalisisIA rellena resumen_ia/score_ia de forma independiente: el
+// LLM puede fallar (timeout, servidor caído) sin que eso invalide las
+// heurísticas ya calculadas — se persisten y exponen por separado para no
+// esconder el score cuando solo el resumen narrativo no llegó.
 func aplicarAnalisisIA(resumenIA **string, scoreIA **ScoreIA, v Visita) {
-	if v.ResumenIA == "" || v.ScoreIA == nil {
-		return
+	if v.ScoreIA != nil {
+		var score ScoreIA
+		if err := json.Unmarshal(v.ScoreIA, &score); err == nil {
+			*scoreIA = &score
+		}
 	}
-	var score ScoreIA
-	if err := json.Unmarshal(v.ScoreIA, &score); err != nil {
-		return
+	if v.ResumenIA != "" {
+		resumen := v.ResumenIA
+		*resumenIA = &resumen
 	}
-	resumen := v.ResumenIA
-	*resumenIA = &resumen
-	*scoreIA = &score
 }

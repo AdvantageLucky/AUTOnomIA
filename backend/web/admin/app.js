@@ -406,10 +406,11 @@
         const nombre = v.titular || "Nuevo visitante";
         if (v.estado === "REVISION") {
           mostrarToast(`⚠ Requiere revisión manual: ${nombre}`, "revision");
-        } else {
+          loadSolicitudes();
+        } else if (v.estado === "PENDIENTE") {
           mostrarToast(`Nueva solicitud: ${nombre}`);
+          loadSolicitudes();
         }
-        loadSolicitudes();
         if (String(v.id) === String(state.detalleAbiertoId)) {
           loadDetalle(v.id);
         }
@@ -465,6 +466,8 @@
   function navTo(screen) {
     const rutas = RUTAS_POR_ROL[state.rol] || RUTAS_POR_ROL.admin;
     if (!rutas.includes(screen)) screen = state.rol === "vigilante" ? "solicitudes" : "dashboard";
+
+    if (screen !== "detalle") state.detalleAbiertoId = null;
 
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
@@ -957,7 +960,7 @@
 
   /* ─── Detalle de visita + expediente ───── */
   function renderSeccionIA(v) {
-    if (v.resumen_ia && v.score_ia) {
+    if (v.score_ia) {
       const s = v.score_ia;
       const badges = [];
       if (s.anomalia_matricula) badges.push('<span class="badge badge--pendiente">Placa distinta</span>');
@@ -969,7 +972,7 @@
         <div class="expediente-section" id="ia-section">
           <div class="expediente-header"><span class="expediente-title">Análisis IA</span></div>
           <div style="padding:0 4px 4px">
-            <div style="margin-bottom:10px;line-height:1.5">${esc(v.resumen_ia)}</div>
+            ${v.resumen_ia ? `<div style="margin-bottom:10px;line-height:1.5">${esc(v.resumen_ia)}</div>` : ''}
             ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${badges.join('')}</div>` : ''}
           </div>
         </div>`;
