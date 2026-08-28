@@ -346,6 +346,7 @@
     visSearchTimeout: null,
     solPollingId: null,
     sseSource: null,
+    detalleAbiertoId: null,
   };
 
   /* ─── Auth helpers ──────────────────────── */
@@ -409,6 +410,9 @@
           mostrarToast(`Nueva solicitud: ${nombre}`);
         }
         loadSolicitudes();
+        if (String(v.id) === String(state.detalleAbiertoId)) {
+          loadDetalle(v.id);
+        }
       } catch { /* ignorar mensajes malformados */ }
     };
   }
@@ -930,8 +934,9 @@
     const acceso = state.accesosById.get(v.kiosko_id);
     const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
     const tvLabel = tipoVisLabel(v.tipo_visitante);
+    const tieneIA = !!(v.resumen_ia || v.estadisticas);
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
-      <div><div class="row-name">${esc(v.titular)}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
+      <div><div class="row-name">${esc(v.titular)}${tieneIA ? ' <span title="Con análisis IA" style="opacity:.6">✦</span>' : ''}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
@@ -951,8 +956,50 @@
   });
 
   /* ─── Detalle de visita + expediente ───── */
+  function renderSeccionIA(v) {
+    if (v.resumen_ia && v.score_ia) {
+      const s = v.score_ia;
+      const badges = [];
+      if (s.anomalia_matricula) badges.push('<span class="badge badge--pendiente">Placa distinta</span>');
+      if (s.horario_inusual)    badges.push('<span class="badge badge--pendiente">Horario inusual</span>');
+      if (s.rechazado_previo)   badges.push('<span class="badge badge--rechazado">Rechazo previo</span>');
+      if (s.ocr_sospechoso)     badges.push('<span class="badge badge--pendiente">OCR sospechoso</span>');
+      if (s.confiable)          badges.push('<span class="badge badge--aprobado">Visitante confiable</span>');
+      return `
+        <div class="expediente-section" id="ia-section">
+          <div class="expediente-header"><span class="expediente-title">Análisis IA</span></div>
+          <div style="padding:0 4px 4px">
+            <div style="margin-bottom:10px;line-height:1.5">${esc(v.resumen_ia)}</div>
+            ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${badges.join('')}</div>` : ''}
+          </div>
+        </div>`;
+    }
+
+    if (v.estadisticas) {
+      const e = v.estadisticas;
+      return `
+        <div class="expediente-section" id="ia-section">
+          <div class="expediente-header"><span class="expediente-title">Historial</span></div>
+          <div class="row-sub" style="padding:0 4px 4px">
+            Visitas: ${e.veces_visitado}${e.ultima_visita ? ' · Última: ' + fmtDateShort(e.ultima_visita) : ''}${e.casa_habitual ? ' · Casa habitual: ' + esc(e.casa_habitual) : ''}
+          </div>
+        </div>`;
+    }
+
+    if (v.estado === 'PENDIENTE') {
+      return `
+        <div class="expediente-section" id="ia-section">
+          <div class="expediente-header"><span class="expediente-title">Análisis IA</span></div>
+          <div class="row-sub" style="padding:0 4px 4px">Analizando…</div>
+        </div>`;
+    }
+
+    return '';
+  }
+
   async function loadDetalle(id) {
     navTo("detalle");
+    state.detalleAbiertoId = id;
     const body = document.getElementById("detalle-body");
     body.innerHTML = `<div class="loading-state"><div class="spinner"></div></div>`;
 
@@ -990,6 +1037,7 @@
           </div>
         </div>
       </div>
+      ${renderSeccionIA(v)}
       <div class="expediente-section">
         <div class="expediente-header">
           <span class="expediente-title">Historial de esta persona</span>
