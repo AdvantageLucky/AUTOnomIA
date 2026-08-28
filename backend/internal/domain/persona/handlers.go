@@ -659,6 +659,67 @@ func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"visitas": items})
 }
 
+// ListarHistorialVisitas devuelve todas las visitas dirigidas a la casa de la
+// Membresia activa de la Persona, en cualquier estado y de la mas reciente a
+// la mas vieja. Es el complemento de ListarVisitasPendientes: alli va lo que
+// falta autorizar, aqui lo que ya paso.
+func (h *Handler) ListarHistorialVisitas(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id invalido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	page, pageSize := 1, 30
+	if v, err := strconv.Atoi(c.Query("page")); err == nil && v > 0 {
+		page = v
+	}
+	if v, err := strconv.Atoi(c.Query("page_size")); err == nil && v > 0 && v <= 100 {
+		pageSize = v
+	}
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía en ese centro"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+		return
+	}
+
+	historial, total, err := h.visitaRepo.WithContext(c.Request.Context()).
+		FindHistorialByCasaDestino(tenantID, m.CasaDestino, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]visitas.VisitaResponse, 0, len(historial))
+	for _, v := range historial {
+		item := visitas.ToVisitaResponse(v)
+		// Mismo recorte que en pendientes: el analisis de IA es para el
+		// dashboard admin, no para la app del residente.
+		item.ResumenIA = nil
+		item.ScoreIA = nil
+		item.Estadisticas = nil
+		items = append(items, item)
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"visitas":   items,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+	})
+}
+
 // ResponderVisita aprueba o rechaza una visita dirigida a la casa de la
 // Membresia activa de la Persona en el tenant pedido.
 func (h *Handler) ResponderVisita(c *gin.Context) {

@@ -232,3 +232,72 @@ func TestEstadisticasPorPersona_AislaPorTenant(t *testing.T) {
 		t.Errorf("esperaba VecesVisitado=0 (la visita es de otro tenant), got %d", stats.VecesVisitado)
 	}
 }
+
+// El historial del residente tiene que traer lo ya resuelto — es lo que
+// distingue a esta consulta de FindPendientesByCasaDestino.
+func TestFindHistorialByCasaDestino_IncluyeResueltas(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	crear := func(titular string, estado EstadoVisita, casa string, tenant uint) {
+		v := &Visita{
+			TenantID: tenant, Titular: titular, CasaDestino: casa, Estado: estado,
+			KioskoID: 1, TipoVisitante: TipoVisitante("VISITANTE"),
+			TipoDocumento: TipoDocumento("SIN_DOCUMENTO"),
+		}
+		if err := repo.Create(v); err != nil {
+			t.Fatalf("no se pudo crear la visita %s: %v", titular, err)
+		}
+	}
+
+	crear("Aprobada", EstadoAprobado, "Casa 4", 1)
+	crear("Rechazada", EstadoRechazado, "casa 4", 1) // case-insensitive
+	crear("Pendiente", EstadoPendiente, "Casa 4", 1)
+	crear("Otra casa", EstadoAprobado, "Casa 9", 1)
+	crear("Otro tenant", EstadoAprobado, "Casa 4", 2)
+
+	list, total, err := repo.FindHistorialByCasaDestino(1, "CASA 4", 1, 30)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if total != 3 || len(list) != 3 {
+		t.Fatalf("esperaba 3 visitas de la casa, got total=%d len=%d", total, len(list))
+	}
+
+	vistos := map[string]bool{}
+	for _, v := range list {
+		vistos[v.Titular] = true
+	}
+	for _, esperado := range []string{"Aprobada", "Rechazada", "Pendiente"} {
+		if !vistos[esperado] {
+			t.Errorf("falta %q en el historial: %v", esperado, vistos)
+		}
+	}
+}
+
+func TestFindHistorialByCasaDestino_Pagina(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	for i := 0; i < 5; i++ {
+		v := &Visita{
+			TenantID: 1, Titular: "V", CasaDestino: "Casa 4", Estado: EstadoAprobado,
+			KioskoID: 1, TipoVisitante: TipoVisitante("VISITANTE"),
+			TipoDocumento: TipoDocumento("SIN_DOCUMENTO"),
+		}
+		if err := repo.Create(v); err != nil {
+			t.Fatalf("no se pudo crear: %v", err)
+		}
+	}
+
+	list, total, err := repo.FindHistorialByCasaDestino(1, "Casa 4", 2, 2)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if total != 5 {
+		t.Errorf("esperaba total=5, got %d", total)
+	}
+	if len(list) != 2 {
+		t.Errorf("esperaba 2 en la pagina 2, got %d", len(list))
+	}
+}

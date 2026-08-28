@@ -344,6 +344,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 	pv.Use(auth.RequirePersona(cfg.JWTSecret))
 	{
 		pv.GET("/pendientes", personaHandler.ListarVisitasPendientes)
+		pv.GET("/historial", personaHandler.ListarHistorialVisitas)
 		pv.PATCH("/:id/estado", personaHandler.ResponderVisita)
 	}
 

@@ -213,6 +213,37 @@ func (r *Repository) FindPendientesByCasaDestino(tenantID uint, casaDestino stri
 	return list, nil
 }
 
+// FindHistorialByCasaDestino devuelve, paginadas y de la mas reciente a la
+// mas vieja, todas las visitas dirigidas a una casa sin filtrar por estado —
+// es lo que ve el residente en su historial, a diferencia de
+// FindPendientesByCasaDestino, que solo trae lo que le falta autorizar.
+func (r *Repository) FindHistorialByCasaDestino(
+	tenantID uint,
+	casaDestino string,
+	page, pageSize int,
+) ([]Visita, int64, error) {
+	query := func() *gorm.DB {
+		return r.db.Model(&Visita{}).
+			Where("tenant_id = ? AND UPPER(casa_destino) = UPPER(?)", tenantID, casaDestino)
+	}
+
+	var total int64
+	if err := query().Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var list []Visita
+	if err := query().
+		Order("created_at DESC").
+		Limit(pageSize).
+		Offset((page - 1) * pageSize).
+		Find(&list).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return list, total, nil
+}
+
 // FindByIDAndCasaDestino busca una visita por ID acotada a la casa destino y
 // tenant del residente autenticado — evita que un residente apruebe o
 // rechace una visita de otra casa.
