@@ -39,7 +39,6 @@ class _MyQrViewState extends State<MyQrView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi QR')),
       body: Center(
         child: _cargando
             ? const CircularProgressIndicator()

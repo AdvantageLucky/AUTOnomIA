@@ -12,4 +12,26 @@ class AppConstants {
   // Única clave persistida — todo lo demás (perfil, membresía) se
   // recarga del backend al restaurar sesión, nunca se cachea localmente.
   static const String prefsJwt = 'kigo_jwt';
+
+  /// Origen del backend, sin el prefijo /api/v1 — de ahí cuelga /uploads.
+  static String get serverOrigin {
+    final u = Uri.parse(apiBaseUrl);
+    return Uri(scheme: u.scheme, host: u.host, port: u.hasPort ? u.port : null)
+        .toString();
+  }
+
+  /// Reancla una URL de archivo del backend al origen que usa esta app.
+  ///
+  /// El backend arma `foto_rostro_url` con el Host de la petición que subió la
+  /// foto, y quien la sube es el kiosko: si el kiosko habla con el backend por
+  /// la IP de la LAN, la URL guardada apunta a un host que el teléfono del
+  /// residente no alcanza y la imagen queda en blanco. La ruta sí es válida
+  /// —los archivos se sirven en /uploads del mismo servidor—, así que se
+  /// conserva la ruta y se cambia el origen.
+  static String mediaUrl(String raw) {
+    if (raw.isEmpty) return '';
+    final u = Uri.tryParse(raw);
+    if (u == null) return '';
+    return '$serverOrigin${u.path}';
+  }
 }
