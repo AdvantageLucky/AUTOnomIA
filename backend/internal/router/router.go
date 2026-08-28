@@ -350,6 +350,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 	a.Use(auth.RequireAdmin(cfg.JWTSecret))
 	{
 		membresiaHandler := residente.NewMembresiaHandler(membresiaRepo)
+		a.GET("/", membresiaHandler.ListarActivas)
 		a.GET("/pendientes", membresiaHandler.ListarPendientes)
 		a.POST("/:id/aprobar", membresiaHandler.Aprobar)
 		a.POST("/:id/rechazar", membresiaHandler.Rechazar)

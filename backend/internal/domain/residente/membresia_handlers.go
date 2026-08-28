@@ -34,6 +34,18 @@ func (h *MembresiaHandler) ListarPendientes(c *gin.Context) {
 	c.JSON(http.StatusOK, list)
 }
 
+// ListarActivas devuelve las membresías activas (ya aprobadas) del tenant del admin.
+func (h *MembresiaHandler) ListarActivas(c *gin.Context) {
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	list, err := h.repo.FindActivasPorTenant(tenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, list)
+}
+
 // Aprobar cambia el status de una membresía pendiente a activo.
 func (h *MembresiaHandler) Aprobar(c *gin.Context) {
 	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
