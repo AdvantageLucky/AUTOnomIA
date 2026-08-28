@@ -787,6 +787,45 @@
     container.querySelectorAll("[data-id]").forEach(row => {
       row.addEventListener("click", () => loadDetalle(row.dataset.id));
     });
+
+    loadReporteIA();
+  }
+
+  async function loadReporteIA() {
+    const loadEl  = document.getElementById('dash-reporte-ia-loading');
+    const emptyEl = document.getElementById('dash-reporte-ia-empty');
+    const bodyEl  = document.getElementById('dash-reporte-ia-body');
+    if (!bodyEl) return;
+
+    if (loadEl) loadEl.hidden = false;
+    if (emptyEl) emptyEl.hidden = true;
+    bodyEl.hidden = true;
+
+    const res = await api('/reportes');
+    if (loadEl) loadEl.hidden = true;
+
+    if (!res || !res.ok) {
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
+
+    let reportes = [];
+    try {
+      const d = await res.json();
+      reportes = Array.isArray(d.reportes) ? d.reportes : [];
+    } catch (e) { console.error(e); }
+
+    if (!reportes.length) {
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
+
+    const r = reportes[0];
+    const periodoEl = document.getElementById('dash-reporte-ia-periodo');
+    const textoEl   = document.getElementById('dash-reporte-ia-texto');
+    if (periodoEl) periodoEl.textContent = `${fmtDate(r.PeriodoInicio)} – ${fmtDate(r.PeriodoFin)}`;
+    if (textoEl) textoEl.textContent = r.Texto || '';
+    bodyEl.hidden = false;
   }
 
   function animateStat(id, value) {
