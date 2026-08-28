@@ -89,6 +89,9 @@ type VisitaFiltros struct {
 	TipoDocumento *TipoDocumento
 	TipoVisitante *TipoVisitante
 	Estado        *EstadoVisita
+	FechaDesde    *time.Time
+	FechaHasta    *time.Time
+	PersonaID     *uint
 	Q             string // ILIKE parcial sobre titular y curp
 }
 
@@ -110,6 +113,15 @@ func (r *Repository) FindAllByAdminID(
 		}
 		if filtros.Estado != nil {
 			q = q.Where("visitas.estado = ?", *filtros.Estado)
+		}
+		if filtros.FechaDesde != nil {
+			q = q.Where("visitas.created_at >= ?", *filtros.FechaDesde)
+		}
+		if filtros.FechaHasta != nil {
+			q = q.Where("visitas.created_at < ?", *filtros.FechaHasta)
+		}
+		if filtros.PersonaID != nil {
+			q = q.Where("visitas.persona_id = ?", *filtros.PersonaID)
 		}
 		if filtros.Q != "" {
 			like := "%" + filtros.Q + "%"

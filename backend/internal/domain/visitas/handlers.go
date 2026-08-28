@@ -449,6 +449,30 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 		}
 		filtros.Estado = &estado
 	}
+	if fechaStr := c.Query("fecha"); fechaStr != "" {
+		ahora := time.Now()
+		hoyInicio := time.Date(ahora.Year(), ahora.Month(), ahora.Day(), 0, 0, 0, 0, ahora.Location())
+		switch fechaStr {
+		case "hoy":
+			filtros.FechaDesde = &hoyInicio
+		case "ayer":
+			ayerInicio := hoyInicio.AddDate(0, 0, -1)
+			filtros.FechaDesde = &ayerInicio
+			filtros.FechaHasta = &hoyInicio
+		case "7d":
+			desde := hoyInicio.AddDate(0, 0, -7)
+			filtros.FechaDesde = &desde
+		case "30d":
+			desde := hoyInicio.AddDate(0, 0, -30)
+			filtros.FechaDesde = &desde
+		}
+	}
+	if personaIDStr := c.Query("persona_id"); personaIDStr != "" {
+		if pid, err := strconv.ParseUint(personaIDStr, 10, 32); err == nil {
+			pidUint := uint(pid)
+			filtros.PersonaID = &pidUint
+		}
+	}
 	filtros.Q = strings.TrimSpace(c.Query("q"))
 
 	repoCtx := h.repo.WithContext(c.Request.Context())

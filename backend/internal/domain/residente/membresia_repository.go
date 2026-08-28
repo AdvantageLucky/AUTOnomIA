@@ -1,7 +1,11 @@
 // backend/internal/domain/residente/membresia_repository.go
 package residente
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type MembresiaRepository struct {
 	db *gorm.DB
@@ -47,28 +51,36 @@ func (r *MembresiaRepository) FindByCasaDestinoYTenant(tenantID uint, casaDestin
 }
 
 // MembresiaPendienteConPersona es una fila de FindPendientesPorTenant —
-// junta la Membresia con nombre/teléfono de su Persona (query cruda contra
-// la tabla personas, para no importar el paquete persona y crear un ciclo:
-// persona ya importa residente). Mismo patrón que BuscarCentroPorCodigo.
+// junta la Membresia con nombre/teléfono/foto de su Persona.
 type MembresiaPendienteConPersona struct {
-	ID          uint   `json:"id"`
-	PersonaID   uint   `json:"persona_id" gorm:"column:persona_id"`
-	Nombre      string `json:"nombre"`
-	Telefono    string `json:"telefono"`
-	CasaDestino string `json:"casa_destino" gorm:"column:casa_destino"`
-	Rol         string `json:"rol"`
-	Status      string `json:"status"`
+	ID              uint      `json:"id"`
+	PersonaID       uint      `json:"persona_id" gorm:"column:persona_id"`
+	Nombre          string    `json:"nombre"`
+	ApellidoPaterno string    `json:"apellido_paterno" gorm:"column:apellido_paterno"`
+	ApellidoMaterno string    `json:"apellido_materno" gorm:"column:apellido_materno"`
+	Curp            string    `json:"curp" gorm:"column:curp"`
+	Telefono        string    `json:"telefono" gorm:"column:telefono"`
+	FotoCaraURL     string    `json:"foto_cara_url" gorm:"column:foto_cara_url"`
+	TieneRostro     bool      `json:"tiene_rostro" gorm:"column:tiene_rostro"`
+	TienePin        bool      `json:"tiene_pin" gorm:"column:tiene_pin"`
+	CasaDestino     string    `json:"casa_destino" gorm:"column:casa_destino"`
+	Rol             string    `json:"rol"`
+	Status          string    `json:"status"`
+	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at"`
 }
 
-// FindPendientesPorTenant devuelve las membresías pendientes de aprobación
-// de un tenant, con el nombre y teléfono de la Persona que las solicitó —
-// sin eso, el admin no tiene forma de saber a quién está aprobando.
+// FindPendientesPorTenant devuelve las membresías pendientes de aprobación de un
+// tenant, con los datos de la Persona para que el admin pueda revisarla.
 func (r *MembresiaRepository) FindPendientesPorTenant(tenantID uint) ([]MembresiaPendienteConPersona, error) {
 	var list []MembresiaPendienteConPersona
 	err := r.db.Table("membresias").
 		Select("membresias.id, membresias.persona_id, "+
 			"trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre, "+
-			"personas.telefono, membresias.casa_destino, membresias.rol, membresias.status").
+			"personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, "+
+			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, "+
+			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
+			"(membresias.pin != '') as tiene_pin, "+
+			"membresias.casa_destino as casa_destino, membresias.rol as rol, membresias.status as status, membresias.created_at as created_at").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusPendiente).
 		Order("membresias.created_at DESC").
@@ -80,24 +92,34 @@ func (r *MembresiaRepository) FindPendientesPorTenant(tenantID uint) ([]Membresi
 // shape que MembresiaPendienteConPersona, para la lista de residentes ya
 // aprobados que ve el admin en el dashboard.
 type MembresiaActivaConPersona struct {
-	ID          uint   `json:"id"`
-	PersonaID   uint   `json:"persona_id" gorm:"column:persona_id"`
-	Nombre      string `json:"nombre"`
-	Telefono    string `json:"telefono"`
-	CasaDestino string `json:"casa_destino" gorm:"column:casa_destino"`
-	Rol         string `json:"rol"`
-	Status      string `json:"status"`
+	ID              uint      `json:"id"`
+	PersonaID       uint      `json:"persona_id" gorm:"column:persona_id"`
+	Nombre          string    `json:"nombre"`
+	ApellidoPaterno string    `json:"apellido_paterno" gorm:"column:apellido_paterno"`
+	ApellidoMaterno string    `json:"apellido_materno" gorm:"column:apellido_materno"`
+	Curp            string    `json:"curp" gorm:"column:curp"`
+	Telefono        string    `json:"telefono" gorm:"column:telefono"`
+	FotoCaraURL     string    `json:"foto_cara_url" gorm:"column:foto_cara_url"`
+	TieneRostro     bool      `json:"tiene_rostro" gorm:"column:tiene_rostro"`
+	TienePin        bool      `json:"tiene_pin" gorm:"column:tiene_pin"`
+	CasaDestino     string    `json:"casa_destino" gorm:"column:casa_destino"`
+	Rol             string    `json:"rol"`
+	Status          string    `json:"status"`
+	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at"`
 }
 
 // FindActivasPorTenant devuelve las membresías activas (ya aprobadas) de un
-// tenant, con el nombre y teléfono de la Persona — para la lista de
-// "residentes activos" del dashboard.
+// tenant, con todos los datos de la Persona para el dashboard.
 func (r *MembresiaRepository) FindActivasPorTenant(tenantID uint) ([]MembresiaActivaConPersona, error) {
 	var list []MembresiaActivaConPersona
 	err := r.db.Table("membresias").
 		Select("membresias.id, membresias.persona_id, "+
 			"trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre, "+
-			"personas.telefono, membresias.casa_destino, membresias.rol, membresias.status").
+			"personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, "+
+			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, "+
+			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
+			"(membresias.pin != '') as tiene_pin, "+
+			"membresias.casa_destino as casa_destino, membresias.rol as rol, membresias.status as status, membresias.created_at as created_at").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusActivo).
 		Order("membresias.created_at DESC").

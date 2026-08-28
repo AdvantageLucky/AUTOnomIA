@@ -755,12 +755,21 @@
 
   /* ─── Dashboard ─────────────────────────── */
   async function loadDashboard() {
-    const resVisitas = await api("/visitas/?page_size=100");
+    const [resVisitas, resMembresias] = await Promise.all([
+      api("/visitas/?page_size=100"),
+      api("/membresias/"),
+    ]);
 
     let visitas = [];
     if (resVisitas && resVisitas.ok) {
       const data = await resVisitas.json();
       visitas = data.visitas || [];
+    }
+
+    let residentesCount = 0;
+    if (resMembresias && resMembresias.ok) {
+      const mData = await resMembresias.json();
+      residentesCount = (Array.isArray(mData) ? mData : (mData.membresias || [])).length;
     }
 
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
@@ -774,6 +783,7 @@
     animateStat("stat-hoy",        hoyCount);
     animateStat("stat-pendientes", pendCount);
     animateStat("stat-aprobadas",  aprobHoyCount);
+    animateStat("stat-residentes", residentesCount);
 
     const subPend = document.getElementById("stat-sub-pendientes");
     if (subPend) {
@@ -783,6 +793,39 @@
         subPend.textContent = lang === 'en' ? "Up to date" : "Al día";
       }
     }
+
+    document.querySelectorAll("[data-stat-nav]").forEach(card => {
+      card.onclick = () => {
+        const dest = card.dataset.statNav;
+        if (dest === "hoy") {
+          const fFecha = document.getElementById("vis-filter-fecha");
+          if (fFecha) fFecha.value = "hoy";
+          const fTipo = document.getElementById("vis-filter-tipo");
+          if (fTipo) fTipo.value = "";
+          const fEstado = document.getElementById("vis-filter-estado");
+          if (fEstado) fEstado.value = "";
+          const fQ = document.getElementById("vis-quick-search");
+          if (fQ) fQ.value = "";
+          navTo("visitas");
+        } else if (dest === "pendientes") {
+          navTo("solicitudes");
+        } else if (dest === "aprobadas") {
+          const fFecha = document.getElementById("vis-filter-fecha");
+          if (fFecha) fFecha.value = "hoy";
+          const fEstado = document.getElementById("vis-filter-estado");
+          if (fEstado) fEstado.value = "APROBADO";
+          const fTipo = document.getElementById("vis-filter-tipo");
+          if (fTipo) fTipo.value = "";
+          const fQ = document.getElementById("vis-quick-search");
+          if (fQ) fQ.value = "";
+          navTo("visitas");
+        } else if (dest === "residentes") {
+          navTo("residentes");
+          const tabActivos = document.querySelector('[data-tab="res-activos"]');
+          if (tabActivos) tabActivos.click();
+        }
+      };
+    });
 
     const container = document.getElementById("dash-recent-rows");
     const recent = visitas.slice(0, 8);
@@ -883,13 +926,15 @@
   /* ─── Visitas ────────────────────────────── */
   async function loadVisitas(page) {
     state.visPage = page;
-    const tipo   = document.getElementById("vis-filter-tipo").value;
-    const estado = document.getElementById("vis-filter-estado").value;
-    const q      = document.getElementById("vis-quick-search").value.trim();
+    const tipo   = document.getElementById("vis-filter-tipo")?.value || "";
+    const estado = document.getElementById("vis-filter-estado")?.value || "";
+    const fecha  = document.getElementById("vis-filter-fecha")?.value || "";
+    const q      = document.getElementById("vis-quick-search")?.value.trim() || "";
 
     let params = `?page=${page}&page_size=${state.visPageSize}`;
     if (tipo)   params += `&tipo_visitante=${tipo}`;
     if (estado) params += `&estado=${estado}`;
+    if (fecha)  params += `&fecha=${fecha}`;
     if (q)      params += `&q=${encodeURIComponent(q)}`;
 
     showVisState("loading");
@@ -949,12 +994,16 @@
 
   document.getElementById("vis-prev")?.addEventListener("click",  () => loadVisitas(state.visPage - 1));
   document.getElementById("vis-next")?.addEventListener("click",  () => loadVisitas(state.visPage + 1));
-  document.getElementById("vis-retry")?.addEventListener("click", () => loadVisitas(state.visPage));
+  document.getElementById("vis-retry")?.addEventListener("click", () => loadVisitas(1));
 
-  ["vis-quick-search","vis-filter-tipo","vis-filter-estado"].forEach(id => {
-    document.getElementById(id)?.addEventListener("input", () => {
-      clearTimeout(state.visSearchTimeout);
-      state.visSearchTimeout = setTimeout(() => loadVisitas(1), 350);
+  ["vis-quick-search","vis-filter-fecha","vis-filter-tipo","vis-filter-estado"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const evt = el.tagName === "INPUT" ? "input" : "change";
+    let debounce;
+    el.addEventListener(evt, () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => loadVisitas(1), el.tagName === "INPUT" ? 250 : 0);
     });
   });
 
@@ -2288,6 +2337,8 @@
 
   /* ─── Residentes (Persona + Membresia) ─── */
 
+  let residentesActivosCache = [];
+
   async function loadResidentesActivos() {
     const loadEl  = document.getElementById('resa-loading');
     const emptyEl = document.getElementById('resa-empty');
@@ -2312,21 +2363,186 @@
       activos = Array.isArray(d) ? d : (d.membresias || []);
     } catch (e) { console.error(e); }
 
+    residentesActivosCache = activos;
+
     if (!activos.length) {
       if (emptyEl) emptyEl.hidden = false;
       return;
     }
     if (emptyEl) emptyEl.hidden = true;
 
-    rowsEl.innerHTML = activos.map(m => `
-      <div class="equipo-row" style="align-items:center">
-        <div style="width:48px;height:48px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:20px">👤</div>
-        <div class="equipo-info" style="flex:1">
-          <div class="equipo-name">${esc(m.nombre || 'Sin nombre')}</div>
-          <div class="equipo-sub">${esc(m.casa_destino)}${m.telefono ? ' · ' + esc(m.telefono) : ''}</div>
-        </div>
-      </div>`).join('');
+    rowsEl.innerHTML = activos.map(m => {
+      const inicial = (m.nombre || 'R')[0].toUpperCase();
+      const avatarHtml = m.foto_cara_url
+        ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(m.nombre)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+        : `<div class="res-avatar">${inicial}</div>`;
+
+      const rolBadge = m.rol === 'titular'
+        ? '<span class="badge badge--aprobado" style="font-size:11px">Titular</span>'
+        : `<span class="badge" style="font-size:11px">${esc(m.rol || 'Residente')}</span>`;
+
+      const tieneRostro = m.tiene_rostro;
+      const tienePin = m.tiene_pin;
+
+      return `
+        <div class="res-row" data-res-id="${m.id}">
+          ${avatarHtml}
+          <div class="res-info-main">
+            <div class="res-name">${esc(m.nombre || 'Sin nombre')} ${esc(m.apellido_paterno || '')}</div>
+            <div class="res-sub">${esc(m.casa_destino)}${m.telefono ? ' · 📞 ' + esc(m.telefono) : ''}</div>
+          </div>
+          <div class="res-badges">
+            <span class="badge--method ${tieneRostro ? 'active' : ''}" title="${tieneRostro ? 'Reconocimiento facial activo' : 'Sin rostro registrado'}">
+              👤 ${tieneRostro ? 'Rostro' : 'Sin rostro'}
+            </span>
+            <span class="badge--method ${tienePin ? 'active' : ''}" title="${tienePin ? 'PIN configurado' : 'Sin PIN'}">
+              🔢 PIN
+            </span>
+            <span class="badge--method active" title="App Kigo vinculada">
+              📱 QR
+            </span>
+          </div>
+          <div>${rolBadge}</div>
+        </div>`;
+    }).join('');
+
+    rowsEl.querySelectorAll('[data-res-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = Number(el.dataset.resId);
+        const m = residentesActivosCache.find(x => x.id === id);
+        if (m) showResidenteModal(m);
+      });
+    });
   }
+
+  function showResidenteModal(m) {
+    const modal = document.getElementById('modal-residente-detalle');
+    const body = document.getElementById('res-modal-body');
+    if (!modal || !body) return;
+
+    const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
+    const inicial = (m.nombre || 'R')[0].toUpperCase();
+    const avatarHtml = m.foto_cara_url
+      ? `<div class="res-avatar res-avatar--lg"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+      : `<div class="res-avatar res-avatar--lg">${inicial}</div>`;
+
+    const tieneRostro = m.tiene_rostro;
+    const tienePin = m.tiene_pin;
+
+    body.innerHTML = `
+      <div class="res-modal-header">
+        ${avatarHtml}
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px">${esc(nombreCompleto)}</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span class="badge badge--aprobado">${esc(m.casa_destino || 'Sin casa asignada')}</span>
+            <span class="badge" style="text-transform:capitalize">${esc(m.rol || 'Residente')}</span>
+            <span class="badge badge--green">Activo</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="res-modal-grid">
+        <div class="res-modal-field">
+          <div class="res-modal-field-label">Teléfono</div>
+          <div class="res-modal-field-value">${m.telefono ? esc(m.telefono) : '—'}</div>
+        </div>
+        <div class="res-modal-field">
+          <div class="res-modal-field-label">CURP</div>
+          <div class="res-modal-field-value mono-value" style="font-size:12px">${m.curp ? esc(m.curp) : '—'}</div>
+        </div>
+        <div class="res-modal-field">
+          <div class="res-modal-field-label">Destino / Casa</div>
+          <div class="res-modal-field-value">${esc(m.casa_destino || '—')}</div>
+        </div>
+        <div class="res-modal-field">
+          <div class="res-modal-field-label">Miembro desde</div>
+          <div class="res-modal-field-value">${m.created_at ? fmtDateShort(m.created_at) : '—'}</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">
+        Métodos de acceso habilitados
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">👤</span>
+            <div>
+              <div style="font-size:13.5px;font-weight:600;color:var(--text)">Reconocimiento Facial IA</div>
+              <div style="font-size:11.5px;color:var(--text-3)">Validación biométrica instantánea en kioskos</div>
+            </div>
+          </div>
+          <span class="badge ${tieneRostro ? 'badge--aprobado' : 'badge--rechazado'}">
+            ${tieneRostro ? '✓ Enrolado' : 'Pendiente'}
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">🔢</span>
+            <div>
+              <div style="font-size:13.5px;font-weight:600;color:var(--text)">PIN de acceso</div>
+              <div style="font-size:11.5px;color:var(--text-3)">Código numérico para teclado en caseta</div>
+            </div>
+          </div>
+          <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}">
+            ${tienePin ? '✓ Configurado' : 'Sin PIN'}
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">📱</span>
+            <div>
+              <div style="font-size:13.5px;font-weight:600;color:var(--text)">App Kigo (QR Dinámico)</div>
+              <div style="font-size:11.5px;color:var(--text-3)">Acceso con escáner de código QR móvil</div>
+            </div>
+          </div>
+          <span class="badge badge--aprobado">✓ Activo</span>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="justify-content:space-between">
+        <button type="button" class="btn-cancel" id="res-modal-ver-visitas">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:middle;margin-right:4px"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
+          Ver entradas de este residente
+        </button>
+        <button type="button" class="btn-primary" id="res-modal-cerrar-btn">Cerrar</button>
+      </div>
+    `;
+
+    document.getElementById('res-modal-ver-visitas')?.addEventListener('click', () => {
+      modal.hidden = true;
+      const fQ = document.getElementById('vis-quick-search');
+      if (fQ) fQ.value = m.nombre || '';
+      const fTipo = document.getElementById('vis-filter-tipo');
+      if (fTipo) fTipo.value = 'RESIDENTE';
+      const fFecha = document.getElementById('vis-filter-fecha');
+      if (fFecha) fFecha.value = '';
+      const fEstado = document.getElementById('vis-filter-estado');
+      if (fEstado) fEstado.value = '';
+      navTo('visitas');
+    });
+
+    document.getElementById('res-modal-cerrar-btn')?.addEventListener('click', () => {
+      modal.hidden = true;
+    });
+
+    modal.hidden = false;
+  }
+
+  document.getElementById('res-modal-close')?.addEventListener('click', () => {
+    const m = document.getElementById('modal-residente-detalle');
+    if (m) m.hidden = true;
+  });
+
+  document.getElementById('modal-residente-detalle')?.addEventListener('click', e => {
+    if (e.target.id === 'modal-residente-detalle') {
+      e.target.hidden = true;
+    }
+  });
 
   async function loadResidentesPendientesBadge() {
     try {
@@ -2375,18 +2591,25 @@
     }
     if (emptyEl) emptyEl.hidden = true;
 
-    const filasMembresias = membresias.map(m => `
+    const filasMembresias = membresias.map(m => {
+      const inicial = (m.nombre || 'R')[0].toUpperCase();
+      const avatarHtml = m.foto_cara_url
+        ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(m.nombre)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+        : `<div class="res-avatar">${inicial}</div>`;
+
+      return `
         <div class="equipo-row" style="align-items:center">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:20px">👤</div>
-          <div class="equipo-info" style="flex:1">
-            <div class="equipo-name">${esc(m.nombre || 'Sin nombre')}</div>
-            <div class="equipo-sub">${esc(m.casa_destino)}${m.telefono ? ' · ' + esc(m.telefono) : ''} · App Kigo</div>
+          ${avatarHtml}
+          <div class="equipo-info" style="flex:1;margin-left:12px">
+            <div class="equipo-name">${esc(m.nombre || 'Sin nombre')} ${esc(m.apellido_paterno || '')}</div>
+            <div class="equipo-sub">${esc(m.casa_destino)}${m.telefono ? ' · 📞 ' + esc(m.telefono) : ''} · App Kigo</div>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-primary" data-aprobar-mem="${m.id}">Aprobar</button>
             <button class="btn-ghost" data-rechazar-mem="${m.id}" style="color:var(--danger,#e55)">Rechazar</button>
           </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 
     rowsEl.innerHTML = filasMembresias;
 
