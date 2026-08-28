@@ -9,6 +9,7 @@ import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/invitation_viewmodel.dart';
 import 'viewmodels/pending_visits_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
+import 'viewmodels/visit_history_viewmodel.dart';
 
 import 'views/kigo_shell.dart';
 import 'views/my_invitations_view.dart';
@@ -29,6 +30,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
         ChangeNotifierProvider(create: (_) => InvitationViewModel()),
         ChangeNotifierProvider(create: (_) => PendingVisitsViewModel()),
+        ChangeNotifierProvider(create: (_) => VisitHistoryViewModel()),
       ],
       child: const MyApp(),
     ),

@@ -76,7 +76,6 @@ class _InvitarViewState extends State<InvitarView> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Invitar')),
       body: tenantId == null
           ? const Center(child: Text('No tienes una membresía activa'))
           : SafeArea(
