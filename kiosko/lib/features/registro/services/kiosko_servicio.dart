@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show SocketException;
+import 'dart:io' show SocketException, HttpException, HandshakeException, TlsException;
 import 'package:bcrypt/bcrypt.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -57,14 +57,32 @@ class KioskoServicio {
     _cache = cache;
   }
 
-  /// true solo cuando un error de RED (no una respuesta de rechazo del
-  /// servidor, como "PIN incorrecto" o "rostro no reconocido") interrumpió
-  /// la llamada — es la única categoría de falla que debe caer al modo
-  /// offline en vez de propagarse como el rechazo legítimo que es.
+  /// true cuando un error de red (DNS, socket, timeout, host inalcanzable,
+  /// o corte de conexión) interrumpió la llamada.
   bool _esFalloDeRed(Object error) {
-    return error is SocketException ||
+    if (error is SocketException ||
         error is TimeoutException ||
-        error is http.ClientException;
+        error is http.ClientException ||
+        error is HttpException ||
+        error is HandshakeException ||
+        error is TlsException) {
+      return true;
+    }
+    final msg = error.toString().toLowerCase();
+    return msg.contains('socket') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('clientexception') ||
+        msg.contains('network') ||
+        msg.contains('connection refused') ||
+        msg.contains('connection closed') ||
+        msg.contains('connection reset') ||
+        msg.contains('timeout') ||
+        msg.contains('timed out') ||
+        msg.contains('errno') ||
+        msg.contains('os error') ||
+        msg.contains('handshake') ||
+        msg.contains('no address associated') ||
+        msg.contains('unreachable');
   }
 
   Future<void> _ensureLogin() async {
@@ -609,6 +627,7 @@ class KioskoServicio {
       fotoPaths: const {},
     );
     return {
+      'estado': 'miembro',
       'tipo': 'RESIDENTE',
       'nombre': nombreCompleto,
       'casa_destino': match['casa_destino'],

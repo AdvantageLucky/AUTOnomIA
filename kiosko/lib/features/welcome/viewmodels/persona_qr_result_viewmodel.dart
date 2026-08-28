@@ -35,13 +35,15 @@ class PersonaQrResultViewModel extends ChangeNotifier {
       _nombre = resultado['nombre'] as String?;
       _casaDestino = resultado['casa_destino'] as String?;
 
-      switch (resultado['estado'] as String?) {
-        case 'miembro':
-          _estado = PersonaQrResultEstado.miembro;
-        case 'invitado':
-          _estado = PersonaQrResultEstado.invitado;
-        default:
-          _estado = PersonaQrResultEstado.desconocido;
+      final estadoStr = (resultado['estado'] as String? ?? '').toLowerCase();
+      final tipoStr = (resultado['tipo'] as String? ?? '').toLowerCase();
+
+      if (estadoStr == 'miembro' || tipoStr == 'residente') {
+        _estado = PersonaQrResultEstado.miembro;
+      } else if (estadoStr == 'invitado') {
+        _estado = PersonaQrResultEstado.invitado;
+      } else {
+        _estado = PersonaQrResultEstado.desconocido;
       }
     } catch (e) {
       _errorMsg = e.toString().replaceFirst('Exception: ', '');
