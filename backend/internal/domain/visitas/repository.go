@@ -214,9 +214,12 @@ func (r *Repository) FindPendientesByCasaDestino(tenantID uint, casaDestino stri
 }
 
 // FindHistorialByCasaDestino devuelve, paginadas y de la mas reciente a la
-// mas vieja, todas las visitas dirigidas a una casa sin filtrar por estado —
-// es lo que ve el residente en su historial, a diferencia de
-// FindPendientesByCasaDestino, que solo trae lo que le falta autorizar.
+// mas vieja, las visitas a una casa que aprobo un residente desde la app.
+//
+// Deja fuera a proposito lo rechazado, lo que sigue pendiente y lo que
+// resolvio alguien mas (el vigilante desde el dashboard, o el agente y el
+// sistema por su cuenta): el historial responde "a quien deje entrar yo", no
+// "que paso en mi puerta".
 func (r *Repository) FindHistorialByCasaDestino(
 	tenantID uint,
 	casaDestino string,
@@ -224,7 +227,11 @@ func (r *Repository) FindHistorialByCasaDestino(
 ) ([]Visita, int64, error) {
 	query := func() *gorm.DB {
 		return r.db.Model(&Visita{}).
-			Where("tenant_id = ? AND UPPER(casa_destino) = UPPER(?)", tenantID, casaDestino)
+			Where(
+				`tenant_id = ? AND UPPER(casa_destino) = UPPER(?)
+				 AND estado = ? AND autorizado_por_tipo = ?`,
+				tenantID, casaDestino, EstadoAprobado, AutorizadorResidente,
+			)
 	}
 
 	var total int64

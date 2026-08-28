@@ -659,10 +659,10 @@ func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"visitas": items})
 }
 
-// ListarHistorialVisitas devuelve todas las visitas dirigidas a la casa de la
-// Membresia activa de la Persona, en cualquier estado y de la mas reciente a
-// la mas vieja. Es el complemento de ListarVisitasPendientes: alli va lo que
-// falta autorizar, aqui lo que ya paso.
+// ListarHistorialVisitas devuelve las visitas que un residente aprobo desde
+// la app para la casa de su Membresia activa, de la mas reciente a la mas
+// vieja. Es el complemento de ListarVisitasPendientes: alli va lo que falta
+// autorizar, aqui a quien ya se dejo entrar.
 func (h *Handler) ListarHistorialVisitas(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
 
