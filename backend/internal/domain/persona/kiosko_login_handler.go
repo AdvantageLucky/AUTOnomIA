@@ -57,7 +57,9 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
 
 	var req struct {
-		Pin string `json:"pin" binding:"required,min=4,max=6"`
+		Pin       string `json:"pin" binding:"required,min=4,max=6"`
+		PersonaID *uint  `json:"persona_id"`
+		ClientID  string `json:"client_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -70,16 +72,58 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 		return
 	}
 
-	var mejor *CandidatoKiosko
+	var matches []CandidatoKiosko
 	for i := range candidatos {
-		if bcrypt.CompareHashAndPassword([]byte(candidatos[i].PinHash), []byte(req.Pin)) == nil {
-			mejor = &candidatos[i]
-			break
+		if candidatos[i].PinHash != "" && bcrypt.CompareHashAndPassword([]byte(candidatos[i].PinHash), []byte(req.Pin)) == nil {
+			matches = append(matches, candidatos[i])
 		}
 	}
-	if mejor == nil {
+	if len(matches) == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "PIN incorrecto"})
 		return
+	}
+
+	var mejor *CandidatoKiosko
+	if len(matches) == 1 {
+		mejor = &matches[0]
+	} else if req.PersonaID != nil {
+		for i := range matches {
+			if matches[i].PersonaID == *req.PersonaID {
+				mejor = &matches[i]
+				break
+			}
+		}
+		if mejor == nil {
+			mejor = &matches[0]
+		}
+	} else {
+		candidatosList := make([]gin.H, 0, len(matches))
+		for _, m := range matches {
+			candidatosList = append(candidatosList, gin.H{
+				"persona_id":   m.PersonaID,
+				"nombre":       m.Nombre + " " + m.ApellidoPaterno,
+				"casa_destino": m.CasaDestino,
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"requiere_seleccion": true,
+			"candidatos":         candidatosList,
+		})
+		return
+	}
+
+	var clientIDPtr *string
+	if req.ClientID != "" {
+		clientIDPtr = &req.ClientID
+		repoCtx := h.visitaRepo.WithContext(c.Request.Context())
+		existente, err := repoCtx.FindByClientID(tenantID, req.ClientID)
+		if err == nil && existente != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"nombre":       mejor.Nombre + " " + mejor.ApellidoPaterno,
+				"casa_destino": mejor.CasaDestino,
+			})
+			return
+		}
 	}
 
 	v := &visitas.Visita{
@@ -91,6 +135,7 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 		Estado:        visitas.EstadoAprobado,
 		KioskoID:      uint(kioskoID),
 		PersonaID:     &mejor.PersonaID,
+		ClientID:      clientIDPtr,
 	}
 	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})

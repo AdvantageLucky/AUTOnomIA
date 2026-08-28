@@ -121,6 +121,17 @@ Future<Map<String, dynamic>> _reproducirRegistroContraBackend(
     case 'rostro_residente':
       final embedding = (payload['embedding'] as List).cast<double>();
       return servicio.reproducirVerificacionRostro(embedding, clientId: clientId);
+    case 'pin_residente':
+      return servicio.reproducirPinResidente(
+        payload['pin'] as String,
+        personaId: payload['persona_id'] as int?,
+        clientId: clientId,
+      );
+    case 'qr_persona':
+      return servicio.reproducirQrPersona(
+        payload['persona_id'] as int,
+        clientId: clientId,
+      );
     default:
       throw StateError('tipo de registro offline desconocido: $tipo');
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show SocketException;
+import 'package:bcrypt/bcrypt.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -360,19 +361,39 @@ class KioskoServicio {
   /// el QR para saber a nombre de quién y a qué casa va la visita antes de pedir
   /// las capturas que exija su configuración.
   Future<Map<String, dynamic>> validarInvitacion(String token) async {
-    await _ensureLogin();
-    final response = await http.get(
-      Uri.parse('$_baseUrl/kioskos/$_kioskoId/invitaciones/validar?token=$token'),
-      headers: {'Authorization': 'Bearer $_sessionToken'},
-    ).timeout(const Duration(seconds: 10));
+    final connectivity = _connectivity;
+    final cache = _cache;
+    if (connectivity != null && cache != null && connectivity.isOffline) {
+      final inv = await cache.obtenerInvitacionPorToken(token);
+      if (inv != null) return inv;
+      throw Exception('Invitación no válida, expirada o no encontrada');
+    }
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
+    try {
+      await _ensureLogin();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/kioskos/$_kioskoId/invitaciones/validar?token=$token'),
+        headers: {'Authorization': 'Bearer $_sessionToken'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      if (response.statusCode == 404) {
+        throw Exception('Invitación no válida, expirada o agotada');
+      }
+      if (cache != null) {
+        final inv = await cache.obtenerInvitacionPorToken(token);
+        if (inv != null) return inv;
+      }
+      throw Exception('Error al validar invitación (${response.statusCode})');
+    } catch (e) {
+      if (cache != null && _esFalloDeRed(e)) {
+        final inv = await cache.obtenerInvitacionPorToken(token);
+        if (inv != null) return inv;
+      }
+      rethrow;
     }
-    if (response.statusCode == 404) {
-      throw Exception('Invitación no válida, expirada o agotada');
-    }
-    throw Exception('Error al validar invitación (${response.statusCode})');
   }
 
   /// Consume la invitación y registra la visita como APROBADA.
@@ -527,39 +548,104 @@ class KioskoServicio {
   /// este centro. Si es invitado, el backend ya deja registrada la visita
   /// APROBADA — no hace falta una llamada aparte para consumirla.
   Future<Map<String, dynamic>> verificarQrPersona(int personaId, String firma) async {
-    await _ensureLogin();
-    final response = await http.post(
-      Uri.parse('$_baseUrl/kioskos/$_kioskoId/personas/verificar-qr'),
-      headers: {
-        'Authorization': 'Bearer $_sessionToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'persona_id': personaId, 'firma': firma}),
-    ).timeout(const Duration(seconds: 10));
+    final connectivity = _connectivity;
+    final cache = _cache;
+    if (connectivity != null && cache != null && connectivity.isOffline) {
+      return _verificarQrPersonaOffline(cache, personaId);
+    }
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
+    try {
+      await _ensureLogin();
+      final response = await http.post(
+        Uri.parse('$_baseUrl/kioskos/$_kioskoId/personas/verificar-qr'),
+        headers: {
+          'Authorization': 'Bearer $_sessionToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'persona_id': personaId, 'firma': firma}),
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      if (response.statusCode == 401) {
+        throw Exception('Código QR inválido');
+      }
+      if (response.statusCode == 404) {
+        throw Exception('No se encontró esa cuenta de Kigo');
+      }
+      if (cache != null) {
+        return _verificarQrPersonaOffline(cache, personaId);
+      }
+      final body = jsonDecode(response.body);
+      throw Exception(body['error'] ?? 'Error al verificar el QR (${response.statusCode})');
+    } catch (e) {
+      if (cache != null && _esFalloDeRed(e)) {
+        return _verificarQrPersonaOffline(cache, personaId);
+      }
+      rethrow;
     }
-    if (response.statusCode == 401) {
-      throw Exception('Código QR inválido');
-    }
-    if (response.statusCode == 404) {
-      throw Exception('No se encontró esa cuenta de Kigo');
-    }
-    final body = jsonDecode(response.body);
-    throw Exception(body['error'] ?? 'Error al verificar el QR (${response.statusCode})');
   }
 
-  Future<Map<String, dynamic>> validarPinResidente(String pin) async {
+  Future<Map<String, dynamic>> _verificarQrPersonaOffline(LocalCacheDb cache, int personaId) async {
+    final residentes = await cache.obtenerResidentes();
+    final match = residentes.cast<Map<String, dynamic>?>().firstWhere(
+      (r) => r?['id'] == personaId,
+      orElse: () => null,
+    );
+    if (match == null) {
+      throw Exception('Cuenta no encontrada en caché local');
+    }
+    final clientId = _uuid.v4();
+    final nombreCompleto = '${match['nombre']} ${match['apellido_paterno']}';
+    await cache.encolarVisita(
+      clientId: clientId,
+      tipo: 'qr_persona',
+      payload: {
+        'persona_id': personaId,
+        'nombre': nombreCompleto,
+        'casa_destino': match['casa_destino'],
+      },
+      fotoPaths: const {},
+    );
+    return {
+      'tipo': 'RESIDENTE',
+      'nombre': nombreCompleto,
+      'casa_destino': match['casa_destino'],
+    };
+  }
+
+  Future<Map<String, dynamic>> validarPinResidente(String pin, {int? personaId, String? clientId}) async {
+    final connectivity = _connectivity;
+    final cache = _cache;
+    if (connectivity != null && cache != null && connectivity.isOffline) {
+      return _validarPinOffline(cache, pin, personaId: personaId, clientId: clientId);
+    }
+
+    try {
+      return await _validarPinRemoto(pin, personaId: personaId, clientId: clientId);
+    } catch (e) {
+      if (cache != null && _esFalloDeRed(e)) {
+        return _validarPinOffline(cache, pin, personaId: personaId, clientId: clientId);
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> _validarPinRemoto(String pin, {int? personaId, String? clientId}) async {
     await _ensureLogin();
+    final bodyMap = <String, dynamic>{'pin': pin};
+    if (personaId != null) bodyMap['persona_id'] = personaId;
+    if (clientId != null) bodyMap['client_id'] = clientId;
+
     final response = await http.post(
       Uri.parse('$_baseUrl/kioskos/$_kioskoId/residentes/login'),
       headers: {
         'Authorization': 'Bearer $_sessionToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'pin': pin}),
-    ).timeout(const Duration(seconds: 10));
+      body: jsonEncode(bodyMap),
+    ).timeout(const Duration(seconds: 5));
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
@@ -567,7 +653,62 @@ class KioskoServicio {
     if (response.statusCode == 401) {
       throw Exception('PIN incorrecto');
     }
-    throw Exception('Error al validar PIN (${response.statusCode})');
+    final body = jsonDecode(response.body);
+    throw Exception(body['error'] ?? 'Error al validar PIN (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> _validarPinOffline(
+    LocalCacheDb cache,
+    String pin, {
+    int? personaId,
+    String? clientId,
+  }) async {
+    final residentes = await cache.obtenerResidentes();
+    final matches = <Map<String, dynamic>>[];
+    for (final r in residentes) {
+      final pinHash = r['pin_hash'] as String?;
+      if (pinHash != null && pinHash.isNotEmpty) {
+        try {
+          if (BCrypt.checkpw(pin, pinHash)) {
+            matches.add(r);
+          }
+        } catch (_) {}
+      }
+    }
+    if (matches.isEmpty) {
+      throw Exception('PIN incorrecto');
+    }
+    if (matches.length > 1 && personaId == null) {
+      return {
+        'requiere_seleccion': true,
+        'candidatos': matches.map((m) => {
+          'persona_id': m['id'],
+          'nombre': '${m['nombre']} ${m['apellido_paterno']}',
+          'casa_destino': m['casa_destino'],
+        }).toList(),
+      };
+    }
+    final match = personaId != null
+        ? matches.firstWhere((m) => m['id'] == personaId, orElse: () => matches.first)
+        : matches.first;
+
+    final cid = clientId ?? _uuid.v4();
+    final nombreCompleto = '${match['nombre']} ${match['apellido_paterno']}';
+    await cache.encolarVisita(
+      clientId: cid,
+      tipo: 'pin_residente',
+      payload: {
+        'pin': pin,
+        'persona_id': match['id'],
+        'nombre': nombreCompleto,
+        'casa_destino': match['casa_destino'],
+      },
+      fotoPaths: const {},
+    );
+    return {
+      'nombre': nombreCompleto,
+      'casa_destino': match['casa_destino'],
+    };
   }
 
   Future<Map<String, dynamic>> verificarRostroResidente(
@@ -641,17 +782,36 @@ class KioskoServicio {
   }
 
   Future<List<Map<String, dynamic>>> obtenerDestinos() async {
-    await _ensureLogin();
-    final response = await http.get(
-      Uri.parse('$_baseUrl/kioskos/$_kioskoId/destinos/'),
-      headers: {'Authorization': 'Bearer $_sessionToken'},
-    ).timeout(const Duration(seconds: 10));
-
-    if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list.cast<Map<String, dynamic>>();
+    final connectivity = _connectivity;
+    final cache = _cache;
+    if (connectivity != null && cache != null && connectivity.isOffline) {
+      final destinosLocales = await cache.obtenerDestinos();
+      if (destinosLocales.isNotEmpty) return destinosLocales;
     }
-    throw Exception('Error al obtener destinos (${response.statusCode})');
+
+    try {
+      await _ensureLogin();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/kioskos/$_kioskoId/destinos/'),
+        headers: {'Authorization': 'Bearer $_sessionToken'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final list = jsonDecode(response.body) as List;
+        return list.cast<Map<String, dynamic>>();
+      }
+      if (cache != null) {
+        final destinosLocales = await cache.obtenerDestinos();
+        if (destinosLocales.isNotEmpty) return destinosLocales;
+      }
+      throw Exception('Error al obtener destinos (${response.statusCode})');
+    } catch (e) {
+      if (cache != null) {
+        final destinosLocales = await cache.obtenerDestinos();
+        if (destinosLocales.isNotEmpty) return destinosLocales;
+      }
+      rethrow;
+    }
   }
 
   // ── Reproducción de la cola offline (solo para SyncWorker) ─────────────────
@@ -709,6 +869,38 @@ class KioskoServicio {
     required String clientId,
   }) {
     return _verificarRostroRemoto(embedding, clientId: clientId);
+  }
+
+  Future<Map<String, dynamic>> reproducirPinResidente(
+    String pin, {
+    int? personaId,
+    required String clientId,
+  }) {
+    return _validarPinRemoto(pin, personaId: personaId, clientId: clientId);
+  }
+
+  Future<Map<String, dynamic>> reproducirQrPersona(
+    int personaId, {
+    required String clientId,
+  }) {
+    return _verificarQrPersonaRemoto(personaId, clientId: clientId);
+  }
+
+  Future<Map<String, dynamic>> _verificarQrPersonaRemoto(int personaId, {String? clientId}) async {
+    await _ensureLogin();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/kioskos/$_kioskoId/personas/verificar-qr'),
+      headers: {
+        'Authorization': 'Bearer $_sessionToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'persona_id': personaId, 'firma': '', 'client_id': clientId ?? ''}),
+    ).timeout(const Duration(seconds: 5));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Error al verificar QR (${response.statusCode})');
   }
 
   Future<Map<String, dynamic>> obtenerSnapshot() async {
