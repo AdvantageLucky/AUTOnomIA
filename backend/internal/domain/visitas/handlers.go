@@ -402,7 +402,13 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 
 	h.aplicarExpiracionSiVencida(repoCtx, v)
 
-	c.JSON(http.StatusOK, toVisitaResponse(*v))
+	item := toVisitaResponse(*v)
+	if v.PersonaID != nil {
+		if stats, err := repoCtx.EstadisticasPorPersona(*v.PersonaID); err == nil {
+			item.Estadisticas = stats
+		}
+	}
+	c.JSON(http.StatusOK, item)
 }
 
 func (h *Handler) ListarVisitas(c *gin.Context) {
@@ -456,7 +462,13 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 	items := make([]VisitaListItemResponse, 0, len(list))
 	for i := range list {
 		h.aplicarExpiracionSiVencida(repoCtx, &list[i])
-		items = append(items, toVisitaListItemResponse(list[i]))
+		item := toVisitaListItemResponse(list[i])
+		if list[i].PersonaID != nil {
+			if stats, err := repoCtx.EstadisticasPorPersona(*list[i].PersonaID); err == nil {
+				item.Estadisticas = stats
+			}
+		}
+		items = append(items, item)
 	}
 
 	c.JSON(http.StatusOK, VisitasPaginadasResponse{
