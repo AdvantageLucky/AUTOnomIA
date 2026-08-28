@@ -193,7 +193,7 @@ func (r *Repository) FindPendientesByKioskoID(kioskoID uint) ([]Visita, error) {
 func (r *Repository) FindPendientesByCasaDestino(tenantID uint, casaDestino string) ([]Visita, error) {
 	var list []Visita
 	if err := r.db.
-		Where("tenant_id = ? AND casa_destino = ? AND estado = ?", tenantID, casaDestino, EstadoPendiente).
+		Where("tenant_id = ? AND UPPER(casa_destino) = UPPER(?) AND estado = ?", tenantID, casaDestino, EstadoPendiente).
 		Order("created_at DESC").
 		Find(&list).Error; err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (r *Repository) FindPendientesByCasaDestino(tenantID uint, casaDestino stri
 func (r *Repository) FindByIDAndCasaDestino(id, tenantID uint, casaDestino string) (*Visita, error) {
 	var v Visita
 	if err := r.db.
-		Where("id = ? AND tenant_id = ? AND casa_destino = ?", id, tenantID, casaDestino).
+		Where("id = ? AND tenant_id = ? AND UPPER(casa_destino) = UPPER(?)", id, tenantID, casaDestino).
 		First(&v).Error; err != nil {
 		return nil, err
 	}

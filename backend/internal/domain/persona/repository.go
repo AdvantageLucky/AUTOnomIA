@@ -38,7 +38,7 @@ func (r *Repository) FindActivasPorCasaDestino(tenantID uint, casaDestino string
 	var list []Persona
 	err := r.db.
 		Joins("JOIN membresias ON membresias.persona_id = personas.id").
-		Where("membresias.tenant_id = ? AND membresias.casa_destino = ? AND membresias.status = ?",
+		Where("membresias.tenant_id = ? AND UPPER(membresias.casa_destino) = UPPER(?) AND membresias.status = ?",
 			tenantID, casaDestino, residente.ResidenteStatusActivo).
 		Where("membresias.deleted_at IS NULL").
 		Find(&list).Error
