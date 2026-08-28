@@ -801,7 +801,7 @@
     if (emptyEl) emptyEl.hidden = true;
     bodyEl.hidden = true;
 
-    const res = await api('/reportes');
+    const res = await api('/visitas/reportes');
     if (loadEl) loadEl.hidden = true;
 
     if (!res || !res.ok) {
