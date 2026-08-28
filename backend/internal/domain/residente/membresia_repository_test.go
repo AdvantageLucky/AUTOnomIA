@@ -15,7 +15,11 @@ type testPersona struct {
 	ID              uint
 	Nombre          string
 	ApellidoPaterno string
+	ApellidoMaterno string
+	Curp            string
 	Telefono        string
+	FotoCaraUrl     string
+	Embedding       FloatArray `gorm:"type:text"`
 }
 
 func (testPersona) TableName() string { return "personas" }

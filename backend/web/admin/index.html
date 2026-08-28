@@ -245,18 +245,22 @@
 					</div>
 
 					<div class="stat-strip">
-						<div class="stat-card">
+						<div class="stat-card stat-card--clickable" data-stat-nav="hoy" title="Ver entradas de hoy">
 							<div class="stat-label" data-i18n="stat_today">Entradas hoy</div>
 							<div class="stat-value" id="stat-hoy">—</div>
 						</div>
-						<div class="stat-card stat-card--accent">
+						<div class="stat-card stat-card--accent stat-card--clickable" data-stat-nav="pendientes" title="Ver solicitudes por atender">
 							<div class="stat-label" data-i18n="stat_attention">Requieren atención</div>
 							<div class="stat-value" id="stat-pendientes">—</div>
 							<div class="stat-sub" id="stat-sub-pendientes" style="font-size:11px;color:var(--text-2);margin-top:2px"></div>
 						</div>
-						<div class="stat-card stat-card--green">
+						<div class="stat-card stat-card--green stat-card--clickable" data-stat-nav="aprobadas" title="Ver aprobadas de hoy">
 							<div class="stat-label" data-i18n="stat_approved">Aprobadas hoy</div>
 							<div class="stat-value" id="stat-aprobadas">—</div>
+						</div>
+						<div class="stat-card stat-card--blue stat-card--clickable" data-stat-nav="residentes" title="Ver directorio de residentes">
+							<div class="stat-label" data-i18n="stat_residents">Residentes activos</div>
+							<div class="stat-value" id="stat-residentes">—</div>
 						</div>
 					</div>
 
@@ -322,6 +326,13 @@
 								<svg class="search-icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
 								<input id="vis-quick-search" type="text" placeholder="Buscar por nombre, CURP, clave, casa o placa…">
 							</div>
+							<select id="vis-filter-fecha" class="search-select">
+								<option value="">Cualquier fecha</option>
+								<option value="hoy">Hoy</option>
+								<option value="ayer">Ayer</option>
+								<option value="7d">Últimos 7 días</option>
+								<option value="30d">Últimos 30 días</option>
+							</select>
 							<select id="vis-filter-tipo" class="search-select">
 								<option value="">Todos los tipos</option>
 								<option value="VISITANTE">Sin invitación (sin app)</option>
@@ -1007,6 +1018,16 @@
 						<button type="submit" class="btn-primary">Crear destinos</button>
 					</div>
 				</form>
+			</div>
+		</div>
+
+		<div id="modal-residente-detalle" class="modal-overlay" hidden>
+			<div class="modal-box modal-box--md">
+				<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+					<div class="modal-title">Detalle del residente</div>
+					<button type="button" class="btn-cancel" id="res-modal-close" style="padding:4px 10px;font-size:16px;border-radius:6px;cursor:pointer">✕</button>
+				</div>
+				<div id="res-modal-body"></div>
 			</div>
 		</div>
 
