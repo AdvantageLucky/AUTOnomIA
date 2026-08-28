@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show SocketException, HttpException, HandshakeException, TlsException;
+import 'dart:io' show File, SocketException, HttpException, HandshakeException, TlsException;
 import 'package:bcrypt/bcrypt.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -497,7 +497,7 @@ class KioskoServicio {
         ('foto_rostro', pathFotoRostro),
         ('foto_placa', pathFotoPlaca),
       ]) {
-        if (foto.$2 == null) continue;
+        if (foto.$2 == null || !File(foto.$2!).existsSync()) continue;
         request.files.add(
           await http.MultipartFile.fromPath(
             foto.$1, foto.$2!,
@@ -997,7 +997,7 @@ class KioskoServicio {
       ..fields['placa'] = placa
       ..fields['client_id'] = clientId ?? '';
 
-    if (pathFotoIne != null) {
+    if (pathFotoIne != null && File(pathFotoIne).existsSync()) {
       request.files.add(
         await http.MultipartFile.fromPath(
           'foto_documento', pathFotoIne,
@@ -1006,7 +1006,7 @@ class KioskoServicio {
       );
     }
 
-    if (pathFotoRostro != null) {
+    if (pathFotoRostro != null && File(pathFotoRostro).existsSync()) {
       request.files.add(
         await http.MultipartFile.fromPath(
           'foto_rostro', pathFotoRostro,
@@ -1015,7 +1015,7 @@ class KioskoServicio {
       );
     }
 
-    if (pathFotoPlaca != null) {
+    if (pathFotoPlaca != null && File(pathFotoPlaca).existsSync()) {
       request.files.add(
         await http.MultipartFile.fromPath(
           'foto_placa', pathFotoPlaca,
@@ -1027,7 +1027,7 @@ class KioskoServicio {
     final streamed = await request.send().timeout(const Duration(seconds: 20));
     final response = await http.Response.fromStream(streamed);
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 201 || response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
 

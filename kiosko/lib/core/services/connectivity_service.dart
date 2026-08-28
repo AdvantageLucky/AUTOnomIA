@@ -13,6 +13,7 @@ class ConnectivityService extends ChangeNotifier {
 
   final Future<bool> Function() _pingHealth;
   StreamSubscription<List<ConnectivityResult>>? _subscripcion;
+  Timer? _pollingTimer;
   bool _isOffline = false;
 
   ConnectivityService({Future<bool> Function()? pingHealth})
@@ -24,7 +25,7 @@ class ConnectivityService extends ChangeNotifier {
     try {
       final response = await http
           .get(Uri.parse('$_baseUrl/health'))
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 4));
       return response.statusCode == 200;
     } catch (_) {
       return false;
@@ -34,6 +35,9 @@ class ConnectivityService extends ChangeNotifier {
   Future<void> iniciar() async {
     await verificarAhora();
     _subscripcion = Connectivity().onConnectivityChanged.listen((_) {
+      verificarAhora();
+    });
+    _pollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       verificarAhora();
     });
   }
@@ -52,6 +56,7 @@ class ConnectivityService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _subscripcion?.cancel();
     super.dispose();
   }
