@@ -30,10 +30,18 @@ func (r *reporteRepository) guardar(reporte *ReporteIA) error {
 	return r.db.Create(reporte).Error
 }
 
-func (r *reporteRepository) ultimos(n int) ([]ReporteIA, error) {
+// paginados devuelve los reportes ordenados del más reciente al más
+// antiguo, con paginación — reemplaza a ultimos(n), que siempre traía un
+// número fijo sin forma de ver más atrás.
+func (r *reporteRepository) paginados(page, pageSize int) ([]ReporteIA, int64, error) {
+	var total int64
+	if err := r.db.Model(&ReporteIA{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var reportes []ReporteIA
-	err := r.db.Order("created_at DESC").Limit(n).Find(&reportes).Error
-	return reportes, err
+	offset := (page - 1) * pageSize
+	err := r.db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&reportes).Error
+	return reportes, total, err
 }
 
 // IniciarAgenteReportes lanza la goroutine del agente de reportes con ticker de 12h.
