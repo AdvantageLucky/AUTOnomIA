@@ -7,6 +7,7 @@ import (
 
 	"kigo-autonomia-backend/configs"
 	"kigo-autonomia-backend/internal/domain/admin"
+	"kigo-autonomia-backend/internal/domain/asistente"
 	"kigo-autonomia-backend/internal/domain/auth"
 	"kigo-autonomia-backend/internal/domain/destinos"
 	"kigo-autonomia-backend/internal/domain/invitaciones"
@@ -48,6 +49,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
 	registerSyncRoutes(api, db)
 	registerPersonaRoutes(api, db, cfg)
+	registerAsistenteRoutes(api, db, cfg)
 	registerTenantRoutes(api, db, cfg.JWTSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
@@ -364,5 +366,18 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		a.GET("/pendientes", membresiaHandler.ListarPendientes)
 		a.POST("/:id/aprobar", membresiaHandler.Aprobar)
 		a.POST("/:id/rechazar", membresiaHandler.Rechazar)
+	}
+}
+
+func registerAsistenteRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config) {
+	kioskoRepo := kiosko.NewRepository(db)
+	destinoRepo := destinos.NewRepository(db)
+	asistenteHandler := asistente.NewHandler(kioskoRepo, destinoRepo, cfg.LLMUrl)
+	sesionRepo := auth.NewSesionRepository(db)
+
+	k := rg.Group("/kioskos/:id/asistente")
+	k.Use(auth.RequireKiosko(sesionRepo))
+	{
+		k.POST("/preguntar", asistenteHandler.Preguntar)
 	}
 }
