@@ -380,7 +380,7 @@
 
 				<!-- DETALLE DE VISITA -->
 				<section id="screen-detalle" class="screen" hidden>
-					<div class="screen-header screen-header--back">
+					<div class="screen-header screen-header--back screen-header--narrow">
 						<button class="back-btn" data-nav="visitas">
 							<svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="3" x2="4" y2="9"/><line x1="4" y1="9" x2="12" y2="15"/></svg>
 							<span data-i18n="nav_entradas">Entradas</span>
@@ -528,7 +528,7 @@
 
 				<!-- CONFIGURACIÓN -->
 				<section id="screen-configuracion" class="screen" hidden>
-					<div class="screen-header">
+					<div class="screen-header screen-header--narrow">
 						<div style="display:flex;align-items:center;gap:14px">
 							<button type="button" class="btn-cancel" id="cfg-btn-volver" style="padding:6px 12px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
 								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13L5 8l5-5"/></svg>
@@ -742,6 +742,27 @@
 					<!-- Tab: configuración del centro -->
 					<div id="inst-config" hidden>
 						<div class="screen-body screen-body--narrow">
+
+							<!-- Tarjeta destacada de Código Público -->
+							<div class="public-code-card">
+								<div class="public-code-info">
+									<div class="public-code-badge">
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+										Código de vinculación para residentes
+									</div>
+									<div class="public-code-value-wrap">
+										<span id="inst-codigo" class="public-code-value">—</span>
+									</div>
+									<div class="public-code-desc">
+										Comparte este código con los residentes para que puedan registrarse y vincular su casa desde la app <strong>Kigo</strong>.
+									</div>
+								</div>
+								<button type="button" class="public-code-copy-btn" id="btn-copiar-codigo" title="Copiar código al portapapeles">
+									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+									<span id="btn-copiar-codigo-texto">Copiar</span>
+								</button>
+							</div>
+
 							<div class="panel panel-padded">
 								<div class="form-section-title" style="margin-top:0">Información del centro habitacional</div>
 								<form id="inst-config-form">
@@ -752,11 +773,6 @@
 									<div class="form-group">
 										<label>Dirección</label>
 										<input id="inst-direccion" type="text" placeholder="Calle, número, colonia">
-									</div>
-									<div class="form-group">
-										<label>Código público</label>
-										<div id="inst-codigo" class="form-static-value">—</div>
-										<div class="form-hint">Se asignó automáticamente al crear el centro. Los residentes lo usan en la app para unirse.</div>
 									</div>
 									<div class="form-group">
 										<label>Descripción</label>
@@ -775,7 +791,7 @@
 
 				<!-- PERFIL -->
 				<section id="screen-perfil" class="screen" hidden>
-					<div class="screen-header">
+					<div class="screen-header screen-header--narrow">
 						<div>
 							<div class="screen-title" data-i18n="nav_perfil">Perfil</div>
 							<div class="screen-sub" data-i18n="perfil_sub">Tus datos personales y seguridad</div>

@@ -714,7 +714,80 @@ textarea { resize: vertical; }
 .screen-body { padding: 20px 32px 64px; max-width: 1100px; margin-left: auto; margin-right: auto; }
 .screen-body--narrow { max-width: 640px; margin-left: auto; margin-right: auto; }
 .screen-body--medium { max-width: 860px; margin-left: auto; margin-right: auto; }
+.screen-header--narrow { max-width: 640px; }
+.screen-header--medium { max-width: 860px; }
 .screen-inner { padding: 20px 32px 64px; max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+/* ── Public Code Card (Centro Habitacional) ─────────────────────── */
+.public-code-card {
+  background: linear-gradient(135deg, rgba(45, 207, 168, 0.08), rgba(96, 165, 250, 0.05));
+  border: 1px solid rgba(45, 207, 168, 0.28);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.public-code-info {
+  flex: 1;
+}
+
+.public-code-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--brand);
+  margin-bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.public-code-value-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.public-code-value {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.public-code-desc {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+.public-code-copy-btn {
+  padding: 9px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.public-code-copy-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--brand);
+}
 
 /* ================================================================
    STAT STRIP — editorial oversized numbers

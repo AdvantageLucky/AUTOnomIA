@@ -2357,6 +2357,20 @@
     else mostrarToast('Error al guardar', 'err');
   });
 
+  document.getElementById('btn-copiar-codigo')?.addEventListener('click', () => {
+    const code = document.getElementById('inst-codigo')?.textContent?.trim();
+    if (code && code !== '—') {
+      navigator.clipboard?.writeText(code);
+      const txt = document.getElementById('btn-copiar-codigo-texto');
+      if (txt) {
+        const orig = txt.textContent;
+        txt.textContent = '¡Copiado!';
+        setTimeout(() => { txt.textContent = orig; }, 2000);
+      }
+      mostrarToast('Código copiado al portapapeles', 'ok');
+    }
+  });
+
   /* ─── Residentes (Persona + Membresia) ─── */
 
   let residentesActivosCache = [];
