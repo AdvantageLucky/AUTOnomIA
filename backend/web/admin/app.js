@@ -930,12 +930,14 @@
     const estado = document.getElementById("vis-filter-estado")?.value || "";
     const fecha  = document.getElementById("vis-filter-fecha")?.value || "";
     const q      = document.getElementById("vis-quick-search")?.value.trim() || "";
+    const soloIntervenida = document.getElementById("vis-filter-intervenida")?.checked || false;
 
     let params = `?page=${page}&page_size=${state.visPageSize}`;
     if (tipo)   params += `&tipo_visitante=${tipo}`;
     if (estado) params += `&estado=${estado}`;
     if (fecha)  params += `&fecha=${fecha}`;
     if (q)      params += `&q=${encodeURIComponent(q)}`;
+    if (soloIntervenida) params += `&intervenida=true`;
 
     showVisState("loading");
 
@@ -996,7 +998,7 @@
   document.getElementById("vis-next")?.addEventListener("click",  () => loadVisitas(state.visPage + 1));
   document.getElementById("vis-retry")?.addEventListener("click", () => loadVisitas(1));
 
-  ["vis-quick-search","vis-filter-fecha","vis-filter-tipo","vis-filter-estado"].forEach(id => {
+  ["vis-quick-search","vis-filter-fecha","vis-filter-tipo","vis-filter-estado","vis-filter-intervenida"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const evt = el.tagName === "INPUT" ? "input" : "change";
