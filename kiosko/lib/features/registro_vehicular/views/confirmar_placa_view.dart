@@ -1,7 +1,9 @@
 /* CONFIRMACIÓN Y CORRECCIÓN MANUAL DE LA PLACA LEÍDA */
 
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/services/placa_detector_servicio.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
@@ -70,6 +72,15 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
     Navigator.pop(context, _placa);
   }
 
+  void _onCampoExtraido(CampoExtraido campo) {
+    final valor = campo.valor;
+    if (valor == null) return;
+    setState(() {
+      _placa = PlacaDetectorServicio.normalizar(valor);
+      _error = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,6 +122,14 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
   Widget _buildHeader() {
     return Column(
       children: [
+        Align(
+          alignment: Alignment.topRight,
+          child: BotonAsistente(
+            tipoCampo: 'placa',
+            onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
+            onCampoExtraido: _onCampoExtraido,
+          ),
+        ),
         Icon(
           _fueLeida ? Icons.directions_car_rounded : Icons.edit_note_rounded,
           color: KigoDesign.brand,
