@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import '../../../../services/kigo_verify_servicio.dart';
 import '../../../../services/reconocimiento_facial_servicio.dart';
 import '../../../../theme/app_theme.dart';
+import 'kigo_verify_webview_view.dart';
 
 /// Tercer y último paso del wizard de identidad: captura el rostro y
 /// calcula su embedding on-device (MobileFaceNet, mismo modelo del
@@ -17,7 +22,9 @@ class StepEscanearRostro extends StatefulWidget {
 class _StepEscanearRostroState extends State<StepEscanearRostro> {
   CameraController? _controller;
   final _servicio = ReconocimientoFacialServicio();
+  final _kigoVerify = KigoVerifyServicio();
   bool _procesando = false;
+  bool _verificandoConKigo = false;
   String? _error;
 
   @override
@@ -65,6 +72,70 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
     } finally {
       if (mounted) setState(() => _procesando = false);
     }
+  }
+
+  Future<void> _verificarConKigo() async {
+    if (_procesando || _verificandoConKigo) return;
+    setState(() {
+      _verificandoConKigo = true;
+      _error = null;
+    });
+
+    try {
+      final enrollment = await _kigoVerify.iniciar();
+      if (!mounted) return;
+
+      await mostrarKigoVerifyWebview(context, enrollment.enrollmentUrl);
+      if (!mounted) return;
+
+      final resultado = await _esperarResultado(enrollment.enrollmentId);
+      if (resultado == null) {
+        setState(() => _error = 'No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
+        return;
+      }
+
+      final pathLocal = await _descargarYGuardarLocal(resultado);
+      final embedding = await _servicio.calcularEmbedding(pathLocal);
+      if (embedding == null) {
+        setState(() => _error = 'No detectamos tu rostro con claridad en la foto de Kigo, intenta de nuevo o usa la cámara');
+        return;
+      }
+      widget.onCapturado(pathLocal, embedding);
+    } catch (_) {
+      if (mounted) setState(() => _error = 'No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
+    } finally {
+      if (mounted) setState(() => _verificandoConKigo = false);
+    }
+  }
+
+  /// Poll cada 3s hasta COMPLETED/FAILED, con limite duro de 3 minutos —
+  /// cubre el caso ya confirmado de enrollments atorados indefinidamente en
+  /// LIVENESS_STARTED (ver spec, seccion 6).
+  Future<String?> _esperarResultado(String enrollmentId) async {
+    const limite = Duration(minutes: 3);
+    const intervalo = Duration(seconds: 3);
+    final vencePara = DateTime.now().add(limite);
+
+    while (DateTime.now().isBefore(vencePara)) {
+      if (!mounted) return null;
+      final estado = await _kigoVerify.consultarEstado(enrollmentId);
+      if (estado.status == 'COMPLETED' && estado.fotoUrl != null) {
+        return estado.fotoUrl;
+      }
+      if (estado.status == 'FAILED') {
+        return null;
+      }
+      await Future.delayed(intervalo);
+    }
+    return null;
+  }
+
+  Future<String> _descargarYGuardarLocal(String fotoUrl) async {
+    final respuesta = await http.get(Uri.parse(fotoUrl));
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/kigo-verify-${DateTime.now().millisecondsSinceEpoch}.jpg';
+    await File(path).writeAsBytes(respuesta.bodyBytes);
+    return path;
   }
 
   @override
@@ -133,18 +204,34 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
           bottom: 32,
           left: 0,
           right: 0,
-          child: Center(
-            child: FloatingActionButton(
-              backgroundColor: AppTheme.primaryOrange,
-              onPressed: _procesando ? null : _capturar,
-              child: _procesando
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
-                    )
-                  : const Icon(Icons.camera_alt, color: Colors.white),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: FloatingActionButton(
+                  backgroundColor: AppTheme.primaryOrange,
+                  onPressed: (_procesando || _verificandoConKigo) ? null : _capturar,
+                  child: _procesando
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+                        )
+                      : const Icon(Icons.camera_alt, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: (_procesando || _verificandoConKigo) ? null : _verificarConKigo,
+                child: _verificandoConKigo
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Verificar con Kigo', style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         ),
       ],
