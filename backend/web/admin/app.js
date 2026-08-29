@@ -1561,47 +1561,24 @@
   let cfgAccesoId = null;
 
   async function openConfigParaAcceso(accesoId) {
-    // Mostrar screen-configuracion sin pasar por navTo (que requeriría la ruta en RUTAS_POR_ROL)
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     const screenEl = document.getElementById('screen-configuracion');
     if (screenEl) { screenEl.hidden = false; screenEl.classList.add('active'); }
     stopSolPolling();
 
-    await loadConfigAccesos();
-    const select = document.getElementById('cfg-acceso-select');
-    if (select) select.value = accesoId;
     cfgAccesoId = accesoId;
     await loadConfig(accesoId);
   }
 
-  async function loadConfigAccesos() {
-    const select = document.getElementById("cfg-acceso-select");
-    if (!select) return;
-
-    if (state.accesosById.size === 0) await preloadAccesos();
-
-    select.innerHTML = `<option value="">— Selecciona un acceso —</option>`;
-    state.accesosById.forEach(a => {
-      const opt = document.createElement("option");
-      opt.value = a.id;
-      opt.textContent = `${a.nombre}${a.ubicacion ? ` (${a.ubicacion})` : ""}`;
-      select.appendChild(opt);
-    });
-
-    document.getElementById("cfg-form-wrap").hidden = true;
-    document.getElementById("cfg-idle").hidden = false;
-  }
-
-  document.getElementById("cfg-acceso-select")?.addEventListener("change", async e => {
-    const id = parseInt(e.target.value);
-    if (!id) {
-      document.getElementById("cfg-form-wrap").hidden = true;
-      document.getElementById("cfg-idle").hidden = false;
-      return;
-    }
-    cfgAccesoId = id;
-    await loadConfig(id);
+  document.getElementById("cfg-btn-volver")?.addEventListener("click", () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const screenEl = document.getElementById('screen-kioskos');
+    if (screenEl) { screenEl.hidden = false; screenEl.classList.add('active'); }
+    const navBtn = document.querySelector('.nav-btn[data-nav="kioskos"]');
+    if (navBtn) navBtn.classList.add('active');
+    loadAccesos();
   });
 
   const PIPELINE_DEFS = {
@@ -1765,6 +1742,11 @@
     const cfg = await res.json();
     const acceso = state.accesosById.get(accesoId);
 
+    const headerTitle = document.getElementById("cfg-header-title");
+    const headerSub = document.getElementById("cfg-header-sub");
+    if (headerTitle) headerTitle.textContent = acceso?.nombre ? `Configurar: ${acceso.nombre}` : "Configuración de kiosko";
+    if (headerSub) headerSub.textContent = `ID #${accesoId}${acceso?.ubicacion ? ' · ' + acceso.ubicacion : ''}`;
+
     // Cargar datos principales del kiosko
     const nombreEl = document.getElementById("cfg-nombre");
     const tipoEl = document.getElementById("cfg-tipo");
@@ -1794,7 +1776,7 @@
 
     document.getElementById("cfg-error").hidden   = true;
     document.getElementById("cfg-success").hidden = true;
-    idle.hidden = true;
+    if (idle) idle.hidden = true;
     wrap.hidden = false;
   }
 
@@ -1842,14 +1824,10 @@
     const kioskoActualizado = await resKiosko.json();
     state.accesosById.set(cfgAccesoId, kioskoActualizado);
 
-    // Actualizar texto en el dropdown de selección de kiosko
-    const select = document.getElementById("cfg-acceso-select");
-    if (select) {
-      const opt = select.querySelector(`option[value="${cfgAccesoId}"]`);
-      if (opt) {
-        opt.textContent = `${kioskoActualizado.nombre}${kioskoActualizado.ubicacion ? ` (${kioskoActualizado.ubicacion})` : ""}`;
-      }
-    }
+    const headerTitle = document.getElementById("cfg-header-title");
+    const headerSub = document.getElementById("cfg-header-sub");
+    if (headerTitle) headerTitle.textContent = `Configurar: ${kioskoActualizado.nombre}`;
+    if (headerSub) headerSub.textContent = `ID #${cfgAccesoId}${kioskoActualizado.ubicacion ? ' · ' + kioskoActualizado.ubicacion : ''}`;
 
     // 2. Guardar parámetros de configuración
     const listEl = document.getElementById("cfg-pipeline-list");
@@ -2377,6 +2355,20 @@
     });
     if (res && res.ok) mostrarToast('Centro habitacional actualizado', 'ok');
     else mostrarToast('Error al guardar', 'err');
+  });
+
+  document.getElementById('btn-copiar-codigo')?.addEventListener('click', () => {
+    const code = document.getElementById('inst-codigo')?.textContent?.trim();
+    if (code && code !== '—') {
+      navigator.clipboard?.writeText(code);
+      const txt = document.getElementById('btn-copiar-codigo-texto');
+      if (txt) {
+        const orig = txt.textContent;
+        txt.textContent = '¡Copiado!';
+        setTimeout(() => { txt.textContent = orig; }, 2000);
+      }
+      mostrarToast('Código copiado al portapapeles', 'ok');
+    }
   });
 
   /* ─── Residentes (Persona + Membresia) ─── */
