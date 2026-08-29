@@ -65,3 +65,62 @@ func TestFindActivasPorTenant(t *testing.T) {
 		t.Errorf("esperaba casa 'Casa 1', got %q", list[0].CasaDestino)
 	}
 }
+
+func TestFindCompanerosCasa(t *testing.T) {
+	db := setupMembresiaTestDB(t)
+	repo := NewMembresiaRepository(db)
+
+	titular := testPersona{Nombre: "Ana", ApellidoPaterno: "Ruiz", Telefono: "+525500000001"}
+	db.Create(&titular)
+	db.Create(&Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo, Rol: "titular"})
+
+	familiar := testPersona{Nombre: "Beto", ApellidoPaterno: "Ruiz", Telefono: "+525500000002"}
+	db.Create(&familiar)
+	db.Create(&Membresia{PersonaID: familiar.ID, TenantID: 1, CasaDestino: "casa 1", Status: ResidenteStatusActivo, Rol: "familiar"})
+
+	pendiente := testPersona{Nombre: "Cin", ApellidoPaterno: "Diaz", Telefono: "+525500000003"}
+	db.Create(&pendiente)
+	db.Create(&Membresia{PersonaID: pendiente.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusPendiente, Rol: "familiar"})
+
+	otraCasa := testPersona{Nombre: "Dan", ApellidoPaterno: "Soto", Telefono: "+525500000004"}
+	db.Create(&otraCasa)
+	db.Create(&Membresia{PersonaID: otraCasa.ID, TenantID: 1, CasaDestino: "Casa 2", Status: ResidenteStatusActivo, Rol: "titular"})
+
+	otroTenant := testPersona{Nombre: "Eva", ApellidoPaterno: "Vega", Telefono: "+525500000005"}
+	db.Create(&otroTenant)
+	db.Create(&Membresia{PersonaID: otroTenant.ID, TenantID: 2, CasaDestino: "Casa 1", Status: ResidenteStatusActivo, Rol: "titular"})
+
+	// Consulta como si fuera "titular" viendo sus compañeros de casa —
+	// se excluye a sí mismo, incluye al familiar (case-insensitive "casa 1"
+	// vs "Casa 1"), excluye al pendiente, a la otra casa y al otro tenant.
+	list, err := repo.FindCompanerosCasa(1, "Casa 1", titular.ID)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(list) != 1 {
+		t.Fatalf("esperaba 1 compañero de casa, got %d: %+v", len(list), list)
+	}
+	if list[0].NombreCompleto != "Beto Ruiz" {
+		t.Errorf("esperaba 'Beto Ruiz', got %q", list[0].NombreCompleto)
+	}
+	if list[0].Rol != "familiar" {
+		t.Errorf("esperaba rol 'familiar', got %q", list[0].Rol)
+	}
+}
+
+func TestFindCompanerosCasa_ListaVacia(t *testing.T) {
+	db := setupMembresiaTestDB(t)
+	repo := NewMembresiaRepository(db)
+
+	titular := testPersona{Nombre: "Ana", ApellidoPaterno: "Ruiz", Telefono: "+525500000001"}
+	db.Create(&titular)
+	db.Create(&Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo, Rol: "titular"})
+
+	list, err := repo.FindCompanerosCasa(1, "Casa 1", titular.ID)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(list) != 0 {
+		t.Fatalf("esperaba lista vacía (único en la casa), got %d", len(list))
+	}
+}
