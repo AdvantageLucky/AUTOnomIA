@@ -63,13 +63,20 @@ class _MyQrViewState extends State<MyQrView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // El recuadro del QR ocupa el mismo ancho que el del
+                        // PIN (ambos double.infinity) y el AspectRatio lo deja
+                        // cuadrado, así que el QR escala con el ancho útil.
                         Container(
+                          width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                           ),
-                          child: QrImageView(data: _dato!, size: 220),
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: QrImageView(data: _dato!),
+                          ),
                         ),
                         if (pin.isNotEmpty) ...[
                           const SizedBox(height: 16),
