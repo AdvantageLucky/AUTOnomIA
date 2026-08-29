@@ -38,6 +38,12 @@ class AppTheme {
   static const double radiusLg = 16.0;
   static const double radiusXl = 22.0;
 
+  /// Fuente monoespaciada para datos "literales" (PIN, placa, CURP) — mismo
+  /// tratamiento que ya usa el dashboard admin (JetBrains Mono) para que un
+  /// residente vea su PIN con el mismo lenguaje visual que un admin ve una
+  /// placa o un CURP.
+  static TextStyle mono(TextStyle base) => GoogleFonts.jetBrainsMono(textStyle: base);
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,

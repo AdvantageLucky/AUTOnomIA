@@ -130,12 +130,12 @@ class _CuadroPin extends StatelessWidget {
             padding: const EdgeInsets.only(left: 8),
             child: Text(
               pin,
-              style: const TextStyle(
+              style: AppTheme.mono(const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 8,
-              ),
+              )),
             ),
           ),
         ],
