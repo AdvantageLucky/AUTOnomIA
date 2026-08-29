@@ -21,10 +21,11 @@ type KioskoLoginHandler struct {
 	repo       *Repository
 	visitaRepo *visitas.Repository
 	db         *gorm.DB
+	llmURL     string
 }
 
-func NewKioskoLoginHandler(repo *Repository, visitaRepo *visitas.Repository, db *gorm.DB) *KioskoLoginHandler {
-	return &KioskoLoginHandler{repo: repo, visitaRepo: visitaRepo, db: db}
+func NewKioskoLoginHandler(repo *Repository, visitaRepo *visitas.Repository, db *gorm.DB, llmURL string) *KioskoLoginHandler {
+	return &KioskoLoginHandler{repo: repo, visitaRepo: visitaRepo, db: db, llmURL: llmURL}
 }
 
 func (h *KioskoLoginHandler) umbralSimilitud(kioskoID uint) float64 {
@@ -146,6 +147,8 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 		"nombre":       mejor.Nombre + " " + mejor.ApellidoPaterno,
 		"casa_destino": mejor.CasaDestino,
 	})
+
+	go visitas.AnalizarYGuardarInformativo(h.visitaRepo, tenantID, *v, h.llmURL)
 }
 
 func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
@@ -220,4 +223,6 @@ func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
 		"nombre":       mejor.Nombre + " " + mejor.ApellidoPaterno,
 		"casa_destino": mejor.CasaDestino,
 	})
+
+	go visitas.AnalizarYGuardarInformativo(h.visitaRepo, tenantID, *v, h.llmURL)
 }

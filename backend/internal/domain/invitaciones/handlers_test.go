@@ -49,7 +49,7 @@ func multipartBody(fields map[string]string) (string, *strings.Reader) {
 func TestUsarInvitacion_Idempotente(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db := setupHandlerTestDB(t)
-	h := NewHandler(NewRepository(db), db, "/tmp")
+	h := NewHandler(NewRepository(db), db, "/tmp", visitas.NewRepository(db), "")
 
 	router := gin.New()
 	router.POST("/kioskos/:id/invitaciones/:token/usar", func(c *gin.Context) {

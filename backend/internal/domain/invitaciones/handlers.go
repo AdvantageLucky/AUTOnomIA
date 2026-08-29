@@ -20,10 +20,12 @@ type Handler struct {
 	repo       *Repository
 	db         *gorm.DB
 	uploadsDir string
+	visitaRepo *visitas.Repository
+	llmURL     string
 }
 
-func NewHandler(repo *Repository, db *gorm.DB, uploadsDir string) *Handler {
-	return &Handler{repo: repo, db: db, uploadsDir: uploadsDir}
+func NewHandler(repo *Repository, db *gorm.DB, uploadsDir string, visitaRepo *visitas.Repository, llmURL string) *Handler {
+	return &Handler{repo: repo, db: db, uploadsDir: uploadsDir, visitaRepo: visitaRepo, llmURL: llmURL}
 }
 
 func generarToken() (string, error) {
@@ -223,6 +225,8 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 		"estado":       v.Estado,
 		"placa":        v.Placa,
 	})
+
+	go visitas.AnalizarYGuardarInformativo(h.visitaRepo, tenantID, *v, h.llmURL)
 }
 
 // fotosGuardadas agrupa las URLs publicas de las fotos que acompañan a una

@@ -45,8 +45,8 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerKioskoRoutes(api, db, cfg.JWTSecret)
 	registerVisitaRoutes(api, db, cfg, hub)
 	registerDestinosRoutes(api, db, cfg.JWTSecret)
-	registerKioskoLoginRoutes(api, db)
-	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir)
+	registerKioskoLoginRoutes(api, db, cfg.LLMUrl)
+	registerInvitacionesRoutes(api, db, cfg.JWTSecret, cfg.UploadsDir, cfg.LLMUrl)
 	registerSyncRoutes(api, db)
 	registerPersonaRoutes(api, db, cfg)
 	registerAsistenteRoutes(api, db, cfg)
@@ -265,10 +265,10 @@ func registerSyncRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 // registerKioskoLoginRoutes registra el login del kiosko por PIN y por
 // rostro — mismos paths que antes, ahora resuelven contra Persona+Membresia
 // en vez de Residente (ver spec 2026-08-26-eliminar-residente-legacy-design.md).
-func registerKioskoLoginRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+func registerKioskoLoginRoutes(rg *gin.RouterGroup, db *gorm.DB, llmURL string) {
 	personaRepo := persona.NewRepository(db)
 	visitaRepo := visitas.NewRepository(db)
-	kioskoLoginHandler := persona.NewKioskoLoginHandler(personaRepo, visitaRepo, db)
+	kioskoLoginHandler := persona.NewKioskoLoginHandler(personaRepo, visitaRepo, db, llmURL)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	kPin := rg.Group("/kioskos/:id/residentes")
@@ -279,9 +279,10 @@ func registerKioskoLoginRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	}
 }
 
-func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, uploadsDir string) {
+func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, uploadsDir, llmURL string) {
 	invRepo := invitaciones.NewRepository(db)
-	invHandler := invitaciones.NewHandler(invRepo, db, uploadsDir)
+	visitaRepo := visitas.NewRepository(db)
+	invHandler := invitaciones.NewHandler(invRepo, db, uploadsDir, visitaRepo, llmURL)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: valida un token y registra su uso
@@ -320,6 +321,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		personaRepo, otpRepo, persona.LogOtpSender{}, emailOtpSender(cfg),
 		cfg.JWTSecret, cfg.QRMasterSecret,
 		membresiaRepo, tenantRepo, invitacionRepo, visitaRepo, destinoRepo, cfg.UploadsDir,
+		cfg.LLMUrl,
 	)
 
 	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)
