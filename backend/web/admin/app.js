@@ -407,6 +407,7 @@
         if (v.estado === "REVISION") {
           mostrarToast(`⚠ Requiere revisión manual: ${nombre}`, "revision");
           loadSolicitudes();
+          loadAlertasIABadge();
         } else if (v.estado === "PENDIENTE") {
           mostrarToast(`Nueva solicitud: ${nombre}`);
           loadSolicitudes();
@@ -616,6 +617,7 @@
     aplicarRol(state.rol);
     initSSE(token);
     loadSolicitudes();
+    loadAlertasIABadge();
     if (state.rol !== 'vigilante' && !state.tenant?.nombre) {
       showOnboarding();
     } else {
@@ -1202,6 +1204,21 @@
   function updateNavAlert(activo) {
     const navBtn = document.querySelector('.nav-btn[data-nav="solicitudes"]');
     if (navBtn) navBtn.classList.toggle("nav-btn--alert", activo);
+  }
+
+  async function loadAlertasIABadge() {
+    const res = await api("/visitas/?estado=REVISION&intervenida=true&page_size=1");
+    if (!res || !res.ok) return;
+    let total = 0;
+    try {
+      const d = await res.json();
+      total = d.total || 0;
+    } catch (e) { console.error(e); }
+    const badge = document.getElementById("nav-badge-alertas-ia");
+    if (badge) {
+      badge.textContent = total > 99 ? "99+" : String(total);
+      badge.hidden = total <= 0;
+    }
   }
 
   async function loadSolicitudes() {
