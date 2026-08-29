@@ -104,3 +104,101 @@ func TestVerificarQR_Invitado_PropagaPersonaID(t *testing.T) {
 		t.Errorf("esperaba PersonaID=%d en la visita creada, got %v", invitado.ID, creada.PersonaID)
 	}
 }
+
+func TestListarCompanerosCasa(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+	membresiaRepo := residente.NewMembresiaRepository(db)
+
+	titular := &Persona{Telefono: "+525500000001", Nombre: "Ana", ApellidoPaterno: "Ruiz"}
+	repo.Create(titular)
+	db.Create(&residente.Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo, Rol: "titular"})
+
+	familiar := &Persona{Telefono: "+525500000002", Nombre: "Beto", ApellidoPaterno: "Ruiz"}
+	repo.Create(familiar)
+	db.Create(&residente.Membresia{PersonaID: familiar.ID, TenantID: 1, CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo, Rol: "familiar"})
+
+	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "")
+
+	router := gin.New()
+	router.GET("/personas/me/companeros-casa", func(c *gin.Context) {
+		c.Set(ctxkeys.PersonaID, titular.ID)
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkeys.PersonaID, titular.ID))
+		h.ListarCompanerosCasa(c)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/personas/me/companeros-casa?tenant_id=1", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		CasaDestino string `json:"casa_destino"`
+		Companeros  []struct {
+			NombreCompleto string `json:"nombre_completo"`
+			Rol            string `json:"rol"`
+		} `json:"companeros"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("respuesta no es JSON válido: %v", err)
+	}
+	if resp.CasaDestino != "Casa 1" {
+		t.Errorf("esperaba casa_destino 'Casa 1', got %q", resp.CasaDestino)
+	}
+	if len(resp.Companeros) != 1 || resp.Companeros[0].NombreCompleto != "Beto Ruiz" {
+		t.Fatalf("esperaba 1 compañero 'Beto Ruiz', got %+v", resp.Companeros)
+	}
+}
+
+func TestListarCompanerosCasa_SinMembresiaEnEseTenant(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+	membresiaRepo := residente.NewMembresiaRepository(db)
+
+	p := &Persona{Telefono: "+525500000001", Nombre: "Ana", ApellidoPaterno: "Ruiz"}
+	repo.Create(p)
+
+	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "")
+
+	router := gin.New()
+	router.GET("/personas/me/companeros-casa", func(c *gin.Context) {
+		c.Set(ctxkeys.PersonaID, p.ID)
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkeys.PersonaID, p.ID))
+		h.ListarCompanerosCasa(c)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/personas/me/companeros-casa?tenant_id=99", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("esperaba 403, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestListarCompanerosCasa_TenantIDInvalido(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+	membresiaRepo := residente.NewMembresiaRepository(db)
+	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "")
+
+	router := gin.New()
+	router.GET("/personas/me/companeros-casa", func(c *gin.Context) {
+		c.Set(ctxkeys.PersonaID, uint(1))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkeys.PersonaID, uint(1)))
+		h.ListarCompanerosCasa(c)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/personas/me/companeros-casa", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("esperaba 400, got %d: %s", w.Code, w.Body.String())
+	}
+}
