@@ -4,6 +4,8 @@ import '../theme/app_theme.dart';
 import '../viewmodels/invitation_viewmodel.dart';
 import '../widgets/kigo_list_row.dart';
 
+/// Seguimiento de las invitaciones que esta persona creó. Es una pestaña del
+/// shell, no una ruta: por eso no trae Scaffold ni AppBar propios.
 class MyInvitationsView extends StatefulWidget {
   const MyInvitationsView({super.key});
 
@@ -29,6 +31,10 @@ class _MyInvitationsViewState extends State<MyInvitationsView> {
   Widget build(BuildContext context) {
     final vm = context.watch<InvitationViewModel>();
 
+    // Solo la carga inicial. Las recargas al volver a esta pestaña las
+    // dispara el shell: dentro del IndexedStack esta vista se construye al
+    // arrancar la app y no se enteraría de las invitaciones que creaste
+    // después en la pestaña de al lado.
     if (!_cargado) {
       _cargado = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -36,32 +42,31 @@ class _MyInvitationsViewState extends State<MyInvitationsView> {
       });
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mis invitaciones')),
-      body: vm.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : vm.invitaciones.isEmpty
-              ? const Center(child: Text('No has creado ninguna invitación'))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(24),
-                  itemCount: vm.invitaciones.length,
-                  separatorBuilder: (_, __) => const Divider(),
-                  itemBuilder: (context, i) {
-                    final inv = vm.invitaciones[i];
-                    return KigoListRow(
-                      icon: inv.vigente ? Icons.check_circle_outline : Icons.block,
-                      iconColor: inv.vigente ? AppTheme.success : AppTheme.textDimmed,
-                      title: inv.titular,
-                      subtitle: inv.vigente ? 'Vigente' : 'Ya no está disponible',
-                      trailing: inv.vigente
-                          ? IconButton(
-                              icon: const Icon(Icons.close),
-                              onPressed: () => _revocar(inv.id),
-                            )
-                          : null,
-                    );
-                  },
-                ),
+    if (vm.isLoading && vm.invitaciones.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (vm.invitaciones.isEmpty) {
+      return const Center(child: Text('No has creado ninguna invitación'));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(24),
+      itemCount: vm.invitaciones.length,
+      separatorBuilder: (_, __) => const Divider(),
+      itemBuilder: (context, i) {
+        final inv = vm.invitaciones[i];
+        return KigoListRow(
+          icon: inv.vigente ? Icons.check_circle_outline : Icons.block,
+          iconColor: inv.vigente ? AppTheme.success : AppTheme.textDimmed,
+          title: inv.titular,
+          subtitle: inv.vigente ? 'Vigente' : 'Ya no está disponible',
+          trailing: inv.vigente
+              ? IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => _revocar(inv.id),
+                )
+              : null,
+        );
+      },
     );
   }
 }

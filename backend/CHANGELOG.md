@@ -8,6 +8,12 @@ Este archivo documenta el historial de cambios, mejoras y lanzamientos del backe
 > `000026`–`000030` requieren ejecutar `migrate up` antes de levantar el servidor.
 
 ### Features
+- **PIN generado por el sistema** (migración `000051`): al unirse a un centro, la persona ya no
+  elige su PIN; el backend genera uno de 5 dígitos, único dentro del centro, que no vuelve a
+  cambiar. `POST /personas/me/membresias` deja de aceptar `pin` y
+  `GET /personas/me/membresias` devuelve el campo `pin` en claro para que la app lo muestre en
+  "Mi QR". La columna `membresias.pin` sigue guardando el hash bcrypt que compara el kiosko
+  (también offline); la nueva `membresias.pin_codigo` guarda el código legible.
 - **Activación de kioskos por Device Authorization Grant (RFC 8628)**: nueva tabla
   `device_authorizations` y endpoints `POST /auth/device/authorize`, `POST /auth/device/token`,
   `GET /device/validar`, `GET /device/pending` y `POST /device/:user_code/aprobar`. El dispositivo

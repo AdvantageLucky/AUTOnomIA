@@ -28,7 +28,13 @@ type Membresia struct {
 	PersonaID                   uint   `gorm:"column:persona_id;not null;index"`
 	TenantID                    uint   `gorm:"column:tenant_id;not null;index"`
 	CasaDestino                 string `gorm:"not null"`
+	// Pin guarda el hash bcrypt (lo que compara el kiosko, incluso
+	// offline); PinCodigo guarda los 5 dígitos en claro que genera el
+	// backend al crear la membresía, porque la app se los tiene que poder
+	// mostrar al residente en "Mi QR". El PIN ya no lo elige la persona y
+	// no cambia una vez asignado.
 	Pin                         string `gorm:"not null"`
+	PinCodigo                   string `gorm:"column:pin_codigo;not null;default:''"`
 	Rol                         string `gorm:"not null;default:'titular'"`
 	Status                      string `gorm:"not null;default:'activo'"`
 	PermiteReconocimientoFacial bool   `gorm:"not null;default:false"`
