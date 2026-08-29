@@ -1,7 +1,9 @@
 package visitas
 
 import (
+	"fmt"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -33,6 +35,45 @@ type ScoreIA struct {
 	RechazadoPrevio   bool       `json:"rechazado_previo"`
 	OCRSospechoso     bool       `json:"ocr_sospechoso"`
 	Confiable         bool       `json:"confiable"`
+}
+
+// GenerarResumenHeuristico genera un resumen determinista y claro en caso de que el LLM esté offline
+func (s ScoreIA) GenerarResumenHeuristico() string {
+	var partes []string
+
+	if s.VecesVisitado <= 0 {
+		partes = append(partes, "Primera visita registrada.")
+	} else if s.VecesVisitado == 1 {
+		partes = append(partes, "Segunda visita registrada.")
+	} else {
+		partes = append(partes, fmt.Sprintf("Visitante recurrente (%d visitas previas).", s.VecesVisitado))
+	}
+
+	if s.Confiable {
+		partes = append(partes, "Visitante confiable con historial favorable.")
+	}
+
+	var anomalias []string
+	if s.AnomaliaMatricula {
+		anomalias = append(anomalias, "placa vehicular distinta a registros anteriores")
+	}
+	if s.HorarioInusual {
+		anomalias = append(anomalias, "horario inusual de ingreso")
+	}
+	if s.RechazadoPrevio {
+		anomalias = append(anomalias, "antecedente de rechazo previo")
+	}
+	if s.OCRSospechoso {
+		anomalias = append(anomalias, "documento de identidad con formato atípico")
+	}
+
+	if len(anomalias) > 0 {
+		partes = append(partes, "Atención: "+strings.Join(anomalias, ", ")+".")
+	} else if s.VecesVisitado > 0 && !s.Confiable {
+		partes = append(partes, "Sin anomalías detectadas.")
+	}
+
+	return strings.Join(partes, " ")
 }
 
 // AScoreIA convierte el resultado interno del análisis al subconjunto que

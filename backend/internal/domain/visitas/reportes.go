@@ -43,6 +43,9 @@ func IniciarAgenteReportes(db *gorm.DB, llmURL string) {
 	visitaRepo := NewRepository(db)
 
 	go func() {
+		// Generar reporte inicial al arrancar el servidor
+		generarReportesPorTenant(db, repo, visitaRepo, llmURL)
+
 		ticker := time.NewTicker(12 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {

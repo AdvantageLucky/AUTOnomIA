@@ -159,5 +159,8 @@ func aplicarAnalisisIA(resumenIA **string, scoreIA **ScoreIA, v Visita) {
 	if v.ResumenIA != "" {
 		resumen := v.ResumenIA
 		*resumenIA = &resumen
+	} else if *scoreIA != nil {
+		resumen := (*scoreIA).GenerarResumenHeuristico()
+		*resumenIA = &resumen
 	}
 }
