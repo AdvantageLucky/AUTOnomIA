@@ -31,6 +31,8 @@ type Config struct {
 	QRMasterSecret          string
 	UploadsDir              string
 	LLMUrl                  string
+	KigoVerifyAPIKey        string
+	KigoVerifyBaseURL       string
 	PublicURL               string
 	FirebaseCredentialsPath string
 	GoogleClientID          string
@@ -53,6 +55,8 @@ func Load() (*Config, error) {
 		QRMasterSecret:          getEnv("QR_MASTER_SECRET", "dev-qr-secret-change-me"),
 		UploadsDir:              getEnv("UPLOADS_DIR", "./web/uploads/visitantes"),
 		LLMUrl:                  getEnv("LLM_URL", "http://localhost:8081"),
+		KigoVerifyAPIKey:        getEnv("KIGO_VERIFY_API_KEY", ""),
+		KigoVerifyBaseURL:       getEnv("KIGO_VERIFY_BASE_URL", "https://verify-api.kigo.dev"),
 		PublicURL:               getEnv("PUBLIC_URL", "http://localhost:8080"),
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
 		GoogleClientID:          getEnv("GOOGLE_CLIENT_ID", ""),
