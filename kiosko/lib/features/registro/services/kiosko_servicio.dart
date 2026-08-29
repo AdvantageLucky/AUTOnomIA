@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:uuid/uuid.dart';
+import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/services/coincidencia_facial_local.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
@@ -843,6 +844,77 @@ class KioskoServicio {
         if (destinosLocales.isNotEmpty) return destinosLocales;
       }
       rethrow;
+    }
+  }
+
+  Future<String> preguntarAsistente(String pregunta) async {
+    try {
+      await _ensureLogin();
+      var response = await http.post(
+        Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistente/preguntar'),
+        headers: {
+          'Authorization': 'Bearer $_sessionToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'pregunta': pregunta}),
+      ).timeout(const Duration(seconds: 25));
+
+      if (response.statusCode == 401) {
+        _sessionToken = null;
+        if (await _reLogin()) {
+          response = await http.post(
+            Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistente/preguntar'),
+            headers: {
+              'Authorization': 'Bearer $_sessionToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'pregunta': pregunta}),
+          ).timeout(const Duration(seconds: 25));
+        }
+      }
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['respuesta'] as String? ?? '';
+      }
+      return 'No puedo responder eso ahora mismo.';
+    } catch (_) {
+      return 'No puedo responder eso ahora mismo.';
+    }
+  }
+
+  Future<CampoExtraido> extraerCampoAsistente(String transcripcion, String tipoCampo) async {
+    try {
+      await _ensureLogin();
+      var response = await http.post(
+        Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistente/extraer-campo'),
+        headers: {
+          'Authorization': 'Bearer $_sessionToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'transcripcion': transcripcion, 'tipo_campo': tipoCampo}),
+      ).timeout(const Duration(seconds: 25));
+
+      if (response.statusCode == 401) {
+        _sessionToken = null;
+        if (await _reLogin()) {
+          response = await http.post(
+            Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistente/extraer-campo'),
+            headers: {
+              'Authorization': 'Bearer $_sessionToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'transcripcion': transcripcion, 'tipo_campo': tipoCampo}),
+          ).timeout(const Duration(seconds: 25));
+        }
+      }
+
+      if (response.statusCode == 200) {
+        return CampoExtraido.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+      }
+      return CampoExtraido(confianza: 0);
+    } catch (_) {
+      return CampoExtraido(confianza: 0);
     }
   }
 
