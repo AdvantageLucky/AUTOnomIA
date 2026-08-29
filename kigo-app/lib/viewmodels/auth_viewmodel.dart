@@ -24,7 +24,8 @@ class AuthViewModel extends ChangeNotifier {
   String _apellidoPaterno = '';
   String _apellidoMaterno = '';
 
-  MembresiaActual? _membresia;
+  List<MembresiaActual> _membresias = [];
+  int? _centroActivoId;
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
@@ -36,13 +37,22 @@ class AuthViewModel extends ChangeNotifier {
   String get apellidoMaterno => _apellidoMaterno;
   String get nombreCompleto => '$_nombre $_apellidoPaterno'.trim();
   bool get perfilCompleto => _nombre.isNotEmpty;
-  MembresiaActual? get membresia => _membresia;
+  List<MembresiaActual> get membresias => _membresias;
+
+  List<MembresiaActual> get membresiasActivas =>
+      _membresias.where((m) => m.status == 'activo').toList();
+
+  MembresiaActual? get centroActivo {
+    for (final m in _membresias) {
+      if (m.tenantId == _centroActivoId) return m;
+    }
+    return null;
+  }
 
   MembresiaEstado get membresiaEstado {
-    if (_membresia == null) return MembresiaEstado.ninguna;
-    switch (_membresia!.status) {
-      case 'activo':
-        return MembresiaEstado.activa;
+    if (centroActivo != null) return MembresiaEstado.activa;
+    if (_membresias.isEmpty) return MembresiaEstado.ninguna;
+    switch (_membresias.first.status) {
       case 'rechazado':
         return MembresiaEstado.rechazada;
       default:
@@ -229,7 +239,7 @@ class AuthViewModel extends ChangeNotifier {
         {'codigo_centro': codigoCentro, 'casa_destino': casaDestino},
         auth: true,
       );
-      await _cargarMembresia();
+      await _cargarMembresias();
       _isLoading = false;
       notifyListeners();
     } on ApiException catch (e) {
@@ -249,7 +259,7 @@ class AuthViewModel extends ChangeNotifier {
   /// para consultar si el admin ya aprobó.
   Future<void> refrescarMembresia() async {
     try {
-      await _cargarMembresia();
+      await _cargarMembresias();
       notifyListeners();
     } on ApiException catch (e) {
       _error = e.message;
@@ -267,13 +277,54 @@ class AuthViewModel extends ChangeNotifier {
     _nombre = perfil['nombre'] as String;
     _apellidoPaterno = perfil['apellido_paterno'] as String;
     _apellidoMaterno = perfil['apellido_materno'] as String;
-    await _cargarMembresia();
+    await _cargarMembresias();
   }
 
-  Future<void> _cargarMembresia() async {
+  Future<void> _cargarMembresias() async {
     final data = await ApiService().get('/personas/me/membresias');
     final list = (data['membresias'] as List).cast<Map<String, dynamic>>();
-    _membresia = list.isEmpty ? null : MembresiaActual.fromJson(list.first);
+    _membresias = list.map((m) => MembresiaActual.fromJson(m)).toList();
+
+    final prefs = await SharedPreferences.getInstance();
+    final persistido = prefs.getInt(AppConstants.prefsCentroActivoId);
+
+    final activas = membresiasActivas;
+    final persistidaSigueActiva = activas.any((m) => m.tenantId == persistido);
+
+    if (persistidaSigueActiva) {
+      _centroActivoId = persistido;
+    } else if (activas.isNotEmpty) {
+      _centroActivoId = activas.first.tenantId;
+      await prefs.setInt(AppConstants.prefsCentroActivoId, _centroActivoId!);
+    } else {
+      _centroActivoId = null;
+    }
+  }
+
+  /// Cambia el centro activo — persiste la selección y notifica para que
+  /// las pantallas que dependen del tenant recarguen contra el nuevo
+  /// tenant_id. Ignora silenciosamente un tenantId que no esté entre las
+  /// membresías activas (ej. un botón obsoleto tras perder la membresía).
+  Future<void> setCentroActivo(int tenantId) async {
+    if (!membresiasActivas.any((m) => m.tenantId == tenantId)) return;
+    _centroActivoId = tenantId;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(AppConstants.prefsCentroActivoId, tenantId);
+    notifyListeners();
+  }
+
+  /// Solo para tests — evita depender de ApiService/red para poblar el
+  /// estado de membresías. centroActivoId simula lo que _cargarMembresias
+  /// leería de SharedPreferences antes de resolver el fallback.
+  @visibleForTesting
+  void debugSetMembresias(List<MembresiaActual> membresias, {int? centroActivoId}) {
+    _membresias = membresias;
+    final activas = membresiasActivas;
+    final idSigueActivo = activas.any((m) => m.tenantId == centroActivoId);
+    _centroActivoId = idSigueActivo
+        ? centroActivoId
+        : (activas.isNotEmpty ? activas.first.tenantId : null);
+    notifyListeners();
   }
 
   Future<void> logout() async {
@@ -282,7 +333,8 @@ class AuthViewModel extends ChangeNotifier {
     _nombre = '';
     _apellidoPaterno = '';
     _apellidoMaterno = '';
-    _membresia = null;
+    _membresias = [];
+    _centroActivoId = null;
     _error = null;
     ApiService().clearJwt();
 
