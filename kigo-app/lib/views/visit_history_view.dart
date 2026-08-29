@@ -24,7 +24,7 @@ class _VisitHistoryViewState extends State<VisitHistoryView> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
     final vm = context.watch<VisitHistoryViewModel>();
-    final tenantId = auth.membresia?.tenantId;
+    final tenantId = auth.centroActivo?.tenantId;
 
     // Solo la carga inicial. Las recargas al volver a esta pestaña las dispara
     // el shell: dentro del IndexedStack esta vista se construye al arrancar la
