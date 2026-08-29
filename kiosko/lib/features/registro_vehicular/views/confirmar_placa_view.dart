@@ -180,12 +180,12 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
       child: Text(
         _placa.isEmpty ? 'ABC123D' : _placa,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: KigoDesign.mono(TextStyle(
           color: _placa.isEmpty ? context.kTextTertiary : context.kTextPrimary,
           fontSize: 40,
           fontWeight: FontWeight.w800,
           letterSpacing: 8,
-        ),
+        )),
       ),
     );
   }
