@@ -35,8 +35,9 @@ class _StepEsperaState extends State<StepEspera> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
-    final centro = auth.membresia?.centroNombre ?? '';
-    final casa = auth.membresia?.casaDestino ?? '';
+    final pendiente = auth.membresias.isNotEmpty ? auth.membresias.first : null;
+    final centro = pendiente?.centroNombre ?? '';
+    final casa = pendiente?.casaDestino ?? '';
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(

@@ -42,7 +42,7 @@ class _MyQrViewState extends State<MyQrView> {
   Widget build(BuildContext context) {
     // El PIN vive en la membresía: lo genera el backend al unirse al centro
     // y no cambia, así que basta con leerlo del estado ya cargado.
-    final membresia = context.watch<AuthViewModel>().membresia;
+    final membresia = context.watch<AuthViewModel>().centroActivo;
     final pin = membresia?.status == 'rechazado' ? '' : (membresia?.pin ?? '');
 
     return Scaffold(
