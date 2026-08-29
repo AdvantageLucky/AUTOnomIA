@@ -52,6 +52,10 @@ abstract final class KigoDesign {
   static const radiusLg = 16.0;
   static const radiusXl = 22.0;
 
+  /// Fuente monoespaciada para datos "literales" (placa, CURP) — mismo
+  /// tratamiento que ya usa el dashboard admin (JetBrains Mono).
+  static TextStyle mono(TextStyle base) => GoogleFonts.jetBrainsMono(textStyle: base);
+
   // ── Themes ─────────────────────────────────────────────────────────────────
   static ThemeData get darkTheme => ThemeData(
         useMaterial3: true,
