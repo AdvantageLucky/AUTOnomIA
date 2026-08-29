@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/routing/registro_router.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/comunidad_badge.dart';
@@ -384,7 +385,10 @@ class _WelcomeViewState extends State<WelcomeView>
           ],
         ),
         const Spacer(),
-        const SizedBox(width: 44),
+        BotonAsistente(
+          onRespuestaLibre: (_) {}, // la respuesta ya se leyó por TTS dentro de AsistenteServicio
+          onCampoExtraido: (_) {}, // WelcomeView no llena campos — tipoCampo queda null
+        ),
       ],
     );
   }
