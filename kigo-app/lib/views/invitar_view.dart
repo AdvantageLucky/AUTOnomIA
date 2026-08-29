@@ -18,7 +18,7 @@ class _InvitarViewState extends State<InvitarView> {
   final _nombreCtrl = TextEditingController();
   int? _destinoIdSeleccionado;
   bool _permiteFacial = false;
-  bool _cargado = false;
+  int? _tenantIdCargado;
   String? _errorLocal;
 
   @override
@@ -41,7 +41,7 @@ class _InvitarViewState extends State<InvitarView> {
     final vm = context.read<InvitationViewModel>();
     try {
       await vm.crear(
-        tenantId: auth.membresia!.tenantId,
+        tenantId: auth.centroActivo!.tenantId,
         telefono: telefono,
         nombre: nombre,
         destinoId: _destinoIdSeleccionado!,
@@ -66,10 +66,10 @@ class _InvitarViewState extends State<InvitarView> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
     final vm = context.watch<InvitationViewModel>();
-    final tenantId = auth.membresia?.tenantId;
+    final tenantId = auth.centroActivo?.tenantId;
 
-    if (tenantId != null && !_cargado) {
-      _cargado = true;
+    if (tenantId != null && tenantId != _tenantIdCargado) {
+      _tenantIdCargado = tenantId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         vm.cargarDestinos(tenantId);
       });

@@ -16,7 +16,7 @@ class DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<DashboardView> {
-  bool _cargado = false;
+  int? _tenantIdCargado;
 
   Future<void> _responder(int tenantId, int visitaId, String estado) async {
     try {
@@ -33,11 +33,11 @@ class _DashboardViewState extends State<DashboardView> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
     final vm = context.watch<PendingVisitsViewModel>();
-    final membresia = auth.membresia;
+    final membresia = auth.centroActivo;
     final tenantId = membresia?.tenantId;
 
-    if (tenantId != null && !_cargado) {
-      _cargado = true;
+    if (tenantId != null && tenantId != _tenantIdCargado) {
+      _tenantIdCargado = tenantId;
       WidgetsBinding.instance.addPostFrameCallback((_) => vm.cargar(tenantId));
     }
 
