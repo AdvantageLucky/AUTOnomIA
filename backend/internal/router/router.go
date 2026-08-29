@@ -379,5 +379,6 @@ func registerAsistenteRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Conf
 	k.Use(auth.RequireKiosko(sesionRepo))
 	{
 		k.POST("/preguntar", asistenteHandler.Preguntar)
+		k.POST("/extraer-campo", asistenteHandler.ExtraerCampo)
 	}
 }
