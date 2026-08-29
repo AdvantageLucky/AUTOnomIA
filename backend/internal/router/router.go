@@ -334,6 +334,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.POST("/membresias", personaHandler.UnirseCentro)
 		p.GET("/membresias", personaHandler.ListarMisMembresias)
 		p.GET("/destinos", personaHandler.ListarDestinos)
+		p.GET("/companeros-casa", personaHandler.ListarCompanerosCasa)
 		p.GET("/centros/:codigo/destinos", personaHandler.ListarDestinosPorCodigo)
 		p.POST("/invitaciones", personaHandler.CrearInvitacion)
 		p.GET("/invitaciones", personaHandler.ListarInvitaciones)

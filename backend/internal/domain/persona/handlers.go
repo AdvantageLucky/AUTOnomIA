@@ -106,6 +106,45 @@ func (h *Handler) ListarDestinos(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"destinos": items})
 }
 
+// ListarCompanerosCasa devuelve los demás miembros activos de la misma
+// casa_destino que la Persona autenticada, dentro del tenant pedido. Mismo
+// patrón de verificación que ListarDestinos: el tenant no viene del JWT
+// (identidad global), se exige membresía activa propia contra ese tenant
+// antes de tocar cualquier dato de otros residentes. Solo expone
+// nombre_completo y rol — nunca teléfono, CURP ni foto.
+func (h *Handler) ListarCompanerosCasa(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía en ese centro"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+		return
+	}
+
+	companeros, err := h.membresiaRepo.FindCompanerosCasa(tenantID, m.CasaDestino, personaID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"companeros": companeros, "casa_destino": m.CasaDestino})
+}
+
 // ListarDestinosPorCodigo devuelve los destinos de un centro por su código
 // público — a diferencia de ListarDestinos, no exige membresía activa: es
 // justo el picker que se usa *antes* de unirse (UnirseCentro), para no
