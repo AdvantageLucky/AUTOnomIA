@@ -34,6 +34,7 @@ type Handler struct {
 	visitaRepo     *visitas.Repository
 	destinoRepo    *destinos.Repository
 	uploadsDir     string
+	llmURL         string
 }
 
 func NewHandler(
@@ -48,6 +49,7 @@ func NewHandler(
 	visitaRepo *visitas.Repository,
 	destinoRepo *destinos.Repository,
 	uploadsDir string,
+	llmURL string,
 ) *Handler {
 	return &Handler{
 		repo:           repo,
@@ -62,6 +64,7 @@ func NewHandler(
 		visitaRepo:     visitaRepo,
 		destinoRepo:    destinoRepo,
 		uploadsDir:     uploadsDir,
+		llmURL:         llmURL,
 	}
 }
 
@@ -584,6 +587,7 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 	// capturas adicionales), así que la Visita se crea de una vez, APROBADO,
 	// y se descuenta el uso de la invitación.
 	var visitaID *uint
+	var visitaCreada *visitas.Visita
 	if resolucion.Estado == EstadoQRInvitado && invitacion != nil {
 		destino, err := h.destinoRepo.FindByID(*resolucion.DestinoID)
 		if err != nil {
@@ -612,6 +616,7 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 			return
 		}
 		visitaID = &v.ID
+		visitaCreada = v
 	}
 
 	c.JSON(http.StatusOK, VerificarQRResponse{
@@ -623,6 +628,10 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 		InvitacionID:                resolucion.InvitacionID,
 		VisitaID:                    visitaID,
 	})
+
+	if visitaCreada != nil {
+		go visitas.AnalizarYGuardarInformativo(h.visitaRepo, tenantID, *visitaCreada, h.llmURL)
+	}
 }
 
 // RevocarInvitacion revoca una invitación creada por la Persona autenticada.

@@ -35,7 +35,7 @@ func TestLoginDesdeKiosko(t *testing.T) {
 	repo.Create(p)
 	db.Create(&residente.Membresia{PersonaID: p.ID, TenantID: 1, CasaDestino: "Casa 1", Pin: string(pinHash), Status: "activo"})
 
-	h := NewKioskoLoginHandler(repo, visitaRepo, db)
+	h := NewKioskoLoginHandler(repo, visitaRepo, db, "")
 
 	router := gin.New()
 	router.POST("/kioskos/:id/residentes/login", func(c *gin.Context) {
@@ -85,7 +85,7 @@ func TestVerificarRostroDesdeKiosko(t *testing.T) {
 	repo.Create(p)
 	db.Create(&residente.Membresia{PersonaID: p.ID, TenantID: 1, CasaDestino: "Casa 1", Pin: "x", Status: "activo"})
 
-	h := NewKioskoLoginHandler(repo, visitaRepo, db)
+	h := NewKioskoLoginHandler(repo, visitaRepo, db, "")
 
 	router := gin.New()
 	router.POST("/kioskos/:id/residentes/verificar-rostro", func(c *gin.Context) {
