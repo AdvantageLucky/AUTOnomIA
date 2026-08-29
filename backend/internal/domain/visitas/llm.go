@@ -12,13 +12,19 @@ const systemPromptVisitas = "Eres un asistente de seguridad en caseta residencia
 
 // GenerarResumen convierte un ScoreContexto en texto narrativo en español.
 // Primero intenta consultar el servidor LLM (soporta endpoints /completion y /v1/chat/completions).
-// Si el LLM está apagado o falla, devuelve un resumen heurístico claro y determinista basado en el ScoreContexto.
+// Si el LLM está apagado o falla, devuelve un resumen heurístico claro y determinista basado en el
+// ScoreContexto — el texto siempre es utilizable, pero el error no-nil le avisa al caller que la
+// llamada al LLM falló de verdad (a diferencia de "no había LLM configurado", que no es un error).
 func GenerarResumen(ctx context.Context, llmURL string, s ScoreContexto) (string, error) {
 	if strings.TrimSpace(llmURL) != "" {
 		resumen, err := llmclient.Completar(ctx, strings.TrimSpace(llmURL), systemPromptVisitas, construirPrompt(s))
 		if err == nil && strings.TrimSpace(resumen) != "" {
 			return strings.TrimSpace(resumen), nil
 		}
+		if err == nil {
+			err = fmt.Errorf("el LLM respondió vacío")
+		}
+		return s.AScoreIA().GenerarResumenHeuristico(), err
 	}
 	return s.AScoreIA().GenerarResumenHeuristico(), nil
 }
