@@ -317,15 +317,19 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 	invitacionRepo := invitaciones.NewRepository(db)
 	visitaRepo := visitas.NewRepository(db)
 	destinoRepo := destinos.NewRepository(db)
+	kigoVerifyRepo := persona.NewKigoVerifyRepository(db)
 	personaHandler := persona.NewHandler(
 		personaRepo, otpRepo, persona.LogOtpSender{}, emailOtpSender(cfg),
 		cfg.JWTSecret, cfg.QRMasterSecret,
 		membresiaRepo, tenantRepo, invitacionRepo, visitaRepo, destinoRepo, cfg.UploadsDir,
 		cfg.LLMUrl,
+		persona.KigoVerifyConfig{APIKey: cfg.KigoVerifyAPIKey, BaseURL: cfg.KigoVerifyBaseURL, PublicURL: cfg.PublicURL},
+		kigoVerifyRepo,
 	)
 
 	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)
 	rg.POST("/personas/registro/verificar-otp", personaHandler.VerificarOTP)
+	rg.POST("/webhooks/kigo-verify", personaHandler.WebhookKigoVerify)
 
 	p := rg.Group("/personas/me")
 	p.Use(auth.RequirePersona(cfg.JWTSecret))
@@ -333,6 +337,8 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.GET("", personaHandler.GetMe)
 		p.PATCH("", personaHandler.PatchMe)
 		p.POST("/identidad", personaHandler.CompletarIdentidad)
+		p.POST("/kigo-verify/iniciar", personaHandler.IniciarKigoVerify)
+		p.GET("/kigo-verify/estado", personaHandler.ConsultarEstadoKigoVerify)
 		p.POST("/device-token", personaHandler.RegistrarDeviceToken)
 		p.GET("/qr", personaHandler.GetQR)
 		p.POST("/membresias", personaHandler.UnirseCentro)

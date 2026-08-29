@@ -25,7 +25,7 @@ func TestRegistrarDeviceToken(t *testing.T) {
 	p := &Persona{Telefono: "+525512345678"}
 	repo.Create(p)
 
-	h := NewHandler(repo, nil, nil, nil, "", "", nil, nil, nil, nil, nil, "", "")
+	h := NewHandler(repo, nil, nil, nil, "", "", nil, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, nil)
 
 	router := gin.New()
 	router.POST("/personas/me/device-token", func(c *gin.Context) {
@@ -74,7 +74,7 @@ func TestVerificarQR_Invitado_PropagaPersonaID(t *testing.T) {
 		ResidenteID: 1, DestinoID: 1, PersonaInvitadaID: &personaInvitadaID,
 	})
 
-	h := NewHandler(repo, nil, nil, nil, "", qrMasterSecret, membresiaRepo, nil, invitacionRepo, visitaRepo, destinoRepo, "", "")
+	h := NewHandler(repo, nil, nil, nil, "", qrMasterSecret, membresiaRepo, nil, invitacionRepo, visitaRepo, destinoRepo, "", "", KigoVerifyConfig{}, nil)
 
 	router := gin.New()
 	router.POST("/personas/verificar-qr", func(c *gin.Context) {
@@ -119,7 +119,7 @@ func TestListarCompanerosCasa(t *testing.T) {
 	repo.Create(familiar)
 	db.Create(&residente.Membresia{PersonaID: familiar.ID, TenantID: 1, CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo, Rol: "familiar"})
 
-	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "", "")
+	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, nil)
 
 	router := gin.New()
 	router.GET("/personas/me/companeros-casa", func(c *gin.Context) {
@@ -162,7 +162,7 @@ func TestListarCompanerosCasa_SinMembresiaEnEseTenant(t *testing.T) {
 	p := &Persona{Telefono: "+525500000001", Nombre: "Ana", ApellidoPaterno: "Ruiz"}
 	repo.Create(p)
 
-	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "", "")
+	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, nil)
 
 	router := gin.New()
 	router.GET("/personas/me/companeros-casa", func(c *gin.Context) {
@@ -185,7 +185,7 @@ func TestListarCompanerosCasa_TenantIDInvalido(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	membresiaRepo := residente.NewMembresiaRepository(db)
-	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "", "")
+	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, nil)
 
 	router := gin.New()
 	router.GET("/personas/me/companeros-casa", func(c *gin.Context) {

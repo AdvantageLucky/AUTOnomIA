@@ -35,6 +35,8 @@ type Handler struct {
 	destinoRepo    *destinos.Repository
 	uploadsDir     string
 	llmURL         string
+	kigoVerify     KigoVerifyConfig
+	kigoVerifyRepo *KigoVerifyRepository
 }
 
 func NewHandler(
@@ -50,6 +52,8 @@ func NewHandler(
 	destinoRepo *destinos.Repository,
 	uploadsDir string,
 	llmURL string,
+	kigoVerify KigoVerifyConfig,
+	kigoVerifyRepo *KigoVerifyRepository,
 ) *Handler {
 	return &Handler{
 		repo:           repo,
@@ -64,6 +68,8 @@ func NewHandler(
 		visitaRepo:     visitaRepo,
 		destinoRepo:    destinoRepo,
 		uploadsDir:     uploadsDir,
+		kigoVerify:     kigoVerify,
+		kigoVerifyRepo: kigoVerifyRepo,
 		llmURL:         llmURL,
 	}
 }
