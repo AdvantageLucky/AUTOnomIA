@@ -244,7 +244,12 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	// Análisis asíncrono
 	visitaCopy := *v
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		// 20s, no 2s: medido contra el LLM real en producción, una
+		// completion de 120 tokens tarda 3-4s — con 2s el análisis caía al
+		// heurístico siempre, tuviera LLM disponible o no. Esta goroutine
+		// corre después de responder al kiosko (línea ~241), así que subir
+		// el timeout no agrega latencia visible a nadie.
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
 		// Propagamos el tenantID al contexto de la goroutine para que las consultas tengan acceso a la misma data
@@ -268,7 +273,10 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 
 		sc := AnalizarVisita(historialPrevio, visitaCopy, cfg.UmbralConfianzaVisitas)
-		resumen, _ := GenerarResumen(ctx, h.llmURL, sc)
+		resumen, err := GenerarResumen(ctx, h.llmURL, sc)
+		if err != nil {
+			log.Printf("visita %d: LLM falló, usando resumen heurístico: %v", visitaCopy.ID, err)
+		}
 
 		tieneAnomalias := sc.AnomaliaMatricula || sc.CambioModalidad || sc.HorarioInusual ||
 			sc.RechazadoPrevio || sc.OCRSospechoso
