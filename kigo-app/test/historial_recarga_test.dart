@@ -21,9 +21,13 @@ class _AuthFake extends AuthViewModel {
   @override
   MembresiaEstado get membresiaEstado => MembresiaEstado.activa;
   @override
-  MembresiaActual? get membresia => MembresiaActual(
+  MembresiaActual? get centroActivo => MembresiaActual(
       id: 1, tenantId: 7, centroNombre: 'Las Palmas',
-      casaDestino: 'CASA 4', status: 'ACTIVO', pin: '42731');
+      casaDestino: 'CASA 4', status: 'activo', pin: '42731');
+  @override
+  List<MembresiaActual> get membresiasActivas => [centroActivo!];
+  @override
+  List<MembresiaActual> get membresias => [centroActivo!];
 }
 
 class _PendingFake extends PendingVisitsViewModel {
