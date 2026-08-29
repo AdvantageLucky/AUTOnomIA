@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/auth_viewmodel.dart';
+import 'viewmodels/companeros_casa_viewmodel.dart';
 import 'viewmodels/invitation_viewmodel.dart';
 import 'viewmodels/pending_visits_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
@@ -30,6 +31,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => InvitationViewModel()),
         ChangeNotifierProvider(create: (_) => PendingVisitsViewModel()),
         ChangeNotifierProvider(create: (_) => VisitHistoryViewModel()),
+        ChangeNotifierProvider(create: (_) => CompanerosCasaViewModel()),
       ],
       child: const MyApp(),
     ),
