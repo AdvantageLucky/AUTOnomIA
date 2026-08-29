@@ -455,6 +455,10 @@ func (h *Handler) ListarVisitas(c *gin.Context) {
 		}
 		filtros.Estado = &estado
 	}
+	if intervenidaStr := c.Query("intervenida"); intervenidaStr != "" {
+		val := intervenidaStr == "true"
+		filtros.Intervenida = &val
+	}
 	if fechaStr := c.Query("fecha"); fechaStr != "" {
 		ahora := time.Now()
 		hoyInicio := time.Date(ahora.Year(), ahora.Month(), ahora.Day(), 0, 0, 0, 0, ahora.Location())
