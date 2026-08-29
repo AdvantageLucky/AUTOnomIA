@@ -8,12 +8,17 @@ class MembresiaActual {
   final String casaDestino;
   final String status;
 
+  /// PIN de 5 dígitos que genera el backend al crear la membresía — la
+  /// persona ya no lo elige y no cambia. Se muestra en "Mi QR".
+  final String pin;
+
   MembresiaActual({
     required this.id,
     required this.tenantId,
     required this.centroNombre,
     required this.casaDestino,
     required this.status,
+    required this.pin,
   });
 
   factory MembresiaActual.fromJson(Map<String, dynamic> json) {
@@ -23,6 +28,7 @@ class MembresiaActual {
       centroNombre: json['centro_nombre'] as String? ?? '',
       casaDestino: json['casa_destino'] as String,
       status: json['status'] as String,
+      pin: json['pin'] as String? ?? '',
     );
   }
 }

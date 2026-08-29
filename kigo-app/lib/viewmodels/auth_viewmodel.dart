@@ -217,14 +217,16 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   /// Paso 4: une la Persona a un centro — queda pendiente de aprobación.
-  Future<void> unirseCentro(String codigoCentro, String casaDestino, String pin) async {
+  /// El PIN no se manda: lo genera el backend y viene de vuelta en la
+  /// membresía, para que "Mi QR" pueda mostrarlo.
+  Future<void> unirseCentro(String codigoCentro, String casaDestino) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
       await ApiService().post(
         '/personas/me/membresias',
-        {'codigo_centro': codigoCentro, 'casa_destino': casaDestino, 'pin': pin},
+        {'codigo_centro': codigoCentro, 'casa_destino': casaDestino},
         auth: true,
       );
       await _cargarMembresia();

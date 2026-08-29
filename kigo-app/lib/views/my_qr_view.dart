@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 class MyQrView extends StatefulWidget {
   const MyQrView({super.key});
@@ -38,6 +40,11 @@ class _MyQrViewState extends State<MyQrView> {
 
   @override
   Widget build(BuildContext context) {
+    // El PIN vive en la membresía: lo genera el backend al unirse al centro
+    // y no cambia, así que basta con leerlo del estado ya cargado.
+    final membresia = context.watch<AuthViewModel>().membresia;
+    final pin = membresia?.status == 'rechazado' ? '' : (membresia?.pin ?? '');
+
     return Scaffold(
       body: Center(
         child: _cargando
@@ -64,6 +71,10 @@ class _MyQrViewState extends State<MyQrView> {
                           ),
                           child: QrImageView(data: _dato!, size: 220),
                         ),
+                        if (pin.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _CuadroPin(pin: pin),
+                        ],
                         const SizedBox(height: 16),
                         const Text(
                           'Muéstralo en la caseta o el kiosko de cualquier centro donde tengas acceso.',
@@ -73,6 +84,54 @@ class _MyQrViewState extends State<MyQrView> {
                       ],
                     ),
                   ),
+      ),
+    );
+  }
+}
+
+/// Recuadro naranja con el PIN debajo del QR — la única forma que tiene el
+/// residente de conocerlo, porque ya no lo elige él.
+class _CuadroPin extends StatelessWidget {
+  final String pin;
+  const _CuadroPin({required this.pin});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryOrange,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'TU PIN',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            // letterSpacing también se aplica después del último dígito:
+            // este padding compensa para que el número quede centrado.
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              pin,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 8,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

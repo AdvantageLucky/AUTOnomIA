@@ -15,14 +15,15 @@ class StepUnirseCentro extends StatefulWidget {
 }
 
 /// Selección progresiva de destino, igual que el picker del kiosko: código
-/// del centro → calle → tipo (si la calle tiene más de uno) → número → PIN.
-/// Antes era un campo de texto libre para "casa/destino" — nadie sabía el
-/// formato exacto que usó el admin, así que casi nunca coincidía.
-enum _Paso { codigo, calle, tipo, numero, pin }
+/// del centro → calle → tipo (si la calle tiene más de uno) → número →
+/// confirmar. Antes era un campo de texto libre para "casa/destino" —
+/// nadie sabía el formato exacto que usó el admin, así que casi nunca
+/// coincidía. El último paso ya no pide PIN: lo genera el backend y la
+/// persona lo consulta después en "Mi QR".
+enum _Paso { codigo, calle, tipo, numero, confirmar }
 
 class _StepUnirseCentroState extends State<StepUnirseCentro> {
   final _codigoCtrl = TextEditingController();
-  final _pinCtrl = TextEditingController();
   String? _errorLocal;
 
   _Paso _paso = _Paso.codigo;
@@ -35,7 +36,6 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
   @override
   void dispose() {
     _codigoCtrl.dispose();
-    _pinCtrl.dispose();
     super.dispose();
   }
 
@@ -117,7 +117,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
   void _elegirNumero(Map<String, dynamic> destino) {
     setState(() {
       _casaSeleccionada = destino['nombre'] as String?;
-      _paso = _Paso.pin;
+      _paso = _Paso.confirmar;
     });
   }
 
@@ -135,7 +135,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
         case _Paso.numero:
           _paso = _tiposDeLaCalle.length <= 1 ? _Paso.calle : _Paso.tipo;
           _tipoSeleccionado = null;
-        case _Paso.pin:
+        case _Paso.confirmar:
           _paso = _Paso.numero;
           _casaSeleccionada = null;
       }
@@ -143,16 +143,11 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
   }
 
   Future<void> _confirmar() async {
-    final pin = _pinCtrl.text.trim();
-    if (pin.length < 4 || pin.length > 6) {
-      setState(() => _errorLocal = 'El PIN debe tener de 4 a 6 dígitos');
-      return;
-    }
     setState(() => _errorLocal = null);
 
     final auth = context.read<AuthViewModel>();
     try {
-      await auth.unirseCentro(_codigoCtrl.text.trim(), _casaSeleccionada!, pin);
+      await auth.unirseCentro(_codigoCtrl.text.trim(), _casaSeleccionada!);
       widget.onUnido();
     } catch (_) {}
   }
@@ -198,8 +193,8 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
         return '¿Casa o edificio?';
       case _Paso.numero:
         return '¿Cuál es el número?';
-      case _Paso.pin:
-        return 'Crea tu PIN';
+      case _Paso.confirmar:
+        return 'Confirma tu casa';
     }
   }
 
@@ -213,8 +208,8 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
         return _calleSeleccionada ?? '';
       case _Paso.numero:
         return '$_calleSeleccionada · ${_tipoSeleccionado == 'edificio' ? 'Edificio' : 'Casa'}';
-      case _Paso.pin:
-        return 'Lo usarás para entrar a la app la próxima vez.';
+      case _Paso.confirmar:
+        return 'Al unirte generamos tu PIN de 5 dígitos; lo encuentras en "Mi QR".';
     }
   }
 
@@ -242,15 +237,20 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
           (d) => (d['numero'] as String?) ?? '—',
           _elegirNumero,
         );
-      case _Paso.pin:
+      case _Paso.confirmar:
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KigoTextField(
-              controller: _pinCtrl,
-              label: 'PIN (4-6 dígitos)',
-              keyboardType: TextInputType.number,
-              obscureText: true,
-              maxLength: 6,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.textDimmed.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                _casaSeleccionada ?? '',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
             const SizedBox(height: 20),
             KigoPrimaryButton(label: 'Unirme', loading: auth.isLoading, onPressed: _confirmar),

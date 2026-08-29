@@ -12,7 +12,6 @@ import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/visit_history_viewmodel.dart';
 
 import 'views/kigo_shell.dart';
-import 'views/my_invitations_view.dart';
 import 'views/onboarding/onboarding_view.dart';
 import 'views/settings_view.dart';
 import 'views/splash_view.dart';
@@ -71,7 +70,6 @@ class MyApp extends StatelessWidget {
         '/splash': (context) => const SplashView(),
         '/onboarding': (context) => const OnboardingView(),
         '/dashboard': (context) => const KigoShell(),
-        '/my_invitations': (context) => const MyInvitationsView(),
         '/settings': (context) => const SettingsView(),
       },
     );

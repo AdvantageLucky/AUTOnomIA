@@ -164,3 +164,32 @@ func (r *MembresiaRepository) FindByPersonaID(personaID uint) ([]Membresia, erro
 	}
 	return list, nil
 }
+
+// FindPinCodigosPorTenant devuelve los PIN en claro ya asignados dentro de
+// un centro — el backend los usa para no repetir uno al generar el de una
+// membresía nueva. Solo ve los generados por el sistema: las membresías
+// viejas, con PIN elegido por la persona, tienen pin_codigo vacío y no
+// entran en la comparación.
+func (r *MembresiaRepository) FindPinCodigosPorTenant(tenantID uint) ([]string, error) {
+	var codigos []string
+	if err := r.db.Model(&Membresia{}).
+		Where("tenant_id = ? AND pin_codigo != ''", tenantID).
+		Pluck("pin_codigo", &codigos).Error; err != nil {
+		return nil, err
+	}
+	return codigos, nil
+}
+
+// FindPinHashesLegacyPorTenant devuelve los hashes de las membresías del
+// centro cuyo PIN eligió la persona antes de que el sistema empezara a
+// generarlos: su código en claro no está guardado, así que la única forma
+// de no repetirlo al generar uno nuevo es comparar contra el hash.
+func (r *MembresiaRepository) FindPinHashesLegacyPorTenant(tenantID uint) ([]string, error) {
+	var hashes []string
+	if err := r.db.Model(&Membresia{}).
+		Where("tenant_id = ? AND pin_codigo = '' AND pin != ''", tenantID).
+		Pluck("pin", &hashes).Error; err != nil {
+		return nil, err
+	}
+	return hashes, nil
+}

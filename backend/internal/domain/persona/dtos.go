@@ -29,10 +29,11 @@ type QrResponse struct {
 	Firma     string `json:"firma"`
 }
 
+// UnirseCentroRequest ya no lleva PIN: lo genera el backend (5 dígitos) al
+// crear la membresía y se lo devuelve a la app para que lo muestre.
 type UnirseCentroRequest struct {
 	CodigoCentro string `json:"codigo_centro" binding:"required"`
 	CasaDestino  string `json:"casa_destino"  binding:"required"`
-	Pin          string `json:"pin"           binding:"required,min=4,max=6"`
 }
 
 type MembresiaResponse struct {
@@ -41,6 +42,7 @@ type MembresiaResponse struct {
 	CasaDestino string `json:"casa_destino"`
 	Rol         string `json:"rol"`
 	Status      string `json:"status"`
+	Pin         string `json:"pin"`
 }
 
 type VerificarQRRequest struct {
@@ -113,4 +115,8 @@ type MembresiaMeResponse struct {
 	CasaDestino  string `json:"casa_destino"`
 	Rol          string `json:"rol"`
 	Status       string `json:"status"`
+	// Pin son los 5 dígitos en claro — la app los muestra en "Mi QR". Va
+	// solo en esta respuesta, que ya está autenticada como la Persona
+	// dueña de la membresía.
+	Pin string `json:"pin"`
 }

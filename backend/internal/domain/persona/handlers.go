@@ -18,7 +18,6 @@ import (
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -304,22 +303,6 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		return
 	}
 
-	candidatos, err := h.repo.FindActivasPorTenant(t.ID)
-	if err == nil {
-		for _, cnd := range candidatos {
-			if cnd.PersonaID != personaID && cnd.PinHash != "" && bcrypt.CompareHashAndPassword([]byte(cnd.PinHash), []byte(req.Pin)) == nil {
-				c.JSON(http.StatusConflict, gin.H{"error": "Ese PIN ya está en uso en este fraccionamiento. Por favor elige otro por seguridad."})
-				return
-			}
-		}
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Pin), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error procesando pin"})
-		return
-	}
-
 	// La app no muestra el directorio completo de casas (evita exponer todo
 	// el directorio a quien solo tiene el código público) — la persona
 	// escribe la casa a mano, así que se normaliza sin distinguir mayúsculas
@@ -343,7 +326,17 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 			return
 		}
 		existente.CasaDestino = casaDestino
-		existente.Pin = string(hash)
+		// El PIN no cambia: quien ya tenía uno vuelve a entrar con el
+		// mismo aunque el admin lo haya rechazado y se reinscriba.
+		if existente.PinCodigo == "" {
+			codigo, hash, err := h.generarPinParaTenant(t.ID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo generar el PIN"})
+				return
+			}
+			existente.PinCodigo = codigo
+			existente.Pin = hash
+		}
 		existente.Status = residente.ResidenteStatusPendiente
 		if err := h.membresiaRepo.Update(existente); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -355,6 +348,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 			CasaDestino: existente.CasaDestino,
 			Rol:         existente.Rol,
 			Status:      existente.Status,
+			Pin:         existente.PinCodigo,
 		})
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -362,11 +356,18 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		return
 	}
 
+	codigo, hash, err := h.generarPinParaTenant(t.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo generar el PIN"})
+		return
+	}
+
 	m := &residente.Membresia{
 		PersonaID:   personaID,
 		TenantID:    t.ID,
 		CasaDestino: casaDestino,
-		Pin:         string(hash),
+		Pin:         hash,
+		PinCodigo:   codigo,
 		Rol:         residente.MembresiaRolTitular,
 		Status:      residente.ResidenteStatusPendiente,
 	}
@@ -381,7 +382,22 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		CasaDestino: m.CasaDestino,
 		Rol:         m.Rol,
 		Status:      m.Status,
+		Pin:         m.PinCodigo,
 	})
+}
+
+// generarPinParaTenant reúne los PIN ya ocupados en el centro (los
+// generados, en claro, y los viejos, solo como hash) y pide uno libre.
+func (h *Handler) generarPinParaTenant(tenantID uint) (codigo string, hash string, err error) {
+	usados, err := h.membresiaRepo.FindPinCodigosPorTenant(tenantID)
+	if err != nil {
+		return "", "", err
+	}
+	legacy, err := h.membresiaRepo.FindPinHashesLegacyPorTenant(tenantID)
+	if err != nil {
+		return "", "", err
+	}
+	return generarPin(usados, legacy)
 }
 
 // CrearInvitacion crea una invitación anclada a Persona: quien invita debe
@@ -806,10 +822,23 @@ func (h *Handler) ListarMisMembresias(c *gin.Context) {
 	}
 
 	items := make([]MembresiaMeResponse, 0, len(list))
-	for _, m := range list {
+	for i := range list {
+		m := &list[i]
 		nombreCentro := ""
 		if t, err := h.tenantRepo.FindByID(m.TenantID); err == nil {
 			nombreCentro = t.Nombre
+		}
+		// Membresías de antes del PIN generado: no hay código en claro que
+		// mostrar, así que se les asigna uno aquí, la primera vez que la
+		// app las pide. A partir de ese momento ya no cambia.
+		if m.PinCodigo == "" {
+			if codigo, hash, err := h.generarPinParaTenant(m.TenantID); err == nil {
+				m.PinCodigo = codigo
+				m.Pin = hash
+				if err := h.membresiaRepo.Update(m); err != nil {
+					m.PinCodigo = ""
+				}
+			}
 		}
 		items = append(items, MembresiaMeResponse{
 			ID:           m.ID,
@@ -818,6 +847,7 @@ func (h *Handler) ListarMisMembresias(c *gin.Context) {
 			CasaDestino:  m.CasaDestino,
 			Rol:          m.Rol,
 			Status:       m.Status,
+			Pin:          m.PinCodigo,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"membresias": items})
