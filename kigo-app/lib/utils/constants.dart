@@ -9,9 +9,11 @@ class AppConstants {
   static const String serverHost = 'localhost';
   static const String apiBaseUrl = 'https://homelab.tail8dc7f1.ts.net/api/v1';
 
-  // Única clave persistida — todo lo demás (perfil, membresía) se
-  // recarga del backend al restaurar sesión, nunca se cachea localmente.
+  // El perfil y las membresías se recargan del backend al restaurar sesión,
+  // nunca se cachean localmente -- salvo cuál centro quedó seleccionado
+  // (prefsCentroActivoId), que sí necesita sobrevivir entre sesiones.
   static const String prefsJwt = 'kigo_jwt';
+  static const String prefsCentroActivoId = 'kigo_centro_activo_id';
 
   /// Origen del backend, sin el prefijo /api/v1 — de ahí cuelga /uploads.
   static String get serverOrigin {
