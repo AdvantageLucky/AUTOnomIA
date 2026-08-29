@@ -80,10 +80,11 @@ abstract final class KigoDesign {
           centerTitle: true,
           foregroundColor: textPrimary,
         ),
-        cardTheme: const CardThemeData(
+        cardTheme: CardThemeData(
           color: surfaceCard,
           elevation: 0,
           margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusLg)),
         ),
         dividerTheme: const DividerThemeData(color: border),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -138,10 +139,11 @@ abstract final class KigoDesign {
           centerTitle: true,
           foregroundColor: textDark,
         ),
-        cardTheme: const CardThemeData(
+        cardTheme: CardThemeData(
           color: surfaceLight,
           elevation: 0,
           margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusLg)),
         ),
         dividerTheme: const DividerThemeData(color: borderLight),
         elevatedButtonTheme: ElevatedButtonThemeData(
