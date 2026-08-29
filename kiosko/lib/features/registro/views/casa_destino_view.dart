@@ -1,4 +1,6 @@
+import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -29,6 +31,15 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
   _SubPaso _subPaso = _SubPaso.calle;
   String? _calleSeleccionada;
   String? _tipoSeleccionado;
+  String? _destinoSugeridoPorVoz;
+
+  void _onCampoExtraido(CampoExtraido campo) {
+    final valor = campo.valor;
+    if (valor == null || _destinos == null) return;
+    final existe = _destinos!.any((d) => d['nombre'] == valor);
+    if (!existe) return;
+    setState(() => _destinoSugeridoPorVoz = valor);
+  }
 
   @override
   void initState() {
@@ -135,6 +146,43 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_destinoSugeridoPorVoz != null) {
+      return Scaffold(
+        backgroundColor: context.kBg,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('¿Tu destino es "${_destinoSugeridoPorVoz!}"?',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => setState(() => _destinoSugeridoPorVoz = null),
+                        child: const Text('No, elegir manualmente'),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, _destinoSugeridoPorVoz),
+                        style: ElevatedButton.styleFrom(backgroundColor: KigoDesign.brand),
+                        child: const Text('Sí, confirmar', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: context.kBg,
       appBar: AppBar(
@@ -144,6 +192,14 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
           icon: Icon(Icons.arrow_back, color: context.kTextPrimary),
           onPressed: _regresar,
         ),
+        actions: [
+          BotonAsistente(
+            tipoCampo: 'destino',
+            onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
+            onCampoExtraido: _onCampoExtraido,
+          ),
+          const SizedBox(width: 12),
+        ],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
