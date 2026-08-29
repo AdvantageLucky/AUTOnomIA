@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../models/membresia_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/kigo_list_row.dart';
@@ -10,27 +11,16 @@ import 'join_centro_view.dart';
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
 
-  Widget _centroRow(BuildContext context, AuthViewModel auth) {
-    switch (auth.membresiaEstado) {
-      case MembresiaEstado.activa:
+  Widget _centroRowItem(BuildContext context, MembresiaActual m) {
+    switch (m.status) {
+      case 'activo':
         return KigoListRow(
           icon: Icons.home_outlined,
           iconColor: AppTheme.success,
-          title: auth.membresia!.centroNombre,
-          subtitle: auth.membresia!.casaDestino,
+          title: m.centroNombre,
+          subtitle: m.casaDestino,
         );
-      case MembresiaEstado.pendiente:
-        return KigoListRow(
-          icon: Icons.hourglass_top_outlined,
-          iconColor: AppTheme.amber,
-          title: 'Solicitud pendiente de aprobación',
-          subtitle: auth.membresia?.centroNombre,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const JoinCentroView()),
-          ),
-        );
-      case MembresiaEstado.rechazada:
+      case 'rechazado':
         return KigoListRow(
           icon: Icons.error_outline,
           iconColor: AppTheme.error,
@@ -41,17 +31,49 @@ class SettingsView extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const JoinCentroView()),
           ),
         );
-      case MembresiaEstado.ninguna:
+      default:
         return KigoListRow(
-          icon: Icons.add_home_outlined,
-          title: 'Unirme a un centro',
-          subtitle: 'Solo si vas a vivir en un fraccionamiento con Kigo',
+          icon: Icons.hourglass_top_outlined,
+          iconColor: AppTheme.amber,
+          title: 'Solicitud pendiente de aprobación',
+          subtitle: m.centroNombre,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const JoinCentroView()),
           ),
         );
     }
+  }
+
+  Widget _misCentros(BuildContext context, AuthViewModel auth) {
+    if (auth.membresias.isEmpty) {
+      return KigoListRow(
+        icon: Icons.add_home_outlined,
+        title: 'Unirme a un centro',
+        subtitle: 'Solo si vas a vivir en un fraccionamiento con Kigo',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const JoinCentroView()),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Mis centros', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        ...auth.membresias.map((m) => _centroRowItem(context, m)),
+        const SizedBox(height: 4),
+        KigoListRow(
+          icon: Icons.add_home_outlined,
+          title: 'Unirme a otro centro',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const JoinCentroView()),
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _cerrarSesion(BuildContext context) async {
@@ -75,7 +97,7 @@ class SettingsView extends StatelessWidget {
             const SizedBox(height: 4),
             Text(auth.telefono, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 32),
-            _centroRow(context, auth),
+            _misCentros(context, auth),
             const Divider(),
             const SizedBox(height: 8),
             SwitchListTile(
