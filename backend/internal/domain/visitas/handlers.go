@@ -577,15 +577,16 @@ func (h *Handler) StreamSolicitudes(c *gin.Context) {
 
 func (h *Handler) ListarReportes(c *gin.Context) {
 	repoCtx := h.repo.WithContext(c.Request.Context())
+	page, pageSize := parsePagination(c)
 
 	// Validamos que el db base use el scope por tenant al acceder a reportes_ia
 	repo := &reporteRepository{db: repoCtx.db.Scopes(ByTenant)}
-	reportes, err := repo.ultimos(7)
+	reportes, total, err := repo.paginados(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error obteniendo reportes"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"reportes": reportes})
+	c.JSON(http.StatusOK, gin.H{"reportes": reportes, "total": total, "page": page, "page_size": pageSize})
 }
 
 func (h *Handler) HistorialVisita(c *gin.Context) {
