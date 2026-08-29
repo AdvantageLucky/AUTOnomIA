@@ -6,6 +6,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/kigo_list_row.dart';
 import '../widgets/kigo_primary_button.dart';
+import 'companeros_casa_view.dart';
 import 'join_centro_view.dart';
 
 class SettingsView extends StatelessWidget {
@@ -98,6 +99,20 @@ class SettingsView extends StatelessWidget {
             Text(auth.telefono, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 32),
             _misCentros(context, auth),
+            if (auth.centroActivo != null) ...[
+              const SizedBox(height: 8),
+              KigoListRow(
+                icon: Icons.people_outline,
+                title: 'Compañeros de casa',
+                subtitle: 'Quiénes más viven contigo',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CompanerosCasaView(tenantId: auth.centroActivo!.tenantId),
+                  ),
+                ),
+              ),
+            ],
             const Divider(),
             const SizedBox(height: 8),
             SwitchListTile(
