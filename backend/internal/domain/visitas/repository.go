@@ -345,7 +345,14 @@ func (r *Repository) HistorialDeVisitante(v Visita) ([]Visita, error) {
 // como AutorizadorAgente en la bitácora — mismo caso de uso que antes
 // actualizaba solo el estado, ahora extendido para no descartar el
 // resumen ni el score.
-func (r *Repository) GuardarAnalisisIA(id uint, resumenIA string, scoreIA []byte, nuevoEstado *EstadoVisita) error {
+// GuardarAnalisisIA persiste el resultado del análisis de patrones (resumen
+// narrativo del LLM + heurísticas de anomalía) de una visita walk-in. Si
+// nuevoEstado no es nil, también actualiza el estado y queda registrado
+// como AutorizadorAgente en la bitácora. intervenida solo se escribe cuando
+// es true (la IA mandó esta visita a revisión) — nunca se fuerza a false,
+// así que una vez marcada queda marcada para siempre, aunque una llamada
+// posterior sobre la misma visita no vuelva a detectar la anomalía.
+func (r *Repository) GuardarAnalisisIA(id uint, resumenIA string, scoreIA []byte, nuevoEstado *EstadoVisita, intervenida bool) error {
 	updates := map[string]any{
 		"resumen_ia": resumenIA,
 		"score_ia":   scoreIA,
@@ -353,6 +360,9 @@ func (r *Repository) GuardarAnalisisIA(id uint, resumenIA string, scoreIA []byte
 	if nuevoEstado != nil {
 		updates["estado"] = *nuevoEstado
 		updates["autorizado_por_tipo"] = AutorizadorAgente
+	}
+	if intervenida {
+		updates["intervenida"] = true
 	}
 	return r.db.Scopes(ByTenant).Model(&Visita{}).Where("id = ?", id).Updates(updates).Error
 }

@@ -99,7 +99,7 @@ func TestGuardarAnalisisIA_ConCambioDeEstado(t *testing.T) {
 
 	nuevoEstado := EstadoAprobado
 	scoreJSON := []byte(`{"veces_visitado":2,"confiable":true}`)
-	if err := repoCtx.GuardarAnalisisIA(v.ID, "resumen de prueba", scoreJSON, &nuevoEstado); err != nil {
+	if err := repoCtx.GuardarAnalisisIA(v.ID, "resumen de prueba", scoreJSON, &nuevoEstado, true); err != nil {
 		t.Fatalf("no esperaba error: %v", err)
 	}
 
@@ -116,6 +116,9 @@ func TestGuardarAnalisisIA_ConCambioDeEstado(t *testing.T) {
 	}
 	if found.AutorizadoPorTipo != AutorizadorAgente {
 		t.Errorf("esperaba autorizado_por_tipo=AGENTE, got %q", found.AutorizadoPorTipo)
+	}
+	if !found.Intervenida {
+		t.Errorf("esperaba intervenida=true, got false")
 	}
 }
 
@@ -136,7 +139,7 @@ func TestGuardarAnalisisIA_SinCambioDeEstado(t *testing.T) {
 	repoCtx := repo.WithContext(ctx)
 
 	scoreJSON := []byte(`{"veces_visitado":0}`)
-	if err := repoCtx.GuardarAnalisisIA(v.ID, "aun analizando historial", scoreJSON, nil); err != nil {
+	if err := repoCtx.GuardarAnalisisIA(v.ID, "aun analizando historial", scoreJSON, nil, false); err != nil {
 		t.Fatalf("no esperaba error: %v", err)
 	}
 
@@ -151,6 +154,48 @@ func TestGuardarAnalisisIA_SinCambioDeEstado(t *testing.T) {
 	}
 	if found.AutorizadoPorTipo != "" {
 		t.Errorf("esperaba autorizado_por_tipo vacío, got %q", found.AutorizadoPorTipo)
+	}
+	if found.Intervenida {
+		t.Errorf("esperaba intervenida=false (no se paso true), got true")
+	}
+}
+
+func TestGuardarAnalisisIA_IntervenidaNoSeReseteaAFalse(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	v := &Visita{
+		TenantID: 1, Titular: "Juan", CasaDestino: "Casa 1",
+		Estado: EstadoPendiente, KioskoID: 1,
+		TipoVisitante: TipoVisitante("VISITANTE"), TipoDocumento: TipoDocumento("INE"),
+	}
+	if err := repo.Create(v); err != nil {
+		t.Fatalf("no se pudo crear la visita: %v", err)
+	}
+
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, uint(1))
+	repoCtx := repo.WithContext(ctx)
+
+	// Primera llamada: marca intervenida=true (fue a revision).
+	estadoRevision := EstadoRevision
+	if err := repoCtx.GuardarAnalisisIA(v.ID, "resumen 1", []byte(`{}`), &estadoRevision, true); err != nil {
+		t.Fatalf("no esperaba error en la primera llamada: %v", err)
+	}
+
+	// Segunda llamada hipotetica sobre la misma visita, con intervenida=false
+	// (ej. un reanalisis que ya no detecto la anomalia) -- no debe borrar el
+	// historial de que SI fue intervenida alguna vez.
+	if err := repoCtx.GuardarAnalisisIA(v.ID, "resumen 2", []byte(`{}`), nil, false); err != nil {
+		t.Fatalf("no esperaba error en la segunda llamada: %v", err)
+	}
+
+	var found Visita
+	db.First(&found, v.ID)
+	if !found.Intervenida {
+		t.Errorf("esperaba que intervenida siguiera true tras la segunda llamada, got false")
+	}
+	if found.ResumenIA != "resumen 2" {
+		t.Errorf("esperaba que resumen_ia se actualizara a 'resumen 2', got %q", found.ResumenIA)
 	}
 }
 

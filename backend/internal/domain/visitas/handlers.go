@@ -285,7 +285,13 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		if nuevoEstado != EstadoPendiente {
 			estadoParaGuardar = &nuevoEstado
 		}
-		if err := asyncRepo.GuardarAnalisisIA(visitaCopy.ID, resumen, scoreIA, estadoParaGuardar); err != nil {
+		// Intervenida marca que la IA mando esta visita a revision por una
+		// anomalia detectada -- NO se activa en auto-pass confiable (ahi no
+		// hay nada que revisar) ni cuando el estado se decide por timeout en
+		// otro lugar del codigo (aplicarExpiracionSiVencida, AutorizadorSistema),
+		// que no pasa por este analisis.
+		intervenida := nuevoEstado == EstadoRevision
+		if err := asyncRepo.GuardarAnalisisIA(visitaCopy.ID, resumen, scoreIA, estadoParaGuardar, intervenida); err != nil {
 			log.Printf("GuardarAnalisisIA visita %d: %v", visitaCopy.ID, err)
 		}
 
