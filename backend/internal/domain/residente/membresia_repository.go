@@ -50,6 +50,32 @@ func (r *MembresiaRepository) FindByCasaDestinoYTenant(tenantID uint, casaDestin
 	return list, nil
 }
 
+// CompaneroCasa es una fila de FindCompanerosCasa — deliberadamente angosta:
+// solo nombre y rol, nunca teléfono/CURP/foto. La restricción de privacidad
+// vive en la query (Select explícito), no en un filtro posterior sobre un
+// struct más amplio.
+type CompaneroCasa struct {
+	NombreCompleto string `json:"nombre_completo"`
+	Rol            string `json:"rol"`
+}
+
+// FindCompanerosCasa lista los demás miembros activos de la misma casa,
+// dentro del mismo tenant, excluyendo a excluirPersonaID (quien hace la
+// consulta). Usado por Handler.ListarCompanerosCasa (paquete persona) para
+// que un residente vea quién más vive con él.
+func (r *MembresiaRepository) FindCompanerosCasa(tenantID uint, casaDestino string, excluirPersonaID uint) ([]CompaneroCasa, error) {
+	var list []CompaneroCasa
+	err := r.db.Table("membresias").
+		Select("trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre_completo, "+
+			"membresias.rol as rol").
+		Joins("JOIN personas ON personas.id = membresias.persona_id").
+		Where("membresias.tenant_id = ? AND UPPER(membresias.casa_destino) = UPPER(?) AND membresias.status = ? AND membresias.persona_id != ? AND membresias.deleted_at IS NULL",
+			tenantID, casaDestino, ResidenteStatusActivo, excluirPersonaID).
+		Order("membresias.created_at ASC").
+		Scan(&list).Error
+	return list, err
+}
+
 // MembresiaPendienteConPersona es una fila de FindPendientesPorTenant —
 // junta la Membresia con nombre/teléfono/foto de su Persona.
 type MembresiaPendienteConPersona struct {
