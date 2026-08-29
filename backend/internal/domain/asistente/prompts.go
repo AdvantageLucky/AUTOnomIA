@@ -2,6 +2,7 @@ package asistente
 
 import (
 	"fmt"
+	"strings"
 
 	"kigo-autonomia-backend/internal/domain/kiosko"
 )
@@ -30,4 +31,39 @@ func construirPromptPreguntar(pregunta string, cfg *kiosko.KioskoConfig) string 
 
 ### Respuesta
 `, systemPromptPreguntar, contexto, pregunta)
+}
+
+const systemPromptExtraerCampo = "Eres un extractor de datos silencioso. NUNCA conversas ni respondes preguntas — " +
+	"solo devuelves un JSON exacto con el campo pedido, sin texto adicional."
+
+func construirPromptPlaca(transcripcion string) string {
+	return fmt.Sprintf(`### Instrucción
+%s
+Extrae una placa vehicular mexicana de la transcripción. Normaliza letras/dígitos hablados a su forma escrita
+(ej. "a b c uno dos tres" -> "ABC123"). Responde EXACTAMENTE en este formato JSON, nada más:
+{"valor": "<placa o null si no se entiende>", "confianza": <0.0 a 1.0>}
+
+### Transcripción
+%s
+
+### JSON
+`, systemPromptExtraerCampo, transcripcion)
+}
+
+func construirPromptDestino(transcripcion string, destinosValidos []string) string {
+	lista := strings.Join(destinosValidos, ", ")
+	return fmt.Sprintf(`### Instrucción
+%s
+Identifica a cuál de estos destinos EXACTOS se refiere la transcripción — nunca inventes uno que no esté en la lista.
+Si no coincide claramente con ninguno, responde valor null. Responde EXACTAMENTE en este formato JSON, nada más:
+{"valor": "<uno de los destinos exactos, o null>", "confianza": <0.0 a 1.0>}
+
+### Destinos válidos
+%s
+
+### Transcripción
+%s
+
+### JSON
+`, systemPromptExtraerCampo, lista, transcripcion)
 }
