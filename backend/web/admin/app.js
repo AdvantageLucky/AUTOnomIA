@@ -880,6 +880,63 @@
     bodyEl.hidden = false;
   }
 
+  const stateHistorialReportes = { page: 1, pageSize: 10 };
+
+  async function loadHistorialReportes(page) {
+    stateHistorialReportes.page = page;
+    const loadEl  = document.getElementById("historial-reportes-loading");
+    const emptyEl = document.getElementById("historial-reportes-empty");
+    const rowsEl  = document.getElementById("historial-reportes-rows");
+    const pagEl   = document.getElementById("historial-reportes-pagination");
+
+    if (loadEl) loadEl.hidden = false;
+    if (emptyEl) emptyEl.hidden = true;
+    rowsEl.innerHTML = "";
+    pagEl.hidden = true;
+
+    const res = await api(`/visitas/reportes?page=${page}&page_size=${stateHistorialReportes.pageSize}`);
+    if (loadEl) loadEl.hidden = true;
+
+    if (!res || !res.ok) {
+      if (emptyEl) { emptyEl.hidden = false; emptyEl.querySelector(".empty-text").textContent = "No se pudo cargar el historial."; }
+      return;
+    }
+
+    let data = { reportes: [], total: 0 };
+    try { data = await res.json(); } catch (e) { console.error(e); }
+    const reportes = data.reportes || [];
+
+    if (!reportes.length) {
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
+
+    rowsEl.innerHTML = reportes.map(r => `
+      <div class="panel-padded" style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div class="row-sub" style="margin-bottom:6px">${fmtDate(r.PeriodoInicio)} – ${fmtDate(r.PeriodoFin)}</div>
+        <div style="line-height:1.5">${esc(r.Texto)}</div>
+      </div>`).join("");
+
+    const totalPages = Math.ceil((data.total || 0) / stateHistorialReportes.pageSize);
+    if (totalPages > 1) {
+      pagEl.hidden = false;
+      document.getElementById("historial-reportes-page-label").textContent = `${data.total} reportes`;
+      document.getElementById("historial-reportes-page-current").textContent = page;
+      document.getElementById("historial-reportes-prev").disabled = page <= 1;
+      document.getElementById("historial-reportes-next").disabled = page >= totalPages;
+    }
+  }
+
+  document.getElementById("btn-ver-historial-reportes")?.addEventListener("click", () => {
+    document.getElementById("modal-historial-reportes").hidden = false;
+    loadHistorialReportes(1);
+  });
+  document.getElementById("historial-reportes-close")?.addEventListener("click", () => {
+    document.getElementById("modal-historial-reportes").hidden = true;
+  });
+  document.getElementById("historial-reportes-prev")?.addEventListener("click", () => loadHistorialReportes(stateHistorialReportes.page - 1));
+  document.getElementById("historial-reportes-next")?.addEventListener("click", () => loadHistorialReportes(stateHistorialReportes.page + 1));
+
   function animateStat(id, value) {
     const el = document.getElementById(id);
     if (!el) return;

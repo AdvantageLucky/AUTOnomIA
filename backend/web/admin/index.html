@@ -307,6 +307,7 @@
 							<div id="dash-reporte-ia-body" hidden>
 								<div class="row-sub" id="dash-reporte-ia-periodo" style="margin-bottom:8px"></div>
 								<div id="dash-reporte-ia-texto" style="line-height:1.6"></div>
+								<button class="link-btn" id="btn-ver-historial-reportes" style="margin-top:8px">Ver historial ›</button>
 							</div>
 						</div>
 					</div>
@@ -1062,6 +1063,30 @@
 					<button type="button" class="btn-cancel" id="res-modal-close" style="padding:4px 10px;font-size:16px;border-radius:6px;cursor:pointer">✕</button>
 				</div>
 				<div id="res-modal-body"></div>
+			</div>
+		</div>
+
+		<div id="modal-historial-reportes" class="modal-overlay" hidden>
+			<div class="modal-box modal-box--md">
+				<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+					<div class="modal-title">Historial de reportes IA</div>
+					<button type="button" class="btn-cancel" id="historial-reportes-close" style="padding:4px 10px;font-size:16px;border-radius:6px;cursor:pointer">✕</button>
+				</div>
+				<div id="historial-reportes-loading" class="loading-state" hidden>
+					<div class="spinner"></div>
+				</div>
+				<div id="historial-reportes-empty" class="empty-state" hidden>
+					<div class="empty-text">No hay reportes en este rango.</div>
+				</div>
+				<div id="historial-reportes-rows"></div>
+				<div id="historial-reportes-pagination" class="pagination" hidden>
+					<div class="pagination-label" id="historial-reportes-page-label"></div>
+					<div class="pagination-controls">
+						<button class="btn-page" id="historial-reportes-prev">‹ Anterior</button>
+						<div class="pagination-current" id="historial-reportes-page-current"></div>
+						<button class="btn-page" id="historial-reportes-next">Siguiente ›</button>
+					</div>
+				</div>
 			</div>
 		</div>
 
