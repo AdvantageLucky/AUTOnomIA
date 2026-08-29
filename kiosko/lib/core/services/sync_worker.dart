@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:io' show SocketException, HttpException, HandshakeException, TlsException;
 
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/services/local_cache_db.dart';
 
@@ -9,6 +12,8 @@ import 'package:kigo_kiosco/core/services/local_cache_db.dart';
 class SyncConflictException implements Exception {
   final String mensaje;
   SyncConflictException(this.mensaje);
+  @override
+  String toString() => mensaje;
 }
 
 /// Mantiene el snapshot local fresco mientras hay red, y drena la cola de
@@ -48,40 +53,79 @@ class SyncWorker {
     }
   }
 
-  /// Refresca el snapshot y drena la cola pendiente, en ese orden. Se
-  /// protege contra corridas simultaneas (el timer y un cambio de
-  /// conectividad podrian disparar esto casi al mismo tiempo).
+  /// Refresca el snapshot y drena la cola pendiente.
   Future<void> sincronizarAhora() async {
     if (_sincronizando) return;
     _sincronizando = true;
     try {
-      await refrescarSnapshot();
-      await _drenarCola();
-    } catch (_) {
-      // El kiosko todavia no esta activado (no hay sesion con la que pedir el
-      // snapshot) o la red fallo a media sincronizacion. En ambos casos se
-      // reintenta en el siguiente ciclo — esto corre durante el arranque, y
-      // dejar escapar la excepcion tumba la app antes de la pantalla de
-      // activacion.
+      try {
+        await _drenarCola();
+      } catch (e) {
+        debugPrint('[SyncWorker] Error drenando cola: $e');
+      }
+
+      try {
+        await refrescarSnapshot();
+      } catch (e) {
+        debugPrint('[SyncWorker] Error refrescando snapshot: $e');
+      }
     } finally {
       _sincronizando = false;
     }
   }
 
+  bool _esFalloDeRed(Object error) {
+    if (error is SocketException ||
+        error is TimeoutException ||
+        error is http.ClientException ||
+        error is HttpException ||
+        error is HandshakeException ||
+        error is TlsException) {
+      return true;
+    }
+    final msg = error.toString().toLowerCase();
+    return msg.contains('socket') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('clientexception') ||
+        msg.contains('network') ||
+        msg.contains('red') ||
+        msg.contains('conexion') ||
+        msg.contains('conexión') ||
+        msg.contains('connection refused') ||
+        msg.contains('connection closed') ||
+        msg.contains('connection reset') ||
+        msg.contains('timeout') ||
+        msg.contains('timed out') ||
+        msg.contains('errno') ||
+        msg.contains('os error') ||
+        msg.contains('handshake') ||
+        msg.contains('no address associated') ||
+        msg.contains('unreachable');
+  }
+
   Future<void> _drenarCola() async {
     final pendientes = await cache.obtenerColaPendiente();
+    if (pendientes.isEmpty) return;
+    debugPrint('[SyncWorker] Drenando ${pendientes.length} visitas pendientes...');
+
     for (final registro in pendientes) {
       final clientId = registro['client_id'] as String;
+      final tipo = registro['tipo'] as String;
       try {
+        debugPrint('[SyncWorker] Replicando $tipo ($clientId)...');
         await reproducirRegistro(registro);
         await cache.marcarSincronizada(clientId);
-      } on SyncConflictException {
+        debugPrint('[SyncWorker] Registro $clientId sincronizado exitosamente.');
+      } on SyncConflictException catch (e) {
+        debugPrint('[SyncWorker] Conflicto en $clientId: ${e.mensaje}');
         await cache.marcarConflicto(clientId);
-      } catch (_) {
-        // Error de red u otro no clasificado: se detiene todo el drenado
-        // para no perder el orden ni dejar huecos — se reintenta en el
-        // siguiente ciclo (timer o proxima reconexion).
-        return;
+      } catch (e) {
+        if (_esFalloDeRed(e)) {
+          debugPrint('[SyncWorker] Fallo de red al replicar $clientId. Se detiene drenado: $e');
+          return;
+        }
+        debugPrint('[SyncWorker] Error no reintentable en $clientId: $e. Marcando como conflicto.');
+        await cache.marcarConflicto(clientId);
       }
     }
   }
