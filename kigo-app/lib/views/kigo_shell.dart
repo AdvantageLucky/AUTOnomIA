@@ -26,6 +26,31 @@ class KigoShell extends StatefulWidget {
 
 class _KigoShellState extends State<KigoShell> {
   int _index = 0;
+  int? _tenantIdAnterior;
+  late final AuthViewModel _auth;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = context.read<AuthViewModel>();
+    _tenantIdAnterior = _auth.centroActivo?.tenantId;
+    _auth.addListener(_onAuthChanged);
+  }
+
+  @override
+  void dispose() {
+    _auth.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    final nuevo = _auth.centroActivo?.tenantId;
+    if (nuevo == _tenantIdAnterior) return;
+    _tenantIdAnterior = nuevo;
+    if (_index == _indiceHistorial && nuevo != null) {
+      context.read<VisitHistoryViewModel>().cargar(nuevo);
+    }
+  }
 
   static const _tabs = [
     DashboardView(),
@@ -57,7 +82,7 @@ class _KigoShellState extends State<KigoShell> {
     // que se entra, y por lo mismo las invitaciones: si no, no aparecerían las
     // que acabas de crear en la pestaña de al lado.
     if (i == _indiceHistorial) {
-      final tenantId = context.read<AuthViewModel>().membresia?.tenantId;
+      final tenantId = context.read<AuthViewModel>().centroActivo?.tenantId;
       if (tenantId != null) {
         context.read<VisitHistoryViewModel>().cargar(tenantId);
       }
@@ -73,6 +98,15 @@ class _KigoShellState extends State<KigoShell> {
       appBar: AppBar(
         title: Text(_titulos[_index]),
         actions: [
+          if (context.watch<AuthViewModel>().membresiasActivas.length > 1)
+            PopupMenuButton<int>(
+              icon: const Icon(Icons.apartment_outlined, color: AppTheme.primaryOrange),
+              tooltip: context.watch<AuthViewModel>().centroActivo?.centroNombre ?? 'Centro',
+              onSelected: (tenantId) => context.read<AuthViewModel>().setCentroActivo(tenantId),
+              itemBuilder: (_) => context.read<AuthViewModel>().membresiasActivas
+                  .map((m) => PopupMenuItem(value: m.tenantId, child: Text(m.centroNombre)))
+                  .toList(),
+            ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: AppTheme.primaryOrange),
             // 24 es el tamaño con el que BottomNavigationBar dibuja sus
