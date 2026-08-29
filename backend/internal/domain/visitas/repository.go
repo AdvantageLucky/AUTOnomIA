@@ -92,6 +92,7 @@ type VisitaFiltros struct {
 	FechaDesde    *time.Time
 	FechaHasta    *time.Time
 	PersonaID     *uint
+	Intervenida   *bool
 	Q             string // ILIKE parcial sobre titular y curp
 }
 
@@ -122,6 +123,9 @@ func (r *Repository) FindAllByAdminID(
 		}
 		if filtros.PersonaID != nil {
 			q = q.Where("visitas.persona_id = ?", *filtros.PersonaID)
+		}
+		if filtros.Intervenida != nil {
+			q = q.Where("visitas.intervenida = ?", *filtros.Intervenida)
 		}
 		if filtros.Q != "" {
 			like := "%" + filtros.Q + "%"

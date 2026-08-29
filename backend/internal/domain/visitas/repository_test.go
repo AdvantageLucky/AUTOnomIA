@@ -8,6 +8,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 )
 
@@ -392,5 +393,32 @@ func TestFindHistorialResueltasPorPersona_Pagina(t *testing.T) {
 	}
 	if len(list) != 2 {
 		t.Errorf("esperaba 2 en la pagina 2, got %d", len(list))
+	}
+}
+
+func TestFindAllByAdminID_FiltroIntervenida(t *testing.T) {
+	db := setupTestDB(t)
+	if err := db.AutoMigrate(&kiosko.Kiosko{}); err != nil {
+		t.Fatalf("no se pudo migrar Kiosko: %v", err)
+	}
+	repo := NewRepository(db)
+
+	db.Create(&kiosko.Kiosko{Model: gorm.Model{ID: 1}, TenantID: 1, Tipo: kiosko.KioskoPeatonal, Nombre: "K1", ClaveKiosko: "x", AdminID: 1})
+
+	vIntervenida := &Visita{TenantID: 1, Titular: "Ana", CasaDestino: "Casa 1", Estado: EstadoRevision, KioskoID: 1, Intervenida: true, TipoVisitante: TipoVisitante("VISITANTE"), TipoDocumento: TipoDocumento("INE")}
+	vNormal := &Visita{TenantID: 1, Titular: "Beto", CasaDestino: "Casa 2", Estado: EstadoAprobado, KioskoID: 1, Intervenida: false, TipoVisitante: TipoVisitante("VISITANTE"), TipoDocumento: TipoDocumento("INE")}
+	repo.Create(vIntervenida)
+	repo.Create(vNormal)
+
+	intervenidaTrue := true
+	list, total, err := repo.FindAllByAdminID(1, VisitaFiltros{Intervenida: &intervenidaTrue}, 1, 20)
+	if err != nil {
+		t.Fatalf("no esperaba error: %v", err)
+	}
+	if total != 1 || len(list) != 1 {
+		t.Fatalf("esperaba 1 resultado, got total=%d len=%d", total, len(list))
+	}
+	if list[0].Titular != "Ana" {
+		t.Errorf("esperaba 'Ana', got %q", list[0].Titular)
 	}
 }
