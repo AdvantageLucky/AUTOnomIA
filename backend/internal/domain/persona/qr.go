@@ -1,27 +1,29 @@
 package persona
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/ed25519"
 	"encoding/hex"
 	"strconv"
 )
 
-// FirmarPersonaID calcula la firma HMAC-SHA256 de un persona_id con la
-// llave maestra del sistema — esto es lo que va dentro del QR personal
-// (persona_id + esta firma). Cualquier kiosko que traiga la misma llave
-// maestra puede verificar la firma offline, sin conocer nada más sobre esa
-// Persona en particular (ver spec §3/§10).
-func FirmarPersonaID(personaID uint, llaveMaestra string) string {
-	mac := hmac.New(sha256.New, []byte(llaveMaestra))
-	mac.Write([]byte(strconv.FormatUint(uint64(personaID), 10)))
-	return hex.EncodeToString(mac.Sum(nil))
+// FirmarPersonaID firma un persona_id con la clave privada Ed25519 del
+// sistema — esto es lo que va dentro del QR personal (persona_id + esta
+// firma). El kiosko verifica offline con la clave pública correspondiente,
+// que nunca permite forjar una firma nueva (ver spec §1).
+func FirmarPersonaID(personaID uint, privKey ed25519.PrivateKey) string {
+	mensaje := []byte(strconv.FormatUint(uint64(personaID), 10))
+	firma := ed25519.Sign(privKey, mensaje)
+	return hex.EncodeToString(firma)
 }
 
-// VerificarFirma confirma que `firma` corresponde a `personaID` firmado con
-// `llaveMaestra` — usa hmac.Equal (comparación en tiempo constante) para no
-// filtrar la firma correcta por temporización.
-func VerificarFirma(personaID uint, firma, llaveMaestra string) bool {
-	esperada := FirmarPersonaID(personaID, llaveMaestra)
-	return hmac.Equal([]byte(firma), []byte(esperada))
+// VerificarFirma confirma que `firmaHex` es una firma Ed25519 válida de
+// `personaID` bajo `pubKey`. Un hex mal formado se trata como firma
+// inválida, no como error.
+func VerificarFirma(personaID uint, firmaHex string, pubKey ed25519.PublicKey) bool {
+	firma, err := hex.DecodeString(firmaHex)
+	if err != nil {
+		return false
+	}
+	mensaje := []byte(strconv.FormatUint(uint64(personaID), 10))
+	return ed25519.Verify(pubKey, mensaje, firma)
 }
