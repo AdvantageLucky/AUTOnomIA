@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:provider/provider.dart';
-import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
@@ -126,9 +125,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         _dispararLedSiCorresponde();
 
         final config = context.read<KioskoConfigNotifier>().config;
-        final seconds = config.tipo == TipoKiosko.vehicular ? 6 : 4;
         _regresoTimer?.cancel();
-        _regresoTimer = Timer(Duration(seconds: seconds), _regresarABienvenida);
+        _regresoTimer = Timer(Duration(seconds: config.tiempoExitoSeg), _regresarABienvenida);
         return;
       }
 
@@ -199,10 +197,9 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         // El kiosko se queda mostrando el resultado brevemente y regresa solo
         // a la bienvenida, para quedar listo para el siguiente visitante.
         final config = context.read<KioskoConfigNotifier>().config;
-        final seconds = config.tipo == TipoKiosko.vehicular ? 6 : 4;
 
         _regresoTimer?.cancel();
-        _regresoTimer = Timer(Duration(seconds: seconds), _regresarABienvenida);
+        _regresoTimer = Timer(Duration(seconds: config.tiempoExitoSeg), _regresarABienvenida);
 
         if (nuevoEstado == 'REVISION' && !yaEstabaEnRevision) {
           _mostrarDialogoRevision();

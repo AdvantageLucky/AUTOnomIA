@@ -2,7 +2,7 @@
 /// Campos: tipo, foto_placa_visitante, foto_rostro_visitante, foto_placa_invitado,
 /// foto_rostro_invitado, foto_ine_invitado (= ine_obligatorio_invitado),
 /// tiempo_espera_seg, horario_inicio, horario_fin, mensaje_bienvenida,
-/// auto_pass_habilitado, umbral_confianza_visitas.
+/// auto_pass_habilitado, umbral_confianza_visitas, tiempo_exito_seg.
 // Paleta de color del kiosko configurada desde el dashboard admin.
 enum KioskoColorTema { oscuro, claro }
 
@@ -26,6 +26,7 @@ class KioskoConfig {
   final String mensajeBienvenida;
   final bool autoPassHabilitado;
   final int umbralConfianzaVisitas;
+  final int tiempoExitoSeg;
   final KioskoColorTema colorTema;
   final String idioma; // 'es' | 'en'
 
@@ -44,6 +45,7 @@ class KioskoConfig {
     required this.mensajeBienvenida,
     required this.autoPassHabilitado,
     required this.umbralConfianzaVisitas,
+    this.tiempoExitoSeg = 5,
     this.colorTema = KioskoColorTema.oscuro,
     this.idioma = 'es',
   });
@@ -78,6 +80,7 @@ class KioskoConfig {
       mensajeBienvenida: json['mensaje_bienvenida'] as String? ?? '',
       autoPassHabilitado: json['auto_pass_habilitado'] as bool? ?? false,
       umbralConfianzaVisitas: json['umbral_confianza_visitas'] as int? ?? 80,
+      tiempoExitoSeg: json['tiempo_exito_seg'] as int? ?? 5,
       colorTema: colorStr == 'claro' ? KioskoColorTema.claro : KioskoColorTema.oscuro,
       idioma: json['idioma_kiosko'] as String? ?? 'es',
     );
@@ -98,6 +101,7 @@ class KioskoConfig {
         mensajeBienvenida: '',
         autoPassHabilitado: false,
         umbralConfianzaVisitas: 80,
+        tiempoExitoSeg: 5,
         colorTema: KioskoColorTema.oscuro,
         idioma: 'es',
       );
