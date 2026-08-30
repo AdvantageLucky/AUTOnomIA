@@ -453,20 +453,8 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.UmbralSimilitudCara != nil {
 		cfg.UmbralSimilitudCara = *req.UmbralSimilitudCara
 	}
-	if req.ScreensaverHabilitado != nil {
-		cfg.ScreensaverHabilitado = *req.ScreensaverHabilitado
-	}
-	if req.ModoCapturaNombre != nil {
-		cfg.ModoCapturaNombre = *req.ModoCapturaNombre
-	}
-	if req.MostrarNombreInvitado != nil {
-		cfg.MostrarNombreInvitado = *req.MostrarNombreInvitado
-	}
 	if req.TiempoExitoSeg != nil {
 		cfg.TiempoExitoSeg = *req.TiempoExitoSeg
-	}
-	if req.LectorFisicoHabilitado != nil {
-		cfg.LectorFisicoHabilitado = *req.LectorFisicoHabilitado
 	}
 
 	if err := repoCtx.UpdateConfig(cfg); err != nil {
