@@ -1,11 +1,13 @@
 /* VISTA PRINCIPAL DEL REGISTRO VEHICULAR */
 
 import 'package:flutter/material.dart';
-import 'package:loading_indicator/loading_indicator.dart';
+import 'package:kigo_kiosco/core/services/asistente_controller.dart';
+import 'package:kigo_kiosco/core/services/asistente_presentacion_servicio.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
-import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animation.dart';
@@ -31,8 +33,7 @@ class VehicularRegisterView extends StatefulWidget {
 }
 
 class _VehicularRegisterViewState extends State<VehicularRegisterView> {
-  final TextToSpeakServicio _textToSpeakServicio = TextToSpeakServicio();
-  bool _isSpeaking = false;
+  final AsistenteController _asistenteController = AsistenteController();
 
   VehicularRegisterViewModel get viewModel => widget.viewModel;
 
@@ -48,7 +49,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         _continuarACasaDestino();
         return;
       }
-      _speakText(AppLocalizations.t(context, 'welcome_vehicular_message'));
+      _narrar(AppLocalizations.t(context, 'welcome_vehicular_message'));
     });
   }
 
@@ -60,17 +61,17 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
 
   void _refresh() => setState(() {});
 
-  Future<void> _speakText(String text) async {
-    if (_isSpeaking) return;
-    setState(() => _isSpeaking = true);
-
-    try {
-      await _textToSpeakServicio.speak(text);
-    } catch (_) {
-      // Ignorar errores de TTS para no bloquear la UI.
-    } finally {
-      if (mounted) setState(() => _isSpeaking = false);
+  /// Antes de la primera narración de la sesión del kiosko, la mascota se
+  /// presenta explícitamente -- misma bandera global que TouchRegisterView,
+  /// así que si el visitante ya la vio en el flujo peatonal no se repite.
+  void _narrar(String texto) {
+    if (!AsistentePresentacionServicio.yaPresentado) {
+      AsistentePresentacionServicio.marcarPresentado();
+      _asistenteController.decir(
+        AppLocalizations.t(context, 'asistente_presentacion_message'),
+      );
     }
+    _asistenteController.decir(texto);
   }
 
   // ── Flujo ───────────────────────────────────────────────────────────────────
@@ -122,7 +123,8 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       final String? casa = await Navigator.push<String>(
         context,
         MaterialPageRoute(
-          builder: (_) => CasaDestinoView(totalSteps: viewModel.indicatorTotalSteps),
+          builder: (_) =>
+              CasaDestinoView(totalSteps: viewModel.indicatorTotalSteps),
         ),
       );
 
@@ -152,7 +154,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     while (true) {
       if (!mounted) return;
 
-      _speakText(AppLocalizations.t(context, 'voice_instruction_ine'));
+      _narrar(AppLocalizations.t(context, 'voice_instruction_ine'));
       final String? pathFoto = await Navigator.push<String>(
         context,
         MaterialPageRoute(builder: (_) => const EscaneoInePage()),
@@ -162,18 +164,29 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
 
       final resultado = await viewModel.procesarEscaneoIne(pathFoto);
       if (resultado == CalidadCaptura.ok) {
-        _speakText(AppLocalizations.t(context, 'ine_detected_title'));
+        _narrar(AppLocalizations.t(context, 'ine_detected_title'));
         await _avanzar();
         return;
       }
 
       final esBorrosa = resultado == CalidadCaptura.borrosa;
-      _speakText(AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_message' : 'ine_invalid_message'));
+      _narrar(
+        AppLocalizations.t(
+          context,
+          esBorrosa ? 'ine_borrosa_message' : 'ine_invalid_message',
+        ),
+      );
       if (!mounted) return;
       await _mostrarError(
         icono: Icons.error_outline_rounded,
-        titulo: AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_error_title' : 'ine_invalid_error_title'),
-        mensaje: AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_error_content' : 'ine_invalid_error_content'),
+        titulo: AppLocalizations.t(
+          context,
+          esBorrosa ? 'ine_borrosa_error_title' : 'ine_invalid_error_title',
+        ),
+        mensaje: AppLocalizations.t(
+          context,
+          esBorrosa ? 'ine_borrosa_error_content' : 'ine_invalid_error_content',
+        ),
       );
     }
   }
@@ -182,7 +195,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     while (true) {
       if (!mounted) return;
 
-      _speakText(AppLocalizations.t(context, 'voice_instruction_face'));
+      _narrar(AppLocalizations.t(context, 'voice_instruction_face'));
       final String? pathFoto = await Navigator.push<String>(
         context,
         MaterialPageRoute(builder: (_) => const EscaneoRostro()),
@@ -197,12 +210,27 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       }
 
       final esBorrosa = resultado == CalidadCaptura.borrosa;
-      _speakText(AppLocalizations.t(context, esBorrosa ? 'face_borrosa_message' : 'face_not_detected_message'));
+      _narrar(
+        AppLocalizations.t(
+          context,
+          esBorrosa ? 'face_borrosa_message' : 'face_not_detected_message',
+        ),
+      );
       if (!mounted) return;
       await _mostrarError(
         icono: Icons.face_retouching_off,
-        titulo: AppLocalizations.t(context, esBorrosa ? 'face_borrosa_error_title' : 'face_not_detected_error_title'),
-        mensaje: AppLocalizations.t(context, esBorrosa ? 'face_borrosa_error_content' : 'face_not_detected_error_content'),
+        titulo: AppLocalizations.t(
+          context,
+          esBorrosa
+              ? 'face_borrosa_error_title'
+              : 'face_not_detected_error_title',
+        ),
+        mensaje: AppLocalizations.t(
+          context,
+          esBorrosa
+              ? 'face_borrosa_error_content'
+              : 'face_not_detected_error_content',
+        ),
       );
     }
   }
@@ -225,7 +253,10 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
             Icon(icono, color: KigoDesign.brand, size: 28),
             const SizedBox(width: 12),
             Flexible(
-              child: Text(titulo, style: TextStyle(color: context.kTextPrimary)),
+              child: Text(
+                titulo,
+                style: TextStyle(color: context.kTextPrimary),
+              ),
             ),
           ],
         ),
@@ -261,58 +292,86 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: context.kBg,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: _buildVoiceWaveButton(),
-      body: SizedBox.expand(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 42, right: 42, top: 32, bottom: 40),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            _buildHeader(),
-                            Positioned(left: 0, child: _buildTopBackButton()),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: context.kBg,
+          body: SizedBox.expand(
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 42,
+                        right: 42,
+                        top: 32,
+                        bottom: 40,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                _buildHeader(),
+                                Positioned(
+                                  left: 0,
+                                  child: _buildTopBackButton(),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          StepIndicator(
+                            currentStep: viewModel.indicatorStep,
+                            totalSteps: viewModel.indicatorTotalSteps,
+                          ),
+                          const SizedBox(height: 24),
+                          _buildGuiaVisual(),
+                          const SizedBox(height: 32),
+                          viewModel.isProcessing
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: KigoDesign.brand,
+                                  ),
+                                )
+                              : _buildMainButton(
+                                  AppLocalizations.t(
+                                    context,
+                                    viewModel.currentStepData.buttonTextKey,
+                                  ),
+                                ),
+                          if (viewModel.currentStep > 0) ...[
+                            const SizedBox(height: 12),
+                            _buildBackButton(),
                           ],
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      StepIndicator(
-                        currentStep: viewModel.indicatorStep,
-                        totalSteps: viewModel.indicatorTotalSteps,
-                      ),
-                      const SizedBox(height: 24),
-                      _buildGuiaVisual(),
-                      const SizedBox(height: 32),
-                      viewModel.isProcessing
-                          ? const Center(
-                              child: CircularProgressIndicator(color: KigoDesign.brand))
-                          : _buildMainButton(AppLocalizations.t(context, viewModel.currentStepData.buttonTextKey)),
-                      if (viewModel.currentStep > 0) ...[
-                        const SizedBox(height: 12),
-                        _buildBackButton(),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 28, top: 12),
+                  child: _buildFooter(),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 28, top: 12),
-              child: _buildFooter(),
-            ),
-          ],
+          ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          // Mismo padding real que TouchRegisterView (top: 32, right: 42).
+          topDelBorde: 32,
+          rightDelBorde: 42,
+          controlador: _asistenteController,
+          onRespuestaLibre:
+              (_) {}, // esta pantalla no usa Q&A libre por texto, solo narra
+          onCampoExtraido: (_) {}, // no llena campos -- tipoCampo queda null
+        ),
+        const Positioned(top: 32 + 50, right: 42, child: EtiquetaAsistente()),
+      ],
     );
   }
 
@@ -349,14 +408,22 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
           child: const Center(
             child: Text(
               'K',
-              style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
         const SizedBox(width: 18),
         Text(
           AppLocalizations.t(context, 'kigo_label'),
-          style: TextStyle(color: context.kTextPrimary, fontSize: 34, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            color: context.kTextPrimary,
+            fontSize: 34,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ],
     );
@@ -390,7 +457,10 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         curve: Curves.easeOut,
         width: 260,
         height: 260,
-        decoration: const BoxDecoration(color: KigoDesign.brand, shape: BoxShape.circle),
+        decoration: const BoxDecoration(
+          color: KigoDesign.brand,
+          shape: BoxShape.circle,
+        ),
         child: ClipOval(
           child: Stack(
             children: [
@@ -442,30 +512,6 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     );
   }
 
-  Widget _buildVoiceWaveButton() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
-      child: FloatingActionButton(
-        onPressed: _isSpeaking ? null : () => _speakText(AppLocalizations.t(context, 'listening_message')),
-        backgroundColor: KigoDesign.brand,
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: _isSpeaking
-              ? const LoadingIndicator(
-                  indicatorType: Indicator.audioEqualizer,
-                  colors: [Colors.white],
-                  strokeWidth: 2.6,
-                  backgroundColor: Colors.transparent,
-                  pathBackgroundColor: Colors.transparent,
-                )
-              : const Icon(Icons.mic, color: Colors.white, size: 32),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBackButton() {
     return Presionable(
       onTap: viewModel.previousStep,
@@ -480,11 +526,19 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.arrow_back_rounded, color: KigoDesign.brand, size: 24),
+            const Icon(
+              Icons.arrow_back_rounded,
+              color: KigoDesign.brand,
+              size: 24,
+            ),
             const SizedBox(width: 10),
             Text(
               AppLocalizations.t(context, 'back_button_text'),
-              style: TextStyle(color: context.kTextPrimary, fontSize: 18, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: context.kTextPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
