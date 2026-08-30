@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <include layout="@layout/titlebar" />
+
+    <Button
+        android:id="@+id/wiegand_26"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        style="@style/buttonNumberStyle"
+        android:layout_margin="5dp"
+        android:onClick="onwiegandclick"
+        android:background="@drawable/button_number_violet_shape"
+        android:text="Send Wiegand26" />
+
+    <Button
+        android:id="@+id/wiegand_34"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:onClick="onwiegandclick"
+        style="@style/buttonNumberStyle"
+        android:background="@drawable/button_number_violet_shape"
+        android:text="Send Wiegand34" />
+
+    <TextView android:id="@+id/tv_receive"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Receive:"/>
+
+
+</LinearLayout>

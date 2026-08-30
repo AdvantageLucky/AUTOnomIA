@@ -19,6 +19,8 @@ web/uploads/visitantes/*
 *.exe~
 *.dll
 *.so
+!F10SDK/**/*.so
+!kiosko/android/**/*.so
 *.dylib
 *.test
 *.out
