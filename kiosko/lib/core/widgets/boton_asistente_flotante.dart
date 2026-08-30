@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
+import 'package:kigo_kiosco/core/services/asistente_controller.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente.dart';
 
 /// Posiciona [BotonAsistente] siempre a la derecha, alineado con la fila de
@@ -24,6 +25,7 @@ class BotonAsistenteFlotante extends StatelessWidget {
   final void Function(CampoExtraido) onCampoExtraido;
   final double topDelBorde;
   final double rightDelBorde;
+  final AsistenteController? controlador;
 
   const BotonAsistenteFlotante({
     super.key,
@@ -32,6 +34,7 @@ class BotonAsistenteFlotante extends StatelessWidget {
     required this.onCampoExtraido,
     required this.topDelBorde,
     this.rightDelBorde = 12,
+    this.controlador,
   });
 
   @override
@@ -43,6 +46,7 @@ class BotonAsistenteFlotante extends StatelessWidget {
         tipoCampo: tipoCampo,
         onRespuestaLibre: onRespuestaLibre,
         onCampoExtraido: onCampoExtraido,
+        controlador: controlador,
       ),
     );
   }
