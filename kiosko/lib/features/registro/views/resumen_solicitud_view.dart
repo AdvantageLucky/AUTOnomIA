@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -135,7 +137,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         // siga siendo buscable en la bitácora.
         titular: data.nombreCompleto ?? '',
         curp: data.curp ?? '',
-        casaDestino: data.casaDestino ?? AppLocalizations.t(context, 'no_especificado'),
+        casaDestino:
+            data.casaDestino ?? AppLocalizations.t(context, 'no_especificado'),
         placa: data.placa ?? '',
         pathFotoIne: data.pathFotoIne,
         pathFotoRostro: data.pathFotoRostro,
@@ -144,7 +147,9 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
       if (!mounted) return;
 
-      final creadoEn = DateTime.tryParse(respuesta['created_at'] as String? ?? '');
+      final creadoEn = DateTime.tryParse(
+        respuesta['created_at'] as String? ?? '',
+      );
 
       setState(() {
         _visitaId = respuesta['id'] as int?;
@@ -158,14 +163,18 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
-        _submitError = '${AppLocalizations.t(context, 'no_se_pudo_registrar_prefix')} $e';
+        _submitError =
+            '${AppLocalizations.t(context, 'no_se_pudo_registrar_prefix')} $e';
       });
     }
   }
 
   void _iniciarPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _consultarEstado());
+    _pollTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => _consultarEstado(),
+    );
   }
 
   Future<void> _consultarEstado() async {
@@ -183,13 +192,15 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       setState(() => _estado = nuevoEstado);
       _dispararLedSiCorresponde();
 
-      if (nuevoEstado == 'APROBADO' || nuevoEstado == 'RECHAZADO' || nuevoEstado == 'REVISION') {
+      if (nuevoEstado == 'APROBADO' ||
+          nuevoEstado == 'RECHAZADO' ||
+          nuevoEstado == 'REVISION') {
         _pollTimer?.cancel();
         // El kiosko se queda mostrando el resultado brevemente y regresa solo
         // a la bienvenida, para quedar listo para el siguiente visitante.
         final config = context.read<KioskoConfigNotifier>().config;
         final seconds = config.tipo == TipoKiosko.vehicular ? 6 : 4;
-        
+
         _regresoTimer?.cancel();
         _regresoTimer = Timer(Duration(seconds: seconds), _regresarABienvenida);
 
@@ -220,26 +231,42 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.hourglass_top_rounded, color: KigoDesign.brand, size: 32),
+            const Icon(
+              Icons.hourglass_top_rounded,
+              color: KigoDesign.brand,
+              size: 32,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 AppLocalizations.t(context, 'revision_manual_dialog_title'),
-                style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: context.kTextPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
         ),
         content: Text(
           AppLocalizations.t(context, 'revision_manual_dialog_content'),
-          style: TextStyle(color: context.kTextSecondary, fontSize: 18, height: 1.5),
+          style: TextStyle(
+            color: context.kTextSecondary,
+            fontSize: 18,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               AppLocalizations.t(context, 'entendido_button'),
-              style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(
+                color: KigoDesign.brand,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
         ],
@@ -249,39 +276,62 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.kBg,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.only(left: 42, right: 42, top: 40, bottom: 40),
-            child: Column(
-              children: [
-                StepIndicator(
-                  currentStep: widget.totalSteps - 1,
-                  totalSteps: widget.totalSteps,
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: context.kBg,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: 42,
+                  right: 42,
+                  top: 40,
+                  bottom: 40,
                 ),
-                const SizedBox(height: 42),
-                if (_submitError != null)
-                  _buildErrorState()
-                else ...[
-                  _buildEstadoHeader(),
-                  const SizedBox(height: 38),
-                  _buildResumenCard(),
-                ],
-              ],
+                child: Column(
+                  children: [
+                    StepIndicator(
+                      currentStep: widget.totalSteps - 1,
+                      totalSteps: widget.totalSteps,
+                    ),
+                    const SizedBox(height: 42),
+                    if (_submitError != null)
+                      _buildErrorState()
+                    else ...[
+                      _buildEstadoHeader(),
+                      const SizedBox(height: 38),
+                      _buildResumenCard(),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          // Coincide con el padding real de esta pantalla (top: 40,
+          // right: 42) -- esta pantalla SÍ usa SafeArea, igual que
+          // WelcomeView/ConfirmarPlacaView.
+          topDelBorde: 40,
+          rightDelBorde: 42,
+          onRespuestaLibre: (_) {},
+          onCampoExtraido: (_) {},
+        ),
+        const Positioned(top: 40 + 50, right: 42, child: EtiquetaAsistente()),
+      ],
     );
   }
 
   Widget _buildErrorState() {
     return Column(
       children: [
-        const Icon(Icons.error_outline_rounded, color: KigoDesign.brand, size: 56),
+        const Icon(
+          Icons.error_outline_rounded,
+          color: KigoDesign.brand,
+          size: 56,
+        ),
         const SizedBox(height: 18),
         Text(
           _submitError!,
@@ -293,14 +343,23 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           width: double.infinity,
           height: 68,
           child: ElevatedButton(
-            onPressed: _errorRequiereRegresar ? _regresarABienvenida : _registrarVisita,
+            onPressed: _errorRequiereRegresar
+                ? _regresarABienvenida
+                : _registrarVisita,
             style: ElevatedButton.styleFrom(
               backgroundColor: KigoDesign.brand,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
             ),
             child: Text(
-              AppLocalizations.t(context, _errorRequiereRegresar ? 'back_button_text' : 'retry_button_text'),
+              AppLocalizations.t(
+                context,
+                _errorRequiereRegresar
+                    ? 'back_button_text'
+                    : 'retry_button_text',
+              ),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
           ),
@@ -329,13 +388,21 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             _isSubmitting
                 ? AppLocalizations.t(context, 'enviando_solicitud')
                 : AppLocalizations.t(context, 'esperando_aprobacion'),
-            style: TextStyle(color: context.kTextPrimary, fontSize: 26, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              color: context.kTextPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
           Text(
             AppLocalizations.t(context, 'esperando_aprobacion_subtitle'),
-            style: TextStyle(color: context.kTextSecondary, fontSize: 17, fontWeight: FontWeight.w400),
+            style: TextStyle(
+              color: context.kTextSecondary,
+              fontSize: 17,
+              fontWeight: FontWeight.w400,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -345,17 +412,29 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     if (_estado == 'REVISION') {
       return Column(
         children: [
-          const Icon(Icons.hourglass_top_rounded, color: KigoDesign.brand, size: 80),
+          const Icon(
+            Icons.hourglass_top_rounded,
+            color: KigoDesign.brand,
+            size: 80,
+          ),
           const SizedBox(height: 18),
           Text(
             AppLocalizations.t(context, 'en_revision_manual_title'),
-            style: TextStyle(color: context.kTextPrimary, fontSize: 28, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              color: context.kTextPrimary,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
           Text(
             AppLocalizations.t(context, 'en_revision_manual_subtitle'),
-            style: TextStyle(color: context.kTextSecondary, fontSize: 17, fontWeight: FontWeight.w400),
+            style: TextStyle(
+              color: context.kTextSecondary,
+              fontSize: 17,
+              fontWeight: FontWeight.w400,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -375,7 +454,11 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           aprobado
               ? AppLocalizations.t(context, 'acceso_aprobado')
               : AppLocalizations.t(context, 'acceso_no_autorizado'),
-          style: TextStyle(color: context.kTextPrimary, fontSize: 28, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            color: context.kTextPrimary,
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -408,23 +491,44 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
                     width: 140,
                     height: 140,
                     color: context.kSurface2,
-                    child: Icon(Icons.person_outline, color: context.kTextSecondary, size: 56),
+                    child: Icon(
+                      Icons.person_outline,
+                      color: context.kTextSecondary,
+                      size: 56,
+                    ),
                   ),
           ),
           const SizedBox(height: 20),
           Text(
             // Sin INE no hay nombre: se muestra la placa, que es como el
             // vigilante va a identificar esta visita.
-            data.nombreCompleto ?? data.placa ?? AppLocalizations.t(context, 'visitante_label'),
-            style: TextStyle(color: context.kTextPrimary, fontSize: 24, fontWeight: FontWeight.w800),
+            data.nombreCompleto ??
+                data.placa ??
+                AppLocalizations.t(context, 'visitante_label'),
+            style: TextStyle(
+              color: context.kTextPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          _buildDato(Icons.access_time_rounded, AppLocalizations.t(context, 'hora_solicitud_label'),
-              TimeOfDay.fromDateTime(_horaSolicitud).format(context)),
-          _buildDato(Icons.home_outlined, AppLocalizations.t(context, 'casa_destino_label'), data.casaDestino ?? '—'),
+          _buildDato(
+            Icons.access_time_rounded,
+            AppLocalizations.t(context, 'hora_solicitud_label'),
+            TimeOfDay.fromDateTime(_horaSolicitud).format(context),
+          ),
+          _buildDato(
+            Icons.home_outlined,
+            AppLocalizations.t(context, 'casa_destino_label'),
+            data.casaDestino ?? '—',
+          ),
           if (data.placa != null && data.placa!.isNotEmpty)
-            _buildDato(Icons.directions_car_outlined, AppLocalizations.t(context, 'placa_label'), data.placa!),
+            _buildDato(
+              Icons.directions_car_outlined,
+              AppLocalizations.t(context, 'placa_label'),
+              data.placa!,
+            ),
         ],
       ),
     );
@@ -441,9 +545,23 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(color: context.kTextSecondary, fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: context.kTextSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(valor, style: TextStyle(color: context.kTextPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
+                Text(
+                  valor,
+                  style: TextStyle(
+                    color: context.kTextPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
