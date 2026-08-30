@@ -62,11 +62,7 @@ type KioskoConfig struct {
 	UmbralSimilitudCara    float64 `gorm:"not null;default:0.70"` // similitud mínima para reconocimiento facial
 
 	// Nuevos campos de UI configurable
-	ScreensaverHabilitado  bool   `gorm:"not null;default:true"`
-	ModoCapturaNombre      string `gorm:"not null;default:'TECLADO'"`
-	MostrarNombreInvitado  bool   `gorm:"not null;default:false"`
-	TiempoExitoSeg         int    `gorm:"not null;default:5"`
-	LectorFisicoHabilitado bool   `gorm:"not null;default:false"`
+	TiempoExitoSeg int `gorm:"not null;default:5"`
 }
 
 func (Kiosko) TableName() string       { return "kioskos" }

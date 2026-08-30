@@ -1847,16 +1847,12 @@
 
     document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
-    document.getElementById("cfg-screensaver").checked = cfg.screensaver_habilitado ?? true;
     document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
-    document.getElementById("cfg-modo-nombre").value  = cfg.modo_captura_nombre || "TECLADO";
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
     document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
-    document.getElementById("cfg-mostrar-nombre-invitado").checked = !!cfg.mostrar_nombre_invitado;
     document.getElementById("cfg-tiempo-exito").value = cfg.tiempo_exito_seg ?? 5;
     document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_seg ?? 60;
-    document.getElementById("cfg-lector-fisico").checked = !!cfg.lector_fisico_habilitado;
     document.getElementById("cfg-autopass").checked = !!cfg.auto_pass_habilitado;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
@@ -1964,9 +1960,7 @@
     const payload = {
       color_kiosko:             document.getElementById("cfg-color").value,
       idioma_kiosko:            document.getElementById("cfg-idioma").value,
-      screensaver_habilitado:   document.getElementById("cfg-screensaver").checked,
       mensaje_bienvenida:       document.getElementById("cfg-mensaje").value,
-      modo_captura_nombre:      document.getElementById("cfg-modo-nombre").value,
       foto_rostro_visitante:    fotoRostro,
       foto_placa_visitante:     fotoPlaca,
       foto_ine_visitante:       fotoIne,
@@ -1974,10 +1968,8 @@
       foto_ine_invitado:        document.getElementById("cfg-ine-invitado").checked,
       foto_rostro_invitado:     document.getElementById("cfg-rostro-invitado").checked,
       foto_placa_invitado:      document.getElementById("cfg-placa-invitado").checked,
-      mostrar_nombre_invitado:  document.getElementById("cfg-mostrar-nombre-invitado").checked,
       tiempo_exito_seg:         parseInt(document.getElementById("cfg-tiempo-exito").value) || 5,
       tiempo_espera_seg:        parseInt(document.getElementById("cfg-tiempo-espera").value) || 60,
-      lector_fisico_habilitado: document.getElementById("cfg-lector-fisico").checked,
       auto_pass_habilitado:     document.getElementById("cfg-autopass").checked,
       horario_inicio:           document.getElementById("cfg-horario-inicio").value,
       horario_fin:              document.getElementById("cfg-horario-fin").value,

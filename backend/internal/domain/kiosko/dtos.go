@@ -47,11 +47,7 @@ type KioskoConfigRequest struct {
 	UmbralConfianzaVisitas *int      `json:"umbral_confianza_visitas"`
 	UmbralSimilitudCara    *float64  `json:"umbral_similitud_cara"`
 
-	ScreensaverHabilitado  *bool     `json:"screensaver_habilitado"`
-	ModoCapturaNombre      *string   `json:"modo_captura_nombre"`
-	MostrarNombreInvitado  *bool     `json:"mostrar_nombre_invitado"`
-	TiempoExitoSeg         *int      `json:"tiempo_exito_seg"`
-	LectorFisicoHabilitado *bool     `json:"lector_fisico_habilitado"`
+	TiempoExitoSeg *int `json:"tiempo_exito_seg"`
 }
 
 // KioskoConfigResponse DTO de respuesta de la config del kiosko
@@ -79,11 +75,7 @@ type KioskoConfigResponse struct {
 	UmbralConfianzaVisitas int        `json:"umbral_confianza_visitas"`
 	UmbralSimilitudCara    float64    `json:"umbral_similitud_cara"`
 
-	ScreensaverHabilitado  bool       `json:"screensaver_habilitado"`
-	ModoCapturaNombre      string     `json:"modo_captura_nombre"`
-	MostrarNombreInvitado  bool       `json:"mostrar_nombre_invitado"`
-	TiempoExitoSeg         int        `json:"tiempo_exito_seg"`
-	LectorFisicoHabilitado bool       `json:"lector_fisico_habilitado"`
+	TiempoExitoSeg int `json:"tiempo_exito_seg"`
 }
 
 // helper func para convertir un Kiosko (DB Model) a DTO Reponse
@@ -137,10 +129,6 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 		UmbralConfianzaVisitas: cfg.UmbralConfianzaVisitas,
 		UmbralSimilitudCara:    cfg.UmbralSimilitudCara,
 
-		ScreensaverHabilitado:  cfg.ScreensaverHabilitado,
-		ModoCapturaNombre:      cfg.ModoCapturaNombre,
-		MostrarNombreInvitado:  cfg.MostrarNombreInvitado,
-		TiempoExitoSeg:         cfg.TiempoExitoSeg,
-		LectorFisicoHabilitado: cfg.LectorFisicoHabilitado,
+		TiempoExitoSeg: cfg.TiempoExitoSeg,
 	}
 }
