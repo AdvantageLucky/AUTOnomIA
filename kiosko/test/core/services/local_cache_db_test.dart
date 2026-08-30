@@ -74,6 +74,44 @@ void main() {
     expect(inv, isNull);
   });
 
+  test('residentes: persona_id se guarda y se puede leer aparte de id (membresia)', () async {
+    await db.reemplazarResidentes([
+      {
+        'id': 1, // membresia_id
+        'persona_id': 42,
+        'nombre': 'Ana',
+        'apellido_paterno': 'Ruiz',
+        'casa_destino': 'Casa 1',
+        'pin_hash': 'hash',
+        'embedding': <double>[],
+      },
+    ]);
+
+    final residentes = await db.obtenerResidentes();
+    expect(residentes.first['id'], 1);
+    expect(residentes.first['persona_id'], 42);
+  });
+
+  test('invitaciones: obtenerInvitacionActivaPorPersonaId encuentra por persona_invitada_id', () async {
+    await db.reemplazarInvitaciones([
+      {
+        'token': 'tok-1',
+        'titular': 'Beto',
+        'casa_destino': 'Casa 2',
+        'expires_at': null,
+        'persona_invitada_id': 77,
+        'permite_reconocimiento_facial': 1,
+      },
+    ]);
+
+    final inv = await db.obtenerInvitacionActivaPorPersonaId(77);
+    expect(inv, isNotNull);
+    expect(inv!['titular'], 'Beto');
+
+    final sinMatch = await db.obtenerInvitacionActivaPorPersonaId(999);
+    expect(sinMatch, isNull);
+  });
+
   test('residentes: reemplazarResidentes serializa y obtenerResidentes deserializa el embedding', () async {
     await db.reemplazarResidentes([
       {
