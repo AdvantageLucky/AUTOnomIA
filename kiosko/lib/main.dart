@@ -133,6 +133,7 @@ Future<Map<String, dynamic>> _reproducirRegistroContraBackend(
     case 'qr_persona':
       return servicio.reproducirQrPersona(
         payload['persona_id'] as int,
+        firma: payload['firma'] as String? ?? '',
         clientId: clientId,
       );
     default:
