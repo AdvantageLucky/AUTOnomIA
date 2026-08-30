@@ -1,19 +1,21 @@
 /* VISTA PRINCIPAL DE REGISTRO TÁCTIL */
 
+import 'package:kigo_kiosco/core/services/asistente_controller.dart';
+import 'package:kigo_kiosco/core/services/asistente_presentacion_servicio.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animation.dart';
 import 'package:flutter/material.dart';
-import 'package:loading_indicator/loading_indicator.dart';
 import 'package:kigo_kiosco/features/registro/viewmodels/touch_register_viewmodel.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_rostro_widget.dart';
-import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
@@ -27,8 +29,7 @@ class TouchRegisterView extends StatefulWidget {
 
 class _TouchRegisterViewState extends State<TouchRegisterView> {
   late final TouchRegisterViewModel viewModel;
-  final TextToSpeakServicio _textToSpeakServicio = TextToSpeakServicio();
-  bool _isSpeaking = false;
+  final AsistenteController _asistenteController = AsistenteController();
 
   @override
   void initState() {
@@ -37,7 +38,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     viewModel.addListener(_refresh);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _speakText(AppLocalizations.t(context, 'welcome_message'));
+      _narrar(AppLocalizations.t(context, 'welcome_message'));
     });
   }
 
@@ -51,24 +52,17 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     setState(() {});
   }
 
-  Future<void> _speakText(String text) async {
-    if (_isSpeaking) return;
-
-    setState(() {
-      _isSpeaking = true;
-    });
-
-    try {
-      await _textToSpeakServicio.speak(text);
-    } catch (_) {
-      // Ignorar errores de TTS para no bloquear la UI.
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSpeaking = false;
-        });
-      }
+  /// Antes de la primera narración de la sesión del kiosko, la mascota se
+  /// presenta explícitamente -- el usuario debe entender rápido que es un
+  /// asistente que escucha, no solo un ícono decorativo.
+  void _narrar(String texto) {
+    if (!AsistentePresentacionServicio.yaPresentado) {
+      AsistentePresentacionServicio.marcarPresentado();
+      _asistenteController.decir(
+        AppLocalizations.t(context, 'asistente_presentacion_message'),
+      );
     }
+    _asistenteController.decir(texto);
   }
 
   Future<void> _continueProcess() async {
@@ -79,7 +73,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       while (!esIneValida) {
         if (!mounted) return;
 
-        _speakText(AppLocalizations.t(context, 'voice_instruction_ine'));
+        _narrar(AppLocalizations.t(context, 'voice_instruction_ine'));
         final String? pathFoto = await Navigator.push<String>(
           context,
           MaterialPageRoute(builder: (_) => const EscaneoInePage()),
@@ -87,10 +81,14 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
         if (pathFoto == null) break;
 
-        final CalidadCaptura resultado = await viewModel.procesarEscaneoIne(pathFoto);
+        final CalidadCaptura resultado = await viewModel.procesarEscaneoIne(
+          pathFoto,
+        );
         if (resultado == CalidadCaptura.ok) {
           esIneValida = true;
-          if (mounted) _speakText(AppLocalizations.t(context, 'ine_detected_title'));
+          if (mounted) {
+            _narrar(AppLocalizations.t(context, 'ine_detected_title'));
+          }
           if (viewModel.isLastStep) {
             _irACasaDestino();
           } else {
@@ -99,31 +97,64 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         } else {
           final esBorrosa = resultado == CalidadCaptura.borrosa;
           if (mounted) {
-            _speakText(AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_message' : 'ine_invalid_message'));
+            _narrar(
+              AppLocalizations.t(
+                context,
+                esBorrosa ? 'ine_borrosa_message' : 'ine_invalid_message',
+              ),
+            );
             await showDialog(
               context: context,
               barrierDismissible: false,
               builder: (BuildContext context) {
                 return AlertDialog(
                   backgroundColor: context.kSurfaceCard,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                   title: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded, color: KigoDesign.brand, size: 28),
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: KigoDesign.brand,
+                        size: 28,
+                      ),
                       const SizedBox(width: 12),
-                      Flexible(child: Text(AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_error_title' : 'ine_invalid_error_title'), style: TextStyle(color: context.kTextPrimary))),
+                      Flexible(
+                        child: Text(
+                          AppLocalizations.t(
+                            context,
+                            esBorrosa
+                                ? 'ine_borrosa_error_title'
+                                : 'ine_invalid_error_title',
+                          ),
+                          style: TextStyle(color: context.kTextPrimary),
+                        ),
+                      ),
                     ],
                   ),
                   content: Text(
-                    AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_error_content' : 'ine_invalid_error_content'),
-                    style: TextStyle(color: context.kTextSecondary, fontSize: 16),
+                    AppLocalizations.t(
+                      context,
+                      esBorrosa
+                          ? 'ine_borrosa_error_content'
+                          : 'ine_invalid_error_content',
+                    ),
+                    style: TextStyle(
+                      color: context.kTextSecondary,
+                      fontSize: 16,
+                    ),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         AppLocalizations.t(context, 'retry_button_text'),
-                        style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                          color: KigoDesign.brand,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ],
@@ -138,7 +169,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       while (!esRostroValido) {
         if (!mounted) return;
 
-        _speakText(AppLocalizations.t(context, 'voice_instruction_face'));
+        _narrar(AppLocalizations.t(context, 'voice_instruction_face'));
         final String? pathFoto = await Navigator.push<String>(
           context,
           MaterialPageRoute(builder: (_) => const EscaneoRostro()),
@@ -146,11 +177,17 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
         if (pathFoto == null) break;
 
-        final CalidadCaptura resultado = await viewModel.procesarEscaneoRostro(pathFoto);
+        final CalidadCaptura resultado = await viewModel.procesarEscaneoRostro(
+          pathFoto,
+        );
 
         if (resultado == CalidadCaptura.ok) {
           esRostroValido = true;
-          if (mounted) _speakText(AppLocalizations.t(context, 'registration_complete_message'));
+          if (mounted) {
+            _narrar(
+              AppLocalizations.t(context, 'registration_complete_message'),
+            );
+          }
           if (viewModel.isLastStep) {
             _irACasaDestino();
           } else {
@@ -159,31 +196,66 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         } else {
           final esBorrosa = resultado == CalidadCaptura.borrosa;
           if (mounted) {
-            _speakText(AppLocalizations.t(context, esBorrosa ? 'face_borrosa_message' : 'face_not_detected_message'));
+            _narrar(
+              AppLocalizations.t(
+                context,
+                esBorrosa
+                    ? 'face_borrosa_message'
+                    : 'face_not_detected_message',
+              ),
+            );
             await showDialog(
               context: context,
               barrierDismissible: false,
               builder: (BuildContext context) {
                 return AlertDialog(
                   backgroundColor: context.kSurfaceCard,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                   title: Row(
                     children: [
-                      const Icon(Icons.face_retouching_off, color: KigoDesign.brand, size: 28),
+                      const Icon(
+                        Icons.face_retouching_off,
+                        color: KigoDesign.brand,
+                        size: 28,
+                      ),
                       const SizedBox(width: 12),
-                      Flexible(child: Text(AppLocalizations.t(context, esBorrosa ? 'face_borrosa_error_title' : 'face_not_detected_title'), style: TextStyle(color: context.kTextPrimary))),
+                      Flexible(
+                        child: Text(
+                          AppLocalizations.t(
+                            context,
+                            esBorrosa
+                                ? 'face_borrosa_error_title'
+                                : 'face_not_detected_title',
+                          ),
+                          style: TextStyle(color: context.kTextPrimary),
+                        ),
+                      ),
                     ],
                   ),
                   content: Text(
-                    AppLocalizations.t(context, esBorrosa ? 'face_borrosa_error_content' : 'face_not_detected_content'),
-                    style: TextStyle(color: context.kTextSecondary, fontSize: 16),
+                    AppLocalizations.t(
+                      context,
+                      esBorrosa
+                          ? 'face_borrosa_error_content'
+                          : 'face_not_detected_content',
+                    ),
+                    style: TextStyle(
+                      color: context.kTextSecondary,
+                      fontSize: 16,
+                    ),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         AppLocalizations.t(context, 'retry_button_text'),
-                        style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                          color: KigoDesign.brand,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ],
@@ -201,7 +273,8 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     final String? casa = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (_) => CasaDestinoView(totalSteps: viewModel.indicatorTotalSteps),
+        builder: (_) =>
+            CasaDestinoView(totalSteps: viewModel.indicatorTotalSteps),
       ),
     );
     if (casa == null) {
@@ -226,84 +299,118 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   Widget build(BuildContext context) {
     // Si el ViewModel no tiene pasos cargados aún, mostramos carga
     if (viewModel.steps.isEmpty) {
-      return Scaffold(backgroundColor: context.kBg, body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: context.kBg,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     final step = viewModel.currentStepData;
 
-    return Scaffold(
-      // Fondo unificado para toda la pantalla, en el tema que toque
-      backgroundColor: context.kBg,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: _buildVoiceWaveButton(),
-      body: SizedBox.expand(
-        //Expandimos a pantalla completa quitando Center y Container restrictivos
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  // incremente el padding vertical superior (60) e inferior (40) para proteger la legibilidad sin depender de SafeArea.
-                  padding: const EdgeInsets.only(
-                    left: 42,
-                    right: 42,
-                    top: 32,
-                    bottom: 40,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            _buildHeader(),
-                            Positioned(
-                              left: 0,
-                              child: _buildTopBackButton(),
+    return Stack(
+      children: [
+        Scaffold(
+          // Fondo unificado para toda la pantalla, en el tema que toque
+          backgroundColor: context.kBg,
+          body: SizedBox.expand(
+            //Expandimos a pantalla completa quitando Center y Container restrictivos
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      // incremente el padding vertical superior (60) e inferior (40) para proteger la legibilidad sin depender de SafeArea.
+                      padding: const EdgeInsets.only(
+                        left: 42,
+                        right: 42,
+                        top: 32,
+                        bottom: 40,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                _buildHeader(),
+                                Positioned(
+                                  left: 0,
+                                  child: _buildTopBackButton(),
+                                ),
+                              ],
                             ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          StepIndicator(
+                            currentStep: viewModel.indicatorStep,
+                            totalSteps: viewModel.indicatorTotalSteps,
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          _buildVideoPlaceholder(),
+
+                          const SizedBox(height: 32),
+
+                          // --- BOTÓN PRINCIPAL CON LOADER ---
+                          viewModel.isProcessingIne
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: KigoDesign.brand,
+                                  ),
+                                )
+                              : _buildMainButton(
+                                  AppLocalizations.t(
+                                    context,
+                                    step.buttonTextKey,
+                                  ),
+                                ),
+
+                          if (viewModel.currentStep > 1) ...[
+                            const SizedBox(height: 12),
+                            _buildBackButton(),
                           ],
-                        ),
+                        ],
                       ),
-
-                      const SizedBox(height: 16),
-
-                      StepIndicator(
-                        currentStep: viewModel.indicatorStep,
-                        totalSteps: viewModel.indicatorTotalSteps,
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      _buildVideoPlaceholder(),
-
-                      const SizedBox(height: 32),
-
-                      // --- BOTÓN PRINCIPAL CON LOADER ---
-                      viewModel.isProcessingIne
-                        ? const Center(child: CircularProgressIndicator(color: KigoDesign.brand))
-                        : _buildMainButton(AppLocalizations.t(context, step.buttonTextKey)),
-
-                      if (viewModel.currentStep > 1) ...[
-                        const SizedBox(height: 12),
-                        _buildBackButton(),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            // Leyenda fija hasta abajo de la pantalla, separada del borde.
-            Padding(
-              padding: const EdgeInsets.only(bottom: 28, top: 12),
-              child: _buildFooter(),
+                // Leyenda fija hasta abajo de la pantalla, separada del borde.
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 28, top: 12),
+                  child: _buildFooter(),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          // Coincide con el padding real de esta pantalla (top: 32,
+          // right: 42 en el Padding de build()) para alinear con el
+          // header real -- mismo criterio usado en Welcome/ConfirmarPlaca
+          // esta sesión. Esta pantalla no usa SafeArea (a diferencia de
+          // PantallaAdaptable) -- MediaQuery.paddingOf(context).top
+          // debería ser 0 en el kiosko (modo inmersivo, sin status bar),
+          // pero confirmar en dispositivo real que no desalinea el ícono.
+          topDelBorde: 32,
+          rightDelBorde: 42,
+          controlador: _asistenteController,
+          onRespuestaLibre:
+              (_) {}, // esta pantalla no usa Q&A libre por texto, solo narra
+          onCampoExtraido: (_) {}, // no llena campos -- tipoCampo queda null
+        ),
+        const Positioned(
+          top: 32 + 50, // debajo del icono de la mascota (44px + margen)
+          right: 42,
+          child: EtiquetaAsistente(),
+        ),
+      ],
     );
   }
 
@@ -444,30 +551,6 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     );
   }
 
-  Widget _buildVoiceWaveButton() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
-      child: FloatingActionButton(
-        onPressed: _isSpeaking ? null : () => _speakText(AppLocalizations.t(context, 'listening_message')),
-        backgroundColor: KigoDesign.brand,
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: _isSpeaking
-              ? const LoadingIndicator(
-                  indicatorType: Indicator.audioEqualizer,
-                  colors: [Colors.white],
-                  strokeWidth: 2.6,
-                  backgroundColor: Colors.transparent,
-                  pathBackgroundColor: Colors.transparent,
-                )
-              : const Icon(Icons.mic, color: Colors.white, size: 32),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBackButton() {
     return Presionable(
       onTap: viewModel.previousStep,
@@ -477,10 +560,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         decoration: BoxDecoration(
           color: context.kSurface2,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: context.kBorder,
-            width: 1.2,
-          ),
+          border: Border.all(color: context.kBorder, width: 1.2),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
