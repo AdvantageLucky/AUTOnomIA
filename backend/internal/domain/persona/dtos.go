@@ -40,7 +40,6 @@ type MembresiaResponse struct {
 	ID          uint   `json:"id"`
 	TenantID    uint   `json:"tenant_id"`
 	CasaDestino string `json:"casa_destino"`
-	Rol         string `json:"rol"`
 	Status      string `json:"status"`
 	Pin         string `json:"pin"`
 }
@@ -113,7 +112,6 @@ type MembresiaMeResponse struct {
 	TenantID     uint   `json:"tenant_id"`
 	CentroNombre string `json:"centro_nombre"`
 	CasaDestino  string `json:"casa_destino"`
-	Rol          string `json:"rol"`
 	Status       string `json:"status"`
 	// Pin son los 5 dígitos en claro — la app los muestra en "Mi QR". Va
 	// solo en esta respuesta, que ya está autenticada como la Persona

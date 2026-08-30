@@ -876,7 +876,7 @@
     const periodoEl = document.getElementById('dash-reporte-ia-periodo');
     const textoEl   = document.getElementById('dash-reporte-ia-texto');
     if (periodoEl) periodoEl.textContent = `${fmtDate(r.PeriodoInicio)} – ${fmtDate(r.PeriodoFin)}`;
-    if (textoEl) textoEl.textContent = r.Texto || '';
+    if (textoEl) textoEl.innerHTML = formatMarkdown(esc(r.Texto)) || '';
     bodyEl.hidden = false;
   }
 
@@ -914,7 +914,7 @@
     rowsEl.innerHTML = reportes.map(r => `
       <div class="panel-padded" style="padding:12px 0;border-bottom:1px solid var(--border)">
         <div class="row-sub" style="margin-bottom:6px">${fmtDate(r.PeriodoInicio)} – ${fmtDate(r.PeriodoFin)}</div>
-        <div style="line-height:1.5">${esc(r.Texto)}</div>
+        <div style="line-height:1.5; font-size:13px; color:var(--text-2); margin-top:8px;" class="ia-summary-card-content">${formatMarkdown(esc(r.Texto))}</div>
       </div>`).join("");
 
     const totalPages = Math.ceil((data.total || 0) / stateHistorialReportes.pageSize);
@@ -1069,21 +1069,36 @@
   });
 
   /* ─── Detalle de visita + expediente ───── */
+  function formatMarkdown(text) {
+    if (!text) return '';
+    let html = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/- (.*)/g, '<li>$1</li>');
+      
+    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+    return html.replace(/\n/g, '<br/>');
+  }
+
   function renderSeccionIA(v) {
-    if (v.score_ia) {
-      const s = v.score_ia;
+    if (v.score_ia || v.resumen_ia) {
+      const s = v.score_ia || {};
       const badges = [];
       if (s.anomalia_matricula) badges.push('<span class="badge badge--pendiente">Placa distinta</span>');
       if (s.horario_inusual)    badges.push('<span class="badge badge--pendiente">Horario inusual</span>');
       if (s.rechazado_previo)   badges.push('<span class="badge badge--rechazado">Rechazo previo</span>');
       if (s.ocr_sospechoso)     badges.push('<span class="badge badge--pendiente">OCR sospechoso</span>');
       if (s.confiable)          badges.push('<span class="badge badge--aprobado">Visitante confiable</span>');
+      
       return `
-        <div class="expediente-section" id="ia-section">
-          <div class="expediente-header"><span class="expediente-title">Análisis IA</span></div>
-          <div style="padding:0 4px 4px">
-            ${v.resumen_ia ? `<div style="margin-bottom:10px;line-height:1.5">${esc(v.resumen_ia)}</div>` : ''}
-            ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${badges.join('')}</div>` : ''}
+        <div class="ia-summary-card">
+          <div class="ia-summary-header">
+             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand);margin-right:6px;"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
+             <span style="font-weight:600;color:var(--text-1);">Análisis de Inteligencia Artificial</span>
+          </div>
+          <div class="ia-summary-body" style="padding-top:10px;">
+            ${v.resumen_ia ? `<div style="font-size:13px;line-height:1.6;color:var(--text-2);margin-bottom:12px;">${formatMarkdown(esc(v.resumen_ia))}</div>` : ''}
+            ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${badges.join('')}</div>` : ''}
           </div>
         </div>`;
     }
@@ -1091,19 +1106,22 @@
     if (v.estadisticas) {
       const e = v.estadisticas;
       return `
-        <div class="expediente-section" id="ia-section">
-          <div class="expediente-header"><span class="expediente-title">Historial</span></div>
-          <div class="row-sub" style="padding:0 4px 4px">
-            Visitas: ${e.veces_visitado}${e.ultima_visita ? ' · Última: ' + fmtDateShort(e.ultima_visita) : ''}${e.casa_habitual ? ' · Casa habitual: ' + esc(e.casa_habitual) : ''}
+        <div class="ia-summary-card" style="border: 1px solid var(--border); background: var(--bg-1);">
+          <div class="ia-summary-header">
+             <span style="font-weight:600;color:var(--text-1);">Historial del Visitante</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-2);padding-top:10px;line-height:1.5;">
+            <strong>Visitas previas:</strong> ${e.veces_visitado}<br>
+            ${e.ultima_visita ? `<strong>Última visita:</strong> ${fmtDateShort(e.ultima_visita)}<br>` : ''}
+            ${e.casa_habitual ? `<strong>Casa habitual:</strong> ${esc(e.casa_habitual)}` : ''}
           </div>
         </div>`;
     }
 
     if (v.estado === 'PENDIENTE') {
       return `
-        <div class="expediente-section" id="ia-section">
-          <div class="expediente-header"><span class="expediente-title">Análisis IA</span></div>
-          <div class="row-sub" style="padding:0 4px 4px">Analizando…</div>
+        <div class="ia-summary-card" style="border: 1px dashed var(--border);">
+          <div class="ia-summary-header" style="color:var(--text-2);">Analizando mediante IA...</div>
         </div>`;
     }
 

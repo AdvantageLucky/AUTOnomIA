@@ -394,7 +394,6 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 			ID:          existente.ID,
 			TenantID:    existente.TenantID,
 			CasaDestino: existente.CasaDestino,
-			Rol:         existente.Rol,
 			Status:      existente.Status,
 			Pin:         existente.PinCodigo,
 		})
@@ -416,7 +415,6 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		CasaDestino: casaDestino,
 		Pin:         hash,
 		PinCodigo:   codigo,
-		Rol:         residente.MembresiaRolTitular,
 		Status:      residente.ResidenteStatusPendiente,
 	}
 	if err := h.membresiaRepo.Create(m); err != nil {
@@ -428,7 +426,6 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		ID:          m.ID,
 		TenantID:    m.TenantID,
 		CasaDestino: m.CasaDestino,
-		Rol:         m.Rol,
 		Status:      m.Status,
 		Pin:         m.PinCodigo,
 	})
@@ -899,7 +896,6 @@ func (h *Handler) ListarMisMembresias(c *gin.Context) {
 			TenantID:     m.TenantID,
 			CentroNombre: nombreCentro,
 			CasaDestino:  m.CasaDestino,
-			Rol:          m.Rol,
 			Status:       m.Status,
 			Pin:          m.PinCodigo,
 		})

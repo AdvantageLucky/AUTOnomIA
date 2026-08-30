@@ -102,8 +102,10 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           _isSubmitting = false;
         });
 
+        final config = context.read<KioskoConfigNotifier>().kiosko;
+        final seconds = config?.tipo == TipoKiosko.vehicular ? 6 : 4;
         _regresoTimer?.cancel();
-        _regresoTimer = Timer(const Duration(minutes: 1), _regresarABienvenida);
+        _regresoTimer = Timer(Duration(seconds: seconds), _regresarABienvenida);
         return;
       }
 
@@ -161,10 +163,13 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
       if (nuevoEstado == 'APROBADO' || nuevoEstado == 'RECHAZADO' || nuevoEstado == 'REVISION') {
         _pollTimer?.cancel();
-        // El kiosko se queda mostrando el resultado un minuto y regresa solo
+        // El kiosko se queda mostrando el resultado brevemente y regresa solo
         // a la bienvenida, para quedar listo para el siguiente visitante.
+        final config = context.read<KioskoConfigNotifier>().kiosko;
+        final seconds = config?.tipo == TipoKiosko.vehicular ? 6 : 4;
+        
         _regresoTimer?.cancel();
-        _regresoTimer = Timer(const Duration(minutes: 1), _regresarABienvenida);
+        _regresoTimer = Timer(Duration(seconds: seconds), _regresarABienvenida);
 
         if (nuevoEstado == 'REVISION' && !yaEstabaEnRevision) {
           _mostrarDialogoRevision();

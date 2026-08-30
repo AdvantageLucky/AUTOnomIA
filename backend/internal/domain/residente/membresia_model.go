@@ -4,9 +4,6 @@ package residente
 import "gorm.io/gorm"
 
 const (
-	MembresiaRolTitular  = "titular"
-	MembresiaRolFamiliar = "familiar"
-
 	// Reusadas por Membresia.Status (y antes por Residente.Status, ya
 	// eliminado) — el ciclo de aprobación activo/pendiente/rechazado es el
 	// mismo para ambos.
@@ -35,7 +32,6 @@ type Membresia struct {
 	// no cambia una vez asignado.
 	Pin                         string `gorm:"not null"`
 	PinCodigo                   string `gorm:"column:pin_codigo;not null;default:''"`
-	Rol                         string `gorm:"not null;default:'titular'"`
 	Status                      string `gorm:"not null;default:'activo'"`
 	PermiteReconocimientoFacial bool   `gorm:"not null;default:false"`
 	KioskoID                    *uint

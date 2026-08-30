@@ -142,7 +142,7 @@ class _FilaCompanero extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                companero.rol == 'titular' ? 'Titular' : 'Familiar',
+                'Compañero de casa',
                 style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
               ),
             ],

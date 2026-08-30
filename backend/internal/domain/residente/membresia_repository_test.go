@@ -72,23 +72,23 @@ func TestFindCompanerosCasa(t *testing.T) {
 
 	titular := testPersona{Nombre: "Ana", ApellidoPaterno: "Ruiz", Telefono: "+525500000001"}
 	db.Create(&titular)
-	db.Create(&Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo, Rol: "titular"})
+	db.Create(&Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo})
 
 	familiar := testPersona{Nombre: "Beto", ApellidoPaterno: "Ruiz", Telefono: "+525500000002"}
 	db.Create(&familiar)
-	db.Create(&Membresia{PersonaID: familiar.ID, TenantID: 1, CasaDestino: "casa 1", Status: ResidenteStatusActivo, Rol: "familiar"})
+	db.Create(&Membresia{PersonaID: familiar.ID, TenantID: 1, CasaDestino: "casa 1", Status: ResidenteStatusActivo})
 
 	pendiente := testPersona{Nombre: "Cin", ApellidoPaterno: "Diaz", Telefono: "+525500000003"}
 	db.Create(&pendiente)
-	db.Create(&Membresia{PersonaID: pendiente.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusPendiente, Rol: "familiar"})
+	db.Create(&Membresia{PersonaID: pendiente.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusPendiente})
 
 	otraCasa := testPersona{Nombre: "Dan", ApellidoPaterno: "Soto", Telefono: "+525500000004"}
 	db.Create(&otraCasa)
-	db.Create(&Membresia{PersonaID: otraCasa.ID, TenantID: 1, CasaDestino: "Casa 2", Status: ResidenteStatusActivo, Rol: "titular"})
+	db.Create(&Membresia{PersonaID: otraCasa.ID, TenantID: 1, CasaDestino: "Casa 2", Status: ResidenteStatusActivo})
 
 	otroTenant := testPersona{Nombre: "Eva", ApellidoPaterno: "Vega", Telefono: "+525500000005"}
 	db.Create(&otroTenant)
-	db.Create(&Membresia{PersonaID: otroTenant.ID, TenantID: 2, CasaDestino: "Casa 1", Status: ResidenteStatusActivo, Rol: "titular"})
+	db.Create(&Membresia{PersonaID: otroTenant.ID, TenantID: 2, CasaDestino: "Casa 1", Status: ResidenteStatusActivo})
 
 	// Consulta como si fuera "titular" viendo sus compañeros de casa —
 	// se excluye a sí mismo, incluye al familiar (case-insensitive "casa 1"
@@ -103,9 +103,6 @@ func TestFindCompanerosCasa(t *testing.T) {
 	if list[0].NombreCompleto != "Beto Ruiz" {
 		t.Errorf("esperaba 'Beto Ruiz', got %q", list[0].NombreCompleto)
 	}
-	if list[0].Rol != "familiar" {
-		t.Errorf("esperaba rol 'familiar', got %q", list[0].Rol)
-	}
 }
 
 func TestFindCompanerosCasa_ListaVacia(t *testing.T) {
@@ -114,7 +111,7 @@ func TestFindCompanerosCasa_ListaVacia(t *testing.T) {
 
 	titular := testPersona{Nombre: "Ana", ApellidoPaterno: "Ruiz", Telefono: "+525500000001"}
 	db.Create(&titular)
-	db.Create(&Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo, Rol: "titular"})
+	db.Create(&Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo})
 
 	list, err := repo.FindCompanerosCasa(1, "Casa 1", titular.ID)
 	if err != nil {

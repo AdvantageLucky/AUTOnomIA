@@ -7,6 +7,9 @@ import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmo
 import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/verdict_ring.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
+import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 
 class PersonaQrResultView extends StatefulWidget {
   final PersonaQrResultViewModel viewModel;
@@ -43,7 +46,10 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
     if (_autoTimer == null &&
         widget.alTerminar != null &&
         widget.viewModel.estado != PersonaQrResultEstado.cargando) {
-      _autoTimer = Timer(const Duration(seconds: 5), widget.alTerminar!);
+      
+      final config = context.read<KioskoConfigNotifier>().kiosko;
+      final seconds = config?.tipo == TipoKiosko.vehicular ? 5 : 3;
+      _autoTimer = Timer(Duration(seconds: seconds), widget.alTerminar!);
     }
   }
 
