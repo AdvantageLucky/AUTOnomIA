@@ -66,6 +66,20 @@ class _QrScannerViewState extends State<QrScannerView>
   /// desechado deja la app colgada.
   Timer? _timerNavegacion;
 
+  /// Campo de texto invisible que capta al lector QR dedicado del hardware
+  /// Telpo F10 — opera como teclado-wedge (HID): al escanear, escribe el
+  /// contenido en cualquier campo enfocado, sin Intent ni binding de SDK.
+  /// Coexiste con `MobileScanner`; el que detecte primero gana (dedup ya
+  /// existe en el viewmodel vía `isScanned`).
+  final _lectorFisicoController = TextEditingController();
+  final _lectorFisicoFocus = FocusNode();
+
+  /// El lector no manda Enter al terminar — se detecta el fin del escaneo
+  /// por quietud: si no llega texto nuevo en este lapso, se toma lo
+  /// acumulado como el QR completo.
+  static const _debounceLectorFisico = Duration(milliseconds: 250);
+  Timer? _timerLectorFisico;
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +89,7 @@ class _QrScannerViewState extends State<QrScannerView>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
+    _lectorFisicoController.addListener(_onLectorFisicoCambio);
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _solicitarConsentimiento(),
     );
@@ -90,11 +105,14 @@ class _QrScannerViewState extends State<QrScannerView>
   @override
   void dispose() {
     _timerNavegacion?.cancel();
+    _timerLectorFisico?.cancel();
     observadorDeRutas.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     widget.viewModel.removeListener(_updateView);
     _anilloCtrl.dispose();
     _controller?.dispose();
+    _lectorFisicoController.dispose();
+    _lectorFisicoFocus.dispose();
     super.dispose();
   }
 
@@ -143,6 +161,10 @@ class _QrScannerViewState extends State<QrScannerView>
       );
       _readyToScan = true;
     });
+    // Mismo momento en que arranca la cámara: el lector físico dedicado
+    // (teclado-wedge) solo debe recibir foco mientras esta pantalla está
+    // realmente activa y lista, igual que la cámara.
+    _lectorFisicoFocus.requestFocus();
   }
 
   void _liberarCamara() {
@@ -158,6 +180,22 @@ class _QrScannerViewState extends State<QrScannerView>
       _readyToScan = false;
     }
     viejo.dispose();
+    _timerLectorFisico?.cancel();
+    _lectorFisicoFocus.unfocus();
+  }
+
+  /// El lector no manda Enter al terminar: se espera a que el campo quede
+  /// quieto (sin texto nuevo) por `_debounceLectorFisico` antes de tratar lo
+  /// acumulado como un QR completo.
+  void _onLectorFisicoCambio() {
+    if (_lectorFisicoController.text.isEmpty) return;
+    _timerLectorFisico?.cancel();
+    _timerLectorFisico = Timer(_debounceLectorFisico, () {
+      final valor = _lectorFisicoController.text;
+      _lectorFisicoController.clear();
+      if (valor.isEmpty || !_readyToScan) return;
+      _onQrDetected(valor);
+    });
   }
 
   void _updateView() => setState(() {});
@@ -303,6 +341,27 @@ class _QrScannerViewState extends State<QrScannerView>
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
+          // Invisible: solo existe para que el lector QR dedicado del F10
+          // (teclado-wedge) tenga un campo enfocado donde "teclear" el
+          // contenido escaneado. `TextInputType.none` evita que Android
+          // muestre el teclado virtual al enfocarlo.
+          Positioned(
+            left: -1000,
+            top: -1000,
+            child: SizedBox(
+              width: 1,
+              height: 1,
+              child: TextField(
+                controller: _lectorFisicoController,
+                focusNode: _lectorFisicoFocus,
+                autofocus: false,
+                showCursor: false,
+                keyboardType: TextInputType.none,
+                decoration: const InputDecoration.collapsed(hintText: null),
+              ),
+            ),
+          ),
+
           if (_consentGiven && _controller != null)
             // mobile_scanner tampoco acierta la orientación en este panel: se
             // le aplica el mismo giro fijo que al resto de las cámaras.
