@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:ui' show Size;
 
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as imglib;
 import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart'
-    show areaMinimaRostro;
+    show areaMinimaRostro, estaDentroDelMarco;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 const int _tamanoEntrada = 112;
@@ -54,6 +55,18 @@ class ReconocimientoFacialServicio {
       if (caja.width * caja.height <= areaMinimaRostro) return null;
 
       final bytes = await File(pathImagen).readAsBytes();
+
+      // Mismo criterio que el registro de visitante: rechazar rostros
+      // detectados fuera del círculo guía (antes se aceptaba cualquier cara
+      // en cualquier parte del encuadre).
+      final imagenParaTamano = imglib.decodeImage(bytes);
+      if (imagenParaTamano == null) return null;
+      if (!estaDentroDelMarco(
+        caja,
+        Size(imagenParaTamano.width.toDouble(), imagenParaTamano.height.toDouble()),
+      )) {
+        return null;
+      }
 
       // Solo se capturan valores enviables entre isolates (bytes y doubles).
       final left = caja.left;
