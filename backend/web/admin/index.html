@@ -550,153 +550,248 @@
 					<div class="screen-body screen-body--narrow">
 
 						<div id="cfg-form-wrap" hidden>
-
-							<div class="config-section">
-								<div class="config-section-title">Información del kiosko</div>
-								<div class="config-section-sub">Datos principales y tipo de acceso de este punto de control.</div>
-
-								<div class="form-group" style="margin-bottom:14px">
-									<label>Nombre del kiosko</label>
-									<input id="cfg-nombre" type="text" placeholder="Ej. Entrada Principal" class="search-select" style="width:100%" required>
-								</div>
-
-								<div class="toggle-row" style="margin-bottom:14px">
-									<div>
-										<div class="toggle-label">Tipo de kiosko</div>
-										<div class="toggle-sub">Define si admite peatones, vehículos o ambos</div>
-									</div>
-									<select id="cfg-tipo" class="search-select" style="width:180px">
-										<option value="PEATONAL">Peatonal</option>
-										<option value="VEHICULAR">Vehicular</option>
-									</select>
-								</div>
-
-								<div class="form-group">
-									<label>Ubicación / Referencia</label>
-									<input id="cfg-ubicacion" type="text" placeholder="Ej. Caseta Norte, Av. Central" class="search-select" style="width:100%">
+							<div class="tab-bar" style="margin-bottom:20px">
+								<div class="tab-bar-inner">
+									<button type="button" class="tab-btn active" data-cfg-tab="cfg-tab-general">General y Pantalla</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-sin-invitacion">Sin Invitación</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-con-invitacion">Pase QR (Invitación)</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-hardware">Hardware y Tiempos</button>
 								</div>
 							</div>
 
-							<div class="config-section">
-								<div class="config-section-title">Apariencia e idioma</div>
+							<!-- TAB 1: GENERAL -->
+							<div id="cfg-tab-general" class="cfg-tab-pane">
+								<div class="config-section">
+									<div class="config-section-title">Información del kiosko</div>
+									<div class="config-section-sub">Datos principales y tipo de acceso de este punto de control.</div>
 
-								<div class="toggle-row">
-									<div>
-										<div class="toggle-label">Modo del kiosko</div>
-										<div class="toggle-sub">Tema visual que verán los visitantes</div>
+									<div class="form-group" style="margin-bottom:14px">
+										<label>Nombre del kiosko</label>
+										<input id="cfg-nombre" type="text" placeholder="Ej. Entrada Principal" class="search-select" style="width:100%" required>
 									</div>
-									<select id="cfg-color" class="search-select">
-										<option value="oscuro">Oscuro</option>
-										<option value="claro">Claro</option>
-									</select>
+
+									<div class="toggle-row" style="margin-bottom:14px">
+										<div>
+											<div class="toggle-label">Tipo de kiosko</div>
+											<div class="toggle-sub">Define si admite peatones o vehículos</div>
+										</div>
+										<select id="cfg-tipo" class="search-select" style="width:180px">
+											<option value="PEATONAL">Peatonal</option>
+											<option value="VEHICULAR">Vehicular</option>
+										</select>
+									</div>
+
+									<div class="form-group">
+										<label>Ubicación / Referencia</label>
+										<input id="cfg-ubicacion" type="text" placeholder="Ej. Caseta Norte, Av. Central" class="search-select" style="width:100%">
+									</div>
 								</div>
 
-								<div class="toggle-row">
-									<div>
-										<div class="toggle-label">Idioma del kiosko</div>
-										<div class="toggle-sub">Idioma de la interfaz del kiosko</div>
-									</div>
-									<select id="cfg-idioma" class="search-select">
-										<option value="es">Español</option>
-										<option value="en">Inglés</option>
-									</select>
-								</div>
+								<div class="config-section">
+									<div class="config-section-title">Apariencia y Bienvenida</div>
 
-								<div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-									<div>
-										<div class="toggle-label">Mensaje de bienvenida</div>
-										<div class="toggle-sub">Texto que aparece al inicio del flujo</div>
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Tema visual</div>
+											<div class="toggle-sub">Paleta de colores que verán los visitantes en el kiosko</div>
+										</div>
+										<select id="cfg-color" class="search-select">
+											<option value="oscuro">Oscuro</option>
+											<option value="claro">Claro</option>
+										</select>
 									</div>
-									<input id="cfg-mensaje" type="text" placeholder="Bienvenido a Residencial Las Palmas" style="width:100%">
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Idioma de la interfaz</div>
+											<div class="toggle-sub">Idioma en que se muestran los textos del kiosko</div>
+										</div>
+										<select id="cfg-idioma" class="search-select">
+											<option value="es">Español</option>
+											<option value="en">Inglés</option>
+										</select>
+									</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Protector de pantalla (Screensaver)</div>
+											<div class="toggle-sub">Animación y reloj cuando el kiosko no está en uso</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-screensaver">
+											<span class="toggle-slider"></span>
+										</label>
+									</div>
+
+									<div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+										<div>
+											<div class="toggle-label">Mensaje de bienvenida</div>
+											<div class="toggle-sub">Texto inicial en pantalla principal</div>
+										</div>
+										<input id="cfg-mensaje" type="text" placeholder="Bienvenido al centro habitacional" style="width:100%">
+									</div>
 								</div>
 							</div>
 
-							<div class="config-section">
-								<div class="config-section-title">Flujo Sin Invitación (Secuencia de Pasos)</div>
-								<div class="config-section-sub">
-									Define qué pasos son obligatorios y <strong>arrastra las tarjetas</strong> para elegir el orden exacto en que aparecerán en la pantalla del kiosko.
-								</div>
+							<!-- TAB 2: SIN INVITACION -->
+							<div id="cfg-tab-sin-invitacion" class="cfg-tab-pane" hidden>
+								<div class="config-section">
+									<div class="config-section-title">Flujo Sin Invitación (Secuencia de Pasos)</div>
+									<div class="config-section-sub">
+										Define qué pasos son obligatorios y <strong>arrastra las tarjetas</strong> para elegir el orden exacto en que aparecerán en la pantalla del kiosko.
+									</div>
 
-								<div class="pipeline-container">
-									<div class="pipeline-list" id="cfg-pipeline-list">
-										<!-- Renderizado dinámicamente en app.js con soporte Drag & Drop -->
+									<div class="pipeline-container">
+										<div class="pipeline-list" id="cfg-pipeline-list">
+											<!-- Renderizado dinámicamente en app.js con soporte Drag & Drop -->
+										</div>
+									</div>
+
+									<div class="pipeline-preview-hint">
+										Nota: <strong>Orden de ejecución:</strong> El visitante completará los pasos de arriba hacia abajo. Los pasos desactivados se omitirán por completo.
 									</div>
 								</div>
 
-								<div class="pipeline-preview-hint">
-									Nota: <strong>Orden de ejecución:</strong> El visitante completará los pasos de arriba hacia abajo. Los pasos desactivados se omitirán por completo.
+								<div class="config-section">
+									<div class="config-section-title">Entrada de Datos</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Método para escribir nombre</div>
+											<div class="toggle-sub">Cómo ingresa su nombre un visitante imprevisto</div>
+										</div>
+										<select id="cfg-modo-nombre" class="search-select">
+											<option value="TECLADO">Teclado en pantalla</option>
+											<option value="NINGUNO">Omitir nombre</option>
+										</select>
+									</div>
 								</div>
 							</div>
 
-							<div class="config-section">
-								<div class="config-section-title">Flujo Con Invitación (Pase QR App Kigo)</div>
-								<div class="config-section-sub">Verificaciones adicionales requeridas cuando una persona llega con un código QR generado desde la app móvil.</div>
+							<!-- TAB 3: CON INVITACION -->
+							<div id="cfg-tab-con-invitacion" class="cfg-tab-pane" hidden>
+								<div class="config-section">
+									<div class="config-section-title">Verificaciones en Pase QR / PIN</div>
+									<div class="config-section-sub">Reglas de seguridad cuando una persona llega con invitación generada desde la app.</div>
 
-								<div class="toggle-row">
-									<div>
-										<div class="toggle-label">INE obligatoria</div>
-										<div class="toggle-sub">Verificar identidad con credencial física aunque el QR sea válido</div>
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">INE / Identificación obligatoria</div>
+											<div class="toggle-sub">Exigir escaneo de credencial física aunque el pase QR sea válido</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-ine-invitado">
+											<span class="toggle-slider"></span>
+										</label>
 									</div>
-									<label class="toggle-switch">
-										<input type="checkbox" id="cfg-ine-invitado">
-										<span class="toggle-slider"></span>
-									</label>
-								</div>
 
-								<div class="toggle-row">
-									<div>
-										<div class="toggle-label">Foto de rostro</div>
-										<div class="toggle-sub">Captura facial de confirmación al validar el QR</div>
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Foto de rostro de confirmación</div>
+											<div class="toggle-sub">Captura biométrica al validar el QR para bitácora</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-rostro-invitado">
+											<span class="toggle-slider"></span>
+										</label>
 									</div>
-									<label class="toggle-switch">
-										<input type="checkbox" id="cfg-rostro-invitado">
-										<span class="toggle-slider"></span>
-									</label>
-								</div>
 
-								<div class="toggle-row" id="cfg-row-placa-invitado">
-									<div>
-										<div class="toggle-label">Foto de placa vehicular</div>
-										<div class="toggle-sub">Registro de matrícula si el invitado ingresa en vehículo</div>
+									<div class="toggle-row" id="cfg-row-placa-invitado">
+										<div>
+											<div class="toggle-label">Confirmación de placa vehicular</div>
+											<div class="toggle-sub">Registro de matrícula si el invitado ingresa en vehículo</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-placa-invitado">
+											<span class="toggle-slider"></span>
+										</label>
 									</div>
-									<label class="toggle-switch">
-										<input type="checkbox" id="cfg-placa-invitado">
-										<span class="toggle-slider"></span>
-									</label>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Mostrar nombre del invitado en pantalla</div>
+											<div class="toggle-sub">Muestra "Bienvenido [Nombre]" tras validar QR en vez de mensaje genérico</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-mostrar-nombre-invitado">
+											<span class="toggle-slider"></span>
+										</label>
+									</div>
 								</div>
 							</div>
 
-							<div class="config-section">
-								<div class="config-section-title">Tiempos y horario</div>
+							<!-- TAB 4: HARDWARE Y TIEMPOS -->
+							<div id="cfg-tab-hardware" class="cfg-tab-pane" hidden>
+								<div class="config-section">
+									<div class="config-section-title">Tiempos y Pantalla de Éxito</div>
 
-								<div class="toggle-row">
-									<div>
-										<div class="toggle-label">Tiempo de espera máximo (seg)</div>
-										<div class="toggle-sub">Segundos antes de que el kiosko se libere si la solicitud no se resuelve</div>
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Tiempo de autoregreso en éxito (seg)</div>
+											<div class="toggle-sub">Segundos que dura la pantalla de bienvenida/apertura antes de volver al inicio</div>
+										</div>
+										<input type="number" id="cfg-tiempo-exito" min="2" max="30" class="search-select" style="width:80px;text-align:right">
 									</div>
-									<input type="number" id="cfg-tiempo-espera" min="5" max="600" class="search-select" style="width:80px;text-align:right">
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Tiempo de espera máximo (seg)</div>
+											<div class="toggle-sub">Segundos de inactividad antes de cancelar un registro incompleto</div>
+										</div>
+										<input type="number" id="cfg-tiempo-espera" min="10" max="600" class="search-select" style="width:80px;text-align:right">
+									</div>
 								</div>
 
-								<div class="toggle-row">
-									<div>
-										<div class="toggle-label">Horario de inicio</div>
-										<div class="toggle-sub">Kiosko activo desde esta hora</div>
+								<div class="config-section">
+									<div class="config-section-title">Hardware y Dispositivos</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Lector físico de credenciales (USB / Óptico)</div>
+											<div class="toggle-sub">Habilitar hardware lector de código de barras para INE</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-lector-fisico">
+											<span class="toggle-slider"></span>
+										</label>
 									</div>
-									<input type="time" id="cfg-horario-inicio" class="search-select">
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Aprobación automática por IA (AutoPass)</div>
+											<div class="toggle-sub">Aprobar accesos recurrentes seguros sin intervención manual</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-autopass">
+											<span class="toggle-slider"></span>
+										</label>
+									</div>
 								</div>
 
-								<div class="toggle-row">
-									<div>
-										<div class="toggle-label">Horario de cierre</div>
-										<div class="toggle-sub">Kiosko activo hasta esta hora</div>
+								<div class="config-section">
+									<div class="config-section-title">Horario de Operación</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Horario de inicio</div>
+											<div class="toggle-sub">Kiosko activo desde esta hora</div>
+										</div>
+										<input type="time" id="cfg-horario-inicio" class="search-select">
 									</div>
-									<input type="time" id="cfg-horario-fin" class="search-select">
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Horario de cierre</div>
+											<div class="toggle-sub">Kiosko activo hasta esta hora</div>
+										</div>
+										<input type="time" id="cfg-horario-fin" class="search-select">
+									</div>
 								</div>
 							</div>
 
 							<div id="cfg-error" class="form-error" hidden></div>
 							<div id="cfg-success" class="form-success" hidden>Configuración guardada.</div>
-							<div class="form-actions">
+							<div class="form-actions" style="margin-top:24px">
 								<button type="button" class="btn-primary" id="cfg-save-btn">Guardar configuración</button>
 							</div>
 						</div>

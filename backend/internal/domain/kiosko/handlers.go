@@ -453,6 +453,21 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.UmbralSimilitudCara != nil {
 		cfg.UmbralSimilitudCara = *req.UmbralSimilitudCara
 	}
+	if req.ScreensaverHabilitado != nil {
+		cfg.ScreensaverHabilitado = *req.ScreensaverHabilitado
+	}
+	if req.ModoCapturaNombre != nil {
+		cfg.ModoCapturaNombre = *req.ModoCapturaNombre
+	}
+	if req.MostrarNombreInvitado != nil {
+		cfg.MostrarNombreInvitado = *req.MostrarNombreInvitado
+	}
+	if req.TiempoExitoSeg != nil {
+		cfg.TiempoExitoSeg = *req.TiempoExitoSeg
+	}
+	if req.LectorFisicoHabilitado != nil {
+		cfg.LectorFisicoHabilitado = *req.LectorFisicoHabilitado
+	}
 
 	if err := repoCtx.UpdateConfig(cfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -468,6 +483,7 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 }
 
 // StreamConfig abre una conexión SSE y emite la config cada vez que el admin la actualiza.
+// El kiosko se suscribe al arrancar y reconecta automáticamente si se cae la red.
 //
 // @Summary Stream SSE de config del kiosko
 // @Tags kioskos
@@ -504,19 +520,3 @@ func (h *Handler) StreamConfig(c *gin.Context) {
 		}
 	})
 }
-	if req.ScreensaverHabilitado != nil {
-		cfg.ScreensaverHabilitado = *req.ScreensaverHabilitado
-	}
-	if req.ModoCapturaNombre != nil {
-		cfg.ModoCapturaNombre = *req.ModoCapturaNombre
-	}
-	if req.MostrarNombreInvitado != nil {
-		cfg.MostrarNombreInvitado = *req.MostrarNombreInvitado
-	}
-	if req.TiempoExitoSeg != nil {
-		cfg.TiempoExitoSeg = *req.TiempoExitoSeg
-	}
-	if req.LectorFisicoHabilitado != nil {
-		cfg.LectorFisicoHabilitado = *req.LectorFisicoHabilitado
-	}
-
