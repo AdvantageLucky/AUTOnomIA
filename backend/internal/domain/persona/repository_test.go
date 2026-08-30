@@ -9,6 +9,11 @@ import (
 	"kigo-autonomia-backend/internal/domain/residente"
 )
 
+// testQREd25519Seed es un seed hex de 32 bytes válido para NewHandler en
+// tests que no ejercen la firma/verificación de QR realmente — NewHandler
+// entra en pánico si el seed no decodifica a exactamente 32 bytes.
+const testQREd25519Seed = "0101010101010101010101010101010101010101010101010101010101010101"
+
 func setupTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
