@@ -62,20 +62,34 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
     if (!_micDisponible) return;
     setState(() => _estado = _EstadoAsistente.escuchando);
 
-    await _asistente.escuchar(
-      tipoCampo: widget.tipoCampo,
-      onRespuestaLibre: (respuesta) {
-        if (mounted) setState(() => _estado = _EstadoAsistente.inactivo);
-        widget.onRespuestaLibre(respuesta);
-      },
-      onCampoExtraido: (campo) {
-        if (mounted) setState(() => _estado = _EstadoAsistente.inactivo);
-        widget.onCampoExtraido(campo);
-      },
-      onNoEntendido: () {
-        if (mounted) setState(() => _estado = _EstadoAsistente.inactivo);
-      },
-    );
+    try {
+      await _asistente
+          .escuchar(
+            tipoCampo: widget.tipoCampo,
+            onRespuestaLibre: (respuesta) {
+              if (mounted) setState(() => _estado = _EstadoAsistente.inactivo);
+              widget.onRespuestaLibre(respuesta);
+            },
+            onCampoExtraido: (campo) {
+              if (mounted) setState(() => _estado = _EstadoAsistente.inactivo);
+              widget.onCampoExtraido(campo);
+            },
+            onNoEntendido: () {
+              if (mounted) setState(() => _estado = _EstadoAsistente.inactivo);
+            },
+          )
+          // Red de seguridad final: `AsistenteServicio.escuchar` ya tiene su
+          // propio timeout interno, pero si algo fuera de ese alcance se
+          // cuelga (ej. `_ensureLogin` leyendo secure storage), el ícono no
+          // debe quedar en "procesando" para siempre.
+          .timeout(const Duration(seconds: 20));
+    } catch (e) {
+      debugPrint('Error en asistente: $e');
+    } finally {
+      if (mounted && _estado != _EstadoAsistente.inactivo) {
+        setState(() => _estado = _EstadoAsistente.inactivo);
+      }
+    }
   }
 
   /// Al soltar el botón: si seguía escuchando, corta ahí mismo (no espera

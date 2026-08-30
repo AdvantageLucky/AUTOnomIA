@@ -121,9 +121,11 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
           ),
         ),
         BotonAsistenteFlotante(
-          // Coincide con el padding vertical del SingleChildScrollView de
-          // esta pantalla (20) para alinear con el header real.
+          // Coincide con el padding vertical/horizontal del
+          // SingleChildScrollView de esta pantalla (20/28) para alinear con
+          // el header real.
           topDelBorde: 20,
+          rightDelBorde: 28,
           tipoCampo: 'placa',
           onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
           onCampoExtraido: _onCampoExtraido,
