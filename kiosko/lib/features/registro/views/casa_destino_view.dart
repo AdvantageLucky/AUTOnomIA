@@ -1,6 +1,6 @@
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
-import 'package:kigo_kiosco/core/widgets/boton_asistente.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -183,54 +183,55 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: context.kBg,
-      appBar: AppBar(
-        backgroundColor: context.kBg,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: context.kTextPrimary),
-          onPressed: _regresar,
-        ),
-        actions: [
-          BotonAsistente(
-            tipoCampo: 'destino',
-            onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
-            onCampoExtraido: _onCampoExtraido,
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: context.kBg,
+          appBar: AppBar(
+            backgroundColor: context.kBg,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: context.kTextPrimary),
+              onPressed: _regresar,
+            ),
           ),
-          const SizedBox(width: 12),
-        ],
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.only(left: 42, right: 42, bottom: 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              StepIndicator(
-                currentStep: widget.totalSteps - 2,
-                totalSteps: widget.totalSteps,
+          body: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 42, right: 42, bottom: 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  StepIndicator(
+                    currentStep: widget.totalSteps - 2,
+                    totalSteps: widget.totalSteps,
+                  ),
+                  const SizedBox(height: 42),
+                  Text(_titulo(), style: TextStyle(color: context.kTextPrimary, fontSize: 34, fontWeight: FontWeight.w800)),
+                  if (_subtitulo() != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _subtitulo()!,
+                      style: TextStyle(color: context.kTextSecondary, fontSize: 17),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  _buildContenido(),
+                  if (!_isLoading && _error == null) ...[
+                    const SizedBox(height: 24),
+                    _buildBotonNoEncuentroDestino(),
+                  ],
+                ],
               ),
-              const SizedBox(height: 42),
-              Text(_titulo(), style: TextStyle(color: context.kTextPrimary, fontSize: 34, fontWeight: FontWeight.w800)),
-              if (_subtitulo() != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  _subtitulo()!,
-                  style: TextStyle(color: context.kTextSecondary, fontSize: 17),
-                ),
-              ],
-              const SizedBox(height: 32),
-              _buildContenido(),
-              if (!_isLoading && _error == null) ...[
-                const SizedBox(height: 24),
-                _buildBotonNoEncuentroDestino(),
-              ],
-            ],
+            ),
           ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          tipoCampo: 'destino',
+          onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
+          onCampoExtraido: _onCampoExtraido,
+        ),
+      ],
     );
   }
 

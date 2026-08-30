@@ -2,6 +2,9 @@
 CLAUDE.md
 GEMINI.md
 
+# superpowers (mockups del companion visual de brainstorming, notas locales)
+.superpowers/
+
 # enviroment keys
 .env
 *.env

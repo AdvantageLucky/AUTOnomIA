@@ -28,17 +28,29 @@ class BotonAsistente extends StatefulWidget {
   State<BotonAsistente> createState() => _BotonAsistenteState();
 }
 
-class _BotonAsistenteState extends State<BotonAsistente> {
+class _BotonAsistenteState extends State<BotonAsistente> with SingleTickerProviderStateMixin {
   final AsistenteServicio _asistente = AsistenteServicio();
   _EstadoAsistente _estado = _EstadoAsistente.inactivo;
   bool _micDisponible = true;
 
+  /// Anima las barras del ecualizador mientras `_estado == escuchando` — el
+  /// simple cambio de ícono (mic_none -> mic_rounded) que había antes era
+  /// demasiado sutil para notarse de reojo mientras alguien habla.
+  late final AnimationController _ondasCtrl;
+
   @override
   void initState() {
     super.initState();
+    _ondasCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
     _asistente.iniciar().then((ok) {
       if (mounted) setState(() => _micDisponible = ok);
     });
+  }
+
+  @override
+  void dispose() {
+    _ondasCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _onPressStart() async {
@@ -111,12 +123,6 @@ class _BotonAsistenteState extends State<BotonAsistente> {
       );
     }
 
-    final icono = switch (_estado) {
-      _EstadoAsistente.inactivo => Icons.mic_none_rounded,
-      _EstadoAsistente.escuchando => Icons.mic_rounded,
-      _EstadoAsistente.procesando => Icons.hourglass_top_rounded,
-    };
-
     return Tooltip(
       message: _micDisponible
           ? 'Mantén presionado para hablar'
@@ -131,9 +137,48 @@ class _BotonAsistenteState extends State<BotonAsistente> {
             color: _micDisponible ? KigoDesign.brand : KigoDesign.brand.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(KigoDesign.radius),
           ),
-          child: Icon(icono, color: Colors.white, size: 20),
+          child: _buildContenido(),
         ),
       ),
+    );
+  }
+
+  Widget _buildContenido() {
+    if (_estado == _EstadoAsistente.escuchando) return _buildOndas();
+
+    final icono = switch (_estado) {
+      _EstadoAsistente.inactivo => Icons.mic_none_rounded,
+      _EstadoAsistente.escuchando => Icons.mic_rounded, // no llega aquí, cubierto arriba
+      _EstadoAsistente.procesando => Icons.hourglass_top_rounded,
+    };
+    return Icon(icono, color: Colors.white, size: 20);
+  }
+
+  /// Cuatro barras tipo ecualizador, cada una desfasada respecto a las demás
+  /// sobre el mismo ciclo, en onda triangular (sube y baja parejo).
+  Widget _buildOndas() {
+    return AnimatedBuilder(
+      animation: _ondasCtrl,
+      builder: (context, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(4, (i) {
+            final t = (_ondasCtrl.value + i * 0.15) % 1.0;
+            final triangular = 1 - (2 * (t - 0.5)).abs(); // 0..1..0
+            final alto = 8 + 12 * triangular;
+            return Container(
+              width: 3,
+              height: alto,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/routing/registro_router.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
-import 'package:kigo_kiosco/core/widgets/boton_asistente.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/comunidad_badge.dart';
@@ -101,36 +101,44 @@ class _WelcomeViewState extends State<WelcomeView>
     final cfg = context.watch<KioskoConfigNotifier>().config;
     final mensaje = cfg.mensajeBienvenida.trim();
 
-    return Scaffold(
-      body: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => _iniciarConteoSalidaOperador(),
-        onTapUp: (_) => _cancelarConteoSalidaOperador(),
-        onTapCancel: _cancelarConteoSalidaOperador,
-        child: PantallaAdaptable(
-          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-          child: Column(
-            children: [
-              _buildHeader(context),
-              const Spacer(),
-              FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: _slideAnim,
-                  child: _buildWelcomeSection(mensaje),
-                ),
+    return Stack(
+      children: [
+        Scaffold(
+          body: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (_) => _iniciarConteoSalidaOperador(),
+            onTapUp: (_) => _cancelarConteoSalidaOperador(),
+            onTapCancel: _cancelarConteoSalidaOperador,
+            child: PantallaAdaptable(
+              padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+              child: Column(
+                children: [
+                  _buildHeader(context),
+                  const Spacer(),
+                  FadeTransition(
+                    opacity: _fadeAnim,
+                    child: SlideTransition(
+                      position: _slideAnim,
+                      child: _buildWelcomeSection(mensaje),
+                    ),
+                  ),
+                  const SizedBox(height: 56),
+                  FadeTransition(
+                    opacity: _fadeAnim,
+                    child: _buildBotones(context),
+                  ),
+                  const Spacer(),
+                  _buildFooter(),
+                ],
               ),
-              const SizedBox(height: 56),
-              FadeTransition(
-                opacity: _fadeAnim,
-                child: _buildBotones(context),
-              ),
-              const Spacer(),
-              _buildFooter(),
-            ],
+            ),
           ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          onRespuestaLibre: (_) {}, // la respuesta ya se leyó por TTS dentro de AsistenteServicio
+          onCampoExtraido: (_) {}, // WelcomeView no llena campos — tipoCampo queda null
+        ),
+      ],
     );
   }
 
@@ -385,10 +393,11 @@ class _WelcomeViewState extends State<WelcomeView>
           ],
         ),
         const Spacer(),
-        BotonAsistente(
-          onRespuestaLibre: (_) {}, // la respuesta ya se leyó por TTS dentro de AsistenteServicio
-          onCampoExtraido: (_) {}, // WelcomeView no llena campos — tipoCampo queda null
-        ),
+        // El botón del asistente ya no vive aquí -- flota sobre toda la
+        // pantalla vía BotonAsistenteFlotante (mismo lugar en las 3
+        // pantallas que lo usan). Este espacio se conserva para que el
+        // bloque de logo + nombre siga centrado igual que antes.
+        const SizedBox(width: 44),
       ],
     );
   }
