@@ -108,6 +108,80 @@ func TestVerificarQR_Invitado_PropagaPersonaID(t *testing.T) {
 	}
 }
 
+func TestVerificarQR_ClientIDRepetido_NoDuplicaVisita(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupTestDB(t)
+	if err := db.AutoMigrate(&visitas.Visita{}, &destinos.Destino{}, &invitaciones.Invitacion{}); err != nil {
+		t.Fatalf("no se pudo migrar: %v", err)
+	}
+	// Este test hace dos requests HTTP secuenciales contra el mismo :memory:
+	// sqlite — sin fijar el pool a una sola conexión, GORM puede abrir una
+	// segunda conexión física que ve una base en memoria distinta (vacía),
+	// dando "no such table" de forma no determinística.
+	if sqlDB, err := db.DB(); err == nil {
+		sqlDB.SetMaxOpenConns(1)
+	}
+	repo := NewRepository(db)
+	membresiaRepo := residente.NewMembresiaRepository(db)
+	invitacionRepo := invitaciones.NewRepository(db)
+	visitaRepo := visitas.NewRepository(db)
+	destinoRepo := destinos.NewRepository(db)
+
+	invitado := &Persona{Telefono: "+525500000098", Nombre: "Carla"}
+	repo.Create(invitado)
+
+	db.Create(&destinos.Destino{Model: gorm.Model{ID: 1}, TenantID: 1, Nombre: "Casa 5", Calle: "Roble", Numero: "5", Titular: "Ana"})
+	personaInvitadaID := invitado.ID
+	db.Create(&invitaciones.Invitacion{
+		Model: gorm.Model{ID: 1}, TenantID: 1, Token: "tok-y", Titular: "Carla",
+		ResidenteID: 1, DestinoID: 1, PersonaInvitadaID: &personaInvitadaID,
+	})
+
+	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, membresiaRepo, nil, invitacionRepo, visitaRepo, destinoRepo, "", "", KigoVerifyConfig{}, nil)
+
+	router := gin.New()
+	router.POST("/personas/verificar-qr", func(c *gin.Context) {
+		injectKioskoTestCtx(c, ctxkeys.TenantID, uint(1))
+		injectKioskoTestCtx(c, ctxkeys.KioskoID, uint(1))
+		h.VerificarQR(c)
+	})
+
+	seed, _ := hex.DecodeString(testQREd25519Seed)
+	firma := FirmarPersonaID(invitado.ID, ed25519.NewKeyFromSeed(seed))
+
+	hacerRequest := func() VerificarQRResponse {
+		body, _ := json.Marshal(VerificarQRRequest{PersonaID: invitado.ID, Firma: firma, ClientID: "cliente-offline-1"})
+		req := httptest.NewRequest(http.MethodPost, "/personas/verificar-qr", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
+		}
+		var resp VerificarQRResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("no se pudo parsear la respuesta: %v", err)
+		}
+		return resp
+	}
+
+	primera := hacerRequest()
+	segunda := hacerRequest()
+
+	if primera.VisitaID == nil || segunda.VisitaID == nil {
+		t.Fatalf("esperaba VisitaID en ambas respuestas: primera=%v segunda=%v", primera.VisitaID, segunda.VisitaID)
+	}
+	if *primera.VisitaID != *segunda.VisitaID {
+		t.Errorf("client_id repetido debe devolver la misma visita (%d), obtuvo %d", *primera.VisitaID, *segunda.VisitaID)
+	}
+
+	var conteo int64
+	db.Model(&visitas.Visita{}).Where("persona_id = ?", invitado.ID).Count(&conteo)
+	if conteo != 1 {
+		t.Errorf("esperaba exactamente 1 Visita creada, hay %d", conteo)
+	}
+}
+
 func TestListarCompanerosCasa(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db := setupTestDB(t)

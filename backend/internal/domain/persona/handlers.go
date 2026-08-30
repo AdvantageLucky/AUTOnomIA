@@ -601,6 +601,26 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 	var visitaID *uint
 	var visitaCreada *visitas.Visita
 	if resolucion.Estado == EstadoQRInvitado && invitacion != nil {
+		if req.ClientID != "" {
+			existente, err := h.visitaRepo.WithContext(c.Request.Context()).FindByClientID(tenantID, req.ClientID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			if existente != nil {
+				c.JSON(http.StatusOK, VerificarQRResponse{
+					Estado:                      resolucion.Estado,
+					Nombre:                      existente.Titular,
+					CasaDestino:                 existente.CasaDestino,
+					DestinoID:                   resolucion.DestinoID,
+					PermiteReconocimientoFacial: resolucion.PermiteReconocimientoFacial,
+					InvitacionID:                resolucion.InvitacionID,
+					VisitaID:                    &existente.ID,
+				})
+				return
+			}
+		}
+
 		destino, err := h.destinoRepo.FindByID(*resolucion.DestinoID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo resolver el destino de la invitación"})
@@ -617,6 +637,7 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 			CasaDestino:   destino.Nombre,
 			Estado:        visitas.EstadoAprobado,
 			KioskoID:      kioskoID,
+			ClientID:      visitas.ClientIDPtr(req.ClientID),
 			PersonaID:     &req.PersonaID,
 		}
 		if err := h.visitaRepo.WithContext(c.Request.Context()).Create(v); err != nil {

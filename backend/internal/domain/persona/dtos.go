@@ -47,6 +47,7 @@ type MembresiaResponse struct {
 type VerificarQRRequest struct {
 	PersonaID uint      `json:"persona_id" binding:"required"`
 	Firma     string    `json:"firma"      binding:"required"`
+	ClientID  string    `json:"client_id"`
 	Embedding []float64 `json:"embedding"`
 }
 
