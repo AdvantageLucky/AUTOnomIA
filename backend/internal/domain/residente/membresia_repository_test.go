@@ -58,8 +58,11 @@ func TestFindActivasPorTenant(t *testing.T) {
 	if len(list) != 1 {
 		t.Fatalf("esperaba 1 membresía activa del tenant 1, got %d", len(list))
 	}
-	if list[0].Nombre != "Ana Ruiz" {
-		t.Errorf("esperaba nombre 'Ana Ruiz', got %q", list[0].Nombre)
+	// FindActivasPorTenant devuelve el nombre de pila solo (sin concatenar
+	// apellidos) — el dashboard arma el nombre completo por su cuenta con
+	// nombre + apellido_paterno + apellido_materno (ver app.js).
+	if list[0].Nombre != "Ana" {
+		t.Errorf("esperaba nombre 'Ana', got %q", list[0].Nombre)
 	}
 	if list[0].CasaDestino != "Casa 1" {
 		t.Errorf("esperaba casa 'Casa 1', got %q", list[0].CasaDestino)
