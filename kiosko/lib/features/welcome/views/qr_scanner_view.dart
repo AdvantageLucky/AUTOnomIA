@@ -4,8 +4,12 @@ import 'dart:math' as math;
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/routing/observador_rutas.dart';
+import 'package:kigo_kiosco/core/services/asistente_controller.dart';
+import 'package:kigo_kiosco/core/services/asistente_presentacion_servicio.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
@@ -31,10 +35,8 @@ const double _fraccionRecuadro = 0.66;
 /// El tope contra el alto es para no quedarnos sin las dos franjas de
 /// contenido: en un lienzo apaisado 0.66 del ancho no cabe siquiera en la
 /// pantalla, y arriba y abajo sobraba espacio negativo.
-double _ladoRecuadro(Size lienzo) => math.min(
-      lienzo.width * _fraccionRecuadro,
-      lienzo.height * 0.45,
-    );
+double _ladoRecuadro(Size lienzo) =>
+    math.min(lienzo.width * _fraccionRecuadro, lienzo.height * 0.45);
 
 /// Pantalla de entrada del kiosko: escanea sola, sin toque previo. Detecta
 /// tanto el QR personal de la app Kigo como el token de invitación de
@@ -61,6 +63,7 @@ class _QrScannerViewState extends State<QrScannerView>
   bool _botonPresionado = false;
   MobileScannerController? _controller;
   late final AnimationController _anilloCtrl;
+  final AsistenteController _asistenteController = AsistenteController();
 
   /// Espera entre detectar el código y navegar al resultado. Se guarda para
   /// poder cancelarla: si la pantalla muere antes, navegar desde un State ya
@@ -94,8 +97,22 @@ class _QrScannerViewState extends State<QrScannerView>
       duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
     _lectorFisicoController.addListener(_onLectorFisicoCambio);
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _solicitarConsentimiento(),
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _solicitarConsentimiento();
+      _presentarAsistenteSiCorresponde();
+    });
+  }
+
+  /// Esta pantalla es la entrada real del kiosko -- el 100% de los
+  /// visitantes pasa por aquí antes que por cualquier flujo de registro. La
+  /// presentación verbal única de la mascota ("Hola, soy tu asistente...")
+  /// vive aquí y no en los pasos de registro, para que se entienda desde el
+  /// primer momento que hay un asistente al que se le puede hablar.
+  void _presentarAsistenteSiCorresponde() {
+    if (AsistentePresentacionServicio.yaPresentado) return;
+    AsistentePresentacionServicio.marcarPresentado();
+    _asistenteController.decir(
+      AppLocalizations.t(context, 'asistente_presentacion_message'),
     );
   }
 
@@ -335,7 +352,10 @@ class _QrScannerViewState extends State<QrScannerView>
     final pantalla = MediaQuery.sizeOf(context);
     final safe = MediaQuery.paddingOf(context);
     final lado = _ladoRecuadro(pantalla);
-    final topRecuadro = ((pantalla.height - lado) / 2).clamp(0.0, pantalla.height);
+    final topRecuadro = ((pantalla.height - lado) / 2).clamp(
+      0.0,
+      pantalla.height,
+    );
     final bottomRecuadro = (topRecuadro + lado).clamp(0.0, pantalla.height);
 
     return Scaffold(
@@ -461,6 +481,21 @@ class _QrScannerViewState extends State<QrScannerView>
                 ),
               ),
             ),
+          ),
+
+          // Mismo padding top que el KigoWordmark de la franja de arriba
+          // (24 + safe area) para que quede a su misma altura, a la derecha.
+          BotonAsistenteFlotante(
+            topDelBorde: 24,
+            rightDelBorde: 24,
+            controlador: _asistenteController,
+            onRespuestaLibre: (_) {},
+            onCampoExtraido: (_) {},
+          ),
+          Positioned(
+            top: 24 + 50 + safe.top,
+            right: 24,
+            child: const EtiquetaAsistente(),
           ),
         ],
       ),

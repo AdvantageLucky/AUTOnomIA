@@ -1,7 +1,6 @@
 /* VISTA PRINCIPAL DE REGISTRO TÁCTIL */
 
 import 'package:kigo_kiosco/core/services/asistente_controller.dart';
-import 'package:kigo_kiosco/core/services/asistente_presentacion_servicio.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
@@ -52,18 +51,10 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     setState(() {});
   }
 
-  /// Antes de la primera narración de la sesión del kiosko, la mascota se
-  /// presenta explícitamente -- el usuario debe entender rápido que es un
-  /// asistente que escucha, no solo un ícono decorativo.
-  void _narrar(String texto) {
-    if (!AsistentePresentacionServicio.yaPresentado) {
-      AsistentePresentacionServicio.marcarPresentado();
-      _asistenteController.decir(
-        AppLocalizations.t(context, 'asistente_presentacion_message'),
-      );
-    }
-    _asistenteController.decir(texto);
-  }
+  // La presentación verbal única de la mascota ("Hola, soy tu
+  // asistente...") vive en QrScannerView, la entrada real del kiosko —
+  // para cuando el visitante llega aquí ya la vio.
+  void _narrar(String texto) => _asistenteController.decir(texto);
 
   Future<void> _continueProcess() async {
     if (viewModel.isProcessingIne || viewModel.isProcessingRostro) return;
