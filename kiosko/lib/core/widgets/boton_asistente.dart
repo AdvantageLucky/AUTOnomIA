@@ -5,6 +5,7 @@ import 'package:kigo_kiosco/core/services/asistente_servicio.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/faq_offline_sheet.dart';
+import 'package:kigo_kiosco/core/widgets/mascota_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 
 enum _EstadoAsistente { inactivo, escuchando, procesando }
@@ -29,20 +30,22 @@ class BotonAsistente extends StatefulWidget {
   State<BotonAsistente> createState() => _BotonAsistenteState();
 }
 
-class _BotonAsistenteState extends State<BotonAsistente> with SingleTickerProviderStateMixin {
+class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStateMixin {
   final AsistenteServicio _asistente = AsistenteServicio();
   _EstadoAsistente _estado = _EstadoAsistente.inactivo;
   bool _micDisponible = true;
 
-  /// Anima las barras del ecualizador mientras `_estado == escuchando` — el
-  /// simple cambio de ícono (mic_none -> mic_rounded) que había antes era
-  /// demasiado sutil para notarse de reojo mientras alguien habla.
-  late final AnimationController _ondasCtrl;
+  /// Punto de la antena de la mascota "respira" mientras escucha.
+  late final AnimationController _pulseCtrl;
+
+  /// Arco de la mascota gira alrededor del orbe mientras procesa.
+  late final AnimationController _rotCtrl;
 
   @override
   void initState() {
     super.initState();
-    _ondasCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
+    _rotCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
     _asistente.iniciar().then((ok) {
       if (mounted) setState(() => _micDisponible = ok);
     });
@@ -50,7 +53,8 @@ class _BotonAsistenteState extends State<BotonAsistente> with SingleTickerProvid
 
   @override
   void dispose() {
-    _ondasCtrl.dispose();
+    _pulseCtrl.dispose();
+    _rotCtrl.dispose();
     super.dispose();
   }
 
@@ -131,55 +135,31 @@ class _BotonAsistenteState extends State<BotonAsistente> with SingleTickerProvid
       child: GestureDetector(
         onLongPressStart: (_) => _onPressStart(),
         onLongPressEnd: (_) => _onPressEnd(),
-        child: Container(
+        child: SizedBox(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
-            color: _micDisponible ? KigoDesign.brand : KigoDesign.brand.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(KigoDesign.radius),
+          child: Opacity(
+            opacity: _micDisponible ? 1.0 : 0.4,
+            child: _buildMascota(),
           ),
-          child: _buildContenido(),
         ),
       ),
     );
   }
 
-  Widget _buildContenido() {
-    if (_estado == _EstadoAsistente.escuchando) return _buildOndas();
-
-    final icono = switch (_estado) {
-      _EstadoAsistente.inactivo => Icons.mic_none_rounded,
-      _EstadoAsistente.escuchando => Icons.mic_rounded, // no llega aquí, cubierto arriba
-      _EstadoAsistente.procesando => Icons.hourglass_top_rounded,
+  Widget _buildMascota() {
+    final estadoMascota = switch (_estado) {
+      _EstadoAsistente.inactivo => EstadoMascota.inactivo,
+      _EstadoAsistente.escuchando => EstadoMascota.escuchando,
+      _EstadoAsistente.procesando => EstadoMascota.procesando,
     };
-    return Icon(icono, color: Colors.white, size: 20);
-  }
-
-  /// Cuatro barras tipo ecualizador, cada una desfasada respecto a las demás
-  /// sobre el mismo ciclo, en onda triangular (sube y baja parejo).
-  Widget _buildOndas() {
     return AnimatedBuilder(
-      animation: _ondasCtrl,
-      builder: (context, _) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(4, (i) {
-            final t = (_ondasCtrl.value + i * 0.15) % 1.0;
-            final triangular = 1 - (2 * (t - 0.5)).abs(); // 0..1..0
-            final alto = 8 + 12 * triangular;
-            return Container(
-              width: 3,
-              height: alto,
-              margin: const EdgeInsets.symmetric(horizontal: 1.5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            );
-          }),
-        );
-      },
+      animation: Listenable.merge([_pulseCtrl, _rotCtrl]),
+      builder: (context, _) => MascotaAsistente(
+        estado: estadoMascota,
+        pulseValue: _pulseCtrl.value,
+        rotValue: _rotCtrl.value,
+      ),
     );
   }
 }
