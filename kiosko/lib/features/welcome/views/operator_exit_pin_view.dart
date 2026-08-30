@@ -1,5 +1,6 @@
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/modo_kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/operator_exit_viewmodel.dart';
@@ -77,7 +78,7 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(
+        Presionable(
           onTap: () => Navigator.pop(context),
           child: Container(
             width: 44,

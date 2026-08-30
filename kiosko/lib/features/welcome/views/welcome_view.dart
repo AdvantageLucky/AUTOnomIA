@@ -12,6 +12,7 @@ import 'package:kigo_kiosco/core/routing/registro_router.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/comunidad_badge.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
@@ -342,7 +343,7 @@ class _WelcomeViewState extends State<WelcomeView>
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(
+        Presionable(
           onTap: () => Navigator.pop(context),
           child: Container(
             width: 44,

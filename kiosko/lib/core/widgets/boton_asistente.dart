@@ -5,6 +5,7 @@ import 'package:kigo_kiosco/core/services/asistente_servicio.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/faq_offline_sheet.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 
 enum _EstadoAsistente { inactivo, escuchando, procesando }
 
@@ -108,7 +109,7 @@ class _BotonAsistenteState extends State<BotonAsistente> with SingleTickerProvid
     if (offline) {
       return Tooltip(
         message: 'Sin conexión — toca para ver preguntas frecuentes',
-        child: GestureDetector(
+        child: Presionable(
           onTap: () => mostrarFaqOffline(context),
           child: Container(
             width: 44,

@@ -1,5 +1,6 @@
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
@@ -69,7 +70,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(
+        Presionable(
           onTap: () => Navigator.pop(context),
           child: Container(
             width: 44,
@@ -320,7 +321,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
               style: const TextStyle(color: KigoDesign.brand, fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
-        GestureDetector(
+        Presionable(
           onTap: vm.puedeConfirmar
               ? () async {
                   final ok = await vm.confirmar();
@@ -429,7 +430,11 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                         }
                       },
                 borderRadius: BorderRadius.circular(14),
-                child: Container(
+                // `Ink` en vez de `Container`: un Container opaco encima del
+                // InkWell tapa por completo su splash (el color se pinta
+                // arriba del efecto de tinta); Ink pinta como parte de la
+                // misma capa de Material, así que el splash sí se ve.
+                child: Ink(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     color: context.kSurface1,
