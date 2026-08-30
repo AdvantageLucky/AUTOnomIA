@@ -1,5 +1,6 @@
 /* VISTA PRINCIPAL DE REGISTRO TÁCTIL */
 
+import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
@@ -85,8 +86,8 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
         if (pathFoto == null) break;
 
-        final bool exito = await viewModel.procesarEscaneoIne(pathFoto);
-        if (exito) {
+        final CalidadCaptura resultado = await viewModel.procesarEscaneoIne(pathFoto);
+        if (resultado == CalidadCaptura.ok) {
           esIneValida = true;
           if (mounted) _speakText(AppLocalizations.t(context, 'ine_detected_title'));
           if (viewModel.isLastStep) {
@@ -95,8 +96,9 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
             viewModel.nextStep();
           }
         } else {
+          final esBorrosa = resultado == CalidadCaptura.borrosa;
           if (mounted) {
-            _speakText(AppLocalizations.t(context, 'ine_invalid_message'));
+            _speakText(AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_message' : 'ine_invalid_message'));
             await showDialog(
               context: context,
               barrierDismissible: false,
@@ -108,11 +110,11 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                     children: [
                       const Icon(Icons.error_outline_rounded, color: KigoDesign.brand, size: 28),
                       const SizedBox(width: 12),
-                      Flexible(child: Text(AppLocalizations.t(context, 'ine_invalid_error_title'), style: TextStyle(color: context.kTextPrimary))),
+                      Flexible(child: Text(AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_error_title' : 'ine_invalid_error_title'), style: TextStyle(color: context.kTextPrimary))),
                     ],
                   ),
                   content: Text(
-                    AppLocalizations.t(context, 'ine_invalid_error_content'),
+                    AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_error_content' : 'ine_invalid_error_content'),
                     style: TextStyle(color: context.kTextSecondary, fontSize: 16),
                   ),
                   actions: [
@@ -143,9 +145,9 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
         if (pathFoto == null) break;
 
-        final bool exito = await viewModel.procesarEscaneoRostro(pathFoto);
+        final CalidadCaptura resultado = await viewModel.procesarEscaneoRostro(pathFoto);
 
-        if (exito) {
+        if (resultado == CalidadCaptura.ok) {
           esRostroValido = true;
           if (mounted) _speakText(AppLocalizations.t(context, 'registration_complete_message'));
           if (viewModel.isLastStep) {
@@ -154,8 +156,9 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
             viewModel.nextStep();
           }
         } else {
+          final esBorrosa = resultado == CalidadCaptura.borrosa;
           if (mounted) {
-            _speakText(AppLocalizations.t(context, 'face_not_detected_message'));
+            _speakText(AppLocalizations.t(context, esBorrosa ? 'face_borrosa_message' : 'face_not_detected_message'));
             await showDialog(
               context: context,
               barrierDismissible: false,
@@ -167,11 +170,11 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                     children: [
                       const Icon(Icons.face_retouching_off, color: KigoDesign.brand, size: 28),
                       const SizedBox(width: 12),
-                      Flexible(child: Text(AppLocalizations.t(context, 'face_not_detected_title'), style: TextStyle(color: context.kTextPrimary))),
+                      Flexible(child: Text(AppLocalizations.t(context, esBorrosa ? 'face_borrosa_error_title' : 'face_not_detected_title'), style: TextStyle(color: context.kTextPrimary))),
                     ],
                   ),
                   content: Text(
-                    AppLocalizations.t(context, 'face_not_detected_content'),
+                    AppLocalizations.t(context, esBorrosa ? 'face_borrosa_error_content' : 'face_not_detected_content'),
                     style: TextStyle(color: context.kTextSecondary, fontSize: 16),
                   ),
                   actions: [
