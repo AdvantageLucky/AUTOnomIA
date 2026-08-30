@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
+import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_scanner_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/qr_scanner_view.dart';
@@ -43,6 +44,12 @@ Future<void> _montar(WidgetTester tester, Size size, String mensaje) async {
       Provider<KioskoServicio>.value(value: servicio),
       ChangeNotifierProvider<KioskoConfigNotifier>.value(
         value: _NotifierFake(servicio, mensaje),
+      ),
+      // BotonAsistente (dentro de BotonAsistenteFlotante, agregado a
+      // QrScannerView) lo lee vía context.watch -- no se llama iniciar(),
+      // así que se queda en su default (isOffline: false) sin timers vivos.
+      ChangeNotifierProvider<ConnectivityService>.value(
+        value: ConnectivityService(),
       ),
     ],
     child: MaterialApp(

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/marco_guia_camara.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
@@ -140,7 +142,10 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
       if (mounted) {
         setState(() {
           _camaraInicializando = false;
-          _camaraError = AppLocalizations.t(context, 'no_se_pudo_activar_camara');
+          _camaraError = AppLocalizations.t(
+            context,
+            'no_se_pudo_activar_camara',
+          );
         });
       }
     }
@@ -151,7 +156,9 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   Future<void> _intentarVerificarRostro() async {
     if (_verificandoRostro) return;
     final controller = _cameraController;
-    if (controller == null || !controller.value.isInitialized || controller.value.isTakingPicture) {
+    if (controller == null ||
+        !controller.value.isInitialized ||
+        controller.value.isTakingPicture) {
       return;
     }
 
@@ -162,13 +169,17 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
 
       // Una sola pasada de ML Kit por foto: calcularEmbedding ya detecta el
       // rostro y descarta los que vienen demasiado pequeños.
-      final embedding = await _reconocimientoServicio.calcularEmbedding(foto.path);
+      final embedding = await _reconocimientoServicio.calcularEmbedding(
+        foto.path,
+      );
       if (embedding == null) {
         _coincidenciasConsecutivas = 0;
         return;
       }
 
-      final resultado = await KioskoServicio().verificarRostroResidente(embedding);
+      final resultado = await KioskoServicio().verificarRostroResidente(
+        embedding,
+      );
       _registrarCoincidencia(
         resultado['nombre'] as String?,
         resultado['casa_destino'] as String?,
@@ -181,17 +192,20 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
       _verificandoRostro = false;
       final rutaFoto = foto?.path;
       if (rutaFoto != null) {
-        unawaited(Future(() async {
-          try {
-            await File(rutaFoto).delete();
-          } catch (_) {}
-        }));
+        unawaited(
+          Future(() async {
+            try {
+              await File(rutaFoto).delete();
+            } catch (_) {}
+          }),
+        );
       }
     }
   }
 
   void _registrarCoincidencia(String? nombre, String? casaDestino) {
-    if (nombre == _ultimoNombreCoincidente && casaDestino == _ultimaCasaCoincidente) {
+    if (nombre == _ultimoNombreCoincidente &&
+        casaDestino == _ultimaCasaCoincidente) {
       _coincidenciasConsecutivas++;
     } else {
       _ultimoNombreCoincidente = nombre;
@@ -201,14 +215,16 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
 
     if (_coincidenciasConsecutivas >= 2 && mounted) {
       _timerVerificacion?.cancel();
-      Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => ResidentWelcomeView(
-          viewModel: ResidentWelcomeViewModel(
-            nombre: nombre ?? AppLocalizations.t(context, 'residente_label'),
-            casaDestino: casaDestino ?? '',
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ResidentWelcomeView(
+            viewModel: ResidentWelcomeViewModel(
+              nombre: nombre ?? AppLocalizations.t(context, 'residente_label'),
+              casaDestino: casaDestino ?? '',
+            ),
           ),
         ),
-      ));
+      );
     }
   }
 
@@ -222,9 +238,11 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   }
 
   void _irAlPin() {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => ResidentPinView(viewModel: ResidentPinViewModel()),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ResidentPinView(viewModel: ResidentPinViewModel()),
+      ),
+    );
   }
 
   @override
@@ -233,27 +251,42 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
       return Scaffold(
         backgroundColor: context.kBg,
         body: Center(
-          child: CircularProgressIndicator(color: KigoDesign.brand, strokeWidth: 2.5),
+          child: CircularProgressIndicator(
+            color: KigoDesign.brand,
+            strokeWidth: 2.5,
+          ),
         ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: context.kBg,
-      body: PantallaAdaptable(
-        padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-        child: Column(
-          children: [
-            _buildHeader(context),
-            const Spacer(),
-            _buildAreaFacial(),
-            const SizedBox(height: 40),
-            _buildPinFallback(),
-            const Spacer(),
-            _buildFooter(),
-          ],
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: context.kBg,
+          body: PantallaAdaptable(
+            padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+            child: Column(
+              children: [
+                _buildHeader(context),
+                const Spacer(),
+                _buildAreaFacial(),
+                const SizedBox(height: 40),
+                _buildPinFallback(),
+                const Spacer(),
+                _buildFooter(),
+              ],
+            ),
+          ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          // Mismo header que WelcomeView (PantallaAdaptable, padding 48/34).
+          topDelBorde: 48,
+          rightDelBorde: 34,
+          onRespuestaLibre: (_) {},
+          onCampoExtraido: (_) {},
+        ),
+        const Positioned(top: 48 + 50, right: 34, child: EtiquetaAsistente()),
+      ],
     );
   }
 
@@ -287,7 +320,11 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           child: const Center(
             child: Text(
               'K',
-              style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 23,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -295,11 +332,24 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppLocalizations.t(context, 'kigo_label'),
-                style: TextStyle(color: context.kTextPrimary, fontSize: 29, fontWeight: FontWeight.w800)),
+            Text(
+              AppLocalizations.t(context, 'kigo_label'),
+              style: TextStyle(
+                color: context.kTextPrimary,
+                fontSize: 29,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(AppLocalizations.t(context, 'self_checkin_label'),
-                style: TextStyle(color: context.kTextSecondary, fontSize: 14, letterSpacing: 4, fontWeight: FontWeight.w500)),
+            Text(
+              AppLocalizations.t(context, 'self_checkin_label'),
+              style: TextStyle(
+                color: context.kTextSecondary,
+                fontSize: 14,
+                letterSpacing: 4,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
         const Spacer(),
@@ -384,7 +434,10 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     }
 
     return const Center(
-      child: CircularProgressIndicator(color: KigoDesign.brand, strokeWidth: 2.5),
+      child: CircularProgressIndicator(
+        color: KigoDesign.brand,
+        strokeWidth: 2.5,
+      ),
     );
   }
 
@@ -411,13 +464,20 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
             decoration: BoxDecoration(
-              border: Border.all(color: KigoDesign.brand.withValues(alpha: 0.5), width: 1.5),
+              border: Border.all(
+                color: KigoDesign.brand.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.dialpad_rounded, color: KigoDesign.brand, size: 22),
+                const Icon(
+                  Icons.dialpad_rounded,
+                  color: KigoDesign.brand,
+                  size: 22,
+                ),
                 const SizedBox(width: 10),
                 Text(
                   AppLocalizations.t(context, 'acceder_por_pin'),
@@ -438,7 +498,12 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   Widget _buildFooter() {
     return Text(
       AppLocalizations.t(context, 'footer_text'),
-      style: TextStyle(color: context.kTextTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
+      style: TextStyle(
+        color: context.kTextTertiary,
+        fontSize: 14,
+        letterSpacing: 2,
+        fontWeight: FontWeight.w500,
+      ),
     );
   }
 }
@@ -462,25 +527,45 @@ Future<bool> _mostrarConsentimientoFacial(BuildContext context) async {
           Expanded(
             child: Text(
               AppLocalizations.t(context, 'aviso_privacidad_title'),
-              style: TextStyle(color: context.kTextPrimary, fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: context.kTextPrimary,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
       ),
       content: Text(
         AppLocalizations.t(context, 'aviso_privacidad_content'),
-        style: TextStyle(color: context.kTextSecondary, fontSize: 18, height: 1.6),
+        style: TextStyle(
+          color: context.kTextSecondary,
+          fontSize: 18,
+          height: 1.6,
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: Text(AppLocalizations.t(context, 'back_button_text'),
-              style: TextStyle(color: context.kTextSecondary, fontWeight: FontWeight.bold, fontSize: 18)),
+          child: Text(
+            AppLocalizations.t(context, 'back_button_text'),
+            style: TextStyle(
+              color: context.kTextSecondary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
-          child: Text(AppLocalizations.t(context, 'aceptar_button'),
-              style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 18)),
+          child: Text(
+            AppLocalizations.t(context, 'aceptar_button'),
+            style: const TextStyle(
+              color: KigoDesign.brand,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
         ),
       ],
     ),
