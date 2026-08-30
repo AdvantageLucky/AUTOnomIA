@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
+import 'package:kigo_kiosco/core/widgets/marco_guia_camara.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'consent_dialog.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
@@ -123,22 +124,10 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
             child: VistaPreviaCamara(_controller!),
           ),
 
-          // Overlay oscuro con recorte oval
+          // Overlay opaco con recorte oval + guía — compartido con
+          // residente_acceso_view.dart (mismo tratamiento visual).
           Positioned.fill(
-            child: CustomPaint(
-              painter: _OvalOverlayPainter(ovalW, ovalH),
-            ),
-          ),
-
-          // Guía oval con borde naranja — se dibuja el óvalo real con
-          // CustomPaint: un Border.all() sobre BorderRadius circular al 50%
-          // en un rectángulo no cuadrado deja costuras visibles a los lados.
-          Center(
-            child: SizedBox(
-              width: ovalW,
-              height: ovalH,
-              child: CustomPaint(painter: _OvaloGuiaPainter()),
-            ),
+            child: MarcoGuiaCamara(ancho: ovalW, alto: ovalH),
           ),
 
           // Instrucción
@@ -172,41 +161,3 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
   }
 }
 
-class _OvalOverlayPainter extends CustomPainter {
-  final double ovalW;
-  final double ovalH;
-
-  _OvalOverlayPainter(this.ovalW, this.ovalH);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black.withValues(alpha: 0.55);
-    final full = Rect.fromLTWH(0, 0, size.width, size.height);
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final oval = Rect.fromCenter(center: Offset(cx, cy), width: ovalW, height: ovalH);
-    final path = Path()
-      ..addRect(full)
-      ..addOval(oval)
-      ..fillType = PathFillType.evenOdd;
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _OvaloGuiaPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = KigoDesign.brand
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    final rect = Offset.zero & size;
-    canvas.drawOval(rect.deflate(1.5), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

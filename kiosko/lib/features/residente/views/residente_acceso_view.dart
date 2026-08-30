@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/marco_guia_camara.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:camera/camera.dart';
@@ -307,6 +309,14 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   }
 
   Widget _buildAreaFacial() {
+    // Responsivo en vez de un tamaño fijo en px (320): en pantallas más
+    // cortas que el panel de referencia (800x1280) el círculo fijo hacía
+    // que el contenido de toda la columna no cupiera sin scroll. Se acota
+    // por el lado más corto entre ancho y alto disponible para que nunca
+    // domine ninguno de los dos ejes.
+    final size = MediaQuery.sizeOf(context);
+    final circuloD = math.min(size.width * 0.6, size.height * 0.32);
+
     return Column(
       children: [
         Text(
@@ -321,17 +331,20 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         ),
         const SizedBox(height: 40),
 
-        // Marco del área de cara: muestra la vista en vivo de la cámara frontal
-        Container(
-          width: 320,
-          height: 320,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: context.kSurface2,
-            border: Border.all(color: KigoDesign.brand.withValues(alpha: 0.35), width: 2.5),
+        // Marco del área de cara: vista en vivo de la cámara frontal, con el
+        // mismo tratamiento de óvalo/círculo guía que usa la captura de
+        // rostro del registro de visitante (MarcoGuiaCamara) -- aquí
+        // ancho == alto, así que el "óvalo" sale círculo.
+        SizedBox(
+          width: circuloD,
+          height: circuloD,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ClipOval(child: _buildContenidoCamara()),
+              MarcoGuiaCamara(ancho: circuloD, alto: circuloD),
+            ],
           ),
-          child: _buildContenidoCamara(),
         ),
 
         const SizedBox(height: 20),
