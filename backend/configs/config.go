@@ -28,7 +28,7 @@ type Config struct {
 	DBName                  string
 	ServerPort              string
 	JWTSecret               string
-	QRMasterSecret          string
+	QREd25519PrivateKeySeed string
 	UploadsDir              string
 	LLMUrl                  string
 	KigoVerifyAPIKey        string
@@ -52,7 +52,7 @@ func Load() (*Config, error) {
 		DBName:                  getEnv("DB_NAME", "kigo_db"),
 		ServerPort:              getEnv("SERVER_PORT", "8080"),
 		JWTSecret:               getEnv("JWT_SECRET", "dev-secret-change-me"),
-		QRMasterSecret:          getEnv("QR_MASTER_SECRET", "dev-qr-secret-change-me"),
+		QREd25519PrivateKeySeed: getEnv("QR_ED25519_PRIVATE_KEY", "0000000000000000000000000000000000000000000000000000000000000000"),
 		UploadsDir:              getEnv("UPLOADS_DIR", "./web/uploads/visitantes"),
 		LLMUrl:                  getEnv("LLM_URL", "http://localhost:8081"),
 		KigoVerifyAPIKey:        getEnv("KIGO_VERIFY_API_KEY", ""),

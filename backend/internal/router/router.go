@@ -320,7 +320,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 	kigoVerifyRepo := persona.NewKigoVerifyRepository(db)
 	personaHandler := persona.NewHandler(
 		personaRepo, otpRepo, persona.LogOtpSender{}, emailOtpSender(cfg),
-		cfg.JWTSecret, cfg.QRMasterSecret,
+		cfg.JWTSecret, cfg.QREd25519PrivateKeySeed,
 		membresiaRepo, tenantRepo, invitacionRepo, visitaRepo, destinoRepo, cfg.UploadsDir,
 		cfg.LLMUrl,
 		persona.KigoVerifyConfig{APIKey: cfg.KigoVerifyAPIKey, BaseURL: cfg.KigoVerifyBaseURL, PublicURL: cfg.PublicURL},

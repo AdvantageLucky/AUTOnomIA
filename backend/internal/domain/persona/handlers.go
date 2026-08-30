@@ -1,7 +1,9 @@
 package persona
 
 import (
+	"crypto/ed25519"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -27,7 +29,8 @@ type Handler struct {
 	sender         OtpSender
 	emailSender    OtpSender
 	jwtSecret      string
-	qrMasterSecret string
+	qrPrivateKey   ed25519.PrivateKey
+	qrPublicKey    ed25519.PublicKey
 	membresiaRepo  *residente.MembresiaRepository
 	tenantRepo     tenant.Repository
 	invitacionRepo *invitaciones.Repository
@@ -44,7 +47,7 @@ func NewHandler(
 	otpRepo *OtpRepository,
 	sender OtpSender,
 	emailSender OtpSender,
-	jwtSecret, qrMasterSecret string,
+	jwtSecret, qrEd25519PrivateKeySeed string,
 	membresiaRepo *residente.MembresiaRepository,
 	tenantRepo tenant.Repository,
 	invitacionRepo *invitaciones.Repository,
@@ -55,13 +58,19 @@ func NewHandler(
 	kigoVerify KigoVerifyConfig,
 	kigoVerifyRepo *KigoVerifyRepository,
 ) *Handler {
+	seed, err := hex.DecodeString(qrEd25519PrivateKeySeed)
+	if err != nil || len(seed) != ed25519.SeedSize {
+		panic("QR_ED25519_PRIVATE_KEY inválido: se esperaban 32 bytes en hex")
+	}
+	privKey := ed25519.NewKeyFromSeed(seed)
 	return &Handler{
 		repo:           repo,
 		otpRepo:        otpRepo,
 		sender:         sender,
 		emailSender:    emailSender,
 		jwtSecret:      jwtSecret,
-		qrMasterSecret: qrMasterSecret,
+		qrPrivateKey:   privKey,
+		qrPublicKey:    privKey.Public().(ed25519.PublicKey),
 		membresiaRepo:  membresiaRepo,
 		tenantRepo:     tenantRepo,
 		invitacionRepo: invitacionRepo,
@@ -329,7 +338,7 @@ func (h *Handler) VerificarOTP(c *gin.Context) {
 // maestra.
 func (h *Handler) GetQR(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
-	firma := FirmarPersonaID(personaID, h.qrMasterSecret)
+	firma := FirmarPersonaID(personaID, h.qrPrivateKey)
 	c.JSON(http.StatusOK, QrResponse{PersonaID: personaID, Firma: firma})
 }
 
@@ -533,7 +542,7 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 		return
 	}
 
-	if !VerificarFirma(req.PersonaID, req.Firma, h.qrMasterSecret) {
+	if !VerificarFirma(req.PersonaID, req.Firma, h.qrPublicKey) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "firma inválida"})
 		return
 	}
