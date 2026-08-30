@@ -7,6 +7,7 @@ import 'package:loading_indicator/loading_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
+import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -43,6 +44,22 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   String _estado = 'PENDIENTE';
   int? _visitaId;
   DateTime _horaSolicitud = DateTime.now();
+  final _led = LedServicio();
+  bool _ledDisparado = false;
+
+  /// LED verde/rojo según el resultado — solo para los dos estados finales
+  /// reales; "en revisión" no es ni aprobado ni rechazado, no prende nada.
+  /// Se dispara una sola vez por pantalla.
+  void _dispararLedSiCorresponde() {
+    if (_ledDisparado) return;
+    if (_estado == 'APROBADO') {
+      _ledDisparado = true;
+      _led.mostrarAprobado();
+    } else if (_estado == 'RECHAZADO') {
+      _ledDisparado = true;
+      _led.mostrarRechazado();
+    }
+  }
 
   @override
   void initState() {
@@ -59,6 +76,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   void dispose() {
     _pollTimer?.cancel();
     _regresoTimer?.cancel();
+    _led.apagar();
     super.dispose();
   }
 
@@ -103,6 +121,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           _horaSolicitud = DateTime.now();
           _isSubmitting = false;
         });
+        _dispararLedSiCorresponde();
 
         final config = context.read<KioskoConfigNotifier>().config;
         final seconds = config.tipo == TipoKiosko.vehicular ? 6 : 4;
@@ -162,6 +181,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       final nuevoEstado = respuesta['estado'] as String? ?? _estado;
       final yaEstabaEnRevision = _estado == 'REVISION';
       setState(() => _estado = nuevoEstado);
+      _dispararLedSiCorresponde();
 
       if (nuevoEstado == 'APROBADO' || nuevoEstado == 'RECHAZADO' || nuevoEstado == 'REVISION') {
         _pollTimer?.cancel();

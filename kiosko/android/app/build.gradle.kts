@@ -40,6 +40,13 @@ kotlin {
     }
 }
 
+dependencies {
+    // SDK del hardware Telpo F10 (F10SDK/sdk/PosUtil.jar) — control del LED
+    // RGBW del kiosko. Las .so nativas por arquitectura viven en
+    // src/main/jniLibs/, Gradle las empaqueta automático por convención.
+    implementation(files("libs/PosUtil.jar"))
+}
+
 flutter {
     source = "../.."
 }

@@ -1,5 +1,6 @@
 package com.example.kigo_kiosco
 
+import com.common.pos.api.util.PosUtil
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -7,6 +8,12 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val kioskChannel = "com.example.kigo_kiosco/kiosk_mode"
     private var kioskLockEnabled = true
+
+    // LED RGBW del hardware Telpo F10 (F10SDK/doc/Telpo F10SDK Manual.docx,
+    // sección LED). PosUtil.controlLedBright(tipo, brillo): tipo 0=rojo,
+    // 1=verde, 2=azul, 3=blanco; brillo 0-255. controlLedBright(4, 1) apaga
+    // todos los canales. No requiere inicialización previa.
+    private val ledChannel = "com.example.kigo_kiosco/led"
 
     // Se re-arma en cada resume (pantalla encendida, vuelta de segundo plano, etc.)
     // para que el pineo se auto-repare si el sistema lo soltó.
@@ -33,6 +40,37 @@ class MainActivity : FlutterActivity() {
                     result.success(null)
                 } else {
                     result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ledChannel)
+            .setMethodCallHandler { call, result ->
+                try {
+                    when (call.method) {
+                        "setColor" -> {
+                            val tipo = when (call.argument<String>("color")) {
+                                "rojo" -> 0
+                                "verde" -> 1
+                                else -> null
+                            }
+                            if (tipo == null) {
+                                result.error("ARGUMENTO_INVALIDO", "color debe ser 'rojo' o 'verde'", null)
+                            } else {
+                                PosUtil.controlLedBright(tipo, 255)
+                                result.success(null)
+                            }
+                        }
+                        "apagar" -> {
+                            PosUtil.controlLedBright(4, 1)
+                            result.success(null)
+                        }
+                        else -> result.notImplemented()
+                    }
+                } catch (e: Exception) {
+                    // El F10SDK no está presente en todo hardware (ej. emulador,
+                    // otro modelo Telpo) — un fallo aquí no debe tronar la
+                    // pantalla de resultado, solo no prender la luz.
+                    result.error("LED_ERROR", e.message, null)
                 }
             }
     }

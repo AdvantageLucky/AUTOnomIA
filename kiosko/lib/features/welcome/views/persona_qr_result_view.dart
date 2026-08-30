@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/persona_qr_result_viewmodel.dart';
@@ -27,6 +28,8 @@ class PersonaQrResultView extends StatefulWidget {
 
 class _PersonaQrResultViewState extends State<PersonaQrResultView> {
   Timer? _autoTimer;
+  final _led = LedServicio();
+  bool _ledDisparado = false;
 
   @override
   void initState() {
@@ -38,15 +41,26 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
   void dispose() {
     widget.viewModel.removeListener(_updateView);
     _autoTimer?.cancel();
+    _led.apagar();
     super.dispose();
   }
 
   void _updateView() {
     setState(() {});
+    if (!_ledDisparado && widget.viewModel.estado != PersonaQrResultEstado.cargando) {
+      _ledDisparado = true;
+      final aprobado = widget.viewModel.estado == PersonaQrResultEstado.miembro ||
+          widget.viewModel.estado == PersonaQrResultEstado.invitado;
+      if (aprobado) {
+        _led.mostrarAprobado();
+      } else {
+        _led.mostrarRechazado();
+      }
+    }
     if (_autoTimer == null &&
         widget.alTerminar != null &&
         widget.viewModel.estado != PersonaQrResultEstado.cargando) {
-      
+
       final config = context.read<KioskoConfigNotifier>().config;
       final seconds = config.tipo == TipoKiosko.vehicular ? 5 : 3;
       _autoTimer = Timer(Duration(seconds: seconds), widget.alTerminar!);
