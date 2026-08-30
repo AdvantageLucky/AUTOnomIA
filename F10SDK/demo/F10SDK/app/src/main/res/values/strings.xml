@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">DemoSDK</string>
+
+    <string name="bt_nfc_title">NFC</string>
+    <string name="tv_nfc_notsupport">The device does not support NFC</string>
+    <string name="tv_nfc_working">Please Swipe Your Card</string>
+    <string name="tv_nfc_notwork">Please Go To Settings And Open The NFC Switch</string>
+</resources>
