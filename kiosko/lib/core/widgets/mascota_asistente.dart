@@ -5,7 +5,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 /// importarlo desde ahí porque el enum original es privado a ese archivo
 /// (`_EstadoAsistente`); este widget no necesita saber nada más del
 /// asistente que "en cuál de los tres estados estoy".
-enum EstadoMascota { inactivo, escuchando, procesando }
+enum EstadoMascota { inactivo, escuchando, procesando, hablando }
 
 /// Mascota vectorial del asistente: un orbe con antena y carita, inspirado
 /// en el asistente animado de Nintendo 3DS que pidió el usuario — sustituye
@@ -97,6 +97,24 @@ class _MascotaPainter extends CustomPainter {
       final rect = Rect.fromCircle(center: orbCentro, radius: orbRadio - 4 * s);
       final inicio = rotValue * 2 * 3.14159265;
       canvas.drawArc(rect, inicio, 3.14159265 / 2, false, arcoPaint);
+    }
+
+    // Hablando: una boca ovalada bajo los ojos que se abre/cierra con
+    // pulseValue -- visualmente distinta del pulso de la antena
+    // (escuchando) y del arco girando (procesando), para que el usuario no
+    // confunda "ella me habla" con "ella me escucha".
+    if (estado == EstadoMascota.hablando) {
+      final bocaPaint = Paint()..color = Colors.white.withValues(alpha: 0.85);
+      final bocaAlto = (2 + 4 * pulseValue) * s;
+      final bocaAncho = 10 * s;
+      final bocaCentro = p(30, 40);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: bocaCentro, width: bocaAncho, height: bocaAlto),
+          Radius.circular(bocaAlto / 2),
+        ),
+        bocaPaint,
+      );
     }
   }
 
