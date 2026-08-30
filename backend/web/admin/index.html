@@ -534,11 +534,13 @@
 				<!-- CONFIGURACIÓN -->
 				<section id="screen-configuracion" class="screen" hidden>
 					<div class="screen-header screen-header--narrow">
-						<div style="display:flex;align-items:center;gap:14px">
-							<button type="button" class="btn-cancel" id="cfg-btn-volver" style="padding:6px 12px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
-								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13L5 8l5-5"/></svg>
-								Volver a Kioskos
-							</button>
+						<div style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px;">
+							<div>
+								<button type="button" class="btn-cancel" id="cfg-btn-volver" style="padding:6px 12px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+									<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13L5 8l5-5"/></svg>
+									Volver a Kioskos
+								</button>
+							</div>
 							<div>
 								<div class="screen-title" id="cfg-header-title">Configuración de kiosko</div>
 								<div class="screen-sub" id="cfg-header-sub">Parámetros y reglas de acceso</div>
@@ -564,9 +566,8 @@
 										<div class="toggle-sub">Define si admite peatones, vehículos o ambos</div>
 									</div>
 									<select id="cfg-tipo" class="search-select" style="width:180px">
-										<option value="PEATONAL">🚶 Peatonal</option>
-										<option value="VEHICULAR">🚗 Vehicular</option>
-										<option value="MIXTO">🚶🚗 Mixto</option>
+										<option value="PEATONAL">Peatonal</option>
+										<option value="VEHICULAR">Vehicular</option>
 									</select>
 								</div>
 
@@ -623,7 +624,7 @@
 								</div>
 
 								<div class="pipeline-preview-hint">
-									💡 <strong>Orden de ejecución:</strong> El visitante completará los pasos de arriba hacia abajo. Los pasos desactivados se omitirán por completo.
+									Nota: <strong>Orden de ejecución:</strong> El visitante completará los pasos de arriba hacia abajo. Los pasos desactivados se omitirán por completo.
 								</div>
 							</div>
 

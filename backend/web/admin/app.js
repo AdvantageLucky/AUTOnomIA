@@ -399,7 +399,7 @@
         const v = JSON.parse(e.data);
         const nombre = v.titular || "Nuevo visitante";
         if (v.estado === "REVISION") {
-          mostrarToast(`⚠ Requiere revisión manual: ${nombre}`, "revision");
+          mostrarToast(`Alerta: Requiere revisión manual: ${nombre}`, "revision");
           loadSolicitudes();
           loadAlertasIABadge();
         } else if (v.estado === "PENDIENTE") {
@@ -1039,7 +1039,7 @@
     const tvLabel = tipoVisLabel(v.tipo_visitante);
     const tieneIA = !!(v.resumen_ia || v.estadisticas);
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
-      <div><div class="row-name">${esc(v.titular)}${tieneIA ? ' <span title="Con análisis IA" style="opacity:.6">✦</span>' : ''}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
+      <div><div class="row-name">${esc(v.titular)}${tieneIA ? ' <span title="Con análisis IA" style="opacity:.6">*</span>' : ''}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
@@ -1672,21 +1672,21 @@
   const PIPELINE_DEFS = {
     ROSTRO: {
       id: "ROSTRO",
-      icon: "👤",
+      icon: "",
       title: "Foto de Rostro",
       desc: "Captura facial de verificación y reconocimiento",
       defaultChecked: true,
     },
     DESTINO: {
       id: "DESTINO",
-      icon: "🏠",
+      icon: "",
       title: "Selección de Destino",
       desc: "Búsqueda y selección de calle, edificio o casa",
       defaultChecked: true,
     },
     PLACA: {
       id: "PLACA",
-      icon: "🚗",
+      icon: "",
       title: "Captura de Placa Vehicular",
       desc: "Escaneo de matrícula (obligatorio en accesos vehiculares)",
       defaultChecked: false,
@@ -2546,7 +2546,7 @@
         ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
         : `<div class="res-avatar">${inicial}</div>`;
 
-      const contacto = m.telefono ? `📞 ${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : 'Residente activo');
+      const contacto = m.telefono ? `${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : 'Residente activo');
       const fechaAlta = m.created_at ? fmtDateShort(m.created_at) : '—';
 
       return `
@@ -2558,7 +2558,7 @@
           </div>
           <div class="res-dest-col">
             <span class="badge badge--aprobado" style="font-size:12px;padding:4px 10px;font-weight:600">
-              🏠 ${esc(m.casa_destino || 'Sin casa')}
+               ${esc(m.casa_destino || 'Sin casa')}
             </span>
           </div>
           <div class="res-date-col">
@@ -2636,39 +2636,39 @@
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px">👤</span>
+            <span style="font-size:18px"></span>
             <div>
               <div style="font-size:13.5px;font-weight:600;color:var(--text)">Reconocimiento Facial IA</div>
               <div style="font-size:11.5px;color:var(--text-3)">Validación biométrica instantánea en kioskos</div>
             </div>
           </div>
           <span class="badge ${tieneRostro ? 'badge--aprobado' : 'badge--rechazado'}">
-            ${tieneRostro ? '✓ Enrolado' : 'Pendiente'}
+            ${tieneRostro ? ' Enrolado' : 'Pendiente'}
           </span>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px">🔢</span>
+            <span style="font-size:18px"></span>
             <div>
               <div style="font-size:13.5px;font-weight:600;color:var(--text)">PIN de acceso</div>
               <div style="font-size:11.5px;color:var(--text-3)">Código numérico para teclado en caseta</div>
             </div>
           </div>
           <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}">
-            ${tienePin ? '✓ Configurado' : 'Sin PIN'}
+            ${tienePin ? ' Configurado' : 'Sin PIN'}
           </span>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px">📱</span>
+            <span style="font-size:18px"></span>
             <div>
               <div style="font-size:13.5px;font-weight:600;color:var(--text)">App Kigo (QR Dinámico)</div>
               <div style="font-size:11.5px;color:var(--text-3)">Acceso con escáner de código QR móvil</div>
             </div>
           </div>
-          <span class="badge badge--aprobado">✓ Activo</span>
+          <span class="badge badge--aprobado"> Activo</span>
         </div>
       </div>
 
@@ -2770,7 +2770,7 @@
           ${avatarHtml}
           <div class="equipo-info" style="flex:1;margin-left:12px">
             <div class="equipo-name">${esc(m.nombre || 'Sin nombre')} ${esc(m.apellido_paterno || '')}</div>
-            <div class="equipo-sub">${esc(m.casa_destino)}${m.telefono ? ' · 📞 ' + esc(m.telefono) : ''} · App Kigo</div>
+            <div class="equipo-sub">${esc(m.casa_destino)}${m.telefono ? ' · ' + esc(m.telefono) : ''} · App Kigo</div>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-primary" data-aprobar-mem="${m.id}">Aprobar</button>
