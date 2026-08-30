@@ -8,7 +8,7 @@ import 'package:sqflite/sqflite.dart';
 /// solo el SyncWorker la drena registro por registro.
 class LocalCacheDb {
   static const _dbName = 'kiosko_cache.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
 
   final String? _pathOverride;
   Database? _db;
@@ -34,6 +34,7 @@ class LocalCacheDb {
         await db.execute('''
           CREATE TABLE residentes (
             id INTEGER PRIMARY KEY,
+            persona_id INTEGER,
             nombre TEXT, apellido_paterno TEXT, casa_destino TEXT,
             pin_hash TEXT, embedding TEXT
           )
@@ -42,6 +43,8 @@ class LocalCacheDb {
           CREATE TABLE invitaciones_activas (
             token TEXT PRIMARY KEY,
             titular TEXT, casa_destino TEXT, expires_at TEXT,
+            persona_invitada_id INTEGER,
+            permite_reconocimiento_facial INTEGER DEFAULT 0,
             consumida_local INTEGER DEFAULT 0
           )
         ''');
@@ -50,6 +53,38 @@ class LocalCacheDb {
             client_id TEXT PRIMARY KEY,
             tipo TEXT, payload_json TEXT, foto_paths_json TEXT,
             creado_en TEXT, estado TEXT DEFAULT 'pendiente'
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // El cache es un espejo de solo-lectura que se reemplaza completo
+        // en cada refresh de snapshot (salvo visitas_queue) — recrearlo
+        // desde cero en cada upgrade es seguro, no hay dato del usuario que
+        // preservar.
+        await db.execute('DROP TABLE IF EXISTS destinos');
+        await db.execute('DROP TABLE IF EXISTS residentes');
+        await db.execute('DROP TABLE IF EXISTS invitaciones_activas');
+        await db.execute('''
+          CREATE TABLE destinos (
+            id INTEGER PRIMARY KEY,
+            calle TEXT, tipo TEXT, numero TEXT, nombre TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE residentes (
+            id INTEGER PRIMARY KEY,
+            persona_id INTEGER,
+            nombre TEXT, apellido_paterno TEXT, casa_destino TEXT,
+            pin_hash TEXT, embedding TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE invitaciones_activas (
+            token TEXT PRIMARY KEY,
+            titular TEXT, casa_destino TEXT, expires_at TEXT,
+            persona_invitada_id INTEGER,
+            permite_reconocimiento_facial INTEGER DEFAULT 0,
+            consumida_local INTEGER DEFAULT 0
           )
         ''');
       },
@@ -140,6 +175,15 @@ class LocalCacheDb {
       'invitaciones_activas',
       where: 'token = ? AND consumida_local = 0',
       whereArgs: [token],
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<Map<String, dynamic>?> obtenerInvitacionActivaPorPersonaId(int personaId) async {
+    final rows = await _instancia.query(
+      'invitaciones_activas',
+      where: 'persona_invitada_id = ?',
+      whereArgs: [personaId],
     );
     return rows.isEmpty ? null : rows.first;
   }
