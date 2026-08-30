@@ -26,6 +26,8 @@ class AppLocalizations {
       // Registro táctil (peatonal + vehicular, mensajes de voz)
       'welcome_message': 'Hola, soy Kigo. Te ayudaré con tu registro. Comencemos.',
       'listening_message': 'Te escucho, puedes hablar ahora.',
+      'asistente_presentacion_message': 'Hola, soy tu asistente. Mantén presionado aquí si tienes dudas.',
+      'asistente_etiqueta': 'Asistente IA',
       'ine_invalid_message': 'No reconocimos el documento. Acércalo a la cámara y vuelve a intentar.',
       'face_not_detected_message': 'No detectamos tu rostro. Asegúrate de tener buena luz y vuelve a intentar.',
       'registration_complete_message': 'Registro completado exitosamente.',
@@ -205,6 +207,8 @@ class AppLocalizations {
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
       'listening_message': "I'm listening, you can speak now.",
+      'asistente_presentacion_message': "Hi, I'm your assistant. Hold here if you have questions.",
+      'asistente_etiqueta': 'AI Assistant',
       'ine_invalid_message': "We didn't recognize the document. Bring it closer to the camera and try again.",
       'face_not_detected_message': "We didn't detect your face. Make sure you have good lighting and try again.",
       'registration_complete_message': 'Registration completed successfully.',
