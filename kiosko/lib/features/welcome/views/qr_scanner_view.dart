@@ -5,6 +5,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/routing/observador_rutas.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
+import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
@@ -85,6 +86,9 @@ class _QrScannerViewState extends State<QrScannerView>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     widget.viewModel.addListener(_updateView);
+    // Pantalla de entrada, siempre remontada de cero para cada visitante
+    // nuevo: el consentimiento de la persona anterior no aplica aquí.
+    ConsentimientoServicio.reiniciar();
     _anilloCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
@@ -204,6 +208,7 @@ class _QrScannerViewState extends State<QrScannerView>
     final bool aceptado = await mostrarConsentimientoCamara(context);
     if (!mounted) return;
     if (aceptado) {
+      ConsentimientoServicio.otorgar();
       setState(() => _consentGiven = true);
       _crearControlador();
     } else {

@@ -4,6 +4,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
+import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'consent_dialog.dart';
@@ -40,11 +41,19 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
   }
 
   Future<void> _solicitarConsentimiento() async {
+    // Ya se pidió una vez para esta visita, en la pantalla de entrada
+    // (el 100% de los visitantes pasa por ahí antes de llegar aquí).
+    if (ConsentimientoServicio.otorgado) {
+      _initCamera();
+      return;
+    }
+
     final bool aceptado = await mostrarConsentimientoCamara(context);
 
     if (!mounted) return;
 
     if (aceptado) {
+      ConsentimientoServicio.otorgar();
       _initCamera();
     } else {
       Navigator.pop(context); // El usuario presionó "Regresar"
