@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/services/placa_detector_servicio.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
@@ -297,7 +298,7 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
     return Row(
       children: [
         Expanded(
-          child: GestureDetector(
+          child: Presionable(
             onTap: () => Navigator.pop(context),
             child: Container(
               height: 64,
@@ -322,7 +323,7 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
         const SizedBox(width: 16),
         Expanded(
           flex: 2,
-          child: GestureDetector(
+          child: Presionable(
             onTap: _confirmar,
             child: Container(
               height: 64,

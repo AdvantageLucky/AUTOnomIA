@@ -2,6 +2,7 @@
 
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animation.dart';
@@ -307,7 +308,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   }
 
   Widget _buildTopBackButton() {
-    return GestureDetector(
+    return Presionable(
       onTap: () => Navigator.pop(context),
       child: Container(
         width: 44,
@@ -380,7 +381,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   }
 
   Widget _buildMainButton(String text) {
-    return GestureDetector(
+    return Presionable(
       onTap: _continueProcess,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
@@ -468,7 +469,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   }
 
   Widget _buildBackButton() {
-    return GestureDetector(
+    return Presionable(
       onTap: viewModel.previousStep,
       child: Container(
         width: double.infinity,

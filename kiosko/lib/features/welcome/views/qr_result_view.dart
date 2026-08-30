@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_result_viewmodel.dart';
@@ -152,7 +153,7 @@ class _QrResultViewState extends State<QrResultView> {
           style: const TextStyle(color: KigoDesign.error, fontSize: 16, height: 1.5),
         ),
         SizedBox(height: gap),
-        GestureDetector(
+        Presionable(
           onTap: () {
             _autoTimer?.cancel();
             if (widget.alTerminar != null) {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
@@ -316,7 +317,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   }
 
   Widget _buildTopBackButton() {
-    return GestureDetector(
+    return Presionable(
       onTap: () => Navigator.pop(context),
       child: Container(
         width: 44,
@@ -382,7 +383,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   }
 
   Widget _buildMainButton(String text) {
-    return GestureDetector(
+    return Presionable(
       onTap: _continuarProceso,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
@@ -466,7 +467,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   }
 
   Widget _buildBackButton() {
-    return GestureDetector(
+    return Presionable(
       onTap: viewModel.previousStep,
       child: Container(
         width: double.infinity,

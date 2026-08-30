@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
@@ -257,7 +258,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(
+        Presionable(
           onTap: () => Navigator.pop(context),
           child: Container(
             width: 44,
@@ -392,7 +393,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           style: TextStyle(color: context.kTextTertiary, fontSize: 15),
         ),
         const SizedBox(height: 12),
-        GestureDetector(
+        Presionable(
           onTap: _irAlPin,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),

@@ -1,6 +1,7 @@
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -401,7 +402,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
   }
 
   Widget _buildCard({required IconData icono, required String titulo, required VoidCallback onTap}) {
-    return GestureDetector(
+    return Presionable(
       onTap: onTap,
       child: Container(
         width: double.infinity,
