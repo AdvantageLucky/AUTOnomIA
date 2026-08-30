@@ -4,15 +4,11 @@
 class CompaneroCasa {
   final String nombreCompleto;
 
-  /// 'titular' · 'familiar', tal cual lo guarda el backend.
-  final String rol;
-
-  CompaneroCasa({required this.nombreCompleto, required this.rol});
+  CompaneroCasa({required this.nombreCompleto});
 
   factory CompaneroCasa.fromJson(Map<String, dynamic> json) {
     return CompaneroCasa(
       nombreCompleto: json['nombre_completo'] as String? ?? '',
-      rol: json['rol'] as String? ?? '',
     );
   }
 }

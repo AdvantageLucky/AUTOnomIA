@@ -56,7 +56,6 @@ func (r *MembresiaRepository) FindByCasaDestinoYTenant(tenantID uint, casaDestin
 // struct más amplio.
 type CompaneroCasa struct {
 	NombreCompleto string `json:"nombre_completo"`
-	Rol            string `json:"rol"`
 }
 
 // FindCompanerosCasa lista los demás miembros activos de la misma casa,
@@ -66,8 +65,7 @@ type CompaneroCasa struct {
 func (r *MembresiaRepository) FindCompanerosCasa(tenantID uint, casaDestino string, excluirPersonaID uint) ([]CompaneroCasa, error) {
 	var list []CompaneroCasa
 	err := r.db.Table("membresias").
-		Select("trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre_completo, "+
-			"membresias.rol as rol").
+		Select("trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre_completo").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND UPPER(membresias.casa_destino) = UPPER(?) AND membresias.status = ? AND membresias.persona_id != ? AND membresias.deleted_at IS NULL",
 			tenantID, casaDestino, ResidenteStatusActivo, excluirPersonaID).
@@ -90,7 +88,6 @@ type MembresiaPendienteConPersona struct {
 	TieneRostro     bool      `json:"tiene_rostro" gorm:"column:tiene_rostro"`
 	TienePin        bool      `json:"tiene_pin" gorm:"column:tiene_pin"`
 	CasaDestino     string    `json:"casa_destino" gorm:"column:casa_destino"`
-	Rol             string    `json:"rol"`
 	Status          string    `json:"status"`
 	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at"`
 }
@@ -100,13 +97,11 @@ type MembresiaPendienteConPersona struct {
 func (r *MembresiaRepository) FindPendientesPorTenant(tenantID uint) ([]MembresiaPendienteConPersona, error) {
 	var list []MembresiaPendienteConPersona
 	err := r.db.Table("membresias").
-		Select("membresias.id, membresias.persona_id, "+
-			"trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre, "+
-			"personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, "+
-			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, "+
-			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
-			"(membresias.pin != '') as tiene_pin, "+
-			"membresias.casa_destino as casa_destino, membresias.rol as rol, membresias.status as status, membresias.created_at as created_at").
+		Select("membresias.id as id, membresias.persona_id as persona_id, personas.nombre as nombre, personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, " +
+			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, " +
+			"(personas.embedding IS NOT NULL) as tiene_rostro, " +
+			"(membresias.pin != '') as tiene_pin, " +
+			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusPendiente).
 		Order("membresias.created_at DESC").
@@ -129,23 +124,19 @@ type MembresiaActivaConPersona struct {
 	TieneRostro     bool      `json:"tiene_rostro" gorm:"column:tiene_rostro"`
 	TienePin        bool      `json:"tiene_pin" gorm:"column:tiene_pin"`
 	CasaDestino     string    `json:"casa_destino" gorm:"column:casa_destino"`
-	Rol             string    `json:"rol"`
 	Status          string    `json:"status"`
 	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at"`
 }
 
-// FindActivasPorTenant devuelve las membresías activas (ya aprobadas) de un
-// tenant, con todos los datos de la Persona para el dashboard.
+// FindActivasPorTenant devuelve las membresías activas de un tenant.
 func (r *MembresiaRepository) FindActivasPorTenant(tenantID uint) ([]MembresiaActivaConPersona, error) {
 	var list []MembresiaActivaConPersona
 	err := r.db.Table("membresias").
-		Select("membresias.id, membresias.persona_id, "+
-			"trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre, "+
-			"personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, "+
-			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, "+
-			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
-			"(membresias.pin != '') as tiene_pin, "+
-			"membresias.casa_destino as casa_destino, membresias.rol as rol, membresias.status as status, membresias.created_at as created_at").
+		Select("membresias.id as id, membresias.persona_id as persona_id, personas.nombre as nombre, personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, " +
+			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, " +
+			"(personas.embedding IS NOT NULL) as tiene_rostro, " +
+			"(membresias.pin != '') as tiene_pin, " +
+			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusActivo).
 		Order("membresias.created_at DESC").

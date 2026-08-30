@@ -113,11 +113,11 @@ func TestListarCompanerosCasa(t *testing.T) {
 
 	titular := &Persona{Telefono: "+525500000001", Nombre: "Ana", ApellidoPaterno: "Ruiz"}
 	repo.Create(titular)
-	db.Create(&residente.Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo, Rol: "titular"})
+	db.Create(&residente.Membresia{PersonaID: titular.ID, TenantID: 1, CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo})
 
 	familiar := &Persona{Telefono: "+525500000002", Nombre: "Beto", ApellidoPaterno: "Ruiz"}
 	repo.Create(familiar)
-	db.Create(&residente.Membresia{PersonaID: familiar.ID, TenantID: 1, CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo, Rol: "familiar"})
+	db.Create(&residente.Membresia{PersonaID: familiar.ID, TenantID: 1, CasaDestino: "Casa 1", Status: residente.ResidenteStatusActivo})
 
 	h := NewHandler(repo, nil, nil, nil, "", "", membresiaRepo, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, nil)
 

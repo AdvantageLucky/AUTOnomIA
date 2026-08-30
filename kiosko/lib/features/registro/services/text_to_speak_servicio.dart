@@ -15,9 +15,16 @@ class TextToSpeakServicio {
     await _flutterTts.setSpeechRate(0.53); 
     await _flutterTts.setVolume(1.0);
 
-    // 2. Forzar motor de Google en Android para usar voces neuronales de alta calidad
+    // 2. Usar motor de Google en Android solo si está instalado (Telpo F10 puede no tenerlo)
     if (Platform.isAndroid) {
-      await _flutterTts.setEngine("com.google.android.tts");
+      try {
+        final dynamic engines = await _flutterTts.getEngines;
+        if (engines != null && engines is List && engines.contains("com.google.android.tts")) {
+          await _flutterTts.setEngine("com.google.android.tts");
+        }
+      } catch (_) {
+        // Fallback al motor TTS por defecto del dispositivo
+      }
     }
 
     // Esperar a que termine de hablar antes de desbloquear el flujo si es necesario

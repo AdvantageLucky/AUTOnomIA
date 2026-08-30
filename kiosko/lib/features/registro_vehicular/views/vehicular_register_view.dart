@@ -279,20 +279,20 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 16),
                       StepIndicator(
                         currentStep: viewModel.indicatorStep,
                         totalSteps: viewModel.indicatorTotalSteps,
                       ),
-                      const SizedBox(height: 44),
+                      const SizedBox(height: 24),
                       _buildGuiaVisual(),
-                      const SizedBox(height: 64),
+                      const SizedBox(height: 32),
                       viewModel.isProcessing
                           ? const Center(
                               child: CircularProgressIndicator(color: KigoDesign.brand))
                           : _buildMainButton(AppLocalizations.t(context, viewModel.currentStepData.buttonTextKey)),
                       if (viewModel.currentStep > 0) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         _buildBackButton(),
                       ],
                     ],

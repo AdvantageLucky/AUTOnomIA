@@ -264,18 +264,18 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 16),
 
                       StepIndicator(
                         currentStep: viewModel.indicatorStep,
                         totalSteps: viewModel.indicatorTotalSteps,
                       ),
 
-                      const SizedBox(height: 44),
+                      const SizedBox(height: 24),
 
                       _buildVideoPlaceholder(),
 
-                      const SizedBox(height: 64),
+                      const SizedBox(height: 32),
 
                       // --- BOTÓN PRINCIPAL CON LOADER ---
                       viewModel.isProcessingIne
@@ -283,7 +283,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                         : _buildMainButton(AppLocalizations.t(context, step.buttonTextKey)),
 
                       if (viewModel.currentStep > 1) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         _buildBackButton(),
                       ],
                     ],
