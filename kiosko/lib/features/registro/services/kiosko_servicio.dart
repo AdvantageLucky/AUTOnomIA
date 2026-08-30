@@ -12,7 +12,9 @@ import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/services/coincidencia_facial_local.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/services/local_cache_db.dart';
+import 'package:kigo_kiosco/core/services/qr_firma_verificador.dart';
 import 'package:kigo_kiosco/features/activacion/models/device_solicitud.dart';
+import 'package:kigo_kiosco/features/registro/services/resolucion_qr_offline.dart';
 
 class DeviceNotActivatedException implements Exception {}
 
@@ -570,7 +572,7 @@ class KioskoServicio {
     final connectivity = _connectivity;
     final cache = _cache;
     if (connectivity != null && cache != null && connectivity.isOffline) {
-      return _verificarQrPersonaOffline(cache, personaId);
+      return _verificarQrPersonaOffline(cache, personaId, firma);
     }
 
     try {
@@ -594,45 +596,70 @@ class KioskoServicio {
         throw Exception('No se encontró esa cuenta de Kigo');
       }
       if (cache != null) {
-        return _verificarQrPersonaOffline(cache, personaId);
+        return _verificarQrPersonaOffline(cache, personaId, firma);
       }
       final body = jsonDecode(response.body);
       throw Exception(body['error'] ?? 'Error al verificar el QR (${response.statusCode})');
     } catch (e) {
       if (cache != null && _esFalloDeRed(e)) {
-        return _verificarQrPersonaOffline(cache, personaId);
+        return _verificarQrPersonaOffline(cache, personaId, firma);
       }
       rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> _verificarQrPersonaOffline(LocalCacheDb cache, int personaId) async {
+  Future<Map<String, dynamic>> _verificarQrPersonaOffline(
+    LocalCacheDb cache,
+    int personaId,
+    String firma,
+  ) async {
+    if (!QrFirmaVerificador.verificar(personaId, firma)) {
+      throw Exception('Código QR inválido');
+    }
+
     final residentes = await cache.obtenerResidentes();
-    final match = residentes.cast<Map<String, dynamic>?>().firstWhere(
-      (r) => r?['id'] == personaId,
+    final residenteMatch = residentes.cast<Map<String, dynamic>?>().firstWhere(
+      (r) => r?['persona_id'] == personaId,
       orElse: () => null,
     );
-    if (match == null) {
-      throw Exception('Cuenta no encontrada en caché local');
-    }
-    final clientId = _uuid.v4();
-    final nombreCompleto = '${match['nombre']} ${match['apellido_paterno']}';
-    await cache.encolarVisita(
-      clientId: clientId,
-      tipo: 'qr_persona',
-      payload: {
-        'persona_id': personaId,
-        'nombre': nombreCompleto,
-        'casa_destino': match['casa_destino'],
-      },
-      fotoPaths: const {},
+    final invitacionMatch = residenteMatch == null
+        ? await cache.obtenerInvitacionActivaPorPersonaId(personaId)
+        : null;
+
+    final resolucion = resolverQrOffline(
+      residenteMatch: residenteMatch,
+      invitacionMatch: invitacionMatch,
     );
-    return {
-      'estado': 'miembro',
-      'tipo': 'RESIDENTE',
-      'nombre': nombreCompleto,
-      'casa_destino': match['casa_destino'],
-    };
+
+    switch (resolucion.estado) {
+      case EstadoQrOffline.miembro:
+        return {
+          'estado': 'miembro',
+          'tipo': 'RESIDENTE',
+          'nombre': resolucion.nombre,
+          'casa_destino': resolucion.casaDestino,
+        };
+      case EstadoQrOffline.invitado:
+        final clientId = _uuid.v4();
+        await cache.encolarVisita(
+          clientId: clientId,
+          tipo: 'qr_persona',
+          payload: {
+            'persona_id': personaId,
+            'firma': firma,
+            'nombre': resolucion.nombre,
+            'casa_destino': resolucion.casaDestino,
+          },
+          fotoPaths: const {},
+        );
+        return {
+          'estado': 'invitado',
+          'nombre': resolucion.nombre,
+          'casa_destino': resolucion.casaDestino,
+        };
+      case EstadoQrOffline.ninguno:
+        throw Exception('Sin membresía ni invitación en este centro');
+    }
   }
 
   Future<Map<String, dynamic>> validarPinResidente(String pin, {int? personaId, String? clientId}) async {
@@ -702,14 +729,14 @@ class KioskoServicio {
       return {
         'requiere_seleccion': true,
         'candidatos': matches.map((m) => {
-          'persona_id': m['id'],
+          'persona_id': m['persona_id'],
           'nombre': '${m['nombre']} ${m['apellido_paterno']}',
           'casa_destino': m['casa_destino'],
         }).toList(),
       };
     }
     final match = personaId != null
-        ? matches.firstWhere((m) => m['id'] == personaId, orElse: () => matches.first)
+        ? matches.firstWhere((m) => m['persona_id'] == personaId, orElse: () => matches.first)
         : matches.first;
 
     final cid = clientId ?? _uuid.v4();
@@ -719,7 +746,7 @@ class KioskoServicio {
       tipo: 'pin_residente',
       payload: {
         'pin': pin,
-        'persona_id': match['id'],
+        'persona_id': match['persona_id'],
         'nombre': nombreCompleto,
         'casa_destino': match['casa_destino'],
       },
@@ -985,12 +1012,17 @@ class KioskoServicio {
 
   Future<Map<String, dynamic>> reproducirQrPersona(
     int personaId, {
+    required String firma,
     required String clientId,
   }) {
-    return _verificarQrPersonaRemoto(personaId, clientId: clientId);
+    return _verificarQrPersonaRemoto(personaId, firma: firma, clientId: clientId);
   }
 
-  Future<Map<String, dynamic>> _verificarQrPersonaRemoto(int personaId, {String? clientId}) async {
+  Future<Map<String, dynamic>> _verificarQrPersonaRemoto(
+    int personaId, {
+    required String firma,
+    String? clientId,
+  }) async {
     await _ensureLogin();
     final response = await http.post(
       Uri.parse('$_baseUrl/kioskos/$_kioskoId/personas/verificar-qr'),
@@ -998,7 +1030,7 @@ class KioskoServicio {
         'Authorization': 'Bearer $_sessionToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'persona_id': personaId, 'firma': '', 'client_id': clientId ?? ''}),
+      body: jsonEncode({'persona_id': personaId, 'firma': firma, 'client_id': clientId ?? ''}),
     ).timeout(const Duration(seconds: 5));
 
     if (response.statusCode == 200) {
