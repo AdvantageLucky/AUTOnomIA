@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
-import 'package:kigo_kiosco/core/widgets/boton_asistente.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/services/placa_detector_servicio.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
@@ -83,53 +83,54 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.kBg,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // El teclado QWERTY completo + encabezado + acciones no siempre
-            // cabe en pantallas chicas — se envuelve en scroll en vez de
-            // desbordar, forzando al menos la altura disponible para que el
-            // Spacer siga empujando el teclado hacia abajo cuando sí cabe.
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: 24),
-                      _buildDisplay(),
-                      const SizedBox(height: 8),
-                      _buildError(),
-                      const Spacer(),
-                      _buildKeypad(),
-                      const SizedBox(height: 20),
-                      _buildAcciones(),
-                    ],
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: context.kBg,
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // El teclado QWERTY completo + encabezado + acciones no siempre
+                // cabe en pantallas chicas — se envuelve en scroll en vez de
+                // desbordar, forzando al menos la altura disponible para que el
+                // Spacer siga empujando el teclado hacia abajo cuando sí cabe.
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          _buildHeader(),
+                          const SizedBox(height: 24),
+                          _buildDisplay(),
+                          const SizedBox(height: 8),
+                          _buildError(),
+                          const Spacer(),
+                          _buildKeypad(),
+                          const SizedBox(height: 20),
+                          _buildAcciones(),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          tipoCampo: 'placa',
+          onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
+          onCampoExtraido: _onCampoExtraido,
+        ),
+      ],
     );
   }
 
   Widget _buildHeader() {
     return Column(
       children: [
-        Align(
-          alignment: Alignment.topRight,
-          child: BotonAsistente(
-            tipoCampo: 'placa',
-            onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
-            onCampoExtraido: _onCampoExtraido,
-          ),
-        ),
         Icon(
           _fueLeida ? Icons.directions_car_rounded : Icons.edit_note_rounded,
           color: KigoDesign.brand,
