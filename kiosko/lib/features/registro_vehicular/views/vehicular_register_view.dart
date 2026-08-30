@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
+import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
@@ -158,18 +159,20 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
 
       if (pathFoto == null) return; // el visitante canceló
 
-      if (await viewModel.procesarEscaneoIne(pathFoto)) {
+      final resultado = await viewModel.procesarEscaneoIne(pathFoto);
+      if (resultado == CalidadCaptura.ok) {
         _speakText(AppLocalizations.t(context, 'ine_detected_title'));
         await _avanzar();
         return;
       }
 
-      _speakText(AppLocalizations.t(context, 'ine_invalid_message'));
+      final esBorrosa = resultado == CalidadCaptura.borrosa;
+      _speakText(AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_message' : 'ine_invalid_message'));
       if (!mounted) return;
       await _mostrarError(
         icono: Icons.error_outline_rounded,
-        titulo: AppLocalizations.t(context, 'ine_invalid_error_title'),
-        mensaje: AppLocalizations.t(context, 'ine_invalid_error_content'),
+        titulo: AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_error_title' : 'ine_invalid_error_title'),
+        mensaje: AppLocalizations.t(context, esBorrosa ? 'ine_borrosa_error_content' : 'ine_invalid_error_content'),
       );
     }
   }
@@ -186,17 +189,19 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
 
       if (pathFoto == null) return;
 
-      if (await viewModel.procesarEscaneoRostro(pathFoto)) {
+      final resultado = await viewModel.procesarEscaneoRostro(pathFoto);
+      if (resultado == CalidadCaptura.ok) {
         await _avanzar();
         return;
       }
 
-      _speakText(AppLocalizations.t(context, 'face_not_detected_message'));
+      final esBorrosa = resultado == CalidadCaptura.borrosa;
+      _speakText(AppLocalizations.t(context, esBorrosa ? 'face_borrosa_message' : 'face_not_detected_message'));
       if (!mounted) return;
       await _mostrarError(
         icono: Icons.face_retouching_off,
-        titulo: AppLocalizations.t(context, 'face_not_detected_error_title'),
-        mensaje: AppLocalizations.t(context, 'face_not_detected_error_content'),
+        titulo: AppLocalizations.t(context, esBorrosa ? 'face_borrosa_error_title' : 'face_not_detected_error_title'),
+        mensaje: AppLocalizations.t(context, esBorrosa ? 'face_borrosa_error_content' : 'face_not_detected_error_content'),
       );
     }
   }

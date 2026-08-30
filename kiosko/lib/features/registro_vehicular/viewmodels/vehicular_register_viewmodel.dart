@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
+import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/touch_step_model.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
@@ -16,6 +17,7 @@ enum PasoVehicular { ine, rostro }
 class VehicularRegisterViewModel extends ChangeNotifier {
   final DetectorServicio _detectorServicio = DetectorServicio();
   final FaceDetectorServicio _faceDetectorServicio = FaceDetectorServicio();
+  final EvidenciaCalidadServicio _calidadServicio = EvidenciaCalidadServicio();
   final PlacaLectorServicio _placaLectorServicio = MockPlacaLectorServicio();
   late final Future<String?> _lecturaPlaca;
 
@@ -128,7 +130,7 @@ class VehicularRegisterViewModel extends ChangeNotifier {
 
   // ── Procesamiento local (mismos servicios que el flujo peatonal) ────────────
 
-  Future<bool> procesarEscaneoIne(String pathFoto) async {
+  Future<CalidadCaptura> procesarEscaneoIne(String pathFoto) async {
     _isProcessingIne = true;
     notifyListeners();
 
@@ -137,33 +139,43 @@ class VehicularRegisterViewModel extends ChangeNotifier {
 
       if (datosExtraidos?.curp == null) {
         debugPrint('La IA no detectó un INE válido en la imagen.');
-        return false;
+        return CalidadCaptura.noDetectado;
+      }
+
+      if (!await _calidadServicio.esNitida(pathFoto)) {
+        return CalidadCaptura.borrosa;
       }
 
       registrationData.curp = datosExtraidos!.curp;
       registrationData.nombreCompleto = datosExtraidos.nombreCompleto;
       registrationData.pathFotoIne = datosExtraidos.pathFotoIne;
-      return true;
+      return CalidadCaptura.ok;
     } catch (e) {
       debugPrint('Error al procesar la INE: $e');
-      return false;
+      return CalidadCaptura.noDetectado;
     } finally {
       _isProcessingIne = false;
       notifyListeners();
     }
   }
 
-  Future<bool> procesarEscaneoRostro(String pathFoto) async {
+  Future<CalidadCaptura> procesarEscaneoRostro(String pathFoto) async {
     _isProcessingRostro = true;
     notifyListeners();
 
     try {
       final esValido = await _faceDetectorServicio.tieneRostroValido(pathFoto);
-      if (esValido) registrationData.pathFotoRostro = pathFoto;
-      return esValido;
+      if (!esValido) return CalidadCaptura.noDetectado;
+
+      if (!await _calidadServicio.esNitida(pathFoto)) {
+        return CalidadCaptura.borrosa;
+      }
+
+      registrationData.pathFotoRostro = pathFoto;
+      return CalidadCaptura.ok;
     } catch (e) {
       debugPrint('Error al procesar el rostro: $e');
-      return false;
+      return CalidadCaptura.noDetectado;
     } finally {
       _isProcessingRostro = false;
       notifyListeners();
