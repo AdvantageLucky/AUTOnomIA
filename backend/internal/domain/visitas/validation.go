@@ -14,28 +14,39 @@ func ValidarCamposCondicionales(
 	cfg *kiosko.KioskoConfig,
 	tipoKiosko kiosko.TipoKiosko,
 ) string {
-	var reqIne, reqRostro, reqPlaca bool
+	var reqIne, reqRostro, reqPlacaTexto, reqFotoPlaca bool
 
 	switch req.TipoVisitante {
 
 	case TipoSinInvitacion:
 		reqIne = cfg.FotoIneVisitante
-		if tipoKiosko == kiosko.KioskoVehicular {
-			reqPlaca = true
-		} else {
-			reqPlaca = cfg.FotoPlacaVisitante
-		}
 		reqRostro = cfg.FotoRostroVisitante
+		if tipoKiosko == kiosko.KioskoVehicular {
+			// La placa (texto) siempre identifica la visita vehicular sin
+			// invitación (ADR-0024) — eso no depende de la config. La FOTO
+			// de placa sí depende de cfg.FotoPlacaVisitante, igual que en
+			// peatonal: antes se exigía siempre sin importar la config, lo
+			// cual rechazaba TODO registro vehicular porque el kiosko no
+			// tiene hoy ningún mecanismo real de capturar esa foto (el
+			// hardware dedicado está mockeado, el OCR por foto es código
+			// muerto sin usar).
+			reqPlacaTexto = true
+			reqFotoPlaca = cfg.FotoPlacaVisitante
+		} else {
+			reqPlacaTexto = cfg.FotoPlacaVisitante
+			reqFotoPlaca = cfg.FotoPlacaVisitante
+		}
 
 	case TipoConInvitacion:
 		reqIne = cfg.IneObligatorioInvitado
 		reqRostro = cfg.FotoRostroInvitado
-		reqPlaca = cfg.FotoPlacaInvitado
+		reqPlacaTexto = cfg.FotoPlacaInvitado
+		reqFotoPlaca = cfg.FotoPlacaInvitado
 	}
 
 	// El titular sale de la INE, de la placa o de la invitación. Si no hay ninguna
 	// y tampoco viene explícito, no bloquea si al menos hay foto de rostro o destino
-	if strings.TrimSpace(req.Titular) == "" && !reqIne && !reqPlaca && !reqRostro {
+	if strings.TrimSpace(req.Titular) == "" && !reqIne && !reqPlacaTexto && !reqRostro {
 		return "titular es requerido"
 	}
 
@@ -55,13 +66,11 @@ func ValidarCamposCondicionales(
 		return "foto_rostro es requerida según la configuración del kiosko"
 	}
 
-	if reqPlaca {
-		if strings.TrimSpace(req.Placa) == "" {
-			return "placa es requerida según la configuración del kiosko"
-		}
-		if req.FotoPlaca == nil {
-			return "foto_placa es requerida según la configuración del kiosko"
-		}
+	if reqPlacaTexto && strings.TrimSpace(req.Placa) == "" {
+		return "placa es requerida según la configuración del kiosko"
+	}
+	if reqFotoPlaca && req.FotoPlaca == nil {
+		return "foto_placa es requerida según la configuración del kiosko"
 	}
 
 	return ""
