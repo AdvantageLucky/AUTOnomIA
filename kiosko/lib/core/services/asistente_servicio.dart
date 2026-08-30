@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
@@ -48,7 +49,14 @@ class AsistenteServicio {
       listenOptions: stt.SpeechListenOptions(listenFor: _duracionMaxima),
     );
 
-    final transcripcionFinal = await completer.future;
+    // Red de seguridad adicional: normalmente `detener()` o el propio
+    // límite de `listenFor` completan este future, pero un cuelgue del
+    // plugin STT no debe dejar el botón atorado en "procesando" para
+    // siempre -- por eso un timeout algo más largo que _duracionMaxima.
+    final transcripcionFinal = await completer.future.timeout(
+      _duracionMaxima + const Duration(seconds: 5),
+      onTimeout: () => _transcripcionParcial,
+    );
     _resultado = null;
 
     if (transcripcionFinal.trim().isEmpty) {
@@ -58,8 +66,11 @@ class AsistenteServicio {
 
     if (tipoCampo == null) {
       final respuesta = await _kioskoServicio.preguntarAsistente(transcripcionFinal);
-      await _tts.speak(respuesta);
+      // El callback regresa el ícono a "inactivo" de inmediato; hablar la
+      // respuesta no debe bloquear el estado visual mientras dura el TTS
+      // (antes el ícono se quedaba en "procesando" todo ese tiempo).
       onRespuestaLibre(respuesta);
+      unawaited(_tts.speak(respuesta));
     } else {
       final extraido = await _kioskoServicio.extraerCampoAsistente(transcripcionFinal, tipoCampo);
       onCampoExtraido(extraido);
@@ -67,12 +78,18 @@ class AsistenteServicio {
   }
 
   /// Se llama cuando el visitante suelta el botón — corta la escucha ahí
-  /// mismo en vez de esperar los 15s del límite de seguridad.
+  /// mismo en vez de esperar los 15s del límite de seguridad. Nunca debe
+  /// dejar el completer sin resolver, así falle `_stt.stop()`.
   Future<void> detener() async {
-    await _stt.stop();
-    final completer = _resultado;
-    if (completer != null && !completer.isCompleted) {
-      completer.complete(_transcripcionParcial);
+    try {
+      await _stt.stop();
+    } catch (e) {
+      debugPrint('Error deteniendo STT: $e');
+    } finally {
+      final completer = _resultado;
+      if (completer != null && !completer.isCompleted) {
+        completer.complete(_transcripcionParcial);
+      }
     }
   }
 }

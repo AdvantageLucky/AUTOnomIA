@@ -136,9 +136,10 @@ class _WelcomeViewState extends State<WelcomeView>
           ),
         ),
         BotonAsistenteFlotante(
-          // Coincide con el padding vertical de PantallaAdaptable en esta
-          // pantalla (48) para alinear con la fila de header real.
+          // Coincide con el padding vertical/horizontal de PantallaAdaptable
+          // en esta pantalla (48/34) para alinear con la fila de header real.
           topDelBorde: 48,
+          rightDelBorde: 34,
           onRespuestaLibre: (_) {}, // la respuesta ya se leyó por TTS dentro de AsistenteServicio
           onCampoExtraido: (_) {}, // WelcomeView no llena campos — tipoCampo queda null
         ),
