@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:provider/provider.dart';
+import 'package:kigo_kiosco/core/models/kiosko_config.dart';
+import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
@@ -102,8 +104,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           _isSubmitting = false;
         });
 
-        final config = context.read<KioskoConfigNotifier>().kiosko;
-        final seconds = config?.tipo == TipoKiosko.vehicular ? 6 : 4;
+        final config = context.read<KioskoConfigNotifier>().config;
+        final seconds = config.tipo == TipoKiosko.vehicular ? 6 : 4;
         _regresoTimer?.cancel();
         _regresoTimer = Timer(Duration(seconds: seconds), _regresarABienvenida);
         return;
@@ -165,8 +167,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         _pollTimer?.cancel();
         // El kiosko se queda mostrando el resultado brevemente y regresa solo
         // a la bienvenida, para quedar listo para el siguiente visitante.
-        final config = context.read<KioskoConfigNotifier>().kiosko;
-        final seconds = config?.tipo == TipoKiosko.vehicular ? 6 : 4;
+        final config = context.read<KioskoConfigNotifier>().config;
+        final seconds = config.tipo == TipoKiosko.vehicular ? 6 : 4;
         
         _regresoTimer?.cancel();
         _regresoTimer = Timer(Duration(seconds: seconds), _regresarABienvenida);

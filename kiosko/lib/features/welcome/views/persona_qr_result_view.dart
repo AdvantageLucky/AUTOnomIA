@@ -47,8 +47,8 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
         widget.alTerminar != null &&
         widget.viewModel.estado != PersonaQrResultEstado.cargando) {
       
-      final config = context.read<KioskoConfigNotifier>().kiosko;
-      final seconds = config?.tipo == TipoKiosko.vehicular ? 5 : 3;
+      final config = context.read<KioskoConfigNotifier>().config;
+      final seconds = config.tipo == TipoKiosko.vehicular ? 5 : 3;
       _autoTimer = Timer(Duration(seconds: seconds), widget.alTerminar!);
     }
   }
