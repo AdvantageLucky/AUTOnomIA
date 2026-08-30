@@ -77,7 +77,7 @@ func (h *Handler) GetSnapshot(c *gin.Context) {
 			emb = []float64{}
 		}
 		resp.Residentes = append(resp.Residentes, ResidenteSnapshot{
-			ID: r.MembresiaID, Nombre: r.Nombre, ApellidoPaterno: r.ApellidoPaterno,
+			ID: r.MembresiaID, PersonaID: r.PersonaID, Nombre: r.Nombre, ApellidoPaterno: r.ApellidoPaterno,
 			CasaDestino: r.CasaDestino, PinHash: r.PinHash, Embedding: emb,
 		})
 	}
@@ -90,6 +90,7 @@ func (h *Handler) GetSnapshot(c *gin.Context) {
 		resp.Invitaciones = append(resp.Invitaciones, InvitacionSnapshot{
 			Token: inv.Token, Titular: inv.Titular,
 			CasaDestino: destinoNombrePorID[inv.DestinoID], ExpiresAt: expiresAt,
+			PersonaInvitadaID: inv.PersonaInvitadaID, PermiteReconocimientoFacial: inv.PermiteReconocimientoFacial,
 		})
 	}
 
