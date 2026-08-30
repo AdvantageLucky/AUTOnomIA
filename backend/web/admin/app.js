@@ -2343,6 +2343,20 @@
     await loadDestinos();
   }
 
+  function formatTipoDestino(tipo) {
+    if (!tipo) return 'Casa';
+    switch (tipo.toLowerCase()) {
+      case 'casa': return 'Casa';
+      case 'departamento': return 'Depto.';
+      case 'edificio': return 'Edificio';
+      case 'oficina': return 'Oficina';
+      case 'local': return 'Local';
+      case 'bodega': return 'Bodega';
+      case 'lote': return 'Lote';
+      default: return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    }
+  }
+
   async function loadDestinos() {
     const rowsEl  = document.getElementById('dest-rows');
     const emptyEl = document.getElementById('dest-empty');
@@ -2360,8 +2374,7 @@
     const items = await res.json();
     if (!items.length) { emptyEl.hidden = false; return; }
 
-    // Agrupadas por calle: un fraccionamiento con decenas de casas es
-    // ilegible como lista plana.
+    // Agrupadas por calle
     const porCalle = new Map();
     for (const d of items) {
       const calle = d.calle || 'Sin calle';
@@ -2370,18 +2383,24 @@
     }
 
     rowsEl.innerHTML = [...porCalle.entries()].map(([calle, destinos]) => `
-      <div class="dest-grupo">
-        <div class="dest-grupo-titulo">${esc(calle)}</div>
-        ${destinos.map(d => `
-          <div class="equipo-row" id="dest-row-${d.id}">
-            <div class="equipo-info">
-              <div class="equipo-name">${esc(d.tipo === 'edificio' ? 'Edificio' : 'Casa')} ${esc(d.numero || '')}</div>
-              ${d.titular ? `<div class="equipo-sub">${esc(d.titular)}</div>` : ''}
-            </div>
-            <button class="btn-ghost" style="color:var(--red)" data-del-dest="${d.id}" title="Eliminar destino">
-              <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
-            </button>
-          </div>`).join('')}
+      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.7"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            ${esc(calle)}
+          </div>
+          <span class="badge badge--neutral" style="font-size:11.5px">${destinos.length} ${destinos.length === 1 ? 'destino' : 'destinos'}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${destinos.map(d => `
+            <div id="dest-row-${d.id}" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:13px">
+              <span style="font-weight:600;color:var(--text)">${formatTipoDestino(d.tipo)} ${esc(d.numero || '')}</span>
+              ${d.titular ? `<span style="font-size:11px;color:var(--text-3)">· ${esc(d.titular)}</span>` : ''}
+              <button type="button" class="btn-ghost" style="color:var(--red);padding:2px 4px;margin-left:4px;display:flex;align-items:center" data-del-dest="${d.id}" title="Eliminar destino">
+                <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
+              </button>
+            </div>`).join('')}
+        </div>
       </div>`).join('');
 
     rowsEl.querySelectorAll('[data-del-dest]').forEach(btn => {
@@ -2407,6 +2426,7 @@
     renderChips();
     document.getElementById('dest-form-error').hidden = true;
     document.getElementById('modal-destino').hidden = false;
+    setTimeout(() => document.getElementById('dest-calle')?.focus(), 50);
   });
   document.getElementById('dest-cancel')?.addEventListener('click', () => {
     document.getElementById('modal-destino').hidden = true;
@@ -2426,7 +2446,7 @@
     }
     chipsContainer.innerHTML = destinosChips.map((num, idx) => `
       <div style="display:inline-flex; align-items:center; background:var(--brand); color:white; padding:4px 10px; border-radius:14px; font-size:12px; font-weight:600;">
-        ${esc(num)}
+        <span>${esc(num)}</span>
         <button type="button" class="dest-chip-remove" data-idx="${idx}" style="background:none; border:none; color:white; margin-left:6px; cursor:pointer; padding:0; display:flex; align-items:center;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
@@ -2435,7 +2455,9 @@
     
     chipsContainer.querySelectorAll('.dest-chip-remove').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const i = parseInt(e.currentTarget.dataset.idx);
+        e.preventDefault();
+        e.stopPropagation();
+        const i = parseInt(btn.dataset.idx);
         destinosChips.splice(i, 1);
         renderChips();
       });
@@ -2455,7 +2477,11 @@
     inputAdd.focus();
   }
 
-  btnAdd?.addEventListener('click', addChip);
+  btnAdd?.addEventListener('click', (e) => {
+    e.preventDefault();
+    addChip();
+  });
+
   inputAdd?.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -2467,13 +2493,32 @@
     e.preventDefault();
     const calle   = document.getElementById('dest-calle').value.trim();
     const tipo    = document.getElementById('dest-tipo').value;
-    const numeros = destinosChips;
     const errEl   = document.getElementById('dest-form-error');
     errEl.hidden  = true;
 
+    // Si quedó texto pendiente en el input sin presionar 'Añadir', agregarlo
+    if (inputAdd && inputAdd.value.trim()) {
+      const val = inputAdd.value.trim();
+      const items = val.split(',').map(n => n.trim()).filter(n => n.length > 0 && !destinosChips.includes(n));
+      if (items.length > 0) {
+        destinosChips.push(...items);
+        renderChips();
+      }
+      inputAdd.value = '';
+    }
+
+    const numeros = [...destinosChips];
+
+    if (!calle) {
+      errEl.textContent = 'Ingresa el nombre de la calle o bloque';
+      errEl.hidden = false;
+      return;
+    }
+
     if (!numeros.length) {
       errEl.textContent = 'Agrega al menos un número o identificador';
-      errEl.hidden = false; return;
+      errEl.hidden = false;
+      return;
     }
 
     const res = await api('/destinos/lote', {
@@ -2484,7 +2529,8 @@
     if (!res || !res.ok) {
       const d = await res.json();
       errEl.textContent = d.error || 'Error al crear destinos';
-      errEl.hidden = false; return;
+      errEl.hidden = false;
+      return;
     }
     document.getElementById('modal-destino').hidden = true;
     document.getElementById('destino-form').reset();
