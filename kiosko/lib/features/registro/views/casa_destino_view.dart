@@ -228,6 +228,10 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
           ),
         ),
         BotonAsistenteFlotante(
+          // Esta pantalla sigue usando un AppBar real (kToolbarHeight=56)
+          // para el botón de atrás -- 6 centra los 44px del botón dentro de
+          // esa franja. Sin confirmar en dispositivo real todavía.
+          topDelBorde: 6,
           tipoCampo: 'destino',
           onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
           onCampoExtraido: _onCampoExtraido,
