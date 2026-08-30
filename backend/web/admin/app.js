@@ -1402,7 +1402,7 @@
         <div class="acceso-info">
           <div class="acceso-nombre">${esc(a.nombre)}</div>
           ${a.ubicacion ? `<div class="acceso-ubi">${esc(a.ubicacion)}</div>` : ""}
-          <div class="acceso-id">ID ${a.id} · ${esc(a.tipo || "—")}</div>
+          <div class="acceso-id">${esc(a.tipo || "—")}</div>
         </div>
         <div class="acceso-actions">
           <button class="btn-cancel" data-cfg-acceso="${a.id}" style="font-size:12.5px;padding:6px 14px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px" title="Configurar kiosko">
@@ -1832,8 +1832,8 @@
 
     const headerTitle = document.getElementById("cfg-header-title");
     const headerSub = document.getElementById("cfg-header-sub");
-    if (headerTitle) headerTitle.textContent = acceso?.nombre ? `Configurar: ${acceso.nombre}` : "Configuración de kiosko";
-    if (headerSub) headerSub.textContent = `ID #${accesoId}${acceso?.ubicacion ? ' · ' + acceso.ubicacion : ''}`;
+    if (headerTitle) headerTitle.textContent = acceso?.nombre ? `Configuración de Kiosko: ${acceso.nombre}` : "Configuración de kiosko";
+    if (headerSub) headerSub.textContent = acceso?.ubicacion ? acceso.ubicacion : '';
 
     // Cargar datos principales del kiosko
     const nombreEl = document.getElementById("cfg-nombre");
@@ -1914,8 +1914,8 @@
 
     const headerTitle = document.getElementById("cfg-header-title");
     const headerSub = document.getElementById("cfg-header-sub");
-    if (headerTitle) headerTitle.textContent = `Configurar: ${kioskoActualizado.nombre}`;
-    if (headerSub) headerSub.textContent = `ID #${cfgAccesoId}${kioskoActualizado.ubicacion ? ' · ' + kioskoActualizado.ubicacion : ''}`;
+    if (headerTitle) headerTitle.textContent = `Configuración de Kiosko: ${kioskoActualizado.nombre}`;
+    if (headerSub) headerSub.textContent = kioskoActualizado.ubicacion ? kioskoActualizado.ubicacion : '';
 
     // 2. Guardar parámetros de configuración
     const listEl = document.getElementById("cfg-pipeline-list");
@@ -2376,40 +2376,84 @@
     document.getElementById('modal-destino').hidden = true;
   });
 
-  function parsearNumeros(texto) {
-    return texto.split(',').map(n => n.trim()).filter(n => n.length > 0);
+  /* --- UI Chips Destinos --- */
+  let destinosChips = [];
+  const inputAdd = document.getElementById('dest-numero-input');
+  const btnAdd = document.getElementById('dest-numero-add');
+  const chipsContainer = document.getElementById('dest-chips-container');
+  
+  function renderChips() {
+    if (!chipsContainer) return;
+    if (destinosChips.length === 0) {
+      chipsContainer.innerHTML = '<div class="empty-text" style="margin:0;font-size:12.5px" id="dest-chips-empty">No has agregado ningún identificador</div>';
+      return;
+    }
+    chipsContainer.innerHTML = destinosChips.map((num, idx) => `
+      <div style="display:inline-flex; align-items:center; background:var(--brand); color:white; padding:4px 10px; border-radius:14px; font-size:12px; font-weight:600;">
+        ${esc(num)}
+        <button type="button" class="dest-chip-remove" data-idx="${idx}" style="background:none; border:none; color:white; margin-left:6px; cursor:pointer; padding:0; display:flex; align-items:center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    `).join("");
+    
+    chipsContainer.querySelectorAll('.dest-chip-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const i = parseInt(e.currentTarget.dataset.idx);
+        destinosChips.splice(i, 1);
+        renderChips();
+      });
+    });
+  }
+  
+  function addChip() {
+    if (!inputAdd) return;
+    const val = inputAdd.value.trim();
+    if (!val) return;
+    const items = val.split(',').map(n => n.trim()).filter(n => n.length > 0 && !destinosChips.includes(n));
+    if (items.length > 0) {
+      destinosChips.push(...items);
+      renderChips();
+    }
+    inputAdd.value = '';
+    inputAdd.focus();
   }
 
-  document.getElementById('dest-numeros')?.addEventListener('input', e => {
-    const n = parsearNumeros(e.target.value).length;
-    document.getElementById('dest-numeros-preview').textContent =
-      n > 0 ? `Se crearán ${n} destino${n !== 1 ? 's' : ''}.` : 'Separa cada número con una coma.';
+  btnAdd?.addEventListener('click', addChip);
+  inputAdd?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addChip();
+    }
   });
 
   document.getElementById('destino-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     const calle   = document.getElementById('dest-calle').value.trim();
     const tipo    = document.getElementById('dest-tipo').value;
-    const numeros = parsearNumeros(document.getElementById('dest-numeros').value);
+    const numeros = destinosChips;
     const errEl   = document.getElementById('dest-form-error');
     errEl.hidden  = true;
 
     if (!numeros.length) {
-      errEl.textContent = 'Escribe al menos un número';
-      errEl.hidden = false;
-      return;
+      errEl.textContent = 'Agrega al menos un número o identificador';
+      errEl.hidden = false; return;
     }
 
-    const res = await api('/destinos/lote', { method: 'POST', body: JSON.stringify({ calle, tipo, numeros }) });
-    if (!res) return;
-    if (!res.ok) {
+    const res = await api('/unidades/batch', {
+      method: 'POST',
+      body: JSON.stringify({ tenant_id: state.tenant.id, calle, tipo, numeros })
+    });
+
+    if (!res || !res.ok) {
       const d = await res.json();
       errEl.textContent = d.error || 'Error al crear destinos';
       errEl.hidden = false; return;
     }
     document.getElementById('modal-destino').hidden = true;
     document.getElementById('destino-form').reset();
-    document.getElementById('dest-numeros-preview').textContent = 'Separa cada número con una coma.';
+    destinosChips = [];
+    renderChips();
     loadDestinos();
   });
 

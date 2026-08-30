@@ -1034,18 +1034,28 @@
 				<div class="modal-title">Nuevos destinos</div>
 				<div class="modal-sub">Da de alta varias casas o edificios de una calle a la vez.</div>
 				<form id="destino-form">
-					<div class="form-group"><label>Calle</label><input id="dest-calle" type="text" required placeholder="Ej. Calle Roble"></div>
+					<div class="form-group"><label>Calle / Bloque</label><input id="dest-calle" type="text" required placeholder="Ej. Calle Roble"></div>
 					<div class="form-group">
 						<label>Tipo</label>
 						<select id="dest-tipo">
 							<option value="casa">Casa</option>
-							<option value="edificio">Edificio</option>
+							<option value="departamento">Departamento</option>
+							<option value="oficina">Oficina</option>
+							<option value="local">Local Comercial</option>
+							<option value="bodega">Bodega</option>
+							<option value="lote">Lote / Terreno</option>
+							<option value="otro">Otro</option>
 						</select>
 					</div>
 					<div class="form-group">
-						<label>Números</label>
-						<input id="dest-numeros" type="text" required placeholder="Ej. 1, 2, 3, 5A, 7">
-						<div class="form-hint" id="dest-numeros-preview">Separa cada número con una coma.</div>
+						<label>Números o Identificadores</label>
+						<div style="display:flex;gap:8px">
+							<input id="dest-numero-input" type="text" placeholder="Ej. 101" style="flex:1">
+							<button type="button" class="btn-cancel" id="dest-numero-add" style="padding:0 14px; font-weight:600">Añadir</button>
+						</div>
+						<div id="dest-chips-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; min-height: 36px; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; background: var(--bg-1);">
+							<div class="empty-text" style="margin:0;font-size:12.5px" id="dest-chips-empty">No has agregado ningún número</div>
+						</div>
 					</div>
 					<div id="dest-form-error" class="form-error" hidden></div>
 					<div class="modal-actions">
