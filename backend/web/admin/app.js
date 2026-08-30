@@ -1847,17 +1847,31 @@
 
     document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
+    document.getElementById("cfg-screensaver").checked = cfg.screensaver_habilitado ?? true;
     document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
+    document.getElementById("cfg-modo-nombre").value  = cfg.modo_captura_nombre || "TECLADO";
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
     document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
+    document.getElementById("cfg-mostrar-nombre-invitado").checked = !!cfg.mostrar_nombre_invitado;
+    document.getElementById("cfg-tiempo-exito").value = cfg.tiempo_exito_seg ?? 5;
     document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_seg ?? 60;
+    document.getElementById("cfg-lector-fisico").checked = !!cfg.lector_fisico_habilitado;
+    document.getElementById("cfg-autopass").checked = !!cfg.auto_pass_habilitado;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
 
     const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
     if (rowPlacaInv) rowPlacaInv.style.opacity = esPeatonal ? "0.35" : "1";
     document.getElementById("cfg-placa-invitado").disabled = esPeatonal;
+
+    // Resetear a la primera pestaña (General)
+    document.querySelectorAll("[data-cfg-tab]").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.cfgTab === "cfg-tab-general");
+    });
+    document.querySelectorAll(".cfg-tab-pane").forEach(pane => {
+      pane.hidden = pane.id !== "cfg-tab-general";
+    });
 
     // Renderizar pipeline arrastrable
     renderPipeline(cfg, esPeatonal);
@@ -1867,6 +1881,18 @@
     if (idle) idle.hidden = true;
     wrap.hidden = false;
   }
+
+  // Listener para las pestañas de configuración de kiosko
+  document.querySelectorAll("[data-cfg-tab]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.dataset.cfgTab;
+      document.querySelectorAll("[data-cfg-tab]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".cfg-tab-pane").forEach(pane => {
+        pane.hidden = pane.id !== targetId;
+      });
+    });
+  });
 
   document.getElementById("cfg-tipo")?.addEventListener("change", (e) => {
     const esPeatonal = e.target.value === "PEATONAL";
@@ -1936,19 +1962,25 @@
     }
 
     const payload = {
-      color_kiosko:          document.getElementById("cfg-color").value,
-      idioma_kiosko:         document.getElementById("cfg-idioma").value,
-      mensaje_bienvenida:    document.getElementById("cfg-mensaje").value,
-      foto_rostro_visitante: fotoRostro,
-      foto_placa_visitante:  fotoPlaca,
-      foto_ine_visitante:    fotoIne,
-      pasos_sin_invitacion:  activeSteps,
-      foto_ine_invitado:     document.getElementById("cfg-ine-invitado").checked,
-      foto_rostro_invitado:  document.getElementById("cfg-rostro-invitado").checked,
-      foto_placa_invitado:   document.getElementById("cfg-placa-invitado").checked,
-      tiempo_espera_seg:     parseInt(document.getElementById("cfg-tiempo-espera").value) || 0,
-      horario_inicio:        document.getElementById("cfg-horario-inicio").value,
-      horario_fin:           document.getElementById("cfg-horario-fin").value,
+      color_kiosko:             document.getElementById("cfg-color").value,
+      idioma_kiosko:            document.getElementById("cfg-idioma").value,
+      screensaver_habilitado:   document.getElementById("cfg-screensaver").checked,
+      mensaje_bienvenida:       document.getElementById("cfg-mensaje").value,
+      modo_captura_nombre:      document.getElementById("cfg-modo-nombre").value,
+      foto_rostro_visitante:    fotoRostro,
+      foto_placa_visitante:     fotoPlaca,
+      foto_ine_visitante:       fotoIne,
+      pasos_sin_invitacion:     activeSteps,
+      foto_ine_invitado:        document.getElementById("cfg-ine-invitado").checked,
+      foto_rostro_invitado:     document.getElementById("cfg-rostro-invitado").checked,
+      foto_placa_invitado:      document.getElementById("cfg-placa-invitado").checked,
+      mostrar_nombre_invitado:  document.getElementById("cfg-mostrar-nombre-invitado").checked,
+      tiempo_exito_seg:         parseInt(document.getElementById("cfg-tiempo-exito").value) || 5,
+      tiempo_espera_seg:        parseInt(document.getElementById("cfg-tiempo-espera").value) || 60,
+      lector_fisico_habilitado: document.getElementById("cfg-lector-fisico").checked,
+      auto_pass_habilitado:     document.getElementById("cfg-autopass").checked,
+      horario_inicio:           document.getElementById("cfg-horario-inicio").value,
+      horario_fin:              document.getElementById("cfg-horario-fin").value,
     };
 
     const res = await api(`/kioskos/${cfgAccesoId}/config`, {
@@ -2370,6 +2402,10 @@
   }
 
   document.getElementById('btn-nuevo-destino')?.addEventListener('click', () => {
+    document.getElementById('destino-form').reset();
+    destinosChips = [];
+    renderChips();
+    document.getElementById('dest-form-error').hidden = true;
     document.getElementById('modal-destino').hidden = false;
   });
   document.getElementById('dest-cancel')?.addEventListener('click', () => {
@@ -2440,9 +2476,9 @@
       errEl.hidden = false; return;
     }
 
-    const res = await api('/unidades/batch', {
+    const res = await api('/destinos/lote', {
       method: 'POST',
-      body: JSON.stringify({ tenant_id: state.tenant.id, calle, tipo, numeros })
+      body: JSON.stringify({ calle, tipo, numeros })
     });
 
     if (!res || !res.ok) {
@@ -2454,6 +2490,7 @@
     document.getElementById('destino-form').reset();
     destinosChips = [];
     renderChips();
+    mostrarToast('Destinos creados correctamente', 'ok');
     loadDestinos();
   });
 

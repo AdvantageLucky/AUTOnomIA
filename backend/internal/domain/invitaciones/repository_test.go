@@ -9,9 +9,14 @@ import (
 )
 
 func setupTestDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	dbName := "file:" + t.Name() + "?mode=memory&cache=shared"
+	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("no se pudo abrir sqlite en memoria: %v", err)
+	}
+	sqlDB, err := db.DB()
+	if err == nil {
+		sqlDB.SetMaxOpenConns(1)
 	}
 	if err := db.AutoMigrate(&Invitacion{}); err != nil {
 		t.Fatalf("no se pudo migrar Invitacion: %v", err)

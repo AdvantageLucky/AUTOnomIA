@@ -17,7 +17,7 @@ type DestinoKioskoResponse = DestinoResponse
 
 type DestinoAdminRequest struct {
 	Calle   string `json:"calle"   binding:"required"`
-	Tipo    string `json:"tipo"    binding:"required,oneof=casa edificio"`
+	Tipo    string `json:"tipo"    binding:"required"`
 	Numero  string `json:"numero"  binding:"required"`
 	Titular string `json:"titular"`
 }
@@ -27,7 +27,7 @@ type DestinoAdminRequest struct {
 // para un fraccionamiento con decenas de casas.
 type DestinoLoteRequest struct {
 	Calle   string   `json:"calle"   binding:"required"`
-	Tipo    string   `json:"tipo"    binding:"required,oneof=casa edificio"`
+	Tipo    string   `json:"tipo"    binding:"required"`
 	Numeros []string `json:"numeros" binding:"required,min=1,dive,required"`
 }
 
@@ -47,10 +47,28 @@ func toDestinoResponse(d Destino) DestinoResponse {
 var toDestinoKioskoResponse = toDestinoResponse
 
 func tipoDisplay(tipo TipoDestino) string {
-	if tipo == TipoDestinoEdificio {
-		return "Edificio"
+	t := string(tipo)
+	if len(t) == 0 {
+		return "Casa"
 	}
-	return "Casa"
+	switch t {
+	case "casa":
+		return "Casa"
+	case "departamento":
+		return "Depto"
+	case "edificio":
+		return "Edificio"
+	case "oficina":
+		return "Oficina"
+	case "local":
+		return "Local"
+	case "bodega":
+		return "Bodega"
+	case "lote":
+		return "Lote"
+	default:
+		return t
+	}
 }
 
 // nombreDestino arma el string resuelto que viaja como casa_destino por el
