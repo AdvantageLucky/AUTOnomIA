@@ -85,6 +85,7 @@ type MembresiaPendienteConPersona struct {
 	Curp            string    `json:"curp" gorm:"column:curp"`
 	Telefono        string    `json:"telefono" gorm:"column:telefono"`
 	FotoCaraURL     string    `json:"foto_cara_url" gorm:"column:foto_cara_url"`
+	FotoIneURL      string    `json:"foto_ine_url" gorm:"column:foto_ine_url"`
 	TieneRostro     bool      `json:"tiene_rostro" gorm:"column:tiene_rostro"`
 	TienePin        bool      `json:"tiene_pin" gorm:"column:tiene_pin"`
 	CasaDestino     string    `json:"casa_destino" gorm:"column:casa_destino"`
@@ -98,7 +99,7 @@ func (r *MembresiaRepository) FindPendientesPorTenant(tenantID uint) ([]Membresi
 	var list []MembresiaPendienteConPersona
 	err := r.db.Table("membresias").
 		Select("membresias.id as id, membresias.persona_id as persona_id, personas.nombre as nombre, personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, " +
-			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, " +
+			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, personas.foto_ine_url as foto_ine_url, " +
 			"(personas.embedding IS NOT NULL) as tiene_rostro, " +
 			"(membresias.pin != '') as tiene_pin, " +
 			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at").
@@ -121,6 +122,7 @@ type MembresiaActivaConPersona struct {
 	Curp            string    `json:"curp" gorm:"column:curp"`
 	Telefono        string    `json:"telefono" gorm:"column:telefono"`
 	FotoCaraURL     string    `json:"foto_cara_url" gorm:"column:foto_cara_url"`
+	FotoIneURL      string    `json:"foto_ine_url" gorm:"column:foto_ine_url"`
 	TieneRostro     bool      `json:"tiene_rostro" gorm:"column:tiene_rostro"`
 	TienePin        bool      `json:"tiene_pin" gorm:"column:tiene_pin"`
 	CasaDestino     string    `json:"casa_destino" gorm:"column:casa_destino"`
@@ -133,7 +135,7 @@ func (r *MembresiaRepository) FindActivasPorTenant(tenantID uint) ([]MembresiaAc
 	var list []MembresiaActivaConPersona
 	err := r.db.Table("membresias").
 		Select("membresias.id as id, membresias.persona_id as persona_id, personas.nombre as nombre, personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, " +
-			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, " +
+			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, personas.foto_ine_url as foto_ine_url, " +
 			"(personas.embedding IS NOT NULL) as tiene_rostro, " +
 			"(membresias.pin != '') as tiene_pin, " +
 			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at").
