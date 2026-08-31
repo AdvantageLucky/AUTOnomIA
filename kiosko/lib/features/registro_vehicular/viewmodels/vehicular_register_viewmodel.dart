@@ -8,11 +8,15 @@ import 'package:kigo_kiosco/features/registro/models/touch_step_model.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
+import 'package:kigo_kiosco/features/residente/services/reconocimiento_facial_servicio.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/services/placa_lector_servicio.dart';
 
 class VehicularRegisterViewModel extends ChangeNotifier {
   final DetectorServicio _detectorServicio = DetectorServicio();
   final FaceDetectorServicio _faceDetectorServicio = FaceDetectorServicio();
+  // Mismo MobileFaceNet que usa el acceso de residentes. La huella se
+  // calcula aqui, on-device: al backend solo viaja el vector.
+  final ReconocimientoFacialServicio _huellaFacialServicio = ReconocimientoFacialServicio();
   final EvidenciaCalidadServicio _calidadServicio = EvidenciaCalidadServicio();
   final PlacaLectorServicio _placaLectorServicio = MockPlacaLectorServicio();
   late final Future<String?> _lecturaPlaca;
@@ -179,6 +183,14 @@ class VehicularRegisterViewModel extends ChangeNotifier {
       }
 
       registrationData.pathFotoRostro = pathFoto;
+
+      // La huella facial es lo que permite reconocer a este visitante en su
+      // siguiente entrada cuando no hay INE ni placa. Si falla, la visita se
+      // registra igual: es un identificador para despues, no un requisito
+      // para dejar pasar ahora.
+      registrationData.embeddingRostro =
+          await _huellaFacialServicio.calcularEmbedding(pathFoto);
+
       return CalidadCaptura.ok;
     } catch (e) {
       debugPrint('Error al procesar el rostro: $e');
@@ -243,6 +255,7 @@ class VehicularRegisterViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _faceDetectorServicio.dispose();
+    _huellaFacialServicio.dispose();
     super.dispose();
   }
 }

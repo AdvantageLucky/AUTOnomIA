@@ -103,6 +103,8 @@ Future<Map<String, dynamic>> _reproducirRegistroContraBackend(
         pathFotoRostro: fotoPaths['rostro'] as String?,
         pathFotoPlaca: fotoPaths['placa'] as String?,
         clientId: clientId,
+        embeddingRostro:
+            (payload['embedding_rostro'] as List?)?.cast<num>().map((n) => n.toDouble()).toList(),
       );
     case 'invitacion':
       try {

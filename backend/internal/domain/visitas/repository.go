@@ -327,20 +327,57 @@ func (r *Repository) HistorialPorPlaca(placa string) ([]Visita, error) {
 	return visitas, err
 }
 
-// HistorialDeVisitante agrupa por CURP cuando la hay y, si no, por placa.
+// HistorialPorRostro devuelve las visitas previas cuya huella facial coincide
+// con embedding por encima de umbralPct (0-100, similitud coseno).
+//
+// Es el identificador de ultimo recurso: en un flujo de solo rostro + destino
+// no hay CURP ni placa, y sin esto ninguna persona era nunca recurrente por
+// mucho que viniera a diario.
+//
+// El umbral es el mismo con el que el kiosko decide si dos caras son la misma
+// (umbral_facial_pct), por coherencia: no tendria sentido que el kiosko diga
+// "eres tu" y el historial diga que no.
+func (r *Repository) HistorialPorRostro(embedding []float64, umbralPct int) ([]Visita, error) {
+	if len(embedding) == 0 {
+		return nil, nil
+	}
+
+	var candidatas []Visita
+	err := r.db.Scopes(ByTenant).
+		Where("embedding_rostro IS NOT NULL").
+		Order("created_at DESC").
+		Limit(maxVisitasEscaneadas).
+		Find(&candidatas).Error
+	if err != nil {
+		return nil, err
+	}
+
+	umbral := float64(umbralPct) / 100
+	var coincidencias []Visita
+	for _, c := range candidatas {
+		if similitudCoseno(c.EmbeddingRostro, embedding) >= umbral {
+			coincidencias = append(coincidencias, c)
+		}
+	}
+	return coincidencias, nil
+}
+
+// HistorialDeVisitante agrupa por CURP cuando la hay, si no por placa, y si
+// tampoco hay, por parecido de rostro.
 //
 // Nunca consulta con un identificador vacío: un `WHERE curp = ”` traeria todas
 // las visitas sin INE del tenant y el análisis heredaría el historial de
 // desconocidos — rechazos ajenos, visitas ajenas y, con autopass encendido,
-// aprobaciones que nadie se ganó.
-func (r *Repository) HistorialDeVisitante(v Visita) ([]Visita, error) {
+// aprobaciones que nadie se ganó. El match por rostro respeta lo mismo: sin
+// embedding no busca nada, en vez de traer el tenant entero.
+func (r *Repository) HistorialDeVisitante(v Visita, umbralFacialPct int) ([]Visita, error) {
 	if v.Curp != "" {
 		return r.HistorialPorCURP(v.Curp)
 	}
 	if v.Placa != "" {
 		return r.HistorialPorPlaca(v.Placa)
 	}
-	return nil, nil
+	return r.HistorialPorRostro(v.EmbeddingRostro, umbralFacialPct)
 }
 
 // GuardarAnalisisIA persiste el resultado del análisis de patrones (resumen

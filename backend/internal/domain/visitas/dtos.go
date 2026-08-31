@@ -34,6 +34,10 @@ type VisitaRequest struct {
 	CasaDestino   string                `form:"casa_destino"   binding:"required"`
 	Placa         string                `form:"placa"`
 	ClientID      string                `form:"client_id"`      // idempotencia: reenvios del kiosko tras sync offline
+	// EmbeddingRostro viaja como JSON ("[0.1,0.2,...]") en un campo de texto
+	// del multipart: el binding de formularios no arma un slice de floats
+	// desde un solo campo. Opcional — un kiosko viejo simplemente no lo manda.
+	EmbeddingRostro string              `form:"embedding_rostro"`
 	FotoDocumento *multipart.FileHeader `form:"foto_documento"` // Content-Type image
 	FotoRostro    *multipart.FileHeader `form:"foto_rostro"`    // Content-Type image
 	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`     // Content-Type image

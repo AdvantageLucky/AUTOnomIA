@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
@@ -234,6 +235,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		Estado:           EstadoPendiente,
 		KioskoID:         uint(kioskoID),
 		ClientID:         ClientIDPtr(req.ClientID),
+		EmbeddingRostro:  parsearEmbedding(req.EmbeddingRostro),
 	}
 
 	if err := repoCtx.Create(v); err != nil {
@@ -263,7 +265,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 			return
 		}
 
-		historial, err := asyncRepo.HistorialDeVisitante(visitaCopy)
+		historial, err := asyncRepo.HistorialDeVisitante(visitaCopy, cfg.UmbralFacialPct)
 		if err != nil {
 			return
 		}
@@ -629,4 +631,21 @@ func (h *Handler) HistorialVisita(c *gin.Context) {
 		TotalVisitas: len(items),
 		Visitas:      items,
 	})
+}
+
+// parsearEmbedding lee el vector que manda el kiosko. Un embedding invalido se
+// descarta en silencio en vez de rechazar la visita entera: sirve para
+// identificar al visitante despues, no para dejarlo pasar ahora, y tumbar un
+// registro en la caseta por un vector mal formado seria un mal negocio.
+func parsearEmbedding(crudo string) residente.FloatArray {
+	crudo = strings.TrimSpace(crudo)
+	if crudo == "" {
+		return nil
+	}
+	var vec []float64
+	if err := json.Unmarshal([]byte(crudo), &vec); err != nil || len(vec) == 0 {
+		log.Printf("embedding_rostro invalido, se ignora: %v", err)
+		return nil
+	}
+	return residente.FloatArray(vec)
 }
