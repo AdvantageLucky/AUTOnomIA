@@ -1,10 +1,18 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../theme/app_theme.dart';
+import '../utils/constants.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/invitation_viewmodel.dart';
 import '../widgets/kigo_primary_button.dart';
 import '../widgets/kigo_text_field.dart';
+
+/// Landing pública servida por el backend (ver router.go,
+/// registerInvitacionLandingRoute): intenta abrir kigoapp://invitacion/<token>
+/// y, si no hay app, ofrece descargarla.
+String _linkInvitacion(String token) => '${AppConstants.serverOrigin}/i/$token';
 
 /// Pestaña unificada de Invitar: integra la creación de un nuevo pase de
 /// acceso y el listado/gestión de invitaciones vigentes y revocadas.
@@ -28,12 +36,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
   bool _permiteFacial = true;
   int? _tenantIdCargado;
   String? _errorLocal;
+  bool _recibidasCargadas = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
@@ -63,7 +72,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
 
     final auth = context.read<AuthViewModel>();
     try {
-      await vm.crear(
+      final token = await vm.crear(
         tenantId: auth.centroActivo!.tenantId,
         telefono: telefono,
         nombre: nombre,
@@ -85,9 +94,24 @@ class _InvitarTabViewState extends State<InvitarTabView>
 
       // Cambiamos a la pestaña de "Mis Invitaciones"
       _tabController.animateTo(1);
+
+      if (token != null) {
+        unawaited(Share.share(
+          'Te invité a ${_nombreDestinoSeleccionado(vm, destinoId)} en Kigo. Abre este link: ${_linkInvitacion(token)}',
+        ));
+      }
     } catch (_) {
       // El error queda en vm.error
     }
+  }
+
+  String _nombreDestinoSeleccionado(InvitationViewModel vm, int destinoId) {
+    final d = vm.destinos.where((d) => d.id == destinoId);
+    return d.isEmpty ? 'mi casa' : d.first.nombre;
+  }
+
+  void _compartir(String token) {
+    unawaited(Share.share('Te invité a Kigo. Abre este link: ${_linkInvitacion(token)}'));
   }
 
   Future<void> _revocar(int id) async {
@@ -139,8 +163,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
       });
     }
 
-    if (tenantId == null) {
-      return const Center(child: Text('No tienes una membresía activa'));
+    // Recibidas no depende de tenant/membresía: una Persona puede recibir
+    // invitaciones sin pertenecer todavía a ningún centro (ver splash_view).
+    if (!_recibidasCargadas) {
+      _recibidasCargadas = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => vm.cargarRecibidas());
     }
 
     final vigentesCount = vm.invitaciones.where((i) => i.vigente).length;
@@ -193,6 +220,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   ],
                 ),
               ),
+              const Tab(text: 'Recibidas'),
             ],
           ),
         ),
@@ -203,12 +231,24 @@ class _InvitarTabViewState extends State<InvitarTabView>
             controller: _tabController,
             children: [
               // 1. NUEVA INVITACIÓN
-              _buildFormularioNuevaInvitacion(context, vm, isDark),
+              if (tenantId == null)
+                const Center(child: Text('No tienes una membresía activa'))
+              else
+                _buildFormularioNuevaInvitacion(context, vm, isDark),
 
               // 2. MIS INVITACIONES
+              if (tenantId == null)
+                const Center(child: Text('No tienes una membresía activa'))
+              else
+                RefreshIndicator(
+                  onRefresh: () => vm.cargarInvitaciones(),
+                  child: _buildListaInvitaciones(context, vm, isDark),
+                ),
+
+              // 3. RECIBIDAS
               RefreshIndicator(
-                onRefresh: () => vm.cargarInvitaciones(),
-                child: _buildListaInvitaciones(context, vm, isDark),
+                onRefresh: () => vm.cargarRecibidas(),
+                child: _buildListaRecibidas(context, vm, isDark),
               ),
             ],
           ),
@@ -436,12 +476,110 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   ],
                 ),
               ),
+              if (inv.vigente && inv.token != null)
+                IconButton(
+                  icon: const Icon(Icons.share_outlined, color: AppTheme.primaryOrange),
+                  tooltip: 'Compartir link',
+                  onPressed: () => _compartir(inv.token!),
+                ),
               if (inv.vigente)
                 IconButton(
                   icon: const Icon(Icons.cancel_outlined, color: AppTheme.error),
                   tooltip: 'Revocar invitación',
                   onPressed: () => _revocar(inv.id),
                 ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildListaRecibidas(
+    BuildContext context,
+    InvitationViewModel vm,
+    bool isDark,
+  ) {
+    if (vm.cargandoRecibidas && vm.recibidas.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (vm.recibidas.isEmpty) {
+      return ListView(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 80, left: 24, right: 24),
+            child: Column(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: (isDark ? AppTheme.surface2Dark : AppTheme.surface2Light),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.move_to_inbox_outlined, size: 38, color: AppTheme.textGrey),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No has recibido invitaciones',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Cuando alguien te invite a su casa, aparecerá aquí.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textDimmed, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      itemCount: vm.recibidas.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final inv = vm.recibidas[i];
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
+            borderRadius: BorderRadius.circular(AppTheme.radius),
+            border: Border.all(
+              color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryOrange.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.mail_outline_rounded, color: AppTheme.primaryOrange, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      inv.casaDestino.isNotEmpty ? inv.casaDestino : inv.titular,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      inv.nombreInvita.isNotEmpty ? 'Te invitó ${inv.nombreInvita}' : 'Invitación pendiente',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.textDimmed, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         );

@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
+import 'services/deep_link_servicio.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/companeros_casa_viewmodel.dart';
@@ -23,6 +24,7 @@ void main() async {
   // por el plugin de Gradle — no hace falta firebase_options.dart (eso solo
   // es necesario para web o multi-plataforma explícita).
   await Firebase.initializeApp();
+  DeepLinkServicio().iniciar();
   runApp(
     MultiProvider(
       providers: [
