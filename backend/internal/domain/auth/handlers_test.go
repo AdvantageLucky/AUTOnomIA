@@ -146,6 +146,14 @@ func TestForgotPasswordFlow(t *testing.T) {
 	r.ServeHTTP(wReg, reqReg)
 	assert.Equal(t, http.StatusCreated, wReg.Code)
 
+	// 1.5 Solicitar OTP para un correo no registrado -> 404 Not Found
+	unregisteredPayload, _ := json.Marshal(SolicitarOtpAdminRequest{Correo: "no_existe@example.com"})
+	wNotFound := httptest.NewRecorder()
+	reqNotFound, _ := http.NewRequest("POST", "/auth/recuperar-password/solicitar-otp", bytes.NewBuffer(unregisteredPayload))
+	reqNotFound.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(wNotFound, reqNotFound)
+	assert.Equal(t, http.StatusNotFound, wNotFound.Code)
+
 	// 2. Solicitar OTP de recuperación de contraseña
 	wRec := httptest.NewRecorder()
 	reqRec, _ := http.NewRequest("POST", "/auth/recuperar-password/solicitar-otp", bytes.NewBuffer(solicitarPayload))

@@ -773,7 +773,11 @@
 
       const data = await res.json();
       if (!res.ok) {
-        errEl.textContent = data.error || "Error";
+        let msg = data.error || (lang === "en" ? "Error sending code" : "Error al enviar código");
+        if (res.status === 404 || msg.includes("no existe")) {
+          msg = lang === "en" ? "No account found with this email address." : "No existe ninguna cuenta registrada con este correo.";
+        }
+        errEl.textContent = msg;
         errEl.hidden = false;
         return;
       }
