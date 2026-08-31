@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:vosk_flutter/vosk_flutter.dart';
+import 'package:vosk_flutter_service/vosk_flutter_service.dart';
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
 import 'package:kigo_kiosco/core/services/vosk_modelo_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';

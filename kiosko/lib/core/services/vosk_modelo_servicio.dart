@@ -1,4 +1,4 @@
-import 'package:vosk_flutter/vosk_flutter.dart';
+import 'package:vosk_flutter_service/vosk_flutter_service.dart';
 import 'package:kigo_kiosco/core/utils/carga_unica.dart';
 
 /// Carga el modelo de español de Vosk una sola vez por sesión del kiosko,
