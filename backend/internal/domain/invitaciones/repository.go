@@ -59,6 +59,18 @@ func (r *Repository) RevocarByIDAndPersonaCreadora(id, personaID uint) error {
 	return nil
 }
 
+// FindByPersonaInvitada lista las invitaciones activas (no revocadas, no
+// expiradas, no agotadas) dirigidas a una Persona — usado por kigo-app para
+// mostrar "invitaciones recibidas" sin importar el tenant.
+func (r *Repository) FindByPersonaInvitada(personaID uint) ([]Invitacion, error) {
+	var list []Invitacion
+	err := r.db.
+		Where("persona_invitada_id = ? AND conteo_usos = 0 AND (expires_at IS NULL OR expires_at > ?)", personaID, time.Now()).
+		Order("created_at DESC").
+		Find(&list).Error
+	return list, err
+}
+
 // FindActivaByPersonaInvitadaAndTenant busca si una Persona tiene una
 // invitación activa (no expirada, no agotada) en un tenant — usado por el
 // kiosko al resolver un QR (ver persona.ResolverEstadoQR).
