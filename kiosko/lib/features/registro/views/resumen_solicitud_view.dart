@@ -1,4 +1,3 @@
-/* VISTA DE RESUMEN Y ESPERA DE APROBACIÓN (reemplaza a confirm_data_view.dart) */
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'dart:async';
 import 'dart:io';
@@ -10,6 +9,7 @@ import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
+import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
@@ -35,6 +35,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   late final KioskoServicio _kioskoServicio;
   Timer? _pollTimer;
   Timer? _regresoTimer;
+  final TextToSpeakServicio _tts = TextToSpeakServicio();
 
   bool _isSubmitting = true;
   String? _submitError;
@@ -125,10 +126,12 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           _isSubmitting = false;
         });
         _dispararLedSiCorresponde();
+        _tts.speak('Acceso autorizado. Puede pasar.');
 
         final config = context.read<KioskoConfigNotifier>().config;
+        final segs = config.tiempoExitoSeg > 0 ? config.tiempoExitoSeg : 4;
         _regresoTimer?.cancel();
-        _regresoTimer = Timer(Duration(seconds: config.tiempoExitoSeg), _regresarABienvenida);
+        _regresoTimer = Timer(Duration(seconds: segs), _regresarABienvenida);
         return;
       }
 
@@ -160,6 +163,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         _isSubmitting = false;
       });
 
+      _tts.speak('Solicitud enviada al residente. Por favor espere.');
       _iniciarPolling();
     } catch (e) {
       if (!mounted) return;
@@ -168,6 +172,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         _submitError =
             '${AppLocalizations.t(context, 'no_se_pudo_registrar_prefix')} $e';
       });
+      _tts.speak('No se pudo registrar la visita. Intente nuevamente.');
     }
   }
 
@@ -191,6 +196,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
       final nuevoEstado = respuesta['estado'] as String? ?? _estado;
       final yaEstabaEnRevision = _estado == 'REVISION';
+      final cambioEstado = nuevoEstado != _estado;
       setState(() => _estado = nuevoEstado);
       _dispararLedSiCorresponde();
 
@@ -201,9 +207,20 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         // El kiosko se queda mostrando el resultado brevemente y regresa solo
         // a la bienvenida, para quedar listo para el siguiente visitante.
         final config = context.read<KioskoConfigNotifier>().config;
+        final segs = config.tiempoExitoSeg > 0 ? config.tiempoExitoSeg : 4;
 
         _regresoTimer?.cancel();
-        _regresoTimer = Timer(Duration(seconds: config.tiempoExitoSeg), _regresarABienvenida);
+        _regresoTimer = Timer(Duration(seconds: segs), _regresarABienvenida);
+
+        if (cambioEstado) {
+          if (nuevoEstado == 'APROBADO') {
+            _tts.speak('Acceso autorizado por el residente. Puede pasar.');
+          } else if (nuevoEstado == 'RECHAZADO') {
+            _tts.speak('Acceso denegado.');
+          } else if (nuevoEstado == 'REVISION') {
+            _tts.speak('Su solicitud ha sido turnada a revisión con el guardia.');
+          }
+        }
 
         if (nuevoEstado == 'REVISION' && !yaEstabaEnRevision) {
           _mostrarDialogoRevision();

@@ -1,5 +1,4 @@
-/* VISTA PRINCIPAL DEL REGISTRO VEHICULAR */
-
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/asistente_controller.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
@@ -324,11 +323,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
                           _buildGuiaVisual(),
                           const SizedBox(height: 32),
                           viewModel.isProcessing
-                              ? const Center(
-                                  child: CircularProgressIndicator(
-                                    color: KigoDesign.brand,
-                                  ),
-                                )
+                              ? _buildBotonCargando()
                               : _buildMainButton(
                                   AppLocalizations.t(
                                     context,
@@ -421,21 +416,56 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   }
 
   Widget _buildGuiaVisual() {
-    return AspectRatio(
-      aspectRatio: 4 / 3,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: context.kSurface1,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(24)),
-          child: switch (viewModel.pasoActual) {
-            PasoVehicular.ine => const IneApproachAnimation(),
-            PasoVehicular.rostro => const FaceApproachAnimation(),
-          },
-        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double maxH = math.min(constraints.maxWidth * 0.75, 300.0);
+        return SizedBox(
+          width: double.infinity,
+          height: maxH,
+          child: Container(
+            decoration: BoxDecoration(
+              color: context.kSurface1,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(24)),
+              child: switch (viewModel.pasoActual) {
+                PasoVehicular.ine => const IneApproachAnimation(),
+                PasoVehicular.rostro => const FaceApproachAnimation(),
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBotonCargando() {
+    return Container(
+      width: double.infinity,
+      height: 76,
+      decoration: BoxDecoration(
+        color: KigoDesign.brand.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+          ),
+          SizedBox(width: 14),
+          Text(
+            'Procesando captura...',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

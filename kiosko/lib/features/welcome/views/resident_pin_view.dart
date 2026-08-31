@@ -2,6 +2,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/resident_welcome_view.dart';
@@ -18,6 +19,7 @@ class ResidentPinView extends StatefulWidget {
 
 class _ResidentPinViewState extends State<ResidentPinView> {
   String? _presionadoId;
+  final TextToSpeakServicio _tts = TextToSpeakServicio();
 
   @override
   void initState() {
@@ -328,7 +330,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                   if (ok && mounted) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
+                       MaterialPageRoute(
                         builder: (_) => ResidentWelcomeView(
                           viewModel: ResidentWelcomeViewModel(
                             nombre: vm.nombreResidente ?? AppLocalizations.t(context, 'residente_label'),
@@ -337,6 +339,8 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                         ),
                       ),
                     ).then((_) => vm.clear());
+                  } else if (!ok && vm.error != null && mounted) {
+                    _tts.speak(vm.error!);
                   }
                 }
               : null,
