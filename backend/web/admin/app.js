@@ -1210,7 +1210,7 @@
     });
 
     const container = document.getElementById("dash-recent-rows");
-    const recent = visitas.slice(0, 8);
+    const recent = visitas.slice(0, 10);
     if (recent.length === 0) {
       container.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg></div><div class="empty-title">${t("vis_empty_title")}</div><div class="empty-text">${t("vis_empty_text")}</div></div>`;
       return;
@@ -1220,13 +1220,16 @@
       row.addEventListener("click", () => loadDetalle(row.dataset.id));
     });
 
-    loadReporteIA();
+    loadReporteIA(visitas);
   }
 
-  async function loadReporteIA() {
-    const loadEl  = document.getElementById('dash-reporte-ia-loading');
-    const emptyEl = document.getElementById('dash-reporte-ia-empty');
-    const bodyEl  = document.getElementById('dash-reporte-ia-body');
+  async function loadReporteIA(visitas = []) {
+    const loadEl   = document.getElementById('dash-reporte-ia-loading');
+    const emptyEl  = document.getElementById('dash-reporte-ia-empty');
+    const bodyEl   = document.getElementById('dash-reporte-ia-body');
+    const chipsEl  = document.getElementById('dash-reporte-ia-stats-chips');
+    const periodoEl= document.getElementById('dash-reporte-ia-periodo');
+    const textoEl  = document.getElementById('dash-reporte-ia-texto');
     if (!bodyEl) return;
 
     if (loadEl) loadEl.hidden = false;
@@ -1236,28 +1239,80 @@
     const res = await api('/visitas/reportes');
     if (loadEl) loadEl.hidden = true;
 
-    if (!res || !res.ok) {
-      if (emptyEl) emptyEl.hidden = false;
-      return;
-    }
-
     let reportes = [];
-    try {
-      const d = await res.json();
-      reportes = Array.isArray(d.reportes) ? d.reportes : [];
-    } catch (e) { console.error(e); }
+    if (res && res.ok) {
+      try {
+        const d = await res.json();
+        reportes = Array.isArray(d.reportes) ? d.reportes : [];
+      } catch (e) { console.error(e); }
+    }
 
-    if (!reportes.length) {
-      if (emptyEl) emptyEl.hidden = false;
+    if (reportes.length > 0) {
+      const r = reportes[0];
+      const inicio = r.periodo_inicio || r.PeriodoInicio;
+      const fin = r.periodo_fin || r.PeriodoFin;
+      const texto = r.texto || r.Texto || "";
+      let raw = null;
+      if (r.datos_raw || r.DatosRaw) {
+        try {
+          raw = typeof (r.datos_raw || r.DatosRaw) === 'string' ? JSON.parse(r.datos_raw || r.DatosRaw) : (r.datos_raw || r.DatosRaw);
+        } catch (e) {}
+      }
+
+      const total = raw ? (raw.total_visitas ?? raw.TotalVisitas ?? 0) : visitas.length;
+      const aprob = raw ? (raw.aprobadas ?? raw.Aprobadas ?? 0) : visitas.filter(v => v.estado === 'APROBADO').length;
+      const rech = raw ? (raw.rechazadas ?? raw.Rechazadas ?? 0) : visitas.filter(v => v.estado === 'RECHAZADO').length;
+      const rev = raw ? (raw.en_revision ?? raw.EnRevision ?? 0) : visitas.filter(v => v.estado === 'REVISION' || v.estado === 'PENDIENTE').length;
+
+      if (periodoEl) {
+        periodoEl.textContent = (inicio && fin) ? `Período: ${fmtDate(inicio)} – ${fmtDate(fin)}` : 'Último período';
+      }
+
+      if (chipsEl) {
+        chipsEl.innerHTML = `
+          <div class="stat-pill"><span class="stat-pill-num">${total}</span> Total visitas</div>
+          <div class="stat-pill stat-pill--green"><span class="stat-pill-num">${aprob}</span> Aprobadas</div>
+          ${rech > 0 ? `<div class="stat-pill stat-pill--red"><span class="stat-pill-num">${rech}</span> Rechazadas</div>` : ''}
+          ${rev > 0 ? `<div class="stat-pill stat-pill--yellow"><span class="stat-pill-num">${rev}</span> En revisión</div>` : ''}
+        `;
+      }
+
+      if (textoEl) textoEl.innerHTML = formatMarkdown(esc(texto)) || '';
+      bodyEl.hidden = false;
       return;
     }
 
-    const r = reportes[0];
-    const periodoEl = document.getElementById('dash-reporte-ia-periodo');
-    const textoEl   = document.getElementById('dash-reporte-ia-texto');
-    if (periodoEl) periodoEl.textContent = `${fmtDate(r.PeriodoInicio)} – ${fmtDate(r.PeriodoFin)}`;
-    if (textoEl) textoEl.innerHTML = formatMarkdown(esc(r.Texto)) || '';
-    bodyEl.hidden = false;
+    // Si no hay reporte periódico aún, generar resumen dinámico si hay visitas
+    if (visitas.length > 0) {
+      const total = visitas.length;
+      const aprob = visitas.filter(v => v.estado === 'APROBADO').length;
+      const rech = visitas.filter(v => v.estado === 'RECHAZADO').length;
+      const rev = visitas.filter(v => v.estado === 'REVISION' || v.estado === 'PENDIENTE').length;
+      const tasaAprob = total > 0 ? Math.round((aprob / total) * 100) : 100;
+
+      if (periodoEl) periodoEl.textContent = "Actividad acumulada reciente";
+      if (chipsEl) {
+        chipsEl.innerHTML = `
+          <div class="stat-pill"><span class="stat-pill-num">${total}</span> Total registradas</div>
+          <div class="stat-pill stat-pill--green"><span class="stat-pill-num">${aprob}</span> Aprobadas (${tasaAprob}%)</div>
+          ${rech > 0 ? `<div class="stat-pill stat-pill--red"><span class="stat-pill-num">${rech}</span> Rechazadas</div>` : ''}
+          ${rev > 0 ? `<div class="stat-pill stat-pill--yellow"><span class="stat-pill-num">${rev}</span> En revisión</div>` : ''}
+        `;
+      }
+
+      let textoDinamico = `Se han registrado **${total} accesos** en el sistema (${aprob} aprobados, ${rech} rechazados, ${rev} pendientes de resolución). `;
+      if (rech > 0) {
+        textoDinamico += `Se identificaron entradas rechazadas que sugieren atención por parte de vigilancia o administración.`;
+      } else {
+        textoDinamico += `El flujo de accesos opera con normalidad y con alta tasa de aprobación.`;
+      }
+
+      if (textoEl) textoEl.innerHTML = formatMarkdown(textoDinamico);
+      bodyEl.hidden = false;
+      return;
+    }
+
+    if (emptyEl) emptyEl.hidden = false;
   }
 
   const stateHistorialReportes = { page: 1, pageSize: 10 };
@@ -1291,11 +1346,35 @@
       return;
     }
 
-    rowsEl.innerHTML = reportes.map(r => `
-      <div class="panel-padded" style="padding:12px 0;border-bottom:1px solid var(--border)">
-        <div class="row-sub" style="margin-bottom:6px">${fmtDate(r.PeriodoInicio)} – ${fmtDate(r.PeriodoFin)}</div>
-        <div style="line-height:1.5; font-size:13px; color:var(--text-2); margin-top:8px;" class="ia-summary-card-content">${formatMarkdown(esc(r.Texto))}</div>
-      </div>`).join("");
+    rowsEl.innerHTML = reportes.map(r => {
+      const inicio = r.periodo_inicio || r.PeriodoInicio;
+      const fin = r.periodo_fin || r.PeriodoFin;
+      const texto = r.texto || r.Texto || "";
+      let raw = null;
+      if (r.datos_raw || r.DatosRaw) {
+        try {
+          raw = typeof (r.datos_raw || r.DatosRaw) === 'string' ? JSON.parse(r.datos_raw || r.DatosRaw) : (r.datos_raw || r.DatosRaw);
+        } catch (e) {}
+      }
+
+      let chips = '';
+      if (raw) {
+        const total = raw.total_visitas ?? raw.TotalVisitas ?? 0;
+        const aprob = raw.aprobadas ?? raw.Aprobadas ?? 0;
+        const rech = raw.rechazadas ?? raw.Rechazadas ?? 0;
+        chips = `<div style="display:flex;gap:6px;margin:6px 0;">
+          <span class="stat-pill" style="font-size:11px;padding:2px 8px"><span class="stat-pill-num">${total}</span> visitas</span>
+          <span class="stat-pill stat-pill--green" style="font-size:11px;padding:2px 8px"><span class="stat-pill-num">${aprob}</span> aprob</span>
+          ${rech > 0 ? `<span class="stat-pill stat-pill--red" style="font-size:11px;padding:2px 8px"><span class="stat-pill-num">${rech}</span> rech</span>` : ''}
+        </div>`;
+      }
+
+      return `<div class="panel-padded" style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div class="row-sub" style="margin-bottom:6px">${(inicio && fin) ? `${fmtDate(inicio)} – ${fmtDate(fin)}` : 'Período'}</div>
+        ${chips}
+        <div style="line-height:1.5; font-size:13px; color:var(--text-2); margin-top:8px;" class="ia-summary-card-content">${formatMarkdown(esc(texto))}</div>
+      </div>`;
+    }).join("");
 
     const totalPages = Math.ceil((data.total || 0) / stateHistorialReportes.pageSize);
     if (totalPages > 1) {
@@ -1334,10 +1413,11 @@
   function renderDashRow(v, i) {
     const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
     const tvLabel = tipoVisLabel(v.tipo_visitante);
-    return `<div class="row-item" style="grid-template-columns:2fr auto 1fr 80px;gap:12px;align-items:center;animation-delay:${i*40}ms" data-id="${v.id}">
+    const titular = v.titular || v.placa || (v.tipo_visitante === "RESIDENTE" ? "Residente" : "Visitante sin nombre");
+    return `<div class="row-item" style="grid-template-columns:2fr auto 1fr 80px;gap:12px;align-items:center;animation-delay:${i*40}ms;cursor:pointer" data-id="${v.id}">
       <div>
-        <div class="row-name">${esc(v.titular)}</div>
-        <div class="row-sub">${esc(v.casa_destino || "")}</div>
+        <div class="row-name">${esc(titular)}</div>
+        <div class="row-sub">${esc(v.casa_destino || v.placa || "")}</div>
       </div>
       <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-date">${fmtDateShort(v.created_at)}</div>
@@ -2284,6 +2364,27 @@
     await loadConfig(accesoId);
   }
 
+  async function loadConfigAccesos() {
+    if (cfgAccesoId) {
+      await loadConfig(cfgAccesoId);
+      return;
+    }
+    const res = await api("/kioskos/");
+    if (!res || !res.ok) return;
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.kioskos || []);
+    list.forEach(a => state.accesosById.set(a.id, a));
+    if (list.length > 0) {
+      cfgAccesoId = list[0].id;
+      await loadConfig(cfgAccesoId);
+    } else {
+      const wrap = document.getElementById("cfg-form-wrap");
+      const idle = document.getElementById("cfg-idle");
+      if (wrap) wrap.hidden = true;
+      if (idle) idle.hidden = false;
+    }
+  }
+
   document.getElementById("cfg-btn-volver")?.addEventListener("click", () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -2441,22 +2542,34 @@
   }
 
   async function loadConfig(accesoId) {
+    if (!accesoId) return;
     const wrap = document.getElementById("cfg-form-wrap");
     const idle = document.getElementById("cfg-idle");
 
+    let acceso = state.accesosById.get(accesoId);
+    if (!acceso) {
+      const kRes = await api(`/kioskos/`);
+      if (kRes && kRes.ok) {
+        const kData = await kRes.json();
+        const list = Array.isArray(kData) ? kData : (kData.kioskos || []);
+        list.forEach(a => state.accesosById.set(a.id, a));
+        acceso = state.accesosById.get(accesoId);
+      }
+    }
+
     const res = await api(`/kioskos/${accesoId}/config`);
     if (!res || !res.ok) {
-      alert("No se pudo cargar la configuración.");
+      mostrarToast("No se pudo cargar la configuración del kiosko", "err");
       return;
     }
 
     const cfg = await res.json();
-    const acceso = state.accesosById.get(accesoId);
+    cfgAccesoId = accesoId;
 
     const headerTitle = document.getElementById("cfg-header-title");
     const headerSub = document.getElementById("cfg-header-sub");
-    if (headerTitle) headerTitle.textContent = acceso?.nombre ? `Configuración de Kiosko: ${acceso.nombre}` : "Configuración de kiosko";
-    if (headerSub) headerSub.textContent = acceso?.ubicacion ? acceso.ubicacion : '';
+    if (headerTitle) headerTitle.textContent = acceso?.nombre ? `Configuración: ${acceso.nombre}` : "Configuración de kiosko";
+    if (headerSub) headerSub.textContent = acceso?.ubicacion ? acceso.ubicacion : (acceso?.tipo ? `Acceso ${acceso.tipo.toLowerCase()}` : '');
 
     // Cargar datos principales del kiosko
     const nombreEl = document.getElementById("cfg-nombre");

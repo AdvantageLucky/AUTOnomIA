@@ -13,13 +13,13 @@ import (
 )
 
 type ReporteIA struct {
-	ID            uint `gorm:"primaryKey"`
-	CreatedAt     time.Time
-	TenantID      uint      `gorm:"column:tenant_id;not null;index"`
-	PeriodoInicio time.Time `gorm:"not null"`
-	PeriodoFin    time.Time `gorm:"not null"`
-	Texto         string    `gorm:"not null"`
-	DatosRaw      []byte    `gorm:"type:jsonb"`
+	ID            uint            `gorm:"primaryKey"                      json:"id"`
+	CreatedAt     time.Time       `json:"created_at"`
+	TenantID      uint            `gorm:"column:tenant_id;not null;index" json:"tenant_id"`
+	PeriodoInicio time.Time       `gorm:"not null"                        json:"periodo_inicio"`
+	PeriodoFin    time.Time       `gorm:"not null"                        json:"periodo_fin"`
+	Texto         string          `gorm:"not null"                        json:"texto"`
+	DatosRaw      json.RawMessage `gorm:"type:jsonb"                      json:"datos_raw"`
 }
 
 func (ReporteIA) TableName() string { return "reportes_ia" }
@@ -121,10 +121,10 @@ func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmURL stri
 }
 
 type datosAgregados struct {
-	TotalVisitas int
-	Aprobadas    int
-	Rechazadas   int
-	EnRevision   int
+	TotalVisitas int `json:"total_visitas"`
+	Aprobadas    int `json:"aprobadas"`
+	Rechazadas   int `json:"rechazadas"`
+	EnRevision   int `json:"en_revision"`
 }
 
 func agregarDatos(vs []Visita) datosAgregados {
