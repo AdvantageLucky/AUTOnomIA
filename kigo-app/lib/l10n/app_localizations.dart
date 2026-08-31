@@ -106,6 +106,10 @@ class AppLocalizations {
       'language': 'Idioma',
       'app_version': 'Versión de App',
       'privacy_policy': 'Políticas de Privacidad',
+      'privacy_policy_draft_notice':
+          'Este es un borrador informativo pendiente de revisión legal — no sustituye un aviso de privacidad formal.',
+      'privacy_policy_body':
+          '¿Qué datos recolectamos?\n\nTu nombre completo, tu número de teléfono (para verificarte por código SMS), tu CURP y la fotografía de tu INE cuando te registras en un centro habitacional, y una muestra biométrica de tu rostro — un vector numérico calculado a partir de tu foto, no la foto en sí — para permitirte el acceso por reconocimiento facial.\n\n¿Para qué los usamos?\n\nPara verificar tu identidad al iniciar sesión, para que el centro habitacional donde vives te reconozca como residente o valide tus invitaciones, y para que los kioskos de acceso puedan comparar tu rostro contra esa muestra biométrica al momento de entrar.\n\n¿Con quién se comparte?\n\nTus datos quedan dentro del sistema de Kigo del centro habitacional al que perteneces — no se comparten con otros centros. Si usas la opción alternativa "Verificar con Kigo", tu fotografía se envía directamente al servicio externo de Kigo Verify para ese trámite específico; en el flujo normal de reconocimiento facial, tu fotografía nunca sale de tu dispositivo, solo el vector numérico calculado localmente.\n\nTus compañeros de casa solo ven tu nombre y tu rol dentro de la vivienda — nunca tu teléfono, CURP ni fotografías.\n\n¿Qué puedes hacer?\n\nSi quieres consultar, corregir o eliminar tus datos, contacta al administrador de tu centro habitacional — es quien administra esta información dentro de la plataforma.',
       'edit_username_title': 'Nombre de Usuario',
       'edit_username_hint': 'Ingresa tu nombre',
       'save': 'GUARDAR',
@@ -211,6 +215,10 @@ class AppLocalizations {
       'language': 'Language',
       'app_version': 'App Version',
       'privacy_policy': 'Privacy Policy',
+      'privacy_policy_draft_notice':
+          'This is an informational draft pending legal review — it does not replace a formal privacy notice.',
+      'privacy_policy_body':
+          'What data do we collect?\n\nYour full name, your phone number (to verify you via SMS code), your CURP and your ID photo when you register at a residential community, and a biometric sample of your face — a numeric vector calculated from your photo, not the photo itself — to allow you facial-recognition access.\n\nWhat do we use it for?\n\nTo verify your identity when you sign in, so the community you live in recognizes you as a resident or validates your invitations, and so the access kiosks can compare your face against that biometric sample when you enter.\n\nWho do we share it with?\n\nYour data stays within the Kigo system of the community you belong to — it is not shared with other communities. If you use the alternative "Verify with Kigo" option, your photo is sent directly to the external Kigo Verify service for that specific process; in the normal facial-recognition flow, your photo never leaves your device, only the numeric vector calculated locally.\n\nYour housemates only see your name and your role in the household — never your phone, CURP, or photos.\n\nWhat can you do?\n\nIf you want to review, correct, or delete your data, contact your community\'s administrator — they manage this information within the platform.',
       'edit_username_title': 'Username',
       'edit_username_hint': 'Enter your name',
       'save': 'SAVE',
