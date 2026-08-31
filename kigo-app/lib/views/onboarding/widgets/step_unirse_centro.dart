@@ -22,6 +22,31 @@ class StepUnirseCentro extends StatefulWidget {
 /// persona lo consulta después en "Mi QR".
 enum _Paso { codigo, calle, tipo, numero, confirmar }
 
+/// Traduce el tipo de destino a una etiqueta legible -- mismo mapeo que
+/// `tipoDisplay()` en backend/internal/domain/destinos/dtos.go. Antes solo
+/// distinguía 'edificio' de cualquier otra cosa (relabeleada como "Casa"),
+/// así que departamento/oficina/local/bodega/lote se mostraban todos como
+/// "Casa" aunque el dato real ya llegaba correcto del backend.
+String _etiquetaTipoDestino(String tipo) {
+  switch (tipo) {
+    case 'departamento':
+      return 'Depto';
+    case 'edificio':
+      return 'Edificio';
+    case 'oficina':
+      return 'Oficina';
+    case 'local':
+      return 'Local';
+    case 'bodega':
+      return 'Bodega';
+    case 'lote':
+      return 'Lote';
+    case 'casa':
+    default:
+      return 'Casa';
+  }
+}
+
 class _StepUnirseCentroState extends State<StepUnirseCentro> {
   final _codigoCtrl = TextEditingController();
   String? _errorLocal;
@@ -207,7 +232,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
       case _Paso.tipo:
         return _calleSeleccionada ?? '';
       case _Paso.numero:
-        return '$_calleSeleccionada · ${_tipoSeleccionado == 'edificio' ? 'Edificio' : 'Casa'}';
+        return '$_calleSeleccionada · ${_etiquetaTipoDestino(_tipoSeleccionado ?? 'casa')}';
       case _Paso.confirmar:
         return 'Al unirte generamos tu PIN de 5 dígitos; lo encuentras en "Mi QR".';
     }
@@ -228,7 +253,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
       case _Paso.tipo:
         return _buildLista(
           _tiposDeLaCalle,
-          (t) => t == 'edificio' ? 'Edificio' : 'Casa',
+          _etiquetaTipoDestino,
           _elegirTipo,
         );
       case _Paso.numero:
