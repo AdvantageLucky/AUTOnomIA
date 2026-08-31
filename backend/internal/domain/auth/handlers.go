@@ -104,25 +104,21 @@ func verifyGoogleToken(credential string) (*googleTokenInfo, error) {
 // Response: JWTResponse
 //
 // @Summary Crear admin
-// @Description Registra un nuevo administrador, hasheando su password con bcrypt, y devuelve su JWT
+// @Description Registra un nuevo administrador previa verificación de código OTP por correo, hasheando su password con bcrypt, y devuelve su JWT
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param admin body RegisterRequest true "Correo y password del nuevo Admin"
+// @Param admin body RegisterRequest true "Correo, password, datos y código OTP del nuevo Admin"
 // @Success 201 {object} JWTResponse
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 409 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /auth/sign-in [post]
 func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "correo y password son requeridos"})
-		return
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -137,6 +133,41 @@ func (h *Handler) RegisterAdminWithMailAndPassword(c *gin.Context) {
 				tenantID = tenantSolicitante // el vigilante se une al tenant del admin que lo crea
 			}
 		}
+	}
+
+	// Si es auto-registro de admin, se exige y valida el código OTP de verificación de correo
+	if rol == "admin" {
+		if req.Codigo == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "código de verificación es requerido"})
+			return
+		}
+
+		solicitud, err := h.adminOtpRepo.FindActivaPorCorreo(req.Correo)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "código inválido o vencido"})
+			return
+		}
+
+		if subtle.ConstantTimeCompare([]byte(solicitud.Codigo), []byte(req.Codigo)) != 1 {
+			if intentos, incErr := h.adminOtpRepo.IncrementarIntentos(solicitud.ID); incErr == nil && intentos >= 5 {
+				_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "código inválido o vencido"})
+			return
+		}
+
+		_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
+	}
+
+	if _, err := h.adminRepo.FindByCorreo(req.Correo); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "ya existe una cuenta registrada con este correo"})
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	if rol == "admin" {
@@ -213,11 +244,53 @@ func (h *Handler) LoginAdminWithMailAndPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, JWTResponse{AccessToken: token})
 }
 
-// SolicitarOTPAdmin genera y manda por correo un código de acceso para el
-// Admin -- login alternativo al de correo+password (mismo patrón que
-// persona.SolicitarOTP, anclado a Correo en vez de Telefono). Válido 5
-// minutos.
-func (h *Handler) SolicitarOTPAdmin(c *gin.Context) {
+// SolicitarOtpSignInAdmin genera y envía un código OTP al correo del usuario
+// para verificar la dirección de correo antes de completar el registro (Sign-in).
+// Válido por 5 minutos.
+func (h *Handler) SolicitarOtpSignInAdmin(c *gin.Context) {
+	var req SolicitarOtpAdminRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if _, err := h.adminRepo.FindByCorreo(req.Correo); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "ya existe una cuenta registrada con este correo"})
+		return
+	}
+
+	if _, err := h.adminOtpRepo.FindActivaPorCorreo(req.Correo); err == nil {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "ya tienes un código activo, espera a que expire"})
+		return
+	}
+
+	codigo, err := generarCodigoOtpAdmin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	solicitud := &AdminOtpSolicitud{
+		Correo:   req.Correo,
+		Codigo:   codigo,
+		ExpiraEn: time.Now().Add(5 * time.Minute),
+	}
+	if err := h.adminOtpRepo.Create(solicitud); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.emailSender.Enviar(c.Request.Context(), req.Correo, codigo); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo enviar el código"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "código de verificación enviado"})
+}
+
+// SolicitarOtpRecuperarPassword genera y manda por correo un código para
+// restablecer la contraseña si el admin la olvidó.
+func (h *Handler) SolicitarOtpRecuperarPassword(c *gin.Context) {
 	var req SolicitarOtpAdminRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -225,8 +298,7 @@ func (h *Handler) SolicitarOTPAdmin(c *gin.Context) {
 	}
 
 	if _, err := h.adminRepo.FindByCorreo(req.Correo); err != nil {
-		// No se revela si el correo existe o no -- mismo mensaje que un
-		// envío exitoso, para no dejar enumerar correos de admins válidos.
+		// Para evitar enumeración de correos de admins registrados, responde OK
 		c.JSON(http.StatusOK, gin.H{"message": "si el correo existe, se envió un código"})
 		return
 	}
@@ -260,10 +332,9 @@ func (h *Handler) SolicitarOTPAdmin(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "si el correo existe, se envió un código"})
 }
 
-// VerificarOTPAdmin confirma el código y devuelve el mismo JWT que el login
-// por correo+password o Google.
-func (h *Handler) VerificarOTPAdmin(c *gin.Context) {
-	var req VerificarOtpAdminRequest
+// RecuperarPasswordConOtp confirma el código OTP y actualiza la contraseña del Admin.
+func (h *Handler) RecuperarPasswordConOtp(c *gin.Context) {
+	var req RecuperarPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -275,8 +346,6 @@ func (h *Handler) VerificarOTPAdmin(c *gin.Context) {
 		return
 	}
 	if subtle.ConstantTimeCompare([]byte(solicitud.Codigo), []byte(req.Codigo)) != 1 {
-		// Corta por fuerza bruta: tras 5 intentos fallidos, se invalida el
-		// código y hay que pedir uno nuevo.
 		if intentos, incErr := h.adminOtpRepo.IncrementarIntentos(solicitud.ID); incErr == nil && intentos >= 5 {
 			_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
 		}
@@ -286,19 +355,25 @@ func (h *Handler) VerificarOTPAdmin(c *gin.Context) {
 
 	a, err := h.adminRepo.FindByCorreo(req.Correo)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "correo inválido"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "usuario no encontrado"})
 		return
 	}
 
-	_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
-
-	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret)
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, JWTResponse{AccessToken: token})
+	a.Password = string(hash)
+	if err := h.adminRepo.Update(a); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error actualizando contraseña"})
+		return
+	}
+
+	_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
+
+	c.JSON(http.StatusOK, gin.H{"message": "contraseña actualizada correctamente"})
 }
 
 // LoginWithGoogle autentica a un admin usando el id_token emitido por Google Identity Services.

@@ -47,52 +47,122 @@
 						</div>
 					</div>
 
-					<div class="login-title" data-i18n="login_title">Panel de administración</div>
-					<div class="login-sub" data-i18n="login_sub">Inicia sesión para supervisar los accesos de tu comunidad.</div>
+					<!-- Vista 1: Login -->
+					<div id="auth-view-login">
+						<div class="login-title" data-i18n="login_title">Panel de administración</div>
+						<div class="login-sub" data-i18n="login_sub">Inicia sesión para supervisar los accesos de tu comunidad.</div>
 
-					<form id="login-form">
-						<div class="form-group">
-							<label for="login-correo" data-i18n="login_email">Correo electrónico</label>
-							<input id="login-correo" type="email" required placeholder="tu@correo.com" autocomplete="username">
-						</div>
-						<div class="form-group">
-							<label for="login-password" data-i18n="login_pass">Contraseña</label>
-							<input id="login-password" type="password" required minlength="8" placeholder="••••••••" autocomplete="current-password">
-						</div>
-						<div id="login-error" class="form-error" hidden></div>
-						<button type="submit" class="btn-primary btn-block" id="login-submit" data-i18n="login_btn">Entrar</button>
-					</form>
-
-					<div class="login-divider"><span data-i18n="or">o continúa con</span></div>
-
-					<div id="google-btn-container" style="display:flex;justify-content:center"></div>
-
-					<div class="fine-print">
-						<button type="button" class="link-btn" id="otp-login-toggle" data-i18n="otp_login_link">Entrar con código por correo</button>
-					</div>
-
-					<div id="otp-login-box" hidden>
-						<div class="form-group">
-							<label for="otp-correo" data-i18n="login_email">Correo electrónico</label>
-							<input id="otp-correo" type="email" required placeholder="tu@correo.com" autocomplete="username">
-						</div>
-						<div id="otp-step-solicitar">
-							<button type="button" class="btn-primary btn-block" id="otp-solicitar-btn" data-i18n="otp_send_btn">Enviar código</button>
-						</div>
-						<div id="otp-step-verificar" hidden>
+						<form id="login-form">
 							<div class="form-group">
-								<label for="otp-codigo" data-i18n="otp_code_label">Código de 6 dígitos</label>
-								<input id="otp-codigo" type="text" inputmode="numeric" maxlength="6" placeholder="000000">
+								<label for="login-correo" data-i18n="login_email">Correo electrónico</label>
+								<input id="login-correo" type="email" required placeholder="tu@correo.com" autocomplete="username">
 							</div>
-							<button type="button" class="btn-primary btn-block" id="otp-verificar-btn" data-i18n="otp_verify_btn">Verificar y entrar</button>
+							<div class="form-group">
+								<div style="display:flex;justify-content:space-between;align-items:center;">
+									<label for="login-password" data-i18n="login_pass" style="margin-bottom:0;">Contraseña</label>
+									<button type="button" class="link-btn" id="forgot-pass-btn" data-i18n="forgot_pass_link" style="font-size:12px;padding:0;">¿Olvidaste tu contraseña?</button>
+								</div>
+								<input id="login-password" type="password" required minlength="8" placeholder="••••••••" autocomplete="current-password" style="margin-top:6px;">
+							</div>
+							<div id="login-error" class="form-error" hidden></div>
+							<div id="login-success" class="form-success" hidden></div>
+							<button type="submit" class="btn-primary btn-block" id="login-submit" data-i18n="login_btn">Entrar</button>
+						</form>
+
+						<div class="login-divider"><span data-i18n="or">o continúa con</span></div>
+
+						<div id="google-btn-container" style="display:flex;justify-content:center"></div>
+
+						<div class="fine-print">
+							<span data-i18n="no_account">¿No tienes cuenta?</span>
+							<button type="button" class="link-btn" id="go-register-btn" data-i18n="create_account">Crear cuenta de administrador</button>
 						</div>
-						<div id="otp-error" class="form-error" hidden></div>
-						<div id="otp-success" class="form-success" hidden data-i18n="otp_sent_msg">Código enviado, revisa tu correo.</div>
 					</div>
 
-					<div class="fine-print">
-						<span data-i18n="no_account">¿No tienes cuenta?</span>
-						<button type="button" class="link-btn" id="login-toggle-mode" data-i18n="create_account">Crear cuenta de administrador</button>
+					<!-- Vista 2: Sign-In con verificación OTP -->
+					<div id="auth-view-register" hidden>
+						<div class="login-title" data-i18n="reg_title">Crear cuenta</div>
+						<div class="login-sub" data-i18n="reg_sub">Registra tu centro habitacional y cuenta de administrador.</div>
+
+						<form id="register-form">
+							<div id="reg-step-datos">
+								<div class="form-group">
+									<label for="reg-nombre" data-i18n="reg_name_label">Nombre completo</label>
+									<input id="reg-nombre" type="text" placeholder="Ej. Juan Pérez" autocomplete="name">
+								</div>
+								<div class="form-group">
+									<label for="reg-correo" data-i18n="login_email">Correo electrónico</label>
+									<input id="reg-correo" type="email" required placeholder="tu@correo.com" autocomplete="username">
+								</div>
+								<div class="form-group">
+									<label for="reg-password" data-i18n="login_pass">Contraseña</label>
+									<input id="reg-password" type="password" required minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+								</div>
+								<button type="button" class="btn-primary btn-block" id="reg-solicitar-btn" data-i18n="reg_send_btn">Continuar y verificar correo</button>
+							</div>
+
+							<div id="reg-step-otp" hidden>
+								<div class="form-hint" id="reg-otp-hint" style="margin-bottom:14px;" data-i18n="reg_otp_hint">Te enviamos un código de 6 dígitos para verificar tu correo.</div>
+								<div class="form-group">
+									<label for="reg-codigo" data-i18n="otp_code_label">Código de 6 dígitos</label>
+									<input id="reg-codigo" type="text" inputmode="numeric" maxlength="6" placeholder="000000" style="letter-spacing:4px;font-weight:700;text-align:center;">
+								</div>
+								<button type="submit" class="btn-primary btn-block" id="reg-verificar-btn" data-i18n="reg_verify_btn">Verificar y crear cuenta</button>
+								<div style="text-align:center;margin-top:10px;">
+									<button type="button" class="link-btn" id="reg-reenviar-btn" style="font-size:12px;" data-i18n="resend_code">Reenviar código</button>
+									<span style="color:var(--text-3);font-size:12px;"> · </span>
+									<button type="button" class="link-btn" id="reg-cambiar-correo-btn" style="font-size:12px;" data-i18n="change_email">Cambiar correo</button>
+								</div>
+							</div>
+
+							<div id="reg-error" class="form-error" hidden></div>
+							<div id="reg-success" class="form-success" hidden></div>
+						</form>
+
+						<div class="fine-print">
+							<span data-i18n="already_account">¿Ya tienes cuenta?</span>
+							<button type="button" class="link-btn" id="reg-go-login-btn" data-i18n="login_btn">Iniciar sesión</button>
+						</div>
+					</div>
+
+					<!-- Vista 3: Olvidé mi contraseña con OTP -->
+					<div id="auth-view-forgot" hidden>
+						<div class="login-title" data-i18n="forgot_title">Recuperar contraseña</div>
+						<div class="login-sub" data-i18n="forgot_sub">Ingresa tu correo para recibir un código de recuperación.</div>
+
+						<form id="forgot-form">
+							<div id="forgot-step-solicitar">
+								<div class="form-group">
+									<label for="forgot-correo" data-i18n="login_email">Correo electrónico</label>
+									<input id="forgot-correo" type="email" required placeholder="tu@correo.com" autocomplete="username">
+								</div>
+								<button type="button" class="btn-primary btn-block" id="forgot-solicitar-btn" data-i18n="forgot_send_btn">Enviar código</button>
+							</div>
+
+							<div id="forgot-step-verificar" hidden>
+								<div class="form-hint" style="margin-bottom:14px;" data-i18n="forgot_code_hint">Ingresa el código que te enviamos y tu nueva contraseña.</div>
+								<div class="form-group">
+									<label for="forgot-codigo" data-i18n="otp_code_label">Código de 6 dígitos</label>
+									<input id="forgot-codigo" type="text" inputmode="numeric" maxlength="6" placeholder="000000" style="letter-spacing:4px;font-weight:700;text-align:center;">
+								</div>
+								<div class="form-group">
+									<label for="forgot-new-password" data-i18n="forgot_new_pass">Nueva contraseña</label>
+									<input id="forgot-new-password" type="password" required minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+								</div>
+								<div class="form-group">
+									<label for="forgot-confirm-password" data-i18n="forgot_confirm_pass">Confirmar nueva contraseña</label>
+									<input id="forgot-confirm-password" type="password" required minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+								</div>
+								<button type="submit" class="btn-primary btn-block" id="forgot-submit-btn" data-i18n="forgot_submit_btn">Restablecer contraseña</button>
+							</div>
+
+							<div id="forgot-error" class="form-error" hidden></div>
+							<div id="forgot-success" class="form-success" hidden></div>
+						</form>
+
+						<div class="fine-print">
+							<button type="button" class="link-btn" id="forgot-back-btn" data-i18n="back_to_login">Volver a Iniciar sesión</button>
+						</div>
 					</div>
 				</div>
 			</div>

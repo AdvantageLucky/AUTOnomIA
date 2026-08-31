@@ -16,11 +16,25 @@
       google_btn: "Continuar con Google",
       no_account: "¿No tienes cuenta?",
       create_account: "Crear cuenta de administrador",
-      otp_login_link: "Entrar con código por correo",
-      otp_send_btn: "Enviar código",
+      forgot_pass_link: "¿Olvidaste tu contraseña?",
+      forgot_title: "Recuperar contraseña",
+      forgot_sub: "Ingresa tu correo para recibir un código de recuperación.",
+      forgot_send_btn: "Enviar código",
+      forgot_code_hint: "Ingresa el código que te enviamos y tu nueva contraseña.",
+      forgot_new_pass: "Nueva contraseña",
+      forgot_confirm_pass: "Confirmar nueva contraseña",
+      forgot_submit_btn: "Restablecer contraseña",
+      back_to_login: "Volver a Iniciar sesión",
+      reg_title: "Crear cuenta",
+      reg_sub: "Registra tu centro habitacional y cuenta de administrador.",
+      reg_name_label: "Nombre completo",
+      reg_send_btn: "Continuar y verificar correo",
+      reg_verify_btn: "Verificar y crear cuenta",
+      reg_otp_hint: "Te enviamos un código de 6 dígitos para verificar tu correo.",
       otp_code_label: "Código de 6 dígitos",
-      otp_verify_btn: "Verificar y entrar",
-      otp_sent_msg: "Código enviado, revisa tu correo.",
+      resend_code: "Reenviar código",
+      change_email: "Cambiar correo",
+      already_account: "¿Ya tienes cuenta?",
       hero_title: "Quién entró, cuándo y por dónde.",
       hero_sub: "Auto-registro de visitantes para comunidades cerradas. Supervisa bitácoras, verifica visitas y gestiona tus entradas desde un solo lugar.",
       dark_mode: "Modo oscuro",
@@ -142,11 +156,25 @@
       google_btn: "Continue with Google",
       no_account: "Don't have an account?",
       create_account: "Create admin account",
-      otp_login_link: "Sign in with an email code",
-      otp_send_btn: "Send code",
+      forgot_pass_link: "Forgot password?",
+      forgot_title: "Reset password",
+      forgot_sub: "Enter your email to receive a recovery code.",
+      forgot_send_btn: "Send code",
+      forgot_code_hint: "Enter the code sent to your email and your new password.",
+      forgot_new_pass: "New password",
+      forgot_confirm_pass: "Confirm new password",
+      forgot_submit_btn: "Reset password",
+      back_to_login: "Back to Sign in",
+      reg_title: "Create account",
+      reg_sub: "Register your community and admin account.",
+      reg_name_label: "Full name",
+      reg_send_btn: "Continue & verify email",
+      reg_verify_btn: "Verify & create account",
+      reg_otp_hint: "We sent a 6-digit code to verify your email.",
       otp_code_label: "6-digit code",
-      otp_verify_btn: "Verify and sign in",
-      otp_sent_msg: "Code sent, check your email.",
+      resend_code: "Resend code",
+      change_email: "Change email",
+      already_account: "Already have an account?",
       hero_title: "Who entered, when and where.",
       hero_sub: "Self-registration for gated communities. Monitor logs, verify visits and manage your entries from one place.",
       dark_mode: "Dark mode",
@@ -460,6 +488,7 @@
     document.getElementById("app-shell").hidden = true;
     clearToken();
     stopSolPolling();
+    switchAuthView("login");
   }
 
   function showApp() {
@@ -498,35 +527,62 @@
     if (nav) navTo(nav.dataset.nav);
   });
 
-  /* ─── Login ─────────────────────────────── */
-  let loginMode = "login";
+  /* ─── Auth Views Navigation ───────────────── */
+  let authMode = "login"; // "login" | "register" | "forgot"
 
-  document.getElementById("login-toggle-mode")?.addEventListener("click", () => {
-    loginMode = loginMode === "login" ? "register" : "login";
-    const isReg = loginMode === "register";
-    document.getElementById("login-submit").textContent = isReg ? (lang === "en" ? "Create account" : "Crear cuenta") : t("login_btn");
-    document.querySelector("#login-toggle-mode").previousElementSibling.textContent =
-      isReg ? (lang === "en" ? "Already have an account?" : "¿Ya tienes cuenta?") : t("no_account");
-    document.getElementById("login-toggle-mode").textContent =
-      isReg ? (lang === "en" ? "Sign in" : "Iniciar sesión") : t("create_account");
-    document.getElementById("login-error").hidden = true;
+  function switchAuthView(mode) {
+    authMode = mode;
+    const viewLogin  = document.getElementById("auth-view-login");
+    const viewReg    = document.getElementById("auth-view-register");
+    const viewForgot = document.getElementById("auth-view-forgot");
+
+    if (viewLogin)  viewLogin.hidden  = mode !== "login";
+    if (viewReg)    viewReg.hidden    = mode !== "register";
+    if (viewForgot) viewForgot.hidden = mode !== "forgot";
+
+    // Limpiar errores y mensajes
+    document.getElementById("login-error")?.setAttribute("hidden", "");
+    document.getElementById("login-success")?.setAttribute("hidden", "");
+    document.getElementById("reg-error")?.setAttribute("hidden", "");
+    document.getElementById("reg-success")?.setAttribute("hidden", "");
+    document.getElementById("forgot-error")?.setAttribute("hidden", "");
+    document.getElementById("forgot-success")?.setAttribute("hidden", "");
+
+    if (mode === "register") {
+      const stepDatos = document.getElementById("reg-step-datos");
+      const stepOtp   = document.getElementById("reg-step-otp");
+      if (stepDatos) stepDatos.hidden = false;
+      if (stepOtp)   stepOtp.hidden   = true;
+    } else if (mode === "forgot") {
+      const stepSol = document.getElementById("forgot-step-solicitar");
+      const stepVer = document.getElementById("forgot-step-verificar");
+      if (stepSol) stepSol.hidden = false;
+      if (stepVer) stepVer.hidden = true;
+    }
+
     renderGoogleButton();
-  });
+  }
 
+  document.getElementById("go-register-btn")?.addEventListener("click", () => switchAuthView("register"));
+  document.getElementById("reg-go-login-btn")?.addEventListener("click", () => switchAuthView("login"));
+  document.getElementById("forgot-pass-btn")?.addEventListener("click", () => switchAuthView("forgot"));
+  document.getElementById("forgot-back-btn")?.addEventListener("click", () => switchAuthView("login"));
+
+  /* ─── 1. Login (Correo + Contraseña) ──────── */
   document.getElementById("login-form")?.addEventListener("submit", async e => {
     e.preventDefault();
-    const correo   = document.getElementById("login-correo").value;
+    const correo   = document.getElementById("login-correo").value.trim();
     const password = document.getElementById("login-password").value;
     const errEl    = document.getElementById("login-error");
+    const okEl     = document.getElementById("login-success");
     const btn      = document.getElementById("login-submit");
 
     btn.disabled = true;
     errEl.hidden = true;
-
-    const endpoint = loginMode === "register" ? "/auth/sign-in" : "/auth/login";
+    if (okEl) okEl.hidden = true;
 
     try {
-      const res = await fetch(API_BASE + endpoint, {
+      const res = await fetch(API_BASE + "/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo, password }),
@@ -534,10 +590,7 @@
 
       const data = await res.json();
       if (!res.ok) {
-        let msg = data.error || "Error";
-        if (msg.includes("duplicate key") || msg.includes("idx_admins_correo") || msg.includes("23505"))
-          msg = lang === "en" ? "An account with this email already exists." : "Ya existe una cuenta con este correo electrónico.";
-        errEl.textContent = msg;
+        errEl.textContent = data.error || (lang === "en" ? "Invalid credentials" : "Credenciales inválidas");
         errEl.hidden = false;
         return;
       }
@@ -547,82 +600,269 @@
       state.adminId  = claims?.admin_id;
       state.tenantId = claims?.tenant_id;
       await bootstrapApp();
-    } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
-    finally  { btn.disabled = false; }
+    } catch {
+      errEl.textContent = lang === "en" ? "Connection error" : "Error de conexión";
+      errEl.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
   });
 
-  /* ─── OTP Login (admin) ─────────────────── */
-  document.getElementById("otp-login-toggle")?.addEventListener("click", () => {
-    document.getElementById("otp-login-box").hidden = !document.getElementById("otp-login-box").hidden;
-  });
+  /* ─── 2. Sign-In (Datos + OTP Verificación) ─ */
+  let regDatos = null;
 
-  document.getElementById("otp-solicitar-btn")?.addEventListener("click", async () => {
-    const correo = document.getElementById("otp-correo").value;
-    const errEl  = document.getElementById("otp-error");
-    const okEl   = document.getElementById("otp-success");
-    const btn    = document.getElementById("otp-solicitar-btn");
+  document.getElementById("reg-solicitar-btn")?.addEventListener("click", async () => {
+    const nombre   = document.getElementById("reg-nombre").value.trim();
+    const correo   = document.getElementById("reg-correo").value.trim();
+    const password = document.getElementById("reg-password").value;
+    const errEl    = document.getElementById("reg-error");
+    const btn      = document.getElementById("reg-solicitar-btn");
+
     errEl.hidden = true;
-    okEl.hidden  = true;
-    if (!correo) { errEl.textContent = lang === "en" ? "Enter your email" : "Ingresa tu correo"; errEl.hidden = false; return; }
 
+    if (!correo) {
+      errEl.textContent = lang === "en" ? "Email is required" : "El correo es requerido";
+      errEl.hidden = false;
+      return;
+    }
+    if (!password || password.length < 8) {
+      errEl.textContent = lang === "en" ? "Password must be at least 8 characters" : "La contraseña debe tener al menos 8 caracteres";
+      errEl.hidden = false;
+      return;
+    }
+
+    regDatos = { nombre, correo, password };
     btn.disabled = true;
+
     try {
-      const res = await fetch(API_BASE + "/auth/admin/solicitar-otp", {
+      const res = await fetch(API_BASE + "/auth/sign-in/solicitar-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo }),
       });
-      const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || "Error"; errEl.hidden = false; return; }
-      okEl.hidden = false;
-      document.getElementById("otp-step-verificar").hidden = false;
-    } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
-    finally  { btn.disabled = false; }
-  });
 
-  document.getElementById("otp-verificar-btn")?.addEventListener("click", async () => {
-    const correo = document.getElementById("otp-correo").value;
-    const codigo = document.getElementById("otp-codigo").value;
-    const errEl  = document.getElementById("otp-error");
-    const btn    = document.getElementById("otp-verificar-btn");
-    errEl.hidden = true;
-
-    btn.disabled = true;
-    try {
-      const res = await fetch(API_BASE + "/auth/admin/verificar-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ correo, codigo }),
-      });
       const data = await res.json();
       if (!res.ok) {
-        errEl.textContent = data.error || (lang === "en" ? "Invalid code" : "Código inválido");
+        errEl.textContent = data.error || (lang === "en" ? "Error sending code" : "Error al enviar código");
         errEl.hidden = false;
         return;
       }
+
+      document.getElementById("reg-step-datos").hidden = true;
+      document.getElementById("reg-step-otp").hidden = false;
+      const hint = document.getElementById("reg-otp-hint");
+      if (hint) {
+        hint.textContent = (lang === "en" ? "We sent a 6-digit code to " : "Te enviamos un código de 6 dígitos a ") + correo;
+      }
+      document.getElementById("reg-codigo").value = "";
+      document.getElementById("reg-codigo").focus();
+    } catch {
+      errEl.textContent = lang === "en" ? "Connection error" : "Error de conexión";
+      errEl.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("reg-cambiar-correo-btn")?.addEventListener("click", () => {
+    document.getElementById("reg-step-datos").hidden = false;
+    document.getElementById("reg-step-otp").hidden = true;
+    document.getElementById("reg-error").hidden = true;
+  });
+
+  document.getElementById("reg-reenviar-btn")?.addEventListener("click", async () => {
+    if (!regDatos?.correo) return;
+    const errEl = document.getElementById("reg-error");
+    const okEl  = document.getElementById("reg-success");
+    errEl.hidden = true;
+    okEl.hidden  = true;
+
+    try {
+      const res = await fetch(API_BASE + "/auth/sign-in/solicitar-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo: regDatos.correo }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error || "Error";
+        errEl.hidden = false;
+      } else {
+        okEl.textContent = lang === "en" ? "New code sent to your email." : "Nuevo código enviado a tu correo.";
+        okEl.hidden = false;
+      }
+    } catch {
+      errEl.textContent = lang === "en" ? "Connection error" : "Error de conexión";
+      errEl.hidden = false;
+    }
+  });
+
+  document.getElementById("register-form")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!regDatos) return;
+
+    const codigo = document.getElementById("reg-codigo").value.trim();
+    const errEl  = document.getElementById("reg-error");
+    const btn    = document.getElementById("reg-verificar-btn");
+
+    errEl.hidden = true;
+    if (!codigo) {
+      errEl.textContent = lang === "en" ? "Enter the 6-digit code" : "Ingresa el código de 6 dígitos";
+      errEl.hidden = false;
+      return;
+    }
+
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/auth/sign-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          correo: regDatos.correo,
+          password: regDatos.password,
+          nombre: regDatos.nombre,
+          codigo: codigo,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error || (lang === "en" ? "Invalid or expired code" : "Código inválido o vencido");
+        errEl.hidden = false;
+        return;
+      }
+
       setToken(data.access_token);
       const claims = decodeJWT(data.access_token);
       state.adminId  = claims?.admin_id;
       state.tenantId = claims?.tenant_id;
       await bootstrapApp();
-    } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
-    finally  { btn.disabled = false; }
+    } catch {
+      errEl.textContent = lang === "en" ? "Connection error" : "Error de conexión";
+      errEl.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  /* ─── 3. Olvidé mi contraseña (Reset con OTP) ─ */
+  let forgotCorreo = "";
+
+  document.getElementById("forgot-solicitar-btn")?.addEventListener("click", async () => {
+    const correo = document.getElementById("forgot-correo").value.trim();
+    const errEl  = document.getElementById("forgot-error");
+    const btn    = document.getElementById("forgot-solicitar-btn");
+
+    errEl.hidden = true;
+    if (!correo) {
+      errEl.textContent = lang === "en" ? "Email is required" : "El correo es requerido";
+      errEl.hidden = false;
+      return;
+    }
+
+    forgotCorreo = correo;
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/auth/recuperar-password/solicitar-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error || "Error";
+        errEl.hidden = false;
+        return;
+      }
+
+      document.getElementById("forgot-step-solicitar").hidden = true;
+      document.getElementById("forgot-step-verificar").hidden = false;
+      document.getElementById("forgot-codigo").value = "";
+      document.getElementById("forgot-new-password").value = "";
+      document.getElementById("forgot-confirm-password").value = "";
+      document.getElementById("forgot-codigo").focus();
+    } catch {
+      errEl.textContent = lang === "en" ? "Connection error" : "Error de conexión";
+      errEl.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("forgot-form")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    const codigo       = document.getElementById("forgot-codigo").value.trim();
+    const newPassword  = document.getElementById("forgot-new-password").value;
+    const confirmPass  = document.getElementById("forgot-confirm-password").value;
+    const errEl        = document.getElementById("forgot-error");
+    const btn          = document.getElementById("forgot-submit-btn");
+
+    errEl.hidden = true;
+
+    if (!codigo) {
+      errEl.textContent = lang === "en" ? "Enter the 6-digit code" : "Ingresa el código de 6 dígitos";
+      errEl.hidden = false;
+      return;
+    }
+    if (!newPassword || newPassword.length < 8) {
+      errEl.textContent = lang === "en" ? "Password must be at least 8 characters" : "La contraseña debe tener al menos 8 caracteres";
+      errEl.hidden = false;
+      return;
+    }
+    if (newPassword !== confirmPass) {
+      errEl.textContent = lang === "en" ? "Passwords do not match" : "Las contraseñas no coinciden";
+      errEl.hidden = false;
+      return;
+    }
+
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/auth/recuperar-password/verificar-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          correo: forgotCorreo,
+          codigo: codigo,
+          new_password: newPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error || (lang === "en" ? "Invalid or expired code" : "Código inválido o vencido");
+        errEl.hidden = false;
+        return;
+      }
+
+      switchAuthView("login");
+      const okEl = document.getElementById("login-success");
+      if (okEl) {
+        okEl.textContent = lang === "en"
+          ? "Password updated successfully. You can now sign in."
+          : "Contraseña actualizada con éxito. Ya puedes iniciar sesión.";
+        okEl.hidden = false;
+      }
+      document.getElementById("login-correo").value = forgotCorreo;
+      document.getElementById("login-password").value = "";
+      document.getElementById("login-password").focus();
+    } catch {
+      errEl.textContent = lang === "en" ? "Connection error" : "Error de conexión";
+      errEl.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   /* ─── Google Login ──────────────────────── */
-  // Se usa el botón que Google renderiza (renderButton), no el prompt de
-  // One Tap — Google suprime automáticamente el prompt tras el primer
-  // descarte o error, dejando el botón muerto para el resto de la sesión.
-  // renderButton abre el selector de cuenta en cada clic, sin ese límite.
   let googleInitialized = false;
 
   async function googleCallback({ credential }) {
-    const errEl = document.getElementById("login-error");
-    // El endpoint depende del modo activo al momento del clic — registro
-    // crea la cuenta, login solo la busca. Antes siempre pegaba a login,
-    // así que "crear cuenta" con Google en realidad intentaba iniciar
-    // sesión con una cuenta que no existe.
-    const endpoint = loginMode === "register" ? "/auth/google/sign-in" : "/auth/google";
+    const errEl = document.getElementById(authMode === "register" ? "reg-error" : "login-error");
+    const endpoint = authMode === "register" ? "/auth/google/sign-in" : "/auth/google";
     try {
       const res = await fetch(API_BASE + endpoint, {
         method: "POST",
@@ -644,25 +884,21 @@
     if (!container || typeof google === "undefined" || !google.accounts) return;
 
     const clientId = window.__GOOGLE_CLIENT_ID__ || "";
-    if (!clientId) return; // sin configurar todavía — no se muestra el botón
+    if (!clientId) return;
 
     if (!googleInitialized) {
       google.accounts.id.initialize({ client_id: clientId, callback: googleCallback });
       googleInitialized = true;
     }
     container.innerHTML = "";
-    // Mismo ancho que el botón naranja (btn-block = 100% del contenedor) —
-    // Google no acepta porcentaje, solo píxeles, así que se mide en vivo.
     const ancho = Math.round(container.getBoundingClientRect().width) || 320;
     google.accounts.id.renderButton(container, {
       theme: "outline", size: "large", width: ancho,
-      text: loginMode === "register" ? "signup_with" : "signin_with",
+      text: authMode === "register" ? "signup_with" : "signin_with",
       locale: lang === "en" ? "en" : "es",
     });
   }
 
-  // El script de Google carga async — puede terminar antes o después de
-  // este punto, así que se reintenta hasta que exista window.google.
   (function esperarGoogleSDK() {
     if (typeof google !== "undefined" && google.accounts) { renderGoogleButton(); return; }
     setTimeout(esperarGoogleSDK, 200);
