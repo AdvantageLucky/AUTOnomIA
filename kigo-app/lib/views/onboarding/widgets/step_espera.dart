@@ -23,6 +23,25 @@ class _StepEsperaState extends State<StepEspera> {
     final auth = context.read<AuthViewModel>();
     try {
       await auth.refrescarMembresia();
+      if (!mounted) return;
+
+      if (auth.membresiaEstado == MembresiaEstado.activa || auth.membresiasActivas.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Tu solicitud ha sido aprobada!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (r) => false);
+      } else if (auth.membresiaEstado == MembresiaEstado.rechazada) {
+        setState(() => _error = 'Tu solicitud fue rechazada por la administración.');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tu solicitud sigue en revisión por la administración.'),
+          ),
+        );
+      }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
@@ -35,9 +54,14 @@ class _StepEsperaState extends State<StepEspera> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
-    final pendiente = auth.membresias.isNotEmpty ? auth.membresias.first : null;
+    final pendiente = auth.membresias.where((m) => m.status == 'pendiente').firstOrNull ??
+        (auth.membresias.isNotEmpty ? auth.membresias.first : null);
     final centro = pendiente?.centroNombre ?? '';
     final casa = pendiente?.casaDestino ?? '';
+    final texto = centro.isNotEmpty
+        ? 'Tu solicitud en $centro ($casa) está pendiente de aprobación.'
+        : 'Tu solicitud está pendiente de aprobación por el administrador.';
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -46,7 +70,7 @@ class _StepEsperaState extends State<StepEspera> {
           const Icon(Icons.hourglass_top, size: 56, color: AppTheme.primaryOrange),
           const SizedBox(height: 20),
           Text(
-            'Tu solicitud en $centro ($casa) está pendiente de aprobación.',
+            texto,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium,
           ),
@@ -64,6 +88,13 @@ class _StepEsperaState extends State<StepEspera> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Text('Actualizar'),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (r) => false);
+            },
+            child: const Text('Continuar al inicio'),
           ),
           TextButton(
             onPressed: () async {

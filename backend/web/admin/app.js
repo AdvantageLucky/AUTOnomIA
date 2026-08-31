@@ -994,6 +994,7 @@
     initSSE(token);
     loadSolicitudes();
     loadAlertasIABadge();
+    loadResidentesPendientesBadge();
     if (state.rol !== 'vigilante' && !state.tenant?.nombre) {
       showOnboarding();
     } else {
@@ -1621,6 +1622,8 @@
     if (lb && !lb.hidden) { cerrarLightbox(); return; }
     const sol = document.getElementById("modal-solicitud");
     if (sol && !sol.hidden) sol.hidden = true;
+    const resMod = document.getElementById("modal-residente-detalle");
+    if (resMod && !resMod.hidden) resMod.hidden = true;
   });
 
   function renderSeccionIA(v) {
@@ -1939,6 +1942,7 @@
     if (countEl) countEl.textContent = visitas.length || "0";
     updateNavBadge(visitas.length);
     updateNavAlert(revisionCount > 0);
+    loadResidentesPendientesBadge();
 
     if (visitas.length === 0) {
       showSolState("empty");
@@ -3448,15 +3452,18 @@
     });
   }
 
+  let residentesPendientesCache = [];
+
   function showResidenteModal(m) {
     const modal = document.getElementById('modal-residente-detalle');
     const body = document.getElementById('res-modal-body');
     if (!modal || !body) return;
 
+    const esPendiente = (m.status === 'pendiente');
     const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
     const inicial = (m.nombre || 'R')[0].toUpperCase();
     const avatarHtml = m.foto_cara_url
-      ? `<div class="res-avatar res-avatar--lg"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+      ? `<div class="res-avatar res-avatar--lg" style="cursor:pointer" onclick="abrirLightbox('${esc(m.foto_cara_url)}', 'Rostro de ${esc(nombreCompleto)}')"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
       : `<div class="res-avatar res-avatar--lg">${inicial}</div>`;
 
     const tieneRostro = m.tiene_rostro;
@@ -3468,9 +3475,9 @@
         <div>
           <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px">${esc(nombreCompleto)}</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <span class="badge badge--aprobado">${esc(m.casa_destino || 'Sin casa asignada')}</span>
+            <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}">${esc(m.casa_destino || 'Sin casa asignada')}</span>
             <span class="badge" style="text-transform:capitalize">${esc(m.rol || 'Residente')}</span>
-            <span class="badge badge--green">Activo</span>
+            <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--green'}">${esPendiente ? 'Solicitud pendiente' : 'Activo'}</span>
           </div>
         </div>
       </div>
@@ -3489,62 +3496,106 @@
           <div class="res-modal-field-value">${esc(m.casa_destino || '—')}</div>
         </div>
         <div class="res-modal-field">
-          <div class="res-modal-field-label">Miembro desde</div>
+          <div class="res-modal-field-label">${esPendiente ? 'Solicitado el' : 'Miembro desde'}</div>
           <div class="res-modal-field-value">${m.created_at ? fmtDateShort(m.created_at) : '—'}</div>
         </div>
       </div>
 
+      ${m.foto_ine_url ? `
+        <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">
+          Documento de Identidad (INE)
+        </div>
+        <div style="margin-bottom:16px">
+          <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="max-height:140px;border-radius:8px;border:1px solid var(--border);cursor:pointer;object-fit:cover" onclick="abrirLightbox('${esc(m.foto_ine_url)}', 'INE de ${esc(nombreCompleto)}')">
+        </div>
+      ` : ''}
+
       <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">
-        Métodos de acceso habilitados
+        Métodos de acceso e identidad
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px"></span>
+            <span style="font-size:18px">👤</span>
             <div>
               <div style="font-size:13.5px;font-weight:600;color:var(--text)">Reconocimiento Facial IA</div>
               <div style="font-size:11.5px;color:var(--text-3)">Validación biométrica instantánea en kioskos</div>
             </div>
           </div>
           <span class="badge ${tieneRostro ? 'badge--aprobado' : 'badge--rechazado'}">
-            ${tieneRostro ? ' Enrolado' : 'Pendiente'}
+            ${tieneRostro ? 'Enrolado' : 'Sin rostro'}
           </span>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px"></span>
+            <span style="font-size:18px">🔢</span>
             <div>
               <div style="font-size:13.5px;font-weight:600;color:var(--text)">PIN de acceso</div>
               <div style="font-size:11.5px;color:var(--text-3)">Código numérico para teclado en caseta</div>
             </div>
           </div>
           <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}">
-            ${tienePin ? ' Configurado' : 'Sin PIN'}
+            ${tienePin ? 'Configurado' : 'Sin PIN'}
           </span>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px"></span>
+            <span style="font-size:18px">📱</span>
             <div>
               <div style="font-size:13.5px;font-weight:600;color:var(--text)">App Kigo (QR Dinámico)</div>
               <div style="font-size:11.5px;color:var(--text-3)">Acceso con escáner de código QR móvil</div>
             </div>
           </div>
-          <span class="badge badge--aprobado"> Activo</span>
+          <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}">
+            ${esPendiente ? 'Pendiente aprobación' : 'Activo'}
+          </span>
         </div>
       </div>
 
-      <div class="modal-actions" style="justify-content:space-between">
-        <button type="button" class="btn-cancel" id="res-modal-ver-visitas">
-          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:middle;margin-right:4px"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
-          Ver entradas de este residente
-        </button>
-        <button type="button" class="btn-primary" id="res-modal-cerrar-btn">Cerrar</button>
+      <div class="modal-actions" style="justify-content:space-between;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        ${esPendiente ? `
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn-primary" id="res-modal-aprobar-btn" style="padding:8px 16px;font-weight:600">Aprobar solicitud</button>
+            <button type="button" class="btn-ghost" id="res-modal-rechazar-btn" style="color:var(--danger,#e55);padding:8px 12px">Rechazar</button>
+          </div>
+        ` : `
+          <button type="button" class="btn-cancel" id="res-modal-ver-visitas">
+            <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:middle;margin-right:4px"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
+            Ver entradas de este residente
+          </button>
+        `}
+        <button type="button" class="btn-cancel" id="res-modal-cerrar-btn">Cerrar</button>
       </div>
     `;
+
+    document.getElementById('res-modal-aprobar-btn')?.addEventListener('click', async () => {
+      const res = await api(`/membresias/${m.id}/aprobar`, { method: 'POST' });
+      if (res && res.ok) {
+        modal.hidden = true;
+        mostrarToast('Solicitud aprobada', 'ok');
+        await loadResidentesPendientes();
+        loadResidentesPendientesBadge();
+        loadResidentesActivos();
+      } else {
+        mostrarToast('Error al aprobar', 'err');
+      }
+    });
+
+    document.getElementById('res-modal-rechazar-btn')?.addEventListener('click', async () => {
+      if (!confirm('¿Rechazar esta solicitud?')) return;
+      const res = await api(`/membresias/${m.id}/rechazar`, { method: 'POST' });
+      if (res && res.ok) {
+        modal.hidden = true;
+        mostrarToast('Solicitud rechazada', 'ok');
+        await loadResidentesPendientes();
+        loadResidentesPendientesBadge();
+      } else {
+        mostrarToast('Error al rechazar', 'err');
+      }
+    });
 
     document.getElementById('res-modal-ver-visitas')?.addEventListener('click', () => {
       modal.hidden = true;
@@ -3583,12 +3634,17 @@
       let n = 0;
       if (resMem && resMem.ok) {
         const d = await resMem.json();
-        n += (Array.isArray(d) ? d : (d.membresias || [])).length;
+        n = (Array.isArray(d) ? d : (d.membresias || [])).length;
       }
+      const text = n > 99 ? '99+' : String(n);
+      const isHidden = (n <= 0);
+
       const badge = document.getElementById('tab-badge-res-sol');
-      if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+      if (badge) { badge.textContent = text; badge.hidden = isHidden; }
       const badgeMob = document.getElementById('tab-badge-res-sol-mob');
-      if (badgeMob) { badgeMob.textContent = n; badgeMob.hidden = n === 0; }
+      if (badgeMob) { badgeMob.textContent = text; badgeMob.hidden = isHidden; }
+      const badgeTab = document.getElementById('tab-badge-res-sol-tab');
+      if (badgeTab) { badgeTab.textContent = text; badgeTab.hidden = isHidden; }
     } catch (e) {
       console.warn('loadResidentesPendientesBadge error:', e);
     }
@@ -3620,50 +3676,98 @@
       } catch (e) { console.error(e); }
     }
 
+    residentesPendientesCache = membresias;
+    loadResidentesPendientesBadge();
+
     if (!membresias.length) {
       if (emptyEl) emptyEl.hidden = false;
       return;
     }
     if (emptyEl) emptyEl.hidden = true;
 
-    const filasMembresias = membresias.map(m => {
+    rowsEl.innerHTML = membresias.map(m => {
+      const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
       const inicial = (m.nombre || 'R')[0].toUpperCase();
       const avatarHtml = m.foto_cara_url
-        ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(m.nombre)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+        ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
         : `<div class="res-avatar">${inicial}</div>`;
 
+      const contacto = m.telefono ? `${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : 'Solicitud pendiente');
+      const fechaSolicitud = m.created_at ? fmtDateShort(m.created_at) : '—';
+
       return `
-        <div class="equipo-row" style="align-items:center">
+        <div class="res-row" data-res-pending-id="${m.id}" style="cursor:pointer">
           ${avatarHtml}
-          <div class="equipo-info" style="flex:1;margin-left:12px">
-            <div class="equipo-name">${esc(m.nombre || 'Sin nombre')} ${esc(m.apellido_paterno || '')}</div>
-            <div class="equipo-sub">${esc(m.casa_destino)}${m.telefono ? ' · ' + esc(m.telefono) : ''} · App Kigo</div>
+          <div class="res-info-main">
+            <div class="res-name">${esc(nombreCompleto)}</div>
+            <div class="res-sub">${contacto} · App Kigo</div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn-primary" data-aprobar-mem="${m.id}">Aprobar</button>
-            <button class="btn-ghost" data-rechazar-mem="${m.id}" style="color:var(--danger,#e55)">Rechazar</button>
+          <div class="res-dest-col">
+            <span class="badge badge--pendiente" style="font-size:12px;padding:4px 10px;font-weight:600">
+               ${esc(m.casa_destino || 'Sin casa')}
+            </span>
+          </div>
+          <div class="res-date-col">
+            <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Solicitado</div>
+            <div style="font-size:12.5px;color:var(--text-2);font-weight:500">${fechaSolicitud}</div>
+          </div>
+          <div class="res-action-col" style="display:flex;gap:8px;align-items:center">
+            <button type="button" class="btn-primary" data-aprobar-mem="${m.id}" style="padding:6px 12px;font-size:12px;font-weight:600">Aprobar</button>
+            <button type="button" class="btn-ghost" data-rechazar-mem="${m.id}" style="color:var(--danger,#e55);padding:6px 10px;font-size:12px">Rechazar</button>
+            <button type="button" class="btn-cancel" data-ver-mem="${m.id}" style="padding:6px 10px;font-size:12px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+              Ver
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
+            </button>
           </div>
         </div>`;
     }).join('');
 
-    rowsEl.innerHTML = filasMembresias;
+    rowsEl.querySelectorAll('[data-res-pending-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = Number(el.dataset.resPendingId);
+        const m = residentesPendientesCache.find(x => x.id === id);
+        if (m) showResidenteModal(m);
+      });
+    });
+
+    rowsEl.querySelectorAll('[data-ver-mem]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = Number(btn.dataset.verMem);
+        const m = residentesPendientesCache.find(x => x.id === id);
+        if (m) showResidenteModal(m);
+      });
+    });
 
     rowsEl.querySelectorAll('[data-aprobar-mem]').forEach(btn => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
         const id = btn.dataset.aprobarMem;
         const res = await api(`/membresias/${id}/aprobar`, { method: 'POST' });
-        if (res && res.ok) { mostrarToast('Solicitud aprobada', 'ok'); loadResidentesPendientes(); }
-        else mostrarToast('Error al aprobar', 'err');
+        if (res && res.ok) {
+          mostrarToast('Solicitud aprobada', 'ok');
+          await loadResidentesPendientes();
+          loadResidentesPendientesBadge();
+          loadResidentesActivos();
+        } else {
+          mostrarToast('Error al aprobar', 'err');
+        }
       });
     });
 
     rowsEl.querySelectorAll('[data-rechazar-mem]').forEach(btn => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
         const id = btn.dataset.rechazarMem;
         if (!confirm('¿Rechazar esta solicitud?')) return;
         const res = await api(`/membresias/${id}/rechazar`, { method: 'POST' });
-        if (res && res.ok) { mostrarToast('Solicitud rechazada', 'ok'); loadResidentesPendientes(); }
-        else mostrarToast('Error al rechazar', 'err');
+        if (res && res.ok) {
+          mostrarToast('Solicitud rechazada', 'ok');
+          await loadResidentesPendientes();
+          loadResidentesPendientesBadge();
+        } else {
+          mostrarToast('Error al rechazar', 'err');
+        }
       });
     });
   }

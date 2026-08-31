@@ -19,6 +19,7 @@ type testPersona struct {
 	Curp            string
 	Telefono        string
 	FotoCaraUrl     string
+	FotoIneUrl      string
 	Embedding       FloatArray `gorm:"type:text"`
 }
 
