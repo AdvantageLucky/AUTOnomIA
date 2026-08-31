@@ -3,7 +3,6 @@ import 'package:kigo_kiosco/core/services/asistente_controller.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
-import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
@@ -423,15 +422,11 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           // pero confirmar en dispositivo real que no desalinea el ícono.
           topDelBorde: 32,
           rightDelBorde: 42,
+          mostrarEtiqueta: true,
           controlador: _asistenteController,
           onRespuestaLibre:
               (_) {}, // esta pantalla no usa Q&A libre por texto, solo narra
           onCampoExtraido: (_) {}, // no llena campos -- tipoCampo queda null
-        ),
-        const Positioned(
-          top: 32 + KigoDesign.offsetEtiquetaAsistente, // justo debajo de la mascota
-          right: 42,
-          child: EtiquetaAsistente(),
         ),
       ],
     );

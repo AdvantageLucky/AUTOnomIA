@@ -4,7 +4,6 @@ import 'dart:math' as math;
 
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
-import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/marco_guia_camara.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
@@ -282,13 +281,9 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           // Mismo header que WelcomeView (PantallaAdaptable, padding 48/34).
           topDelBorde: 48,
           rightDelBorde: 34,
+          mostrarEtiqueta: true,
           onRespuestaLibre: (_) {},
           onCampoExtraido: (_) {},
-        ),
-        const Positioned(
-          top: 48 + KigoDesign.offsetEtiquetaAsistente,
-          right: 34,
-          child: EtiquetaAsistente(),
         ),
       ],
     );

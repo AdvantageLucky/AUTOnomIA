@@ -4,7 +4,6 @@ import 'package:kigo_kiosco/core/services/asistente_controller.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
-import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
@@ -381,15 +380,11 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
           // Mismo padding real que TouchRegisterView (top: 32, right: 42).
           topDelBorde: 32,
           rightDelBorde: 42,
+          mostrarEtiqueta: true,
           controlador: _asistenteController,
           onRespuestaLibre:
               (_) {}, // esta pantalla no usa Q&A libre por texto, solo narra
           onCampoExtraido: (_) {}, // no llena campos -- tipoCampo queda null
-        ),
-        const Positioned(
-          top: 32 + KigoDesign.offsetEtiquetaAsistente,
-          right: 42,
-          child: EtiquetaAsistente(),
         ),
       ],
     );
