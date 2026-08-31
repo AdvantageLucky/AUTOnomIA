@@ -339,8 +339,8 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                         ),
                       ),
                     ).then((_) => vm.clear());
-                  } else if (!ok && vm.error != null && mounted) {
-                    _tts.speak(vm.error!);
+                  } else if (!ok && vm.errorMsg != null && mounted) {
+                    _tts.speak(vm.errorMsg!);
                   }
                 }
               : null,
