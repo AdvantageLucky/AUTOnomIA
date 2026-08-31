@@ -215,7 +215,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
       case _Paso.calle:
         return '¿En qué calle vives?';
       case _Paso.tipo:
-        return '¿Casa o edificio?';
+        return '¿Cuál es tu destino?';
       case _Paso.numero:
         return '¿Cuál es el número?';
       case _Paso.confirmar:
