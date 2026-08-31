@@ -842,17 +842,11 @@
         return;
       }
 
-      switchAuthView("login");
-      const okEl = document.getElementById("login-success");
-      if (okEl) {
-        okEl.textContent = lang === "en"
-          ? "Password updated successfully. You can now sign in."
-          : "Contraseña actualizada con éxito. Ya puedes iniciar sesión.";
-        okEl.hidden = false;
-      }
-      document.getElementById("login-correo").value = forgotCorreo;
-      document.getElementById("login-password").value = "";
-      document.getElementById("login-password").focus();
+      setToken(data.access_token);
+      const claims = decodeJWT(data.access_token);
+      state.adminId  = claims?.admin_id;
+      state.tenantId = claims?.tenant_id;
+      await bootstrapApp();
     } catch {
       errEl.textContent = lang === "en" ? "Connection error" : "Error de conexión";
       errEl.hidden = false;
