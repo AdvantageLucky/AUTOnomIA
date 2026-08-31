@@ -246,7 +246,7 @@ func (h *Handler) LoginAdminWithMailAndPassword(c *gin.Context) {
 
 // SolicitarOtpSignInAdmin genera y envía un código OTP al correo del usuario
 // para verificar la dirección de correo antes de completar el registro (Sign-in).
-// Válido por 5 minutos.
+// Válido por 5 minutos. Si ya había un código previo, lo reemplaza por uno nuevo.
 func (h *Handler) SolicitarOtpSignInAdmin(c *gin.Context) {
 	var req SolicitarOtpAdminRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -259,10 +259,7 @@ func (h *Handler) SolicitarOtpSignInAdmin(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.adminOtpRepo.FindActivaPorCorreo(req.Correo); err == nil {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "ya tienes un código activo, espera a que expire"})
-		return
-	}
+	_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
 
 	codigo, err := generarCodigoOtpAdmin()
 	if err != nil {
@@ -289,7 +286,8 @@ func (h *Handler) SolicitarOtpSignInAdmin(c *gin.Context) {
 }
 
 // SolicitarOtpRecuperarPassword genera y manda por correo un código para
-// restablecer la contraseña si el admin la olvidó.
+// restablecer la contraseña si el admin la olvidó. Si ya había un código previo,
+// lo invalida y envía uno nuevo.
 func (h *Handler) SolicitarOtpRecuperarPassword(c *gin.Context) {
 	var req SolicitarOtpAdminRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -302,10 +300,7 @@ func (h *Handler) SolicitarOtpRecuperarPassword(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.adminOtpRepo.FindActivaPorCorreo(req.Correo); err == nil {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "ya tienes un código activo, espera a que expire"})
-		return
-	}
+	_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
 
 	codigo, err := generarCodigoOtpAdmin()
 	if err != nil {
