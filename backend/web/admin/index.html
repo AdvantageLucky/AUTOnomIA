@@ -385,18 +385,19 @@
 
 						<div class="panel panel-padded" id="dash-reporte-ia-panel" style="margin-top:20px">
 							<div class="panel-header" style="margin-bottom:10px">
-								<div class="panel-title">Reporte de IA</div>
+								<div class="panel-title">Resumen y Análisis de Actividad</div>
 							</div>
 							<div id="dash-reporte-ia-loading" class="loading-state" hidden>
 								<div class="spinner"></div>
 							</div>
 							<div id="dash-reporte-ia-empty" class="empty-state" hidden>
-								<div class="empty-text">Aún no hay reportes — el primero se genera automáticamente cada 12h.</div>
+								<div class="empty-text">Sin actividad de accesos reciente para analizar.</div>
 							</div>
 							<div id="dash-reporte-ia-body" hidden>
-								<div class="row-sub" id="dash-reporte-ia-periodo" style="margin-bottom:8px"></div>
-								<div id="dash-reporte-ia-texto" class="ia-summary-card" style="line-height:1.5; font-size:13px; color:var(--text-2); margin-top:8px; border: 1px solid var(--border); background: var(--bg-1);"></div>
-								<button class="link-btn" id="btn-ver-historial-reportes" style="margin-top:8px">Ver historial ›</button>
+								<div class="row-sub" id="dash-reporte-ia-periodo" style="margin-bottom:10px"></div>
+								<div id="dash-reporte-ia-stats-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+								<div id="dash-reporte-ia-texto" class="ia-summary-card" style="line-height:1.5; font-size:13px; color:var(--text-2); border: 1px solid var(--border); background: var(--bg-1);"></div>
+								<button class="link-btn" id="btn-ver-historial-reportes" style="margin-top:10px">Ver historial ›</button>
 							</div>
 						</div>
 					</div>
