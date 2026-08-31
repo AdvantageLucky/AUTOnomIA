@@ -52,7 +52,22 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
     _rotCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
     _asistente.iniciar().then((ok) {
-      if (mounted) setState(() => _micDisponible = ok);
+      if (!mounted) return;
+      setState(() => _micDisponible = ok);
+      // Diagnóstico temporal: sin acceso a logcat en el F10, esta es la
+      // única forma de ver el error real de iniciar() en pantalla.
+      final error = _asistente.ultimoError;
+      if (!ok && error != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Asistente no inició: $error'),
+              duration: const Duration(seconds: 15),
+            ),
+          );
+        });
+      }
     });
     widget.controlador?.addListener(_onControladorDecir);
   }
