@@ -51,12 +51,15 @@ class MainActivity : FlutterActivity() {
                             val tipo = when (call.argument<String>("color")) {
                                 "rojo" -> 0
                                 "verde" -> 1
+                                "azul" -> 2
+                                "blanco" -> 3
                                 else -> null
                             }
                             if (tipo == null) {
-                                result.error("ARGUMENTO_INVALIDO", "color debe ser 'rojo' o 'verde'", null)
+                                result.error("ARGUMENTO_INVALIDO", "color debe ser 'rojo', 'verde', 'azul' o 'blanco'", null)
                             } else {
-                                PosUtil.controlLedBright(tipo, 255)
+                                val brillo = call.argument<Int>("brillo") ?: 255
+                                PosUtil.controlLedBright(tipo, brillo)
                                 result.success(null)
                             }
                         }

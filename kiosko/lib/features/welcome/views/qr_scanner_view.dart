@@ -13,6 +13,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/routing/registro_router.dart';
+import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/consent_dialog.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_scanner_viewmodel.dart';
@@ -122,6 +123,8 @@ class _QrScannerViewState extends State<QrScannerView>
     if (ruta is PageRoute) observadorDeRutas.subscribe(this, ruta);
   }
 
+  final LedServicio _led = LedServicio();
+
   @override
   void dispose() {
     _timerNavegacion?.cancel();
@@ -133,6 +136,7 @@ class _QrScannerViewState extends State<QrScannerView>
     _controller?.dispose();
     _lectorFisicoController.dispose();
     _lectorFisicoFocus.dispose();
+    _led.apagar();
     super.dispose();
   }
 
@@ -181,6 +185,7 @@ class _QrScannerViewState extends State<QrScannerView>
       );
       _readyToScan = true;
     });
+    _led.encenderIluminacion();
     // Mismo momento en que arranca la cámara: el lector físico dedicado
     // (teclado-wedge) solo debe recibir foco mientras esta pantalla está
     // realmente activa y lista, igual que la cámara.
@@ -190,6 +195,7 @@ class _QrScannerViewState extends State<QrScannerView>
   void _liberarCamara() {
     final viejo = _controller;
     if (viejo == null) return;
+    _led.apagar();
     if (mounted) {
       setState(() {
         _controller = null;

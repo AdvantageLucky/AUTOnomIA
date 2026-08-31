@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
+import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'consent_dialog.dart';
@@ -20,6 +21,8 @@ class EscaneoInePage extends StatefulWidget {
 class _EscaneoInePageState extends State<EscaneoInePage> {
   CameraController? _controller;
   bool _isInitialized = false;
+
+  final LedServicio _led = LedServicio();
 
   /// false cuando la lente es de foco fijo: no hay nada que dirigir y al
   /// visitante hay que decirle que acerque o aleje el documento.
@@ -85,6 +88,8 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
         _isInitialized = true;
       });
 
+      _led.encenderIluminacion();
+
       // El recuadro guía está centrado, así que ahí es donde debe enfocar.
       _hayEnfoque = await CamaraKiosko.enfocarEn(
         controller,
@@ -117,28 +122,20 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
 
   void _iniciarAutoCaptura() {
     _autoTimer?.cancel();
-    _autoTimer = Timer.periodic(
-      const Duration(milliseconds: 2500),
-      (_) => _sondearIne(),
-    );
+    _autoTimer = Timer.periodic(const Duration(milliseconds: 1400), (_) {
+      _sondeoAutomatico();
+    });
   }
 
-  Future<void> _sondearIne() async {
+  Future<void> _sondeoAutomatico() async {
     if (_sondeando || _cerrando) return;
-    if (_controller == null || !_controller!.value.isInitialized) return;
-    if (_controller!.value.isTakingPicture) return;
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized || controller.value.isTakingPicture) {
+      return;
+    }
 
     _sondeando = true;
     try {
-      final controller = _controller!;
-      // El enfoque se fijaba una sola vez en _initCamera(), antes de que el
-      // visitante levantara su INE -- cada disparo automático posterior
-      // usaba ese enfoque ya desactualizado. Re-enfocar en el centro del
-      // recuadro guía antes de cada intento evita fotos borrosas por
-      // enfoque viejo, causa probable de que el OCR fallara seguido.
-      if (_hayEnfoque) {
-        await CamaraKiosko.enfocarEn(controller, const Offset(0.5, 0.5));
-      }
       final XFile foto = await controller.takePicture();
       final resultado = await _detector.analizarIne(foto.path);
 
@@ -186,6 +183,7 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
   @override
   void dispose() {
     _autoTimer?.cancel();
+    _led.apagar();
     _controller?.dispose(); // Muy importante liberar la cámara al salir
     super.dispose();
   }
