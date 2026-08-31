@@ -111,7 +111,7 @@ func TestGenerarResumen_PromptLlevaLosDatosDeLaVisita(t *testing.T) {
 		t.Fatalf("no esperaba error, got %v", err)
 	}
 
-	for _, esperado := range []string{"Ana Ruiz Mendoza", "Casa 12", "ABC-123", "placa distinta"} {
+	for _, esperado := range []string{"Ana Ruiz Mendoza", "Casa 12", "ABC-123", "Placa distinta"} {
 		if !strings.Contains(recibido, esperado) {
 			t.Errorf("esperaba %q en el prompt, no está.\nPrompt: %s", esperado, recibido)
 		}

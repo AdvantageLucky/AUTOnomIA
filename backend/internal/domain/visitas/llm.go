@@ -24,6 +24,10 @@ var rePlaceholder = regexp.MustCompile(`\[[^\]]*\]|\{[^}]*\}|<[^>]*>`)
 // utilizable, pero el error no-nil le avisa al caller que la llamada al LLM
 // falló de verdad (a diferencia de "no había LLM configurado", que no es error).
 func GenerarResumen(ctx context.Context, llmURL string, s ScoreContexto, v Visita) (string, error) {
+	if len(s.Factores) == 0 {
+		evaluarEntrada(&s, v, nil, EvidenciaEsperada{})
+	}
+
 	if strings.TrimSpace(llmURL) == "" {
 		return resumenHeuristicoDe(s, v), nil
 	}
