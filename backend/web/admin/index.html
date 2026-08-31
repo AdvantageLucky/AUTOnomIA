@@ -816,8 +816,16 @@
 
 									<div class="toggle-row">
 										<div>
+											<div class="toggle-label">Confianza mínima para aprobar sola (%)</div>
+											<div class="toggle-sub">Cada entrada recibe un score de confianza de 0 a 100 según su historial, la evidencia capturada y las anomalías detectadas. Con AutoPass encendido, se aprueba sola a partir de este porcentaje. Más alto = más estricto. Recomendado 80.</div>
+										</div>
+										<input type="number" id="cfg-umbral-autopass" min="50" max="100" class="search-select" style="width:80px;text-align:right">
+									</div>
+
+									<div class="toggle-row">
+										<div>
 											<div class="toggle-label">Exigencia del reconocimiento facial (%)</div>
-											<div class="toggle-sub">Qué tanto se debe parecer la cara para dar acceso. Más alto = más estricto, más rechazos legítimos. Recomendado 85.</div>
+											<div class="toggle-sub">Qué tanto se debe parecer la cara para que el kiosko dé por buena la identidad. Más alto = más estricto, más rechazos legítimos. Recomendado 85.</div>
 										</div>
 										<input type="number" id="cfg-umbral-facial" min="50" max="99" class="search-select" style="width:80px;text-align:right">
 									</div>

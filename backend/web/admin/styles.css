@@ -2917,3 +2917,151 @@ textarea { resize: vertical; }
 .ia-summary-card li {
   margin-bottom: 4px;
 }
+
+/* ── Análisis de IA: score, recomendaciones y factores ─────────────────────
+   El score se pinta grande porque es lo primero que mira el guardia, y los
+   factores se pueden desplegar porque un numero que no se puede auditar no
+   ayuda a decidir: solo pide confianza ciega. */
+.ia-cuerpo {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding-top: 12px;
+}
+
+.ia-texto { flex: 1; min-width: 0; }
+
+.ia-resumen {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text-3);
+  white-space: pre-line;
+}
+
+.ia-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.score-anillo {
+  position: relative;
+  flex-shrink: 0;
+  width: 88px;
+  text-align: center;
+}
+
+.score-pista { stroke: var(--surface-2); }
+.score-arco  { transition: stroke-dasharray 0.5s ease; }
+
+.score--alta  .score-arco { stroke: var(--green); }
+.score--media .score-arco { stroke: var(--amber); }
+.score--baja  .score-arco { stroke: var(--red); }
+
+.score--alta  .score-num { color: var(--green); }
+.score--media .score-num { color: var(--amber); }
+.score--baja  .score-num { color: var(--red); }
+
+.score-centro {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 88px;
+  height: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.score-num { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+.score-de  { font-size: 10px; color: var(--text-2); margin-top: 2px; }
+
+.score-nivel {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+
+.ia-bloque {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.ia-bloque-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+
+.ia-recs {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-3);
+}
+
+.ia-recs li { margin-bottom: 2px; }
+
+.ia-factores summary {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.ia-factores summary::-webkit-details-marker { display: none; }
+.ia-factores summary::before { content: "\25B8"; margin-right: 6px; color: var(--text-2); }
+.ia-factores[open] summary::before { content: "\25BE"; }
+
+.factor-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.factor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border-left: 3px solid var(--border);
+}
+
+.factor--positivo { border-left-color: var(--green); }
+.factor--negativo { border-left-color: var(--red); }
+.factor--faltante { border-left-color: var(--amber); }
+
+.factor-info { min-width: 0; }
+.factor-etiqueta { font-size: 13px; font-weight: 600; color: var(--text); }
+.factor-detalle  { font-size: 11.5px; color: var(--text-2); margin-top: 2px; line-height: 1.45; }
+
+.factor-impacto {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.factor--positivo .factor-impacto { color: var(--green); }
+.factor--negativo .factor-impacto { color: var(--red); }
+.factor--faltante .factor-impacto { color: var(--amber); }
+
+@media (max-width: 560px) {
+  .ia-cuerpo { flex-direction: column; align-items: center; }
+  .ia-texto { width: 100%; }
+}
