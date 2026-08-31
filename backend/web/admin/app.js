@@ -16,6 +16,11 @@
       google_btn: "Continuar con Google",
       no_account: "¿No tienes cuenta?",
       create_account: "Crear cuenta de administrador",
+      otp_login_link: "Entrar con código por correo",
+      otp_send_btn: "Enviar código",
+      otp_code_label: "Código de 6 dígitos",
+      otp_verify_btn: "Verificar y entrar",
+      otp_sent_msg: "Código enviado, revisa tu correo.",
       hero_title: "Quién entró, cuándo y por dónde.",
       hero_sub: "Auto-registro de visitantes para comunidades cerradas. Supervisa bitácoras, verifica visitas y gestiona tus entradas desde un solo lugar.",
       dark_mode: "Modo oscuro",
@@ -137,6 +142,11 @@
       google_btn: "Continue with Google",
       no_account: "Don't have an account?",
       create_account: "Create admin account",
+      otp_login_link: "Sign in with an email code",
+      otp_send_btn: "Send code",
+      otp_code_label: "6-digit code",
+      otp_verify_btn: "Verify and sign in",
+      otp_sent_msg: "Code sent, check your email.",
       hero_title: "Who entered, when and where.",
       hero_sub: "Self-registration for gated communities. Monitor logs, verify visits and manage your entries from one place.",
       dark_mode: "Dark mode",
@@ -532,6 +542,64 @@
         return;
       }
 
+      setToken(data.access_token);
+      const claims = decodeJWT(data.access_token);
+      state.adminId  = claims?.admin_id;
+      state.tenantId = claims?.tenant_id;
+      await bootstrapApp();
+    } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
+    finally  { btn.disabled = false; }
+  });
+
+  /* ─── OTP Login (admin) ─────────────────── */
+  document.getElementById("otp-login-toggle")?.addEventListener("click", () => {
+    document.getElementById("otp-login-box").hidden = !document.getElementById("otp-login-box").hidden;
+  });
+
+  document.getElementById("otp-solicitar-btn")?.addEventListener("click", async () => {
+    const correo = document.getElementById("otp-correo").value;
+    const errEl  = document.getElementById("otp-error");
+    const okEl   = document.getElementById("otp-success");
+    const btn    = document.getElementById("otp-solicitar-btn");
+    errEl.hidden = true;
+    okEl.hidden  = true;
+    if (!correo) { errEl.textContent = lang === "en" ? "Enter your email" : "Ingresa tu correo"; errEl.hidden = false; return; }
+
+    btn.disabled = true;
+    try {
+      const res = await fetch(API_BASE + "/auth/admin/solicitar-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || "Error"; errEl.hidden = false; return; }
+      okEl.hidden = false;
+      document.getElementById("otp-step-verificar").hidden = false;
+    } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
+    finally  { btn.disabled = false; }
+  });
+
+  document.getElementById("otp-verificar-btn")?.addEventListener("click", async () => {
+    const correo = document.getElementById("otp-correo").value;
+    const codigo = document.getElementById("otp-codigo").value;
+    const errEl  = document.getElementById("otp-error");
+    const btn    = document.getElementById("otp-verificar-btn");
+    errEl.hidden = true;
+
+    btn.disabled = true;
+    try {
+      const res = await fetch(API_BASE + "/auth/admin/verificar-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo, codigo }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error || (lang === "en" ? "Invalid code" : "Código inválido");
+        errEl.hidden = false;
+        return;
+      }
       setToken(data.access_token);
       const claims = decodeJWT(data.access_token);
       state.adminId  = claims?.admin_id;
