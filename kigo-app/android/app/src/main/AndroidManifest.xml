@@ -28,6 +28,17 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Esquema propio para invitaciones compartibles (kigoapp://invitacion/<token>).
+                 No se usa Android App Links (https://): requiere assetlinks.json en el
+                 backend y el fingerprint del keystore de release, y se rompe en silencio
+                 entre firma debug/release. Un esquema personalizado no necesita
+                 verificación de dominio. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="kigoapp" android:host="invitacion"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

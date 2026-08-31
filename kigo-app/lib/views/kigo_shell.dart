@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/deep_link_servicio.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/invitation_viewmodel.dart';
@@ -22,6 +23,7 @@ class KigoShell extends StatefulWidget {
 
 class _KigoShellState extends State<KigoShell> {
   int _index = 0;
+  int _invitarTabInicial = 0;
   int? _tenantIdAnterior;
   late final AuthViewModel _auth;
 
@@ -33,10 +35,20 @@ class _KigoShellState extends State<KigoShell> {
     _auth.addListener(_onAuthChanged);
 
     // Carga inicial de datos
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final tenantId = _auth.centroActivo?.tenantId;
       if (tenantId != null) {
         context.read<PendingVisitsViewModel>().cargar(tenantId);
+      }
+      // Si se llegó aquí desde un link kigoapp://invitacion/<token>, la
+      // invitación ya está adjunta por teléfono — solo hace falta llevar a
+      // la persona a verla en "Invitar → Recibidas".
+      final tokenPendiente = await DeepLinkServicio.tomarTokenPendiente();
+      if (tokenPendiente != null && mounted) {
+        setState(() {
+          _index = 2;
+          _invitarTabInicial = 2;
+        });
       }
     });
   }
@@ -90,7 +102,9 @@ class _KigoShellState extends State<KigoShell> {
     final tabs = [
       MyQrView(onGoToSolicitudes: () => _irA(1)),
       const SolicitudesView(),
-      const InvitarTabView(),
+      // Key con el tab inicial: sin ella, IndexedStack conserva el State ya
+      // montado y initialTabIndex no tendría efecto tras el primer build.
+      InvitarTabView(key: ValueKey(_invitarTabInicial), initialTabIndex: _invitarTabInicial),
     ];
 
     return Scaffold(
