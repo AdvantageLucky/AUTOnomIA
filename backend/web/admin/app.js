@@ -2934,7 +2934,7 @@
     const errEl = document.getElementById('ob-vig-error');
     errEl.hidden = true;
     const payload = {
-      nombre:           document.getElementById('ob-vig-nombre').value.trim(),
+      nombre:           '',
       apellido_paterno: '',
       correo:           document.getElementById('ob-vig-correo').value.trim(),
       password:         document.getElementById('ob-vig-password').value,
