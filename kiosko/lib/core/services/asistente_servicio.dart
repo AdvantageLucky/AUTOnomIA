@@ -28,6 +28,11 @@ class AsistenteServicio {
   Completer<String>? _resultado;
   Timer? _limiteSeguridad;
 
+  /// Detalle del último error de `iniciar()` -- diagnóstico temporal para
+  /// poder ver en pantalla (sin ADB/logcat) por qué falló en un dispositivo
+  /// real, mientras se confirma la causa. `null` si `iniciar()` nunca falló.
+  String? ultimoError;
+
   Future<bool> iniciar() async {
     try {
       final model = await VoskModeloServicio.obtener();
@@ -37,6 +42,7 @@ class AsistenteServicio {
       return true;
     } catch (e) {
       debugPrint('Error iniciando Vosk: $e');
+      ultimoError = e.toString();
       return false;
     }
   }
