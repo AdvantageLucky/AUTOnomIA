@@ -100,11 +100,13 @@ func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmURL stri
 	llmCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	sc := ScoreContexto{VecesVisitado: datos.TotalVisitas}
-	texto, err := GenerarResumen(llmCtx, llmURL, sc)
+	// GenerarResumenPeriodo y no GenerarResumen: esto describe un turno, no a
+	// una persona. Antes se le pasaba un ScoreContexto inventado con las cifras
+	// del periodo metidas en VecesVisitado, asi que al modelo se le pedia un
+	// resumen "de este visitante" con datos que no eran de ningun visitante.
+	texto, err := GenerarResumenPeriodo(llmCtx, llmURL, datos)
 	if err != nil {
 		log.Printf("[agente-reportes] tenant %d: error LLM: %v", tenantID, err)
-		texto = resumirDatosTexto(datos)
 	}
 
 	if err := repo.guardar(&ReporteIA{

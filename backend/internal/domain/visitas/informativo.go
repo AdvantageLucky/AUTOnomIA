@@ -45,7 +45,7 @@ func AnalizarYGuardarInformativo(repo *Repository, tenantID uint, v Visita, llmU
 	}
 
 	sc := AnalizarVisita(historialPrevio, v, cfg.UmbralConfianzaVisitas)
-	resumen, err := GenerarResumen(ctx, llmURL, sc)
+	resumen, err := GenerarResumen(ctx, llmURL, sc, v)
 	if err != nil {
 		log.Printf("visita %d: LLM falló, usando resumen heurístico: %v", v.ID, err)
 	}

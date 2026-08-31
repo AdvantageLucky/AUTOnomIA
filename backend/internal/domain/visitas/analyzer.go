@@ -76,6 +76,33 @@ func (s ScoreIA) GenerarResumenHeuristico() string {
 	return strings.Join(partes, " ")
 }
 
+// resumenHeuristicoDe es el respaldo cuando el LLM no esta configurado o no
+// devolvio algo utilizable. Antepone a GenerarResumenHeuristico los datos
+// concretos de la visita, que el score no lleva: sin ellos todos los resumenes
+// de respaldo salian identicos entre si y no le decian al guardia ni quien
+// llego ni a donde iba.
+func resumenHeuristicoDe(s ScoreContexto, v Visita) string {
+	var partes []string
+
+	nombre := strings.TrimSpace(v.Titular)
+	casa := strings.TrimSpace(v.CasaDestino)
+	switch {
+	case nombre != "" && casa != "":
+		partes = append(partes, fmt.Sprintf("%s va a %s.", nombre, casa))
+	case nombre != "":
+		partes = append(partes, nombre+".")
+	case casa != "":
+		partes = append(partes, "Visita con destino "+casa+".")
+	}
+
+	if placa := strings.TrimSpace(v.Placa); placa != "" {
+		partes = append(partes, "Vehiculo "+placa+".")
+	}
+
+	partes = append(partes, s.AScoreIA().GenerarResumenHeuristico())
+	return strings.Join(partes, " ")
+}
+
 // AScoreIA convierte el resultado interno del análisis al subconjunto que
 // se persiste y se expone al dashboard.
 func (sc ScoreContexto) AScoreIA() ScoreIA {
