@@ -198,7 +198,18 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Mis Invitaciones'),
+                    // 'Mis Invitaciones' + badge en un Row sin límite de ancho
+                    // desbordaba (RenderFlex overflow) al pasar de 2 a 3
+                    // pestañas: cada una tiene menos espacio disponible.
+                    // Flexible + ellipsis evita el crash visual; en pantallas
+                    // angostas el texto puede truncarse a 'Mis Invit…'.
+                    const Flexible(
+                      child: Text(
+                        'Mis Invitaciones',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
                     if (vigentesCount > 0) ...[
                       const SizedBox(width: 6),
                       Container(
