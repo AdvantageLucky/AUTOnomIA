@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import 'widgets/step_bienvenida.dart';
 import 'widgets/step_telefono.dart';
 import 'widgets/step_otp.dart';
 import 'widgets/step_identidad.dart';
 
-enum _Paso { telefono, otp, identidad }
+enum _Paso { bienvenida, telefono, otp, identidad }
 
 /// Flujo de entrada: teléfono → OTP → identidad (INE+rostro, si es Persona
 /// nueva). Unirse a un centro NO es parte de este flujo — una Persona puede
@@ -30,7 +31,7 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   _Paso _resolverPasoInicial() {
     final auth = context.read<AuthViewModel>();
-    if (!auth.isAuthenticated) return _Paso.telefono;
+    if (!auth.isAuthenticated) return _Paso.bienvenida;
     return _Paso.identidad;
   }
 
@@ -45,6 +46,8 @@ class _OnboardingViewState extends State<OnboardingView> {
     return Scaffold(
       body: SafeArea(
         child: switch (_paso) {
+          _Paso.bienvenida =>
+            StepBienvenida(onContinuar: () => setState(() => _paso = _Paso.telefono)),
           _Paso.telefono =>
             StepTelefono(onSolicitado: () => setState(() => _paso = _Paso.otp)),
           _Paso.otp => StepOtp(
