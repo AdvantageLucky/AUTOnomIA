@@ -22,17 +22,22 @@ class MascotaAsistente extends StatelessWidget {
   /// 0..1, avanza en bucle — gira el arco de "procesando" alrededor del orbe.
   final double rotValue;
 
+  /// Lado del cuadro donde se dibuja. El painter escala todo desde el
+  /// viewBox 60x60 del mockup, asi que cualquier valor sale proporcionado.
+  final double lado;
+
   const MascotaAsistente({
     super.key,
     required this.estado,
     required this.pulseValue,
     required this.rotValue,
+    this.lado = KigoDesign.ladoAsistente,
   });
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      size: const Size(44, 44),
+      size: Size(lado, lado),
       painter: _MascotaPainter(
         estado: estado,
         pulseValue: pulseValue,

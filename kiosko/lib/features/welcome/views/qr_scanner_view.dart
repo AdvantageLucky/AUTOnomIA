@@ -493,7 +493,7 @@ class _QrScannerViewState extends State<QrScannerView>
             onCampoExtraido: (_) {},
           ),
           Positioned(
-            top: 24 + 50 + safe.top,
+            top: 24 + KigoDesign.offsetEtiquetaAsistente + safe.top,
             right: 24,
             child: const EtiquetaAsistente(),
           ),

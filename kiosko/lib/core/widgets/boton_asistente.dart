@@ -12,6 +12,10 @@ import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.da
 
 enum _EstadoAsistente { inactivo, escuchando, procesando, hablando }
 
+/// Los iconos de los dos modos sin conexion, proporcionales al lado del
+/// boton (conservan la razon 20/44 del tamano original).
+const double _ladoIcono = KigoDesign.ladoAsistente * 20 / 44;
+
 /// Botón push-to-talk compartido: mantener presionado para hablar, soltar
 /// para enviar. [tipoCampo] null => pregunta libre (WelcomeView, respondida
 /// por voz). [tipoCampo] 'placa'|'destino' => extracción de campo (pantallas
@@ -39,6 +43,12 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
   final TextToSpeakServicio _tts = TextToSpeakServicio();
   _EstadoAsistente _estado = _EstadoAsistente.inactivo;
   bool _micDisponible = true;
+
+  /// El dedo tapa el boton mientras lo mantiene presionado, asi que el
+  /// unico feedback util es el que se nota en el borde: encoge un poco y
+  /// enciende el halo. Sin esto no habia forma de saber si registro el
+  /// toque -- el long-press no cambiaba nada visible hasta empezar a oir.
+  bool _presionado = false;
 
   /// Punto de la antena de la mascota "respira" mientras escucha.
   late final AnimationController _pulseCtrl;
@@ -155,13 +165,13 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
       return Tooltip(
         message: 'Sin conexión — usa el teclado/selector manual',
         child: Container(
-          width: 44,
-          height: 44,
+          width: KigoDesign.ladoAsistente,
+          height: KigoDesign.ladoAsistente,
           decoration: BoxDecoration(
             color: KigoDesign.brand.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(KigoDesign.radius),
+            borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
           ),
-          child: const Icon(Icons.mic_off_rounded, color: Colors.white, size: 20),
+          child: const Icon(Icons.mic_off_rounded, color: Colors.white, size: _ladoIcono),
         ),
       );
     }
@@ -172,13 +182,13 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
         child: Presionable(
           onTap: () => mostrarFaqOffline(context),
           child: Container(
-            width: 44,
-            height: 44,
+            width: KigoDesign.ladoAsistente,
+            height: KigoDesign.ladoAsistente,
             decoration: BoxDecoration(
               color: KigoDesign.brand,
-              borderRadius: BorderRadius.circular(KigoDesign.radius),
+              borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
             ),
-            child: const Icon(Icons.help_outline_rounded, color: Colors.white, size: 20),
+            child: const Icon(Icons.help_outline_rounded, color: Colors.white, size: _ladoIcono),
           ),
         ),
       );
@@ -189,17 +199,71 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
           ? 'Mantén presionado para hablar'
           : 'Activa el permiso de micrófono para usar el asistente',
       child: GestureDetector(
-        onLongPressStart: (_) => _onPressStart(),
-        onLongPressEnd: (_) => _onPressEnd(),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Opacity(
-            opacity: _micDisponible ? 1.0 : 0.4,
-            child: _buildMascota(),
+        // onTapDown/onTapCancel solo pintan el estado presionado: el gesto
+        // sigue siendo long-press. Un tap corto no dispara nada, igual que
+        // antes, pero ahora al menos se ve que el toque llego.
+        onTapDown: (_) => setState(() => _presionado = true),
+        onTapUp: (_) => setState(() => _presionado = false),
+        onTapCancel: () => setState(() => _presionado = false),
+        onLongPressStart: (_) {
+          setState(() => _presionado = true);
+          _onPressStart();
+        },
+        onLongPressEnd: (_) {
+          setState(() => _presionado = false);
+          _onPressEnd();
+        },
+        child: AnimatedScale(
+          scale: _presionado ? 0.92 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+          child: SizedBox(
+            width: KigoDesign.ladoAsistente,
+            height: KigoDesign.ladoAsistente,
+            child: Opacity(
+              opacity: _micDisponible ? 1.0 : 0.4,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  _buildHalo(),
+                  // Va algo mas chica que el cuadro para dejarle sitio al
+                  // halo sin salirse del area pintable.
+                  _buildMascota(),
+                ],
+              ),
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Anillo que respira por FUERA de la mascota. Es lo unico que sigue
+  /// siendo visible con la yema encima: el centro queda tapado, el borde no.
+  Widget _buildHalo() {
+    final activo = _presionado ||
+        _estado == _EstadoAsistente.escuchando ||
+        _estado == _EstadoAsistente.procesando;
+    return AnimatedBuilder(
+      animation: _pulseCtrl,
+      builder: (context, _) {
+        final crecimiento = _estado == _EstadoAsistente.escuchando ? _pulseCtrl.value : 0.0;
+        return AnimatedOpacity(
+          opacity: activo ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 150),
+          child: Container(
+            width: KigoDesign.ladoAsistente * (0.9 + 0.1 * crecimiento),
+            height: KigoDesign.ladoAsistente * (0.9 + 0.1 * crecimiento),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: KigoDesign.brand.withValues(alpha: 0.45),
+                width: 3,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -216,6 +280,7 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
         estado: estadoMascota,
         pulseValue: _pulseCtrl.value,
         rotValue: _rotCtrl.value,
+        lado: KigoDesign.ladoAsistente * 0.84,
       ),
     );
   }
