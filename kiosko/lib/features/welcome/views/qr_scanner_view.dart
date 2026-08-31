@@ -9,7 +9,6 @@ import 'package:kigo_kiosco/core/services/asistente_presentacion_servicio.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
-import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
@@ -488,14 +487,10 @@ class _QrScannerViewState extends State<QrScannerView>
           BotonAsistenteFlotante(
             topDelBorde: 24,
             rightDelBorde: 24,
+            mostrarEtiqueta: true,
             controlador: _asistenteController,
             onRespuestaLibre: (_) {},
             onCampoExtraido: (_) {},
-          ),
-          Positioned(
-            top: 24 + KigoDesign.offsetEtiquetaAsistente + safe.top,
-            right: 24,
-            child: const EtiquetaAsistente(),
           ),
         ],
       ),

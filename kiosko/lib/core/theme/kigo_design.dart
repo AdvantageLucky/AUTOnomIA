@@ -46,18 +46,13 @@ abstract final class KigoDesign {
   static const amber   = Color(0xFFFFC542);
   static const blue    = Color(0xFF5B8AF5);
 
-  // ── Radius ─────────────────────────────────────────────────────────────────
-  // ── Asistente ───────────────────────────────────────────────────────────
+  // ── Asistente ──────────────────────────────────────────────────────────────
   // Un kiosko se opera de pie y a brazo extendido, sin la precision de un
   // telefono en la mano: 44 (el minimo tactil de movil, que es lo que tenia
   // antes) queda tapado por la yema del dedo y no se ve si respondio.
   static const ladoAsistente = 76.0;
 
-  // Separacion vertical de EtiquetaAsistente respecto al borde superior del
-  // boton. Vive junto al lado para que crecer el boton no deje la etiqueta
-  // encimada -- antes las vistas llevaban un "+ 50" a mano cada una.
-  static const offsetEtiquetaAsistente = ladoAsistente + 8;
-
+  // ── Radius ─────────────────────────────────────────────────────────────────
   static const radius   = 10.0;
   static const radiusSm = 6.0;
   static const radiusLg = 16.0;

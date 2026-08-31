@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
-import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
@@ -334,13 +333,9 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           // WelcomeView/ConfirmarPlacaView.
           topDelBorde: 40,
           rightDelBorde: 42,
+          mostrarEtiqueta: true,
           onRespuestaLibre: (_) {},
           onCampoExtraido: (_) {},
-        ),
-        const Positioned(
-          top: 40 + KigoDesign.offsetEtiquetaAsistente,
-          right: 42,
-          child: EtiquetaAsistente(),
         ),
       ],
     );
