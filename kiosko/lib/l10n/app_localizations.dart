@@ -183,11 +183,18 @@ class AppLocalizations {
       // Selección progresiva de destino (calle/tipo/número)
       'no_se_pudo_cargar_casas': 'No se pudo cargar la lista de casas. Verifica la conexión.',
       'en_que_calle_esta_destino': '¿En qué calle está tu destino?',
-      'casa_o_edificio': '¿Casa o edificio?',
+      // Generico: el dashboard ya permite 7 tipos de destino, no solo dos.
+      'casa_o_edificio': '¿Qué tipo de destino?',
       'cual_es_el_numero': '¿Cuál es el número?',
       'sin_casas_registradas': 'Todavía no hay casas registradas en este kiosko.\nAvisa a la administración.',
       'edificio_label': 'Edificio',
       'casa_label': 'Casa',
+      'departamento_label': 'Departamento',
+      'oficina_label': 'Oficina',
+      'local_label': 'Local comercial',
+      'bodega_label': 'Bodega',
+      'lote_label': 'Lote',
+      'otro_destino_label': 'Otro',
       'no_encuentro_mi_destino': 'No encuentro mi destino',
       'escribe_tu_destino': 'Escribe tu destino',
 
@@ -366,11 +373,17 @@ class AppLocalizations {
       // Selección progresiva de destino (calle/tipo/número)
       'no_se_pudo_cargar_casas': 'Could not load the list of houses. Check your connection.',
       'en_que_calle_esta_destino': 'Which street is your destination on?',
-      'casa_o_edificio': 'House or building?',
+      'casa_o_edificio': 'What kind of destination?',
       'cual_es_el_numero': 'What is the number?',
       'sin_casas_registradas': 'There are no houses registered in this kiosk yet.\nLet the administration know.',
       'edificio_label': 'Building',
       'casa_label': 'House',
+      'departamento_label': 'Apartment',
+      'oficina_label': 'Office',
+      'local_label': 'Retail unit',
+      'bodega_label': 'Warehouse',
+      'lote_label': 'Lot',
+      'otro_destino_label': 'Other',
       'no_encuentro_mi_destino': "I can't find my destination",
       'escribe_tu_destino': 'Type your destination',
 
