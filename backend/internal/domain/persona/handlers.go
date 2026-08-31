@@ -513,10 +513,13 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, invitaciones.ToInvitacionResponse(inv, false))
+	c.JSON(http.StatusCreated, invitaciones.ToInvitacionResponse(inv, true))
 }
 
-// ListarInvitaciones lista las invitaciones creadas por la Persona autenticada.
+// ListarInvitaciones lista las invitaciones creadas por la Persona
+// autenticada. El token sí viaja aquí (a diferencia de ValidarInvitacion,
+// que es público): esta lista solo la ve quien las creó, y necesita el
+// token para poder compartir de nuevo el link de una invitación existente.
 func (h *Handler) ListarInvitaciones(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
 
@@ -528,7 +531,37 @@ func (h *Handler) ListarInvitaciones(c *gin.Context) {
 
 	resp := make([]invitaciones.InvitacionResponse, len(list))
 	for i, inv := range list {
-		resp[i] = invitaciones.ToInvitacionResponse(&inv, false)
+		resp[i] = invitaciones.ToInvitacionResponse(&inv, true)
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+// ListarInvitacionesRecibidas lista las invitaciones activas dirigidas a la
+// Persona autenticada — lo que ve en "invitaciones recibidas" en kigo-app.
+// A diferencia de ListarInvitaciones (las que ella creó), estas ya llegan
+// adjuntas por teléfono desde CrearInvitacion; no hace falta "reclamarlas".
+func (h *Handler) ListarInvitacionesRecibidas(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	list, err := h.invitacionRepo.FindByPersonaInvitada(personaID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp := make([]invitaciones.InvitacionRecibidaResponse, len(list))
+	for i, inv := range list {
+		var casaDestino string
+		if d, err := h.destinoRepo.FindByID(inv.DestinoID); err == nil {
+			casaDestino = d.Nombre
+		}
+		var nombreInvita string
+		if inv.PersonaCreadoraID != nil {
+			if p, err := h.repo.FindByID(*inv.PersonaCreadoraID); err == nil {
+				nombreInvita = p.Nombre
+			}
+		}
+		resp[i] = invitaciones.ToInvitacionRecibidaResponse(&inv, casaDestino, nombreInvita)
 	}
 	c.JSON(http.StatusOK, resp)
 }

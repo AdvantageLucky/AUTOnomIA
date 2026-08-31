@@ -41,6 +41,7 @@ type Config struct {
 	SMTPPort                string
 	SMTPUser                string
 	SMTPPassword            string
+	KigoAppReleaseURL       string
 }
 
 func Load() (*Config, error) {
@@ -69,6 +70,9 @@ func Load() (*Config, error) {
 		SMTPPort:                getEnv("SMTP_PORT", "587"),
 		SMTPUser:                getEnv("SMTP_USER", ""),
 		SMTPPassword:            getEnv("SMTP_PASSWORD", ""),
+		// Vacio oculta el boton de descarga en la landing de invitaciones (/i/:token)
+		// hasta que el repo de kigo-app sea publico y haya un release.
+		KigoAppReleaseURL: getEnv("KIGO_APP_RELEASE_URL", ""),
 	}
 
 	return cfg, nil

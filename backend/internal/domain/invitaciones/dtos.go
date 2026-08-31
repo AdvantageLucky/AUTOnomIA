@@ -72,6 +72,32 @@ type ValidarInvitacionResponse struct {
 	ExpiresAt   *time.Time     `json:"expires_at"`
 }
 
+// InvitacionRecibidaResponse DTO de respuesta para la Persona invitada —
+// lo que ve en "invitaciones recibidas" dentro de kigo-app.
+type InvitacionRecibidaResponse struct {
+	ID           uint           `json:"id"`
+	Tipo         TipoInvitacion `json:"tipo"`
+	Titular      string         `json:"titular"`
+	CasaDestino  string         `json:"casa_destino"`
+	NombreInvita string         `json:"nombre_invita"`
+	ExpiresAt    *time.Time     `json:"expires_at"`
+	CreatedAt    time.Time      `json:"created_at"`
+}
+
+// ToInvitacionRecibidaResponse expone el mapeo a otros paquetes — el
+// dominio persona arma la lista de invitaciones recibidas.
+func ToInvitacionRecibidaResponse(inv *Invitacion, casaDestino, nombreInvita string) InvitacionRecibidaResponse {
+	return InvitacionRecibidaResponse{
+		ID:           inv.ID,
+		Tipo:         inv.Tipo,
+		Titular:      inv.Titular,
+		CasaDestino:  casaDestino,
+		NombreInvita: nombreInvita,
+		ExpiresAt:    inv.ExpiresAt,
+		CreatedAt:    inv.CreatedAt,
+	}
+}
+
 // ToInvitacionResponse expone toInvitacionResponse a otros paquetes — el
 // dominio persona necesita convertir una Invitacion a su DTO de respuesta
 // sin duplicar el mapeo.

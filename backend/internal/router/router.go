@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"html"
 	"log"
 	"net/http"
 
@@ -51,6 +52,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	registerPersonaRoutes(api, db, cfg)
 	registerAsistenteRoutes(api, db, cfg)
 	registerTenantRoutes(api, db, cfg.JWTSecret)
+	registerInvitacionLandingRoute(r, db, cfg.KigoAppReleaseURL)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
@@ -299,6 +301,56 @@ func registerInvitacionesRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, upl
 	}
 }
 
+// registerInvitacionLandingRoute registra /i/:token, la página pública que
+// se comparte fuera de la app: intenta abrir kigo-app por su esquema
+// personalizado (kigoapp://) y, si no está instalada, ofrece descargarla.
+// No requiere Android App Links (assetlinks.json + fingerprint del
+// keystore) — un esquema personalizado no necesita verificación de dominio.
+func registerInvitacionLandingRoute(r *gin.Engine, db *gorm.DB, releaseURL string) {
+	invRepo := invitaciones.NewRepository(db)
+
+	r.GET("/i/:token", func(c *gin.Context) {
+		token := html.EscapeString(c.Param("token"))
+		inv, err := invRepo.FindByToken(c.Param("token"))
+		if err != nil {
+			c.Header("Content-Type", "text/html; charset=utf-8")
+			c.String(http.StatusNotFound, invitacionLandingHTML("Invitación no válida", "Este enlace ya expiró, se agotó o fue revocado.", token, ""))
+			return
+		}
+		c.Header("Content-Type", "text/html; charset=utf-8")
+		c.String(http.StatusOK, invitacionLandingHTML(
+			"Tienes una invitación de Kigo",
+			"Te invitó "+html.EscapeString(inv.Titular)+". Abre Kigo para verla.",
+			token, releaseURL,
+		))
+	})
+}
+
+func invitacionLandingHTML(titulo, subtitulo, token, releaseURL string) string {
+	descarga := ""
+	if releaseURL != "" {
+		descarga = `<a class="btn btn-secondary" href="` + releaseURL + `">Descargar Kigo</a>`
+	}
+	return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kigo</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box}
+.card{max-width:360px;text-align:center}
+h1{font-size:22px;margin-bottom:8px}
+p{color:#aaa;font-size:15px;line-height:1.5}
+.btn{display:block;width:100%;box-sizing:border-box;padding:14px;margin-top:14px;border-radius:10px;text-decoration:none;font-weight:600}
+.btn-primary{background:#ff7a1a;color:#fff}
+.btn-secondary{background:#222;color:#fff;border:1px solid #333}
+</style></head>
+<body><div class="card">
+<h1>` + titulo + `</h1>
+<p>` + subtitulo + `</p>
+<a class="btn btn-primary" href="kigoapp://invitacion/` + token + `">Abrir en Kigo</a>
+` + descarga + `
+</div></body></html>`
+}
+
 // registerTenantRoutes registra las rutas para la gestión de fraccionamientos (tenants).
 func registerTenantRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 	tenantRepo := tenant.NewRepository(db)
@@ -354,6 +406,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.POST("/invitaciones", personaHandler.CrearInvitacion)
 		p.GET("/invitaciones", personaHandler.ListarInvitaciones)
 		p.DELETE("/invitaciones/:id", personaHandler.RevocarInvitacion)
+		p.GET("/invitaciones/recibidas", personaHandler.ListarInvitacionesRecibidas)
 	}
 
 	pv := rg.Group("/personas/me/visitas")
