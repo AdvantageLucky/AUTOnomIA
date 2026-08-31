@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:vosk_flutter_service/vosk_flutter_service.dart';
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
-import 'package:kigo_kiosco/core/services/vosk_modelo_servicio.dart';
+import 'package:kigo_kiosco/core/services/vosk_speech_service_provider.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 
@@ -17,7 +17,6 @@ import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.da
 /// seguridad, implementado a mano aquí -- Vosk, a diferencia de
 /// speech_to_text, no trae un parámetro de duración máxima integrado).
 class AsistenteServicio {
-  static const _sampleRate = 16000;
   static const _duracionMaxima = Duration(seconds: 15);
 
   final TextToSpeakServicio _tts = TextToSpeakServicio();
@@ -35,10 +34,12 @@ class AsistenteServicio {
 
   Future<bool> iniciar() async {
     try {
-      final model = await VoskModeloServicio.obtener();
-      final vosk = VoskFlutterPlugin.instance();
-      final recognizer = await vosk.createRecognizer(model: model, sampleRate: _sampleRate);
-      _speechService = await vosk.initSpeechService(recognizer);
+      // El plugin nativo solo permite un SpeechService vivo a la vez en
+      // toda la app -- se comparte uno solo para toda la sesión del
+      // kiosko (ver VoskSpeechServiceProvider) en vez de crear uno nuevo
+      // por pantalla, que chocaba con el de la pantalla anterior (sigue
+      // montada debajo tras un Navigator.push).
+      _speechService = await VoskSpeechServiceProvider.obtener();
       return true;
     } catch (e) {
       debugPrint('Error iniciando Vosk: $e');
@@ -136,15 +137,13 @@ class AsistenteServicio {
     }
   }
 
-  /// Libera el reconocedor y el servicio de audio de esta instancia --
-  /// cada pantalla con mascota crea su propio AsistenteServicio, así que
-  /// sin esto cada navegación dejaría un SpeechService vivo sin liberar
-  /// (el modelo en sí sí se comparte vía VoskModeloServicio; esto es solo
-  /// el estado por-instancia).
+  /// Suelta la suscripción/timer de esta instancia -- el SpeechService en
+  /// sí es compartido para toda la sesión del kiosko (ver
+  /// VoskSpeechServiceProvider) y sigue vivo para las demás pantallas, así
+  /// que no se libera aquí.
   Future<void> dispose() async {
     _limiteSeguridad?.cancel();
     await _resultSub?.cancel();
-    await _speechService?.dispose();
     _speechService = null;
   }
 }
