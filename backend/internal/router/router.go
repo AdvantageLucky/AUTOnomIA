@@ -313,8 +313,11 @@ func registerInvitacionLandingRoute(r *gin.Engine, db *gorm.DB, releaseURL strin
 		token := html.EscapeString(c.Param("token"))
 		inv, err := invRepo.FindByToken(c.Param("token"))
 		if err != nil {
+			// Sin token: un botón "Abrir en Kigo" que apunte a un enlace
+			// muerto solo llevaría a la app a un callejón sin salida (ver
+			// DeepLinkServicio, recibidas vacío sin explicación).
 			c.Header("Content-Type", "text/html; charset=utf-8")
-			c.String(http.StatusNotFound, invitacionLandingHTML("Invitación no válida", "Este enlace ya expiró, se agotó o fue revocado.", token, ""))
+			c.String(http.StatusNotFound, invitacionLandingHTML("Invitación no válida", "Este enlace ya expiró, se agotó o fue revocado.", "", releaseURL))
 			return
 		}
 		c.Header("Content-Type", "text/html; charset=utf-8")
@@ -331,6 +334,10 @@ func invitacionLandingHTML(titulo, subtitulo, token, releaseURL string) string {
 	if releaseURL != "" {
 		descarga = `<a class="btn btn-secondary" href="` + releaseURL + `">Descargar Kigo</a>`
 	}
+	abrir := ""
+	if token != "" {
+		abrir = `<a class="btn btn-primary" href="kigoapp://invitacion/` + token + `">Abrir en Kigo</a>`
+	}
 	return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kigo</title>
@@ -346,7 +353,7 @@ p{color:#aaa;font-size:15px;line-height:1.5}
 <body><div class="card">
 <h1>` + titulo + `</h1>
 <p>` + subtitulo + `</p>
-<a class="btn btn-primary" href="kigoapp://invitacion/` + token + `">Abrir en Kigo</a>
+` + abrir + `
 ` + descarga + `
 </div></body></html>`
 }
