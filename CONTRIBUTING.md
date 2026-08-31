@@ -4,7 +4,7 @@
 
 ## 🗣️ Idioma y Comunicación
 *   **Documentación y Revisión:** Todos los mensajes de commit, descripciones de Pull Requests (PRs), issues y discusiones técnicas se redactarán en español.
-*   **Código Fuente:** Para alinearnos con los estándares de la industria, la nomenclatura de variables, funciones, clases y comentarios internos del código debe escribirse en **inglés**.
+*   **Código Fuente:** La nomenclatura de variables, funciones, clases y comentarios internos del código también se escribe en **español** — es la convención real y consistente en los tres subproyectos (`backend`, `kiosko`, `kigo-app`), y se mantiene así para no mezclar idiomas dentro del mismo archivo.
 
 ## 🌿 Gestión de Ramas (Branches)
 Nuestra rama principal de desarrollo es `dev`. **Queda estrictamente prohibido realizar *pushes* directos a `main`**: a `main` solo se llega mediante Pull Request desde `dev`.
