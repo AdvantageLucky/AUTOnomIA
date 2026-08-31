@@ -10,12 +10,13 @@ package admin
 import "gorm.io/gorm"
 
 type Admin struct {
-	gorm.Model
-	TenantID        uint `gorm:"column:tenant_id;not null;index"` // enlace a centros habitacionales
-	Nombre          string
-	ApellidoPaterno string
-	ApellidoMaterno string
-	Correo          string `gorm:"not null;uniqueIndex"`          // identificador unico de login
-	Password        string `gorm:"not null"             json:"-"` // hash bcrypt, nunca se expone en JSON
-	Rol             string `gorm:"not null;default:'admin'"`
+	gorm.Model      `json:"-"`
+	ID              uint   `gorm:"primarykey"                      json:"id"`
+	TenantID        uint   `gorm:"column:tenant_id;not null;index" json:"tenant_id"` // enlace a centros habitacionales
+	Nombre          string `json:"nombre"`
+	ApellidoPaterno string `json:"apellido_paterno"`
+	ApellidoMaterno string `json:"apellido_materno"`
+	Correo          string `gorm:"not null;uniqueIndex"            json:"correo"` // identificador unico de login
+	Password        string `gorm:"not null"                        json:"-"`      // hash bcrypt, nunca se expone en JSON
+	Rol             string `gorm:"not null;default:'admin'"        json:"rol"`
 }
