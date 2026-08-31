@@ -11,7 +11,7 @@ import (
 
 func TestAnalizarVisita_PrimeraVisita(t *testing.T) {
 	nueva := Visita{Titular: "García Juan", Curp: "GARJ900101HMCRNA01"}
-	sc := AnalizarVisita(nil, nueva, 5)
+	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{})
 
 	if sc.VecesVisitado != 0 {
 		t.Errorf("esperaba 0 visitas previas, got %d", sc.VecesVisitado)
@@ -27,10 +27,10 @@ func TestAnalizarVisita_AltaConfianza(t *testing.T) {
 		historial[i] = Visita{Estado: EstadoAprobado, Placa: "ABC123"}
 	}
 	nueva := Visita{Placa: "ABC123", Curp: "GARJ900101HMCRNA01"}
-	sc := AnalizarVisita(historial, nueva, 5)
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
 
 	if !sc.Confiable {
-		t.Error("6 aprobaciones consecutivas deben marcar confiable con umbral 5")
+		t.Error("6 aprobaciones seguidas con placa y CURP validas deben dar confianza alta")
 	}
 }
 
@@ -40,7 +40,7 @@ func TestAnalizarVisita_AnomaliaMatricula(t *testing.T) {
 		{Placa: "ABC123", Estado: EstadoAprobado},
 	}
 	nueva := Visita{Placa: "XYZ999", Curp: "GARJ900101HMCRNA01"}
-	sc := AnalizarVisita(historial, nueva, 5)
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
 
 	if !sc.AnomaliaMatricula {
 		t.Error("placa diferente debe marcar AnomaliaMatricula")
@@ -49,7 +49,7 @@ func TestAnalizarVisita_AnomaliaMatricula(t *testing.T) {
 
 func TestAnalizarVisita_OCRSospechoso_CURPInvalida(t *testing.T) {
 	nueva := Visita{Titular: "García Juan", Curp: "INVALIDA"}
-	sc := AnalizarVisita(nil, nueva, 5)
+	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{})
 
 	if !sc.OCRSospechoso {
 		t.Error("CURP inválida debe marcar OCRSospechoso")
@@ -60,7 +60,7 @@ func TestAnalizarVisita_OCRSospechoso_CURPInvalida(t *testing.T) {
 // anomalía. Tratarlo como OCR sospechoso dejaría a esos kioskos sin autopass.
 func TestAnalizarVisita_SinCURP_NoEsOCRSospechoso(t *testing.T) {
 	nueva := Visita{Placa: "ABC123D", TipoDocumento: DocumentoPlaca}
-	sc := AnalizarVisita(nil, nueva, 5)
+	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{})
 
 	if sc.OCRSospechoso {
 		t.Error("una visita sin CURP no debe marcar OCRSospechoso")
@@ -75,7 +75,7 @@ func TestAnalizarVisita_SinCURP_NoComparaMatricula(t *testing.T) {
 		{Placa: "ABC123D", Estado: EstadoAprobado},
 	}
 	nueva := Visita{Placa: "ABC123D"}
-	sc := AnalizarVisita(historial, nueva, 5)
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
 
 	if sc.AnomaliaMatricula {
 		t.Error("historial agrupado por placa no debe marcar AnomaliaMatricula")
@@ -89,7 +89,7 @@ func TestAnalizarVisita_SinCURP_AlcanzaConfianza(t *testing.T) {
 		historial[i] = Visita{Estado: EstadoAprobado, Placa: "ABC123D"}
 	}
 	nueva := Visita{Placa: "ABC123D", TipoDocumento: DocumentoPlaca}
-	sc := AnalizarVisita(historial, nueva, 5)
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
 
 	if !sc.Confiable {
 		t.Error("6 aprobaciones consecutivas de la misma placa deben marcar confiable")
@@ -105,7 +105,7 @@ func TestAnalizarVisita_HorarioInusual(t *testing.T) {
 	}
 	noche := time.Date(2026, 1, 2, 23, 0, 0, 0, time.UTC)
 	nueva := Visita{Curp: "GARJ900101HMCRNA01", Model: gorm.Model{CreatedAt: noche}}
-	sc := AnalizarVisita(historial, nueva, 5)
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
 
 	if !sc.HorarioInusual {
 		t.Error("llegada nocturna cuando historial es diurno debe marcar HorarioInusual")
@@ -123,7 +123,7 @@ func TestAnalizarVisita_HorarioInusual_MedianocheWrap(t *testing.T) {
 	// Llegada a las 00:10 (20 minutos después, cruzando medianoche)
 	madrugada := time.Date(2026, 1, 2, 0, 10, 0, 0, time.UTC)
 	nueva := Visita{Curp: "GARJ900101HMCRNA01", Model: gorm.Model{CreatedAt: madrugada}}
-	sc := AnalizarVisita(historial, nueva, 5)
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
 
 	if sc.HorarioInusual {
 		t.Error("llegada a las 00:10 cuando historial es 23:50 no debe marcar HorarioInusual (cruce de medianoche)")

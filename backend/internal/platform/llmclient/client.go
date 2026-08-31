@@ -20,18 +20,35 @@ type completionResponse struct {
 	Content string `json:"content"`
 }
 
+// tokensPorDefecto alcanza para las respuestas cortas del asistente del
+// kiosko. Un resumen de entrada con factores y recomendaciones necesita más
+// margen: para eso está CompletarConLimite.
+const tokensPorDefecto = 120
+
 // Completar intenta el endpoint nativo de llama.cpp (/completion) y, si falla,
 // cae al endpoint estándar OpenAI-compatible (/v1/chat/completions). No decide
 // fallback de negocio (heurística, mensaje fijo, etc.) — eso es responsabilidad
 // de cada caller.
 func Completar(ctx context.Context, baseURL, systemPrompt, prompt string) (string, error) {
+	return CompletarConLimite(ctx, baseURL, systemPrompt, prompt, tokensPorDefecto)
+}
+
+// CompletarConLimite es Completar con un techo de tokens explícito, para
+// respuestas que necesitan más espacio que el del asistente del kiosko.
+func CompletarConLimite(ctx context.Context, baseURL, systemPrompt, prompt string, maxTokens int) (string, error) {
 	base := strings.TrimRight(baseURL, "/")
+	if maxTokens <= 0 {
+		maxTokens = tokensPorDefecto
+	}
 
 	body, _ := json.Marshal(completionRequest{
 		Prompt:      prompt,
-		NPredict:    120,
+		NPredict:    maxTokens,
 		Temperature: 0.3,
-		Stop:        []string{"\n\n", "###"},
+		// Se quitó el corte por línea en blanco: un resumen de varios párrafos
+		// o con viñetas se truncaba en la primera. "###" sigue cortando el
+		// encabezado que el modelo a veces intenta continuar por su cuenta.
+		Stop: []string{"###"},
 	})
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/completion", bytes.NewReader(body))
@@ -54,7 +71,7 @@ func Completar(ctx context.Context, baseURL, systemPrompt, prompt string) (strin
 			{"role": "system", "content": systemPrompt},
 			{"role": "user", "content": prompt},
 		},
-		"max_tokens":  120,
+		"max_tokens":  maxTokens,
 		"temperature": 0.3,
 	})
 

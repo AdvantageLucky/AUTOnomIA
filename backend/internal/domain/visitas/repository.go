@@ -376,7 +376,7 @@ func (r *Repository) GetKioskoConfig(kioskoID uint) (*kiosko.KioskoConfig, error
 	var cfg kiosko.KioskoConfig
 	err := r.db.Scopes(ByTenant).Where("kiosko_id = ?", kioskoID).First(&cfg).Error
 	if err == gorm.ErrRecordNotFound {
-		return &kiosko.KioskoConfig{AutoPassHabilitado: true, UmbralConfianzaVisitas: 5}, nil
+		return &kiosko.KioskoConfig{AutoPassHabilitado: true, UmbralFacialPct: 85, UmbralAutopassPct: 80}, nil
 	}
 	return &cfg, err
 }

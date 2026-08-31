@@ -447,8 +447,14 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.AutoPassHabilitado != nil {
 		cfg.AutoPassHabilitado = *req.AutoPassHabilitado
 	}
-	if req.UmbralConfianzaVisitas != nil {
-		cfg.UmbralConfianzaVisitas = *req.UmbralConfianzaVisitas
+	// Se acotan aqui y no solo en el dashboard: son porcentajes, y un valor
+	// fuera de rango deja el kiosko aceptando cualquier cara o el autopase
+	// aprobando todo.
+	if req.UmbralFacialPct != nil {
+		cfg.UmbralFacialPct = acotarPct(*req.UmbralFacialPct, 50, 99)
+	}
+	if req.UmbralAutopassPct != nil {
+		cfg.UmbralAutopassPct = acotarPct(*req.UmbralAutopassPct, 50, 100)
 	}
 	if req.UmbralSimilitudCara != nil {
 		cfg.UmbralSimilitudCara = *req.UmbralSimilitudCara
@@ -507,4 +513,16 @@ func (h *Handler) StreamConfig(c *gin.Context) {
 			return false
 		}
 	})
+}
+
+// acotarPct deja un porcentaje dentro de un rango util. Fuera de el, el valor
+// no representa una decision del admin sino un dedazo o una fila vieja.
+func acotarPct(v, min, max int) int {
+	if v < min {
+		return min
+	}
+	if v > max {
+		return max
+	}
+	return v
 }

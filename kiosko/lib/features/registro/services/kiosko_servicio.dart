@@ -70,9 +70,9 @@ class KioskoServicio {
   /// dashboard lo captura como porcentaje (0-100), asi que aqui se
   /// convierte; fuera de rango cae al default en vez de confiar en el valor.
   double get _umbralFacial {
-    final pct = _ultimaConfig.umbralConfianzaVisitas;
+    final pct = _ultimaConfig.umbralFacialPct;
     if (pct < _umbralFacialMinimo || pct > 100) {
-      return KioskoConfig.defaults.umbralConfianzaVisitas / 100;
+      return KioskoConfig.defaults.umbralFacialPct / 100;
     }
     return pct / 100;
   }

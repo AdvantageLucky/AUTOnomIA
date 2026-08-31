@@ -274,7 +274,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 			}
 		}
 
-		sc := AnalizarVisita(historialPrevio, visitaCopy, cfg.UmbralConfianzaVisitas)
+		sc := AnalizarVisita(historialPrevio, visitaCopy, evidenciaEsperadaDe(cfg, visitaCopy))
 		resumen, err := GenerarResumen(ctx, h.llmURL, sc, visitaCopy)
 		if err != nil {
 			log.Printf("visita %d: LLM falló, usando resumen heurístico: %v", visitaCopy.ID, err)
@@ -283,10 +283,13 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		tieneAnomalias := sc.AnomaliaMatricula || sc.CambioModalidad || sc.HorarioInusual ||
 			sc.RechazadoPrevio || sc.OCRSospechoso
 
+		// El autopase se decide contra el porcentaje configurado, no contra un
+		// contador de aprobaciones seguidas: el score ya pondera la racha junto
+		// con la calidad de la evidencia y las anomalias.
 		nuevoEstado := EstadoPendiente
-		if sc.Confiable && !tieneAnomalias && cfg.AutoPassHabilitado {
+		if cfg.AutoPassHabilitado && sc.PuedeAutoPass(cfg.UmbralAutopassPct) {
 			nuevoEstado = EstadoAprobado
-		} else if tieneAnomalias || (sc.Confiable && !cfg.AutoPassHabilitado) {
+		} else if tieneAnomalias || (sc.PuedeAutoPass(cfg.UmbralAutopassPct) && !cfg.AutoPassHabilitado) {
 			nuevoEstado = EstadoRevision
 		}
 

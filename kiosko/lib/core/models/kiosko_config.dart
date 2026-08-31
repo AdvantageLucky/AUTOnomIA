@@ -2,7 +2,7 @@
 /// Campos: tipo, foto_placa_visitante, foto_rostro_visitante, foto_placa_invitado,
 /// foto_rostro_invitado, foto_ine_invitado (= ine_obligatorio_invitado),
 /// tiempo_espera_seg, horario_inicio, horario_fin, mensaje_bienvenida,
-/// auto_pass_habilitado, umbral_confianza_visitas, tiempo_exito_seg.
+/// auto_pass_habilitado, umbral_facial_pct, tiempo_exito_seg.
 // Paleta de color del kiosko configurada desde el dashboard admin.
 enum KioskoColorTema { oscuro, claro }
 
@@ -28,7 +28,11 @@ class KioskoConfig {
   /// Porcentaje (0-100) de similitud coseno que se exige para dar por
   /// buena una cara en el match local. 85 = el 0.85 que antes estaba
   /// clavado en coincidencia_facial_local.dart.
-  final int umbralConfianzaVisitas;
+  ///
+  /// Es distinto del umbral de autopase, que vive solo en el backend: aquel
+  /// decide si una entrada se aprueba sola, este decide si dos caras son la
+  /// misma. Compartían campo hasta la migración 000058.
+  final int umbralFacialPct;
   final int tiempoExitoSeg;
   final KioskoColorTema colorTema;
   final String idioma; // 'es' | 'en'
@@ -47,7 +51,7 @@ class KioskoConfig {
     required this.horarioFin,
     required this.mensajeBienvenida,
     required this.autoPassHabilitado,
-    required this.umbralConfianzaVisitas,
+    required this.umbralFacialPct,
     this.tiempoExitoSeg = 5,
     this.colorTema = KioskoColorTema.oscuro,
     this.idioma = 'es',
@@ -82,7 +86,7 @@ class KioskoConfig {
       horarioFin: json['horario_fin'] as String? ?? '20:00',
       mensajeBienvenida: json['mensaje_bienvenida'] as String? ?? '',
       autoPassHabilitado: json['auto_pass_habilitado'] as bool? ?? false,
-      umbralConfianzaVisitas: json['umbral_confianza_visitas'] as int? ?? 85,
+      umbralFacialPct: json['umbral_facial_pct'] as int? ?? 85,
       tiempoExitoSeg: json['tiempo_exito_seg'] as int? ?? 5,
       colorTema: colorStr == 'claro' ? KioskoColorTema.claro : KioskoColorTema.oscuro,
       idioma: json['idioma_kiosko'] as String? ?? 'es',
@@ -103,7 +107,7 @@ class KioskoConfig {
         horarioFin: '20:00',
         mensajeBienvenida: '',
         autoPassHabilitado: false,
-        umbralConfianzaVisitas: 85,
+        umbralFacialPct: 85,
         tiempoExitoSeg: 5,
         colorTema: KioskoColorTema.oscuro,
         idioma: 'es',

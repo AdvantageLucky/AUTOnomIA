@@ -21,6 +21,13 @@ type ScoreContexto struct {
 	OCRSospechoso     bool
 	Confiable         bool
 	ResumenTexto      string
+
+	// ConfianzaPct resume todo lo anterior en un 0-100 auditable. Es contra
+	// esto que se decide el autopase, en vez del contador de aprobaciones
+	// consecutivas que se configuraba antes (ver score.go).
+	ConfianzaPct    int
+	Factores        []FactorScore
+	Recomendaciones []string
 }
 
 // ScoreIA es el subconjunto serializable de ScoreContexto que se persiste y
@@ -28,13 +35,17 @@ type ScoreContexto struct {
 // false, exponerlo mentiría "sin cambios") ni ResumenTexto (va en su propia
 // columna resumen_ia, no duplicado dentro del score).
 type ScoreIA struct {
-	VecesVisitado     int        `json:"veces_visitado"`
-	UltimaVisita      *time.Time `json:"ultima_visita,omitempty"`
-	AnomaliaMatricula bool       `json:"anomalia_matricula"`
-	HorarioInusual    bool       `json:"horario_inusual"`
-	RechazadoPrevio   bool       `json:"rechazado_previo"`
-	OCRSospechoso     bool       `json:"ocr_sospechoso"`
-	Confiable         bool       `json:"confiable"`
+	ConfianzaPct      int           `json:"confianza_pct"`
+	NivelConfianza    string        `json:"nivel_confianza"`
+	Factores          []FactorScore `json:"factores,omitempty"`
+	Recomendaciones   []string      `json:"recomendaciones,omitempty"`
+	VecesVisitado     int           `json:"veces_visitado"`
+	UltimaVisita      *time.Time    `json:"ultima_visita,omitempty"`
+	AnomaliaMatricula bool          `json:"anomalia_matricula"`
+	HorarioInusual    bool          `json:"horario_inusual"`
+	RechazadoPrevio   bool          `json:"rechazado_previo"`
+	OCRSospechoso     bool          `json:"ocr_sospechoso"`
+	Confiable         bool          `json:"confiable"`
 }
 
 // GenerarResumenHeuristico genera un resumen determinista y claro en caso de que el LLM esté offline
@@ -100,6 +111,13 @@ func resumenHeuristicoDe(s ScoreContexto, v Visita) string {
 	}
 
 	partes = append(partes, s.AScoreIA().GenerarResumenHeuristico())
+
+	// Sin LLM, el nivel de confianza es lo único que le resume al guardia todo
+	// el análisis de un vistazo; los factores que lo componen los pinta el
+	// dashboard aparte.
+	if s.ConfianzaPct > 0 {
+		partes = append(partes, fmt.Sprintf("Confianza %s (%d/100).", s.NivelConfianza(), s.ConfianzaPct))
+	}
 	return strings.Join(partes, " ")
 }
 
@@ -107,6 +125,10 @@ func resumenHeuristicoDe(s ScoreContexto, v Visita) string {
 // se persiste y se expone al dashboard.
 func (sc ScoreContexto) AScoreIA() ScoreIA {
 	return ScoreIA{
+		ConfianzaPct:      sc.ConfianzaPct,
+		NivelConfianza:    sc.NivelConfianza(),
+		Factores:          sc.Factores,
+		Recomendaciones:   sc.Recomendaciones,
 		VecesVisitado:     sc.VecesVisitado,
 		UltimaVisita:      sc.UltimaVisita,
 		AnomaliaMatricula: sc.AnomaliaMatricula,
@@ -117,16 +139,22 @@ func (sc ScoreContexto) AScoreIA() ScoreIA {
 	}
 }
 
-// AnalizarVisita compara la visita nueva contra el historial y devuelve el ScoreContexto.
-// umbral es el número mínimo de aprobaciones consecutivas para marcar Confiable.
+// AnalizarVisita compara la visita nueva contra el historial y devuelve el
+// ScoreContexto, ya con el score de confianza y sus factores calculados.
 // historial debe estar ordenado de más reciente a más antiguo.
-func AnalizarVisita(historial []Visita, nueva Visita, umbral int) ScoreContexto {
+//
+// Ya no recibe un umbral: el número de aprobaciones consecutivas dejó de ser
+// configurable y pasó a ser uno de los factores del score (rachaLimpiaMinima).
+// Lo que el admin configura ahora es el porcentaje de confianza que exige para
+// autopase, que es la misma decisión expresada en algo que se entiende.
+func AnalizarVisita(historial []Visita, nueva Visita, esperada EvidenciaEsperada) ScoreContexto {
 	sc := ScoreContexto{
 		VecesVisitado: len(historial),
 		OCRSospechoso: validarOCR(nueva.Curp),
 	}
 
 	if len(historial) == 0 {
+		evaluarEntrada(&sc, nueva, historial, esperada)
 		return sc
 	}
 
@@ -148,8 +176,11 @@ func AnalizarVisita(historial []Visita, nueva Visita, umbral int) ScoreContexto 
 
 	sc.HorarioInusual = horarioInusual(historial, nueva.CreatedAt)
 
-	sc.Confiable = esConfiable(historial, umbral) && !sc.AnomaliaMatricula && !sc.RechazadoPrevio &&
-		!sc.OCRSospechoso
+	evaluarEntrada(&sc, nueva, historial, esperada)
+
+	// Confiable se conserva porque el dashboard ya pintaba una insignia con
+	// él, pero ahora deriva del score en vez de un contador suelto.
+	sc.Confiable = !sc.Bloqueantes() && sc.NivelConfianza() == "alta"
 
 	return sc
 }
@@ -200,14 +231,3 @@ func horarioInusual(historial []Visita, llegada time.Time) bool {
 	return diff > 4
 }
 
-func esConfiable(historial []Visita, umbral int) bool {
-	if len(historial) < umbral {
-		return false
-	}
-	for i := range umbral {
-		if historial[i].Estado != EstadoAprobado {
-			return false
-		}
-	}
-	return true
-}
