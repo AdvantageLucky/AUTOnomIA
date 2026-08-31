@@ -85,7 +85,7 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       final enrollment = await _kigoVerify.iniciar();
       if (!mounted) return;
 
-      await mostrarKigoVerifyWebview(context, enrollment.enrollmentUrl);
+      await mostrarKigoVerifyWebview(context, enrollment.enrollmentUrl, enrollment.redirectUrl);
       if (!mounted) return;
 
       final resultado = await _esperarResultado(enrollment.enrollmentId);
