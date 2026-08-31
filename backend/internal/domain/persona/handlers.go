@@ -206,6 +206,7 @@ func (h *Handler) SolicitarOTP(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	req.Telefono = NormalizarTelefono(req.Telefono)
 
 	if _, err := h.otpRepo.FindActivaPorTelefono(req.Telefono); err == nil {
 		// Ya hay un código activo para este teléfono — no se genera uno
@@ -255,6 +256,7 @@ func (h *Handler) VerificarOTP(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	req.Telefono = NormalizarTelefono(req.Telefono)
 
 	solicitud, err := h.otpRepo.FindActivaPorTelefono(req.Telefono)
 	if err != nil {
@@ -476,7 +478,18 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 		return
 	}
 
-	invitado, err := h.repo.FindOrCreateByTelefono(strings.TrimSpace(req.TelefonoInvitado))
+	// Sin esto, cualquier residente autenticado podía mandar cualquier
+	// destino_id del tenant (o de otro tenant) y crear una invitación a una
+	// casa que no es la suya -- Membresia no tiene FK a Destino, solo
+	// CasaDestino (texto), así que la única forma de verificar "es tu
+	// casa" es resolver el Destino y comparar su Nombre contra eso.
+	destino, err := h.destinoRepo.FindByID(req.DestinoID)
+	if err != nil || destino.TenantID != req.TenantID || destino.Nombre != m.CasaDestino {
+		c.JSON(http.StatusForbidden, gin.H{"error": "solo puedes invitar a tu propia casa"})
+		return
+	}
+
+	invitado, err := h.repo.FindOrCreateByTelefono(NormalizarTelefono(req.TelefonoInvitado))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -496,6 +509,16 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 		titular = invitado.Telefono
 	}
 
+	// Sin max_usos explícito, una invitación PERSONAL (un solo invitado)
+	// quedaba usable un número ilimitado de veces -- kigo-app nunca manda
+	// max_usos, así que en la práctica NINGUNA invitación tenía límite.
+	// GRUPAL sí puede quedar sin límite si el creador no pone uno.
+	maxUsos := req.MaxUsos
+	if maxUsos == nil && req.Tipo == invitaciones.InvitacionPersonal {
+		uno := 1
+		maxUsos = &uno
+	}
+
 	inv := &invitaciones.Invitacion{
 		Token:                       token,
 		TenantID:                    req.TenantID,
@@ -505,7 +528,7 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 		PersonaInvitadaID:           &invitado.ID,
 		PersonaCreadoraID:           &personaID,
 		PermiteReconocimientoFacial: req.PermiteReconocimientoFacial,
-		MaxUsos:                     req.MaxUsos,
+		MaxUsos:                     maxUsos,
 		ExpiresAt:                   req.ExpiresAt,
 	}
 	if err := h.invitacionRepo.Create(inv); err != nil {
