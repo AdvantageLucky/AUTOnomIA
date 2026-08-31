@@ -69,6 +69,11 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
   @override
   void dispose() {
     widget.controlador?.removeListener(_onControladorDecir);
+    // Libera el SpeechService de Vosk de esta pantalla -- cada
+    // BotonAsistente tiene su propia instancia de AsistenteServicio, así
+    // que sin esto cada navegación entre pantallas dejaría un servicio de
+    // audio vivo sin liberar.
+    _asistente.dispose();
     _pulseCtrl.dispose();
     _rotCtrl.dispose();
     super.dispose();
