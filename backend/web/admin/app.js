@@ -2651,18 +2651,22 @@
     }
 
     rowsEl.innerHTML = vigilantes.map((v, i) => {
-      const nombre = [v.nombre, v.apellido_paterno].filter(Boolean).join(" ") || v.correo;
-      const initials = ((v.nombre?.[0] || "") + (v.apellido_paterno?.[0] || "")).toUpperCase();
+      const nombreRaw = (v.nombre || v.Nombre || "").trim();
+      const apeRaw = (v.apellido_paterno || v.ApellidoPaterno || "").trim();
+      const correoRaw = (v.correo || v.Correo || "").trim();
+      const idRaw = v.id || v.ID || 0;
+      const nombre = [nombreRaw, apeRaw].filter(Boolean).join(" ") || correoRaw || "Vigilante";
+      const initials = (nombreRaw ? (nombreRaw[0] + (apeRaw[0] || "")) : (correoRaw ? correoRaw[0] : "V")).toUpperCase();
       return `<div class="acceso-card" style="animation-delay:${i*30}ms">
         <div class="acceso-info" style="display:flex;align-items:center;gap:12px">
-          <div class="avatar">${esc(initials) || "·"}</div>
+          <div class="avatar">${esc(initials) || "V"}</div>
           <div>
             <div class="acceso-nombre">${esc(nombre)}</div>
-            <div class="acceso-ubi">${esc(v.correo)}</div>
+            ${correoRaw && correoRaw !== nombre ? `<div class="acceso-ubi">${esc(correoRaw)}</div>` : `<div class="acceso-ubi" style="color:var(--text-3)">Vigilante</div>`}
           </div>
         </div>
         <div class="acceso-actions">
-          <button class="btn-ghost" style="color:var(--red)" data-del-vigilante="${v.id}" title="Eliminar vigilante">
+          <button class="btn-ghost" style="color:var(--red)" data-del-vigilante="${idRaw}" title="Eliminar vigilante">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
           </button>
         </div>
