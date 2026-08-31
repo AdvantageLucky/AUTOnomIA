@@ -63,11 +63,11 @@ type CompaneroCasa struct {
 // consulta). Usado por Handler.ListarCompanerosCasa (paquete persona) para
 // que un residente vea quién más vive con él.
 func (r *MembresiaRepository) FindCompanerosCasa(tenantID uint, casaDestino string, excluirPersonaID uint) ([]CompaneroCasa, error) {
-	var list []CompaneroCasa
+	list := make([]CompaneroCasa, 0)
 	err := r.db.Table("membresias").
-		Select("trim(personas.nombre || ' ' || personas.apellido_paterno) as nombre_completo").
+		Select("TRIM(COALESCE(personas.nombre, '') || ' ' || COALESCE(personas.apellido_paterno, '') || ' ' || COALESCE(personas.apellido_materno, '')) as nombre_completo").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
-		Where("membresias.tenant_id = ? AND UPPER(membresias.casa_destino) = UPPER(?) AND membresias.status = ? AND membresias.persona_id != ? AND membresias.deleted_at IS NULL",
+		Where("membresias.tenant_id = ? AND UPPER(TRIM(membresias.casa_destino)) = UPPER(TRIM(?)) AND membresias.status = ? AND membresias.persona_id != ? AND membresias.deleted_at IS NULL",
 			tenantID, casaDestino, ResidenteStatusActivo, excluirPersonaID).
 		Order("membresias.created_at ASC").
 		Scan(&list).Error

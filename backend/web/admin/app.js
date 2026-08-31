@@ -679,7 +679,6 @@
   let regDatos = null;
 
   document.getElementById("reg-solicitar-btn")?.addEventListener("click", async () => {
-    const nombre   = document.getElementById("reg-nombre").value.trim();
     const correo   = document.getElementById("reg-correo").value.trim();
     const password = document.getElementById("reg-password").value;
     const errEl    = document.getElementById("reg-error");
@@ -698,7 +697,7 @@
       return;
     }
 
-    regDatos = { nombre, correo, password };
+    regDatos = { correo, password };
     btn.disabled = true;
 
     try {
@@ -945,8 +944,7 @@
   }
 
   function renderGoogleButton() {
-    const container = document.getElementById("google-btn-container");
-    if (!container || typeof google === "undefined" || !google.accounts) return;
+    if (typeof google === "undefined" || !google.accounts) return;
 
     const clientId = window.__GOOGLE_CLIENT_ID__ || "";
     if (!clientId) return;
@@ -955,13 +953,28 @@
       google.accounts.id.initialize({ client_id: clientId, callback: googleCallback });
       googleInitialized = true;
     }
-    container.innerHTML = "";
-    const ancho = Math.round(container.getBoundingClientRect().width) || 320;
-    google.accounts.id.renderButton(container, {
-      theme: "outline", size: "large", width: ancho,
-      text: authMode === "register" ? "signup_with" : "signin_with",
-      locale: lang === "en" ? "en" : "es",
-    });
+
+    const containerLogin = document.getElementById("google-btn-container");
+    if (containerLogin) {
+      containerLogin.innerHTML = "";
+      const ancho = Math.round(containerLogin.getBoundingClientRect().width) || 320;
+      google.accounts.id.renderButton(containerLogin, {
+        theme: "outline", size: "large", width: ancho,
+        text: "signin_with",
+        locale: lang === "en" ? "en" : "es",
+      });
+    }
+
+    const containerReg = document.getElementById("google-btn-container-reg");
+    if (containerReg) {
+      containerReg.innerHTML = "";
+      const ancho = Math.round(containerReg.getBoundingClientRect().width) || 320;
+      google.accounts.id.renderButton(containerReg, {
+        theme: "outline", size: "large", width: ancho,
+        text: "signup_with",
+        locale: lang === "en" ? "en" : "es",
+      });
+    }
   }
 
   (function esperarGoogleSDK() {
