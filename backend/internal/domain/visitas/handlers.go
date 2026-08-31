@@ -275,7 +275,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 
 		sc := AnalizarVisita(historialPrevio, visitaCopy, cfg.UmbralConfianzaVisitas)
-		resumen, err := GenerarResumen(ctx, h.llmURL, sc)
+		resumen, err := GenerarResumen(ctx, h.llmURL, sc, visitaCopy)
 		if err != nil {
 			log.Printf("visita %d: LLM falló, usando resumen heurístico: %v", visitaCopy.ID, err)
 		}
