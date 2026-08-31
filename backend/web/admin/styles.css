@@ -843,12 +843,10 @@ textarea { resize: vertical; }
 
 .stat-value {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 88px;
+  font-size: 46px;
   font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  height: 76px;
-  overflow: hidden;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   color: var(--text);
 }
 
@@ -2184,7 +2182,7 @@ textarea { resize: vertical; }
   .screen-header { padding: 20px 16px 14px; }
   .screen-body, .screen-inner { padding-left: 16px; padding-right: 16px; }
   .stat-card { padding: 14px 16px; }
-  .stat-value { font-size: 64px; height: 58px; }
+  .stat-value { font-size: 36px; }
 }
 
 @media (max-width: 500px) {
