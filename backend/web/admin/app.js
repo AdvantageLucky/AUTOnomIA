@@ -400,7 +400,7 @@
   function aplicarRol(rol) {
     state.rol = rol;
     const rutas = RUTAS_POR_ROL[rol] || RUTAS_POR_ROL.admin;
-    document.querySelectorAll(".nav-btn[data-nav]").forEach(btn => {
+    document.querySelectorAll(".nav-btn[data-nav], .mobile-nav-btn[data-nav]").forEach(btn => {
       btn.hidden = !rutas.includes(btn.dataset.nav);
     });
     const esVigilante = rol === "vigilante";
@@ -1637,15 +1637,18 @@
   }
 
   function updateNavBadge(count) {
+    const text = count > 99 ? "99+" : String(count);
+    const hidden = count <= 0;
     const badge = document.getElementById("nav-badge-solicitudes");
-    if (!badge) return;
-    badge.textContent = count > 99 ? "99+" : String(count);
-    badge.hidden = count <= 0;
+    if (badge) { badge.textContent = text; badge.hidden = hidden; }
+    const badgeMob = document.getElementById("nav-badge-solicitudes-mob");
+    if (badgeMob) { badgeMob.textContent = text; badgeMob.hidden = hidden; }
   }
 
   function updateNavAlert(activo) {
-    const navBtn = document.querySelector('.nav-btn[data-nav="solicitudes"]');
-    if (navBtn) navBtn.classList.toggle("nav-btn--alert", activo);
+    document.querySelectorAll('[data-nav="solicitudes"]').forEach(btn => {
+      btn.classList.toggle("nav-btn--alert", activo);
+    });
   }
 
   async function loadAlertasIABadge() {
@@ -1656,10 +1659,17 @@
       const d = await res.json();
       total = d.total || 0;
     } catch (e) { console.error(e); }
+    const text = total > 99 ? "99+" : String(total);
+    const hidden = total <= 0;
     const badge = document.getElementById("nav-badge-alertas-ia");
     if (badge) {
-      badge.textContent = total > 99 ? "99+" : String(total);
-      badge.hidden = total <= 0;
+      badge.textContent = text;
+      badge.hidden = hidden;
+    }
+    const badgeMob = document.getElementById("nav-badge-alertas-ia-mob");
+    if (badgeMob) {
+      badgeMob.textContent = text;
+      badgeMob.hidden = hidden;
     }
   }
 
@@ -3165,6 +3175,8 @@
       }
       const badge = document.getElementById('tab-badge-res-sol');
       if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+      const badgeMob = document.getElementById('tab-badge-res-sol-mob');
+      if (badgeMob) { badgeMob.textContent = n; badgeMob.hidden = n === 0; }
     } catch (e) {
       console.warn('loadResidentesPendientesBadge error:', e);
     }
