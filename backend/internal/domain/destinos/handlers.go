@@ -128,15 +128,30 @@ func (h *Handler) CrearDestinosLote(c *gin.Context) {
 		return
 	}
 
-	tipo := TipoDestino(req.Tipo)
-	nuevos := make([]Destino, 0, len(req.Numeros))
-	for _, numero := range req.Numeros {
+	// El binding no puede exigir la lista porque hay dos formas validas de
+	// mandarla (ver DestinoLoteRequest.items), asi que se valida aqui.
+	elementos := req.items()
+	if len(elementos) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "manda al menos un destino"})
+		return
+	}
+
+	nuevos := make([]Destino, 0, len(elementos))
+	for _, it := range elementos {
+		if it.Numero == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cada destino necesita un numero o identificador"})
+			return
+		}
+		tipo := TipoDestino(it.Tipo)
+		if tipo == "" {
+			tipo = TipoDestinoCasa
+		}
 		nuevos = append(nuevos, Destino{
 			TenantID: tenantID,
-			Nombre:   nombreDestino(req.Calle, tipo, numero),
+			Nombre:   nombreDestino(req.Calle, tipo, it.Numero),
 			Calle:    req.Calle,
 			Tipo:     tipo,
-			Numero:   numero,
+			Numero:   it.Numero,
 		})
 	}
 
