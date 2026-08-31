@@ -27,6 +27,9 @@ type UsarInvitacionRequest struct {
 	FotoDocumento *multipart.FileHeader `form:"foto_documento"`
 	FotoRostro    *multipart.FileHeader `form:"foto_rostro"`
 	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`
+	// Nitidez de FotoDocumento, calculada en el kiosko (ver visitas.VisitaRequest).
+	NitidezIneScore float64 `form:"nitidez_ine_score"`
+	CalidadIne      string  `form:"calidad_ine"`
 }
 
 // CreateInvitacionRequest DTO para crear una invitacion desde la app del residente.
