@@ -37,7 +37,9 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
   void initState() {
     super.initState();
     // Pide consentimiento antes de activar la cámara; solo la inicializa si acepta
-    WidgetsBinding.instance.addPostFrameCallback((_) => _solicitarConsentimiento());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _solicitarConsentimiento(),
+    );
   }
 
   Future<void> _solicitarConsentimiento() async {
@@ -84,7 +86,10 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
       });
 
       // El recuadro guía está centrado, así que ahí es donde debe enfocar.
-      _hayEnfoque = await CamaraKiosko.enfocarEn(controller, const Offset(0.5, 0.5));
+      _hayEnfoque = await CamaraKiosko.enfocarEn(
+        controller,
+        const Offset(0.5, 0.5),
+      );
       if (mounted) setState(() {});
 
       _iniciarAutoCaptura();
@@ -112,7 +117,10 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
 
   void _iniciarAutoCaptura() {
     _autoTimer?.cancel();
-    _autoTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) => _sondearIne());
+    _autoTimer = Timer.periodic(
+      const Duration(milliseconds: 2500),
+      (_) => _sondearIne(),
+    );
   }
 
   Future<void> _sondearIne() async {
@@ -122,7 +130,16 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
 
     _sondeando = true;
     try {
-      final XFile foto = await _controller!.takePicture();
+      final controller = _controller!;
+      // El enfoque se fijaba una sola vez en _initCamera(), antes de que el
+      // visitante levantara su INE -- cada disparo automático posterior
+      // usaba ese enfoque ya desactualizado. Re-enfocar en el centro del
+      // recuadro guía antes de cada intento evita fotos borrosas por
+      // enfoque viejo, causa probable de que el OCR fallara seguido.
+      if (_hayEnfoque) {
+        await CamaraKiosko.enfocarEn(controller, const Offset(0.5, 0.5));
+      }
+      final XFile foto = await controller.takePicture();
       final resultado = await _detector.analizarIne(foto.path);
 
       if (!mounted || _cerrando) return;
@@ -185,10 +202,15 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: context.kBg,
-        title: Text(AppLocalizations.t(context, 'apunta_a_tu_ine'), style: TextStyle(color: context.kTextPrimary)),
+        title: Text(
+          AppLocalizations.t(context, 'apunta_a_tu_ine'),
+          style: TextStyle(color: context.kTextPrimary),
+        ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: context.kTextPrimary),
-          onPressed: () => Navigator.pop(context), // Botón físico/virtual para regresar si cancela
+          onPressed: () => Navigator.pop(
+            context,
+          ), // Botón físico/virtual para regresar si cancela
         ),
       ),
       body: Stack(
@@ -217,7 +239,10 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.65),
                   borderRadius: BorderRadius.circular(24),
@@ -228,16 +253,26 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
                     const SizedBox(
                       width: 14,
                       height: 14,
-                      child: CircularProgressIndicator(color: Colors.green, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.green,
+                        strokeWidth: 2,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       // Con lente de foco fijo no hay nada que dirigir: lo
                       // único que enfoca el documento es la distancia.
                       _hayEnfoque
-                          ? AppLocalizations.t(context, 'deteccion_automatica_ine')
+                          ? AppLocalizations.t(
+                              context,
+                              'deteccion_automatica_ine',
+                            )
                           : AppLocalizations.t(context, 'acerca_aleja_ine'),
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -256,7 +291,7 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
                 child: const Icon(Icons.camera_alt, color: Colors.white),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
