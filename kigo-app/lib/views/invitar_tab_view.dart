@@ -50,21 +50,24 @@ class _InvitarTabViewState extends State<InvitarTabView>
   Future<void> _crearInvitacion() async {
     final telefono = _telefonoCtrl.text.trim();
     final nombre = _nombreCtrl.text.trim();
+    final vm = context.read<InvitationViewModel>();
 
-    if (nombre.isEmpty || telefono.isEmpty || _destinoIdSeleccionado == null) {
+    final destinoId = _destinoIdSeleccionado ??
+        (vm.destinos.isNotEmpty ? vm.destinos.first.id : null);
+
+    if (nombre.isEmpty || telefono.isEmpty || destinoId == null) {
       setState(() => _errorLocal = 'Completa el nombre, teléfono y casa destino');
       return;
     }
     setState(() => _errorLocal = null);
 
     final auth = context.read<AuthViewModel>();
-    final vm = context.read<InvitationViewModel>();
     try {
       await vm.crear(
         tenantId: auth.centroActivo!.tenantId,
         telefono: telefono,
         nombre: nombre,
-        destinoId: _destinoIdSeleccionado!,
+        destinoId: destinoId,
         permiteReconocimientoFacial: _permiteFacial,
       );
 
@@ -129,6 +132,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
 
     if (tenantId != null && tenantId != _tenantIdCargado) {
       _tenantIdCargado = tenantId;
+      _destinoIdSeleccionado = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         vm.cargarDestinos(tenantId);
         vm.cargarInvitaciones();
@@ -219,9 +223,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
     bool isDark,
   ) {
     final destinos = vm.destinos;
-    if (_destinoIdSeleccionado == null && destinos.isNotEmpty) {
-      _destinoIdSeleccionado = destinos.first.id;
-    }
+    final bool destinoExiste = _destinoIdSeleccionado != null &&
+        destinos.any((d) => d.id == _destinoIdSeleccionado);
+    final int? destinoValido = destinoExiste
+        ? _destinoIdSeleccionado
+        : (destinos.isNotEmpty ? destinos.first.id : null);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -251,12 +257,22 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<int>(
-                  value: _destinoIdSeleccionado,
+                  value: destinoValido,
                   decoration: const InputDecoration(labelText: 'Casa destino'),
-                  items: destinos
-                      .map((d) => DropdownMenuItem(value: d.id, child: Text(d.nombre)))
-                      .toList(),
-                  onChanged: (val) => setState(() => _destinoIdSeleccionado = val),
+                  items: destinos.isEmpty
+                      ? [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            enabled: false,
+                            child: Text('Sin casas registradas'),
+                          ),
+                        ]
+                      : destinos
+                          .map((d) => DropdownMenuItem<int>(value: d.id, child: Text(d.nombre)))
+                          .toList(),
+                  onChanged: destinos.isEmpty
+                      ? null
+                      : (val) => setState(() => _destinoIdSeleccionado = val),
                 ),
                 const SizedBox(height: 16),
                 Container(
