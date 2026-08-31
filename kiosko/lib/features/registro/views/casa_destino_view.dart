@@ -340,10 +340,8 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         return Column(
           children: _tiposDeLaCalle
               .map((t) => _buildCard(
-                    icono: t == 'edificio' ? Icons.apartment_outlined : Icons.home_outlined,
-                    titulo: t == 'edificio'
-                        ? AppLocalizations.t(context, 'edificio_label')
-                        : AppLocalizations.t(context, 'casa_label'),
+                    icono: _iconoDeTipo(t),
+                    titulo: _etiquetaDeTipo(t),
                     onTap: () => _elegirTipo(t),
                   ))
               .toList(),
@@ -352,12 +350,62 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         return Column(
           children: _numerosVisibles
               .map((d) => _buildCard(
-                    icono: Icons.home_outlined,
+                    icono: _iconoDeTipo(_tipoSeleccionado),
                     titulo: d['numero'] as String? ?? '—',
                     onTap: () => Navigator.pop(context, d['nombre'] as String?),
                   ))
               .toList(),
         );
+    }
+  }
+
+  /// El dashboard permite 7 tipos de destino (casa, departamento, oficina,
+  /// local, bodega, lote y otro). Antes esto era un binario: cualquier cosa
+  /// que no fuera 'edificio' se pintaba como "Casa", así que un departamento
+  /// o una bodega salían rotulados como casa.
+  ///
+  /// El default no inventa un tipo: capitaliza lo que haya llegado. Si el
+  /// dashboard aprende un tipo nuevo antes que el APK del kiosko, se ve el
+  /// nombre crudo — feo, pero cierto.
+  String _etiquetaDeTipo(String? tipo) {
+    switch (tipo) {
+      case 'casa':
+        return AppLocalizations.t(context, 'casa_label');
+      case 'departamento':
+        return AppLocalizations.t(context, 'departamento_label');
+      case 'edificio':
+        return AppLocalizations.t(context, 'edificio_label');
+      case 'oficina':
+        return AppLocalizations.t(context, 'oficina_label');
+      case 'local':
+        return AppLocalizations.t(context, 'local_label');
+      case 'bodega':
+        return AppLocalizations.t(context, 'bodega_label');
+      case 'lote':
+        return AppLocalizations.t(context, 'lote_label');
+      case null:
+      case '':
+        return AppLocalizations.t(context, 'otro_destino_label');
+      default:
+        return tipo![0].toUpperCase() + tipo.substring(1);
+    }
+  }
+
+  IconData _iconoDeTipo(String? tipo) {
+    switch (tipo) {
+      case 'edificio':
+      case 'departamento':
+        return Icons.apartment_outlined;
+      case 'oficina':
+        return Icons.business_center_outlined;
+      case 'local':
+        return Icons.storefront_outlined;
+      case 'bodega':
+        return Icons.warehouse_outlined;
+      case 'lote':
+        return Icons.crop_square_outlined;
+      default:
+        return Icons.home_outlined;
     }
   }
 
