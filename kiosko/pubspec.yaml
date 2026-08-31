@@ -43,7 +43,7 @@ dependencies:
   mobile_scanner: ^5.2.3               # Escaner de QR/códigos de barras
   tflite_flutter: ^0.12.1              # Motor de inferencia para el modelo de huella facial
   image: ^4.9.1                        # Recorte/redimensionado del rostro antes de la inferencia
-  vosk_flutter_service: ^0.1.2          # STT on-device (reemplaza a speech_to_text): motor embebido, sin depender de servicios de Android. Fork mantenido de vosk_flutter (el oficial no compila contra la cadena de herramientas actual)
+  speech_to_text: ^7.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -84,7 +84,6 @@ flutter:
 
   assets:
     - assets/models/mobilefacenet.tflite
-    - assets/models/vosk-model-small-es-0.42.zip
 
   # To add assets to your application, add an assets section, like this:
   # assets:
