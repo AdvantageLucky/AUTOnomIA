@@ -8,6 +8,8 @@ import '../widgets/kigo_list_row.dart';
 import '../widgets/kigo_primary_button.dart';
 import 'companeros_casa_view.dart';
 import 'join_centro_view.dart';
+import 'privacy_policy_view.dart';
+import '../l10n/app_localizations.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -134,6 +136,15 @@ class SettingsView extends StatelessWidget {
                 onChanged: (v) {
                   if (v != null) settings.changeLanguage(v);
                 },
+              ),
+            ),
+            const Divider(),
+            KigoListRow(
+              icon: Icons.privacy_tip_outlined,
+              title: AppLocalizations.t(context, 'privacy_policy'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PrivacyPolicyView()),
               ),
             ),
             const SizedBox(height: 32),
