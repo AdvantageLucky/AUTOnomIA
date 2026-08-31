@@ -30,6 +30,18 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
   bool _rostroDetectado = false;
   bool _capturaFinalizada = false;
 
+  /// Cuántas detecciones válidas consecutivas se exigen antes de confirmar
+  /// la captura. Con 1 sola, el primer frame que casualmente cruza el
+  /// umbral (persona todavía acomodándose, moviéndose hacia el óvalo) ya
+  /// disparaba la foto -- de ahí el reporte de "detecta muy rápido, antes
+  /// de que la persona se acomode". Exigir 2 seguidas da margen a que la
+  /// persona termine de posicionarse; el intervalo real entre intentos no
+  /// es el timer de 700ms (`_escaneando` lo bloquea) sino lo que tarda
+  /// takePicture + ML Kit modo accurate + decodeImage del JPEG en el
+  /// hardware del F10 -- probablemente más de 1-2s por intento.
+  static const _deteccionesRequeridas = 2;
+  int _deteccionesConsecutivas = 0;
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +125,15 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
       }
 
       if (esValido && !_capturaFinalizada) {
+        _deteccionesConsecutivas++;
+        if (_deteccionesConsecutivas < _deteccionesRequeridas) {
+          // Válida pero todavía no estable: se descarta esta foto y se
+          // sigue intentando -- la que finalmente se usa es la de la
+          // detección que confirma la racha, no la primera.
+          try { File(foto.path).deleteSync(); } catch (_) {}
+          return;
+        }
+
         _timerAutoScan?.cancel();
         setState(() {
           _rostroDetectado = true;
@@ -127,6 +148,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
         }
         return;
       } else {
+        _deteccionesConsecutivas = 0;
         // Descartar archivo temporal no válido
         try { File(foto.path).deleteSync(); } catch (_) {}
       }
