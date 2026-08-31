@@ -2427,7 +2427,9 @@
 
     state.admin = { ...state.admin, ...payload };
     okEl.hidden = false;
+    document.getElementById("perfil-password").value = "";
     await loadAdminData();
+    mostrarToast(lang === "en" ? "Profile updated successfully" : "Perfil actualizado correctamente");
   });
 
   /* ─── Hero anim (live access feed) ──────── */

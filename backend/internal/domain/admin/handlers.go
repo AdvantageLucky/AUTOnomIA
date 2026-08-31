@@ -117,27 +117,32 @@ func (h *Handler) PatchAdmin(c *gin.Context) {
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	existing, err := h.repo.FindByID(uint(id))
 	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "admin no encontrado"})
+		return
+	}
+
+	if req.Password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		existing.Password = string(hash)
+	}
+
+	existing.Nombre = req.Nombre
+	existing.ApellidoPaterno = req.ApellidoPaterno
+	existing.ApellidoMaterno = req.ApellidoMaterno
+	existing.Correo = req.Correo
+
+	if err := h.repo.Update(existing); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	a := Admin{
-		Nombre:          req.Nombre,
-		ApellidoPaterno: req.ApellidoPaterno,
-		ApellidoMaterno: req.ApellidoMaterno,
-		Correo:          req.Correo,
-		Password:        string(hash),
-	}
-	a.ID = uint(id)
-
-	if err := h.repo.Update(&a); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, toAdminResponse(&a))
+	c.JSON(http.StatusOK, toAdminResponse(existing))
 }
 
 // DeleteAdmin elimina un Admin
