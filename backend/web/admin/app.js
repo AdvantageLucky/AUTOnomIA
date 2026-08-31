@@ -497,7 +497,10 @@
     applyI18n();
   }
 
-  function navTo(screen) {
+  /* ─── Router / SPA Navigation History ───── */
+  let currentNavScreen = null;
+
+  function navTo(screen, push = true) {
     const rutas = RUTAS_POR_ROL[state.rol] || RUTAS_POR_ROL.admin;
     if (!rutas.includes(screen)) screen = state.rol === "vigilante" ? "solicitudes" : "dashboard";
 
@@ -510,6 +513,15 @@
     if (screenEl) { screenEl.hidden = false; screenEl.classList.add("active"); }
 
     document.querySelectorAll(`[data-nav="${screen}"]`).forEach(b => b.classList.add("active"));
+
+    currentNavScreen = screen;
+    if (push) {
+      if (window.location.hash !== "#" + screen) {
+        history.pushState({ type: "screen", screen: screen }, "", "#" + screen);
+      } else {
+        history.replaceState({ type: "screen", screen: screen }, "", "#" + screen);
+      }
+    }
 
     stopSolPolling();
     if (screen === "dashboard")     loadDashboard();
@@ -524,13 +536,16 @@
 
   document.addEventListener("click", e => {
     const nav = e.target.closest("[data-nav]");
-    if (nav) navTo(nav.dataset.nav);
+    if (nav) {
+      e.preventDefault();
+      navTo(nav.dataset.nav);
+    }
   });
 
   /* ─── Auth Views Navigation ───────────────── */
   let authMode = "login"; // "login" | "register" | "forgot"
 
-  function switchAuthView(mode) {
+  function switchAuthView(mode, push = true) {
     authMode = mode;
     const viewLogin  = document.getElementById("auth-view-login");
     const viewReg    = document.getElementById("auth-view-register");
@@ -560,8 +575,60 @@
       if (stepVer) stepVer.hidden = true;
     }
 
+    if (push) {
+      const targetHash = mode === "login" ? "" : "#auth-" + mode;
+      if (window.location.hash !== targetHash) {
+        history.pushState({ type: "auth", mode: mode }, "", targetHash || window.location.pathname);
+      }
+    }
+
     renderGoogleButton();
   }
+
+  // Interceptar navegación Atrás/Adelante del navegador
+  window.addEventListener("popstate", (e) => {
+    // 1. Si hay algún modal abierto, cerrarlo primero
+    const openModals = Array.from(document.querySelectorAll(".modal-overlay")).filter(m => !m.hidden);
+    if (openModals.length > 0) {
+      openModals.forEach(m => m.hidden = true);
+      return;
+    }
+
+    // 2. Si el usuario está dentro de la app
+    const appShell = document.getElementById("app-shell");
+    if (appShell && !appShell.hidden) {
+      if (e.state && e.state.type === "screen" && e.state.screen) {
+        navTo(e.state.screen, false);
+      } else if (window.location.hash) {
+        const hash = window.location.hash.replace(/^#/, "");
+        if (hash && !hash.startsWith("auth-")) {
+          navTo(hash, false);
+        } else {
+          navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard", false);
+        }
+      } else {
+        navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard", false);
+      }
+      return;
+    }
+
+    // 3. Si está en la pantalla de autenticación
+    const screenLogin = document.getElementById("screen-login");
+    if (screenLogin && !screenLogin.hidden) {
+      if (e.state && e.state.type === "auth" && e.state.mode) {
+        switchAuthView(e.state.mode, false);
+      } else if (window.location.hash) {
+        const hash = window.location.hash.replace(/^#auth-/, "").replace(/^#/, "");
+        if (["login", "register", "forgot"].includes(hash)) {
+          switchAuthView(hash, false);
+        } else {
+          switchAuthView("login", false);
+        }
+      } else {
+        switchAuthView("login", false);
+      }
+    }
+  });
 
   document.getElementById("go-register-btn")?.addEventListener("click", () => switchAuthView("register"));
   document.getElementById("reg-go-login-btn")?.addEventListener("click", () => switchAuthView("login"));
@@ -917,7 +984,11 @@
     if (state.rol !== 'vigilante' && !state.tenant?.nombre) {
       showOnboarding();
     } else {
-      navTo(state.rol === "vigilante" ? "solicitudes" : "dashboard");
+      const hash = window.location.hash.replace(/^#/, "");
+      const rutas = RUTAS_POR_ROL[state.rol] || RUTAS_POR_ROL.admin;
+      const target = rutas.includes(hash) ? hash : (state.rol === "vigilante" ? "solicitudes" : "dashboard");
+      history.replaceState({ type: "screen", screen: target }, "", "#" + target);
+      navTo(target, false);
     }
   }
 
@@ -1951,24 +2022,17 @@
   let cfgAccesoId = null;
 
   async function openConfigParaAcceso(accesoId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const screenEl = document.getElementById('screen-configuracion');
-    if (screenEl) { screenEl.hidden = false; screenEl.classList.add('active'); }
-    stopSolPolling();
-
     cfgAccesoId = accesoId;
+    navTo("configuracion");
     await loadConfig(accesoId);
   }
 
   document.getElementById("cfg-btn-volver")?.addEventListener("click", () => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const screenEl = document.getElementById('screen-kioskos');
-    if (screenEl) { screenEl.hidden = false; screenEl.classList.add('active'); }
-    const navBtn = document.querySelector('.nav-btn[data-nav="kioskos"]');
-    if (navBtn) navBtn.classList.add('active');
-    loadAccesos();
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navTo("kioskos");
+    }
   });
 
   const PIPELINE_DEFS = {
@@ -3184,7 +3248,15 @@
   /* ─── Init ───────────────────────────────── */
   function init() {
     const token = getToken();
-    if (!token) { showLogin(); applyI18n(); return; }
+    if (!token) {
+      const hash = window.location.hash.replace(/^#auth-/, "").replace(/^#/, "");
+      showLogin();
+      if (["register", "forgot"].includes(hash)) {
+        switchAuthView(hash, false);
+      }
+      applyI18n();
+      return;
+    }
 
     const claims = decodeJWT(token);
     if (!claims || (claims.exp && claims.exp * 1000 < Date.now())) {
