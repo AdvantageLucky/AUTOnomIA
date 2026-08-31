@@ -3187,9 +3187,9 @@
       chipsContainer.innerHTML = '<div class="empty-text" style="margin:0;font-size:12.5px" id="dest-chips-empty">No has agregado ningún identificador</div>';
       return;
     }
-    chipsContainer.innerHTML = destinosChips.map((num, idx) => `
+    chipsContainer.innerHTML = destinosChips.map((chip, idx) => `
       <div style="display:inline-flex; align-items:center; background:var(--brand); color:white; padding:4px 10px; border-radius:14px; font-size:12px; font-weight:600;">
-        <span>${esc(num)}</span>
+        <span>${esc(formatTipoDestino(chip.tipo))} ${esc(chip.numero)}</span>
         <button type="button" class="dest-chip-remove" data-idx="${idx}" style="background:none; border:none; color:white; margin-left:6px; cursor:pointer; padding:0; display:flex; align-items:center;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
@@ -3207,13 +3207,19 @@
     });
   }
   
+  // Cada chip se queda con el tipo que estaba elegido al agregarlo, no con el
+  // que quede seleccionado al enviar. Asi una misma calle puede llevar n casas
+  // y m departamentos en un solo alta: antes el <select> aplicaba a todo el
+  // lote y habia que mandar el formulario una vez por tipo.
   function addChip() {
     if (!inputAdd) return;
     const val = inputAdd.value.trim();
     if (!val) return;
-    const items = val.split(',').map(n => n.trim()).filter(n => n.length > 0 && !destinosChips.includes(n));
-    if (items.length > 0) {
-      destinosChips.push(...items);
+    const tipo = document.getElementById('dest-tipo').value;
+    const nuevos = val.split(',').map(n => n.trim()).filter(n =>
+      n.length > 0 && !destinosChips.some(c => c.tipo === tipo && c.numero === n));
+    if (nuevos.length > 0) {
+      destinosChips.push(...nuevos.map(numero => ({ tipo, numero })));
       renderChips();
     }
     inputAdd.value = '';
@@ -3235,22 +3241,13 @@
   document.getElementById('destino-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     const calle   = document.getElementById('dest-calle').value.trim();
-    const tipo    = document.getElementById('dest-tipo').value;
     const errEl   = document.getElementById('dest-form-error');
     errEl.hidden  = true;
 
     // Si quedó texto pendiente en el input sin presionar 'Añadir', agregarlo
-    if (inputAdd && inputAdd.value.trim()) {
-      const val = inputAdd.value.trim();
-      const items = val.split(',').map(n => n.trim()).filter(n => n.length > 0 && !destinosChips.includes(n));
-      if (items.length > 0) {
-        destinosChips.push(...items);
-        renderChips();
-      }
-      inputAdd.value = '';
-    }
+    if (inputAdd && inputAdd.value.trim()) addChip();
 
-    const numeros = [...destinosChips];
+    const destinos = [...destinosChips];
 
     if (!calle) {
       errEl.textContent = 'Ingresa el nombre de la calle o bloque';
@@ -3258,7 +3255,7 @@
       return;
     }
 
-    if (!numeros.length) {
+    if (!destinos.length) {
       errEl.textContent = 'Agrega al menos un número o identificador';
       errEl.hidden = false;
       return;
@@ -3266,7 +3263,7 @@
 
     const res = await api('/destinos/lote', {
       method: 'POST',
-      body: JSON.stringify({ calle, tipo, numeros })
+      body: JSON.stringify({ calle, destinos })
     });
 
     if (!res || !res.ok) {

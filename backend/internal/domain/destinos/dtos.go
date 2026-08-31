@@ -22,13 +22,38 @@ type DestinoAdminRequest struct {
 	Titular string `json:"titular"`
 }
 
-// DestinoLoteRequest da de alta N destinos de una vez: misma calle y tipo,
-// un número distinto por cada uno — evita repetir el formulario 1 por 1
-// para un fraccionamiento con decenas de casas.
+// DestinoLoteItem es un destino del lote con su propio tipo, para poder dar
+// de alta casas y departamentos de la misma calle en una sola operación.
+type DestinoLoteItem struct {
+	Tipo   string `json:"tipo"   binding:"required"`
+	Numero string `json:"numero" binding:"required"`
+}
+
+// DestinoLoteRequest da de alta N destinos de una calle en una sola llamada —
+// evita repetir el formulario 1 por 1 para un fraccionamiento con decenas de
+// casas.
+//
+// Acepta dos formas. La nueva (Destinos) lleva el tipo por elemento: una calle
+// puede tener n casas y m departamentos, y antes eso obligaba a mandar el
+// formulario una vez por tipo. La vieja (Tipo + Numeros) se conserva porque es
+// la que describe la mayoría de los altas — una tira de números del mismo tipo.
 type DestinoLoteRequest struct {
-	Calle   string   `json:"calle"   binding:"required"`
-	Tipo    string   `json:"tipo"    binding:"required"`
-	Numeros []string `json:"numeros" binding:"required,min=1,dive,required"`
+	Calle    string            `json:"calle" binding:"required"`
+	Tipo     string            `json:"tipo"`
+	Numeros  []string          `json:"numeros"`
+	Destinos []DestinoLoteItem `json:"destinos"`
+}
+
+// items normaliza las dos formas a una sola lista.
+func (r DestinoLoteRequest) items() []DestinoLoteItem {
+	if len(r.Destinos) > 0 {
+		return r.Destinos
+	}
+	out := make([]DestinoLoteItem, 0, len(r.Numeros))
+	for _, n := range r.Numeros {
+		out = append(out, DestinoLoteItem{Tipo: r.Tipo, Numero: n})
+	}
+	return out
 }
 
 func toDestinoResponse(d Destino) DestinoResponse {
