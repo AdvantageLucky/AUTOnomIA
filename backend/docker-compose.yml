@@ -32,6 +32,7 @@ services:
       UPLOADS_DIR: ./web/uploads/visitantes
       LLM_URL: ${LLM_URL}
       PUBLIC_URL: ${PUBLIC_URL}
+      KIGO_APP_RELEASE_URL: ${KIGO_APP_RELEASE_URL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       # La credencial se monta como archivo (abajo), no como variable —
       # nunca debe viajar como valor plano de entorno.
