@@ -225,6 +225,8 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		TipoDocumento:    tipoDocumento,
 		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
 		FotoDocumentoURL: fotoDocumentoURL,
+		NitidezIneScore:  req.NitidezIneScore,
+		CalidadIne:       req.CalidadIne,
 		FotoRostroURL:    fotoRostroURL,
 		FotoPlacaURL:     fotoPlacaURL,
 		CasaDestino:      strings.ToUpper(strings.TrimSpace(req.CasaDestino)),

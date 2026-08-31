@@ -47,6 +47,13 @@ type Visita struct {
 	TipoDocumento       TipoDocumento `gorm:"not null;default:''"`
 	Curp                string        `gorm:"not null"`
 	FotoDocumentoURL    string        `gorm:"not null"`
+	// Nitidez de FotoDocumentoURL: varianza cruda del Laplaciano calculada
+	// en el kiosko (mismo umbral que ya decide si aceptar la foto, ver
+	// EvidenciaCalidadServicio) y la etiqueta derivada de esa varianza.
+	// El número crudo se guarda para poder recalibrar los cortes de
+	// CalidadIne despues sin volver a tomar fotos.
+	NitidezIneScore     float64       `gorm:"column:nitidez_ine_score;not null;default:0"`
+	CalidadIne          string        `gorm:"column:calidad_ine;not null;default:''"`
 	FotoRostroURL       string        `gorm:"not null"`
 	FotoPlacaURL        string
 	CasaDestino         string `gorm:"not null"`

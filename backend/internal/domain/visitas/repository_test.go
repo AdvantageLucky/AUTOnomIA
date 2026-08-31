@@ -17,6 +17,17 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("no se pudo abrir sqlite en memoria: %v", err)
 	}
+	// Cada conexión nueva a ":memory:" es una base de datos SQLite aislada,
+	// distinta entre sí -- sin forzar una sola conexión, el pool de
+	// database/sql puede abrir una segunda conexión (nunca migrada) y una
+	// query cualquiera le toca esa conexión "en blanco", fallando con
+	// "no such table" de forma intermitente. Una sola conexión elimina la
+	// carrera por construcción.
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("no se pudo obtener *sql.DB: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
 	if err := db.AutoMigrate(&Visita{}); err != nil {
 		t.Fatalf("no se pudo migrar Visita: %v", err)
 	}

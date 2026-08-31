@@ -37,6 +37,10 @@ type VisitaRequest struct {
 	FotoDocumento *multipart.FileHeader `form:"foto_documento"` // Content-Type image
 	FotoRostro    *multipart.FileHeader `form:"foto_rostro"`    // Content-Type image
 	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`     // Content-Type image
+	// Nitidez de FotoDocumento, calculada en el kiosko (EvidenciaCalidadServicio).
+	// Ninguno de los dos es obligatorio: solo aplica cuando hay foto de INE.
+	NitidezIneScore float64 `form:"nitidez_ine_score"`
+	CalidadIne      string  `form:"calidad_ine"`
 }
 
 // VisitaResponse DTO de respuesta completo para una visita
@@ -47,6 +51,8 @@ type VisitaResponse struct {
 	TipoVisitante       TipoVisitante        `json:"tipo_visitante"`
 	Curp                string               `json:"curp"`
 	FotoDocumentoURL    string               `json:"foto_documento_url"`
+	NitidezIneScore     float64              `json:"nitidez_ine_score"`
+	CalidadIne          string               `json:"calidad_ine,omitempty"`
 	FotoRostroURL       string               `json:"foto_rostro_url"`
 	FotoPlacaURL        string               `json:"foto_placa_url,omitempty"`
 	CasaDestino         string               `json:"casa_destino"`
@@ -110,6 +116,8 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		TipoVisitante:       v.TipoVisitante,
 		Curp:                v.Curp,
 		FotoDocumentoURL:    v.FotoDocumentoURL,
+		NitidezIneScore:     v.NitidezIneScore,
+		CalidadIne:          v.CalidadIne,
 		FotoRostroURL:       v.FotoRostroURL,
 		FotoPlacaURL:        v.FotoPlacaURL,
 		CasaDestino:         v.CasaDestino,

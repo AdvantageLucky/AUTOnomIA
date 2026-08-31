@@ -199,6 +199,8 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 		TipoDocumento:    tipoDocumento,
 		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
 		FotoDocumentoURL: fotos.documento,
+		NitidezIneScore:  req.NitidezIneScore,
+		CalidadIne:       req.CalidadIne,
 		FotoRostroURL:    fotos.rostro,
 		FotoPlacaURL:     fotos.placa,
 		CasaDestino:      casaDestino,
