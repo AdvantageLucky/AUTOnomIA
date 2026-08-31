@@ -298,8 +298,7 @@ func (h *Handler) SolicitarOtpRecuperarPassword(c *gin.Context) {
 	}
 
 	if _, err := h.adminRepo.FindByCorreo(req.Correo); err != nil {
-		// Para evitar enumeración de correos de admins registrados, responde OK
-		c.JSON(http.StatusOK, gin.H{"message": "si el correo existe, se envió un código"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "no existe ninguna cuenta registrada con este correo"})
 		return
 	}
 
