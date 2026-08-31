@@ -55,4 +55,44 @@ void main() {
     final esNitida = await EvidenciaCalidadServicio().esNitida('${tmpDir.path}/no-existe.png');
     expect(esNitida, isFalse);
   });
+
+  test('puntuarNitidez regresa null para una ruta que no existe', () async {
+    final score = await EvidenciaCalidadServicio().puntuarNitidez('${tmpDir.path}/no-existe.png');
+    expect(score, isNull);
+  });
+
+  test('puntuarNitidez regresa un número mayor para el tablero que para la imagen plana', () async {
+    final tablero = imglib.Image(width: 200, height: 200);
+    for (var y = 0; y < 200; y++) {
+      for (var x = 0; x < 200; x++) {
+        final claro = ((x ~/ 10) + (y ~/ 10)) % 2 == 0;
+        final v = claro ? 255 : 0;
+        tablero.setPixelRgb(x, y, v, v, v);
+      }
+    }
+    final pathTablero = guardarPng('tablero_score', tablero);
+
+    final plana = imglib.Image(width: 200, height: 200);
+    for (var y = 0; y < 200; y++) {
+      for (var x = 0; x < 200; x++) {
+        final v = 128 + ((x + y) % 3);
+        plana.setPixelRgb(x, y, v, v, v);
+      }
+    }
+    final pathPlana = guardarPng('plana_score', plana);
+
+    final servicio = EvidenciaCalidadServicio();
+    final scoreTablero = await servicio.puntuarNitidez(pathTablero);
+    final scorePlana = await servicio.puntuarNitidez(pathPlana);
+
+    expect(scoreTablero, isNotNull);
+    expect(scorePlana, isNotNull);
+    expect(scoreTablero!, greaterThan(scorePlana!));
+  });
+
+  test('calificar clasifica varianzas altas como nitida y bajas como media', () {
+    final servicio = EvidenciaCalidadServicio();
+    expect(servicio.calificar(500.0), 'nitida');
+    expect(servicio.calificar(80.0), 'media');
+  });
 }

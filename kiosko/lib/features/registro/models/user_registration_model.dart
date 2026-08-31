@@ -10,6 +10,12 @@ class UserRegistrationModel {
   String? pathFotoRostro;
   String? pathFotoPlaca;
 
+  // Nitidez de pathFotoIne (EvidenciaCalidadServicio): el número crudo de
+  // la varianza del Laplaciano y la etiqueta derivada de él, para el
+  // dataset calificable de calidad de captura.
+  double? nitidezIneScore;
+  String? calidadIne;
+
   // Datos de la visita capturados en la pantalla de confirmación
   String? casaDestino;
   String? placa;
@@ -37,6 +43,8 @@ class UserRegistrationModel {
     pathFotoIne = null;
     pathFotoRostro = null;
     pathFotoPlaca = null;
+    nitidezIneScore = null;
+    calidadIne = null;
     casaDestino = null;
     placa = null;
     tokenInvitacion = null;

@@ -290,6 +290,8 @@ class KioskoServicio {
     String? pathFotoRostro,
     String? pathFotoPlaca,
     String? clientId,
+    double? nitidezIneScore,
+    String? calidadIne,
   }) async {
     final connectivity = _connectivity;
     final cache = _cache;
@@ -319,6 +321,8 @@ class KioskoServicio {
         pathFotoPlaca: pathFotoPlaca,
         reintento: false,
         clientId: clientId,
+        nitidezIneScore: nitidezIneScore,
+        calidadIne: calidadIne,
       );
     } catch (e) {
       // La red parecía disponible pero la llamada falló a medio camino — si
@@ -430,6 +434,8 @@ class KioskoServicio {
     String? pathFotoRostro,
     String? pathFotoPlaca,
     String? clientId,
+    double? nitidezIneScore,
+    String? calidadIne,
   }) async {
     final connectivity = _connectivity;
     final cache = _cache;
@@ -447,6 +453,8 @@ class KioskoServicio {
         placa: placa, curp: curp,
         pathFotoIne: pathFotoIne, pathFotoRostro: pathFotoRostro, pathFotoPlaca: pathFotoPlaca,
         clientId: clientId,
+        nitidezIneScore: nitidezIneScore,
+        calidadIne: calidadIne,
       );
     } catch (e) {
       if (cache != null && _esFalloDeRed(e)) {
@@ -468,6 +476,8 @@ class KioskoServicio {
     String? pathFotoRostro,
     String? pathFotoPlaca,
     String? clientId,
+    double? nitidezIneScore,
+    String? calidadIne,
   }) async {
     await _ensureLogin();
     final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/invitaciones/$token/usar');
@@ -494,6 +504,13 @@ class KioskoServicio {
         ..fields['placa'] = placa
         ..fields['curp'] = curp ?? ''
         ..fields['client_id'] = clientId ?? '';
+
+      if (nitidezIneScore != null) {
+        request.fields['nitidez_ine_score'] = nitidezIneScore.toString();
+      }
+      if (calidadIne != null) {
+        request.fields['calidad_ine'] = calidadIne;
+      }
 
       for (final foto in [
         ('foto_documento', pathFotoIne),
@@ -1086,6 +1103,8 @@ class KioskoServicio {
     String? pathFotoPlaca,
     required bool reintento,
     String? clientId,
+    double? nitidezIneScore,
+    String? calidadIne,
   }) async {
     final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/visitas/');
     // Sin INE capturada, lo que respalda la visita es la placa: en un acceso
@@ -1100,6 +1119,13 @@ class KioskoServicio {
       ..fields['casa_destino'] = casaDestino
       ..fields['placa'] = placa
       ..fields['client_id'] = clientId ?? '';
+
+    if (nitidezIneScore != null) {
+      request.fields['nitidez_ine_score'] = nitidezIneScore.toString();
+    }
+    if (calidadIne != null) {
+      request.fields['calidad_ine'] = calidadIne;
+    }
 
     if (pathFotoIne != null && File(pathFotoIne).existsSync()) {
       request.files.add(
