@@ -161,6 +161,13 @@ func TestForgotPasswordFlow(t *testing.T) {
 	r.ServeHTTP(wRec, reqRec)
 	assert.Equal(t, http.StatusOK, wRec.Code)
 
+	// 2.5 Re-solicitar OTP de inmediato (Reenviar código) -> 200 OK (invalida el anterior y genera uno nuevo)
+	wReRec := httptest.NewRecorder()
+	reqReRec, _ := http.NewRequest("POST", "/auth/recuperar-password/solicitar-otp", bytes.NewBuffer(solicitarPayload))
+	reqReRec.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(wReRec, reqReRec)
+	assert.Equal(t, http.StatusOK, wReRec.Code)
+
 	codigoRec := sender.sent[correo]
 	assert.NotEmpty(t, codigoRec)
 
