@@ -1254,6 +1254,21 @@
 			</div>
 		</div>
 
+		<!-- Detalle de una solicitud: antes solo se podia aprobar o rechazar desde
+		     la tarjeta, sin poder ver la cara ni el analisis de IA. Se llena desde
+		     app.js con la visita completa, porque el listado no trae las fotos. -->
+		<div id="modal-solicitud" class="modal-overlay" hidden></div>
+
+		<!-- Visor de fotos a tamano real, compartido por el detalle de entrada y
+		     el de solicitud. -->
+		<div id="lightbox" class="modal-overlay" hidden>
+			<button type="button" class="lightbox-cerrar" id="lightbox-cerrar" aria-label="Cerrar">&#10005;</button>
+			<div>
+				<img id="lightbox-img" class="lightbox-img" src="" alt="">
+				<div id="lightbox-caption" class="lightbox-caption"></div>
+			</div>
+		</div>
+
 		<div id="modal-residente-detalle" class="modal-overlay" hidden>
 			<div class="modal-box modal-box--md">
 				<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">

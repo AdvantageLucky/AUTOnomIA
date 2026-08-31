@@ -1227,31 +1227,145 @@ textarea { resize: vertical; }
    DETALLE
    ================================================================ */
 .detalle-hero {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
 }
 
-.detalle-fotos {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
+.detalle-info { padding: 24px; }
+
+/* ── Evidencia (fotos de la visita) ──────────────────────────────────────────
+   Antes eran 200x140 fijos con object-fit:cover, o sea recortadas: de una INE
+   se perdian los bordes y de un rostro la coronilla y la barbilla. Ahora se
+   ven completas (contain) sobre un fondo neutro, con su etiqueta, y se pueden
+   abrir a tamano real. */
+.evidencia-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.detalle-foto {
-  width: 200px;
-  height: 140px;
-  object-fit: cover;
+.evidencia-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: zoom-in;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.evidencia-card:hover { border-color: var(--brand); transform: translateY(-2px); }
+.evidencia-card:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.evidencia-marco {
+  position: relative;
+  height: 200px;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.evidencia-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   display: block;
 }
 
-.detalle-foto:first-child { border-bottom: 1px solid var(--border); }
+.evidencia-zoom {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
 
-.detalle-info { padding: 24px; }
+.evidencia-card:hover .evidencia-zoom { opacity: 1; }
+
+.evidencia-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.evidencia-vacia {
+  grid-column: 1 / -1;
+  padding: 22px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+/* ── Lightbox ─────────────────────────────────────────────────────────────── */
+.lightbox-img {
+  max-width: 92vw;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: var(--radius);
+  display: block;
+}
+
+.lightbox-caption {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.lightbox-cerrar {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ── Solicitud: tarjeta clicable + modal de detalle ──────────────────────── */
+.sol-card { cursor: pointer; }
+.sol-card:hover { border-color: var(--brand); }
+.sol-card-actions { cursor: default; }
+
+.modal-box--lg {
+  width: min(760px, calc(100vw - 40px));
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
+.sol-modal-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
 
 .detalle-nombre {
   font-size: 22px;
@@ -2064,10 +2178,7 @@ textarea { resize: vertical; }
   .stat-strip { grid-template-columns: repeat(2, 1fr); padding-left: 16px; padding-right: 16px; }
   .quick-grid { grid-template-columns: 1fr; }
   .form-grid-2 { grid-template-columns: 1fr; }
-  .detalle-hero { grid-template-columns: 1fr; }
-  .detalle-fotos { flex-direction: row; border-right: none; border-bottom: 1px solid var(--border); }
-  .detalle-foto { width: 50%; height: 120px; }
-  .detalle-foto:first-child { border-bottom: none; border-right: 1px solid var(--border); }
+  .evidencia-marco { height: 170px; }
   .detalle-info { padding: 20px; }
   .detalle-campos { grid-template-columns: 1fr; }
   .screen-header { padding: 20px 16px 14px; }
