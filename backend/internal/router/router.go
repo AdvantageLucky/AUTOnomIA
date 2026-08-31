@@ -96,9 +96,10 @@ func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config) {
 	g := rg.Group("/auth")
 	{
 		g.POST("/sign-in", authHandler.RegisterAdminWithMailAndPassword)
+		g.POST("/sign-in/solicitar-otp", authHandler.SolicitarOtpSignInAdmin)
 		g.POST("/login", authHandler.LoginAdminWithMailAndPassword)
-		g.POST("/admin/solicitar-otp", authHandler.SolicitarOTPAdmin)
-		g.POST("/admin/verificar-otp", authHandler.VerificarOTPAdmin)
+		g.POST("/recuperar-password/solicitar-otp", authHandler.SolicitarOtpRecuperarPassword)
+		g.POST("/recuperar-password/verificar-otp", authHandler.RecuperarPasswordConOtp)
 		g.POST("/google", authHandler.LoginWithGoogle)
 		g.POST("/google/sign-in", authHandler.RegisterWithGoogle)
 		g.POST("/kiosko/login", authHandler.LoginKiosko)

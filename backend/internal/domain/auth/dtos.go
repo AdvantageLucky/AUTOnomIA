@@ -2,7 +2,8 @@
 Package auth
 
 Paquete de estructuras que representan respuestas o peticiones relacionadas con
-el login de Admin (JWT/Google) y de Kiosko (sesion persistida)
+el login/sign-in de Admin (JWT/Google), verificación de correo por OTP,
+recuperación de contraseña y login de Kiosko (sesión persistida)
 */
 package auth
 
@@ -13,6 +14,7 @@ type RegisterRequest struct {
 	Nombre          string `json:"nombre"`
 	ApellidoPaterno string `json:"apellido_paterno"`
 	Rol             string `json:"rol"` // "admin" (default) o "vigilante" si el solicitante es admin
+	Codigo          string `json:"codigo"` // Código OTP para verificar correo en sign-in
 }
 
 // LoginRequest DTO para loguear a un Admin existente
@@ -26,16 +28,17 @@ type JWTResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-// SolicitarOtpAdminRequest DTO para pedir un código de acceso por correo
-// (login alternativo al de correo+password)
+// SolicitarOtpAdminRequest DTO para pedir un código OTP por correo
+// Usado en Sign-in (verificación de correo) y en Recuperar contraseña
 type SolicitarOtpAdminRequest struct {
 	Correo string `json:"correo" binding:"required,email"`
 }
 
-// VerificarOtpAdminRequest DTO para confirmar el código y obtener el JWT
-type VerificarOtpAdminRequest struct {
-	Correo string `json:"correo" binding:"required,email"`
-	Codigo string `json:"codigo" binding:"required"`
+// RecuperarPasswordRequest DTO para restablecer la contraseña con OTP
+type RecuperarPasswordRequest struct {
+	Correo      string `json:"correo"       binding:"required,email"`
+	Codigo      string `json:"codigo"       binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
 // LoginKioskoRequest DTO para loguear a un kiosko usando el KioskoID y su ClaveKiosko
