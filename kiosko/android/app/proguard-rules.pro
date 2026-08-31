@@ -10,3 +10,9 @@
 -dontwarn com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
+
+# vosk_flutter usa JNA (Java Native Access) para llamar a la librería nativa
+# de Vosk -- sin estas reglas, R8 puede eliminar las clases que JNA necesita
+# por reflexión en el build de release.
+-keep class com.sun.jna.* { *; }
+-keepclassmembers class * extends com.sun.jna.* { public *; }
