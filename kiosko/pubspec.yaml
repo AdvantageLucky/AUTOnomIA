@@ -43,8 +43,7 @@ dependencies:
   mobile_scanner: ^5.2.3               # Escaner de QR/códigos de barras
   tflite_flutter: ^0.12.1              # Motor de inferencia para el modelo de huella facial
   image: ^4.9.1                        # Recorte/redimensionado del rostro antes de la inferencia
-  speech_to_text: ^7.0.0               # STT on-device para decir la casa destino en voz alta
-  vosk_flutter: ^0.3.48                # Reemplazo de speech_to_text: motor STT embebido, sin depender de servicios de Android
+  vosk_flutter_service: ^0.1.2          # STT on-device (reemplaza a speech_to_text): motor embebido, sin depender de servicios de Android. Fork mantenido de vosk_flutter (el oficial no compila contra la cadena de herramientas actual)
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -117,19 +116,3 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-
-# vosk_flutter (sin actualizaciones desde 2023) declara http ^0.13.5, que
-# choca con el http ^1.2.2 que ya usa el resto de la app. Solo se fuerza la
-# version aqui porque el unico metodo de vosk_flutter que usa http
-# (ModelLoader.loadFromNetwork) nunca se llama en este proyecto -- el
-# modelo viaja empaquetado en assets (VoskModeloServicio), no se descarga.
-#
-# vosk_flutter tambien declara archive ^3.1.8, que choca con el
-# archive ^4.0.9 que exige image (ya en uso extensivo en el proyecto,
-# no se puede bajar de version). A diferencia de http, ModelLoader SI usa
-# archive en el metodo que este proyecto llama (loadFromAssets, para
-# descomprimir el modelo) -- este override es mas riesgoso, se verifica
-# con un build real en la Task 7.
-dependency_overrides:
-  http: ^1.2.2
-  archive: ^4.0.9

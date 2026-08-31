@@ -11,8 +11,17 @@
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 
-# vosk_flutter usa JNA (Java Native Access) para llamar a la librería nativa
-# de Vosk -- sin estas reglas, R8 puede eliminar las clases que JNA necesita
-# por reflexión en el build de release.
+# vosk_flutter_service usa JNA (Java Native Access) para llamar a la librería
+# nativa de Vosk -- sin estas reglas, R8 puede eliminar las clases que JNA
+# necesita por reflexión en el build de release.
 -keep class com.sun.jna.* { *; }
 -keepclassmembers class * extends com.sun.jna.* { public *; }
+
+# JNA trae soporte opcional para AWT (Java de escritorio) que nunca se
+# ejecuta en Android -- esas clases no existen en el SDK de Android, R8 las
+# marca como "missing" al analizar el bytecode aunque el código real nunca
+# las llame. Regla sugerida por el propio R8 (missing_rules.txt).
+-dontwarn java.awt.Component
+-dontwarn java.awt.GraphicsEnvironment
+-dontwarn java.awt.HeadlessException
+-dontwarn java.awt.Window

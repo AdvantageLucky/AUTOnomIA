@@ -32,6 +32,17 @@ project(":tflite_flutter").tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotl
     }
 }
 
+// vosk_flutter_service fija compileSdk 33 en su propio build.gradle, pero
+// sus propias dependencias transitivas (androidx.appcompat 1.7.0 y otras)
+// exigen compilar contra SDK 34+ -- se sube aquí al mismo compileSdk que
+// usa el resto del proyecto (36, ya instalado localmente), sin tocar el
+// paquete en pub-cache.
+project(":vosk_flutter_service").afterEvaluate {
+    extensions.configure<com.android.build.gradle.LibraryExtension> {
+        compileSdk = 36
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
