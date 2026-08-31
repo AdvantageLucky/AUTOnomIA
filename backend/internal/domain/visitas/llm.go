@@ -9,7 +9,7 @@ import (
 	"kigo-autonomia-backend/internal/platform/llmclient"
 )
 
-const systemPromptVisitas = "Eres un analista de seguridad en caseta residencial. Escribes en español, para el guardia, explicando qué pasó en una entrada y qué conviene revisar. Usas únicamente los datos que se te dan: nunca inventas cifras ni antecedentes, y nunca escribes campos vacíos entre corchetes."
+const systemPromptVisitas = "Eres un analista de seguridad en caseta residencial. Escribes en español, para el guardia, explicando qué pasó en UNA entrada concreta y qué conviene revisar de ella. Usas únicamente los datos que se te dan: nunca inventas cifras ni antecedentes, nunca escribes campos vacíos entre corchetes, y nunca opinas sobre el residencial, su administración ni sus procedimientos. Dices cada cosa una sola vez."
 
 // rePlaceholder detecta los huecos que deja un modelo cuando le falta un dato:
 // "[nombre]", "[Nombre del visitante]", "{nombre}", "<nombre>". Es el sintoma
@@ -32,9 +32,11 @@ func GenerarResumen(ctx context.Context, llmURL string, s ScoreContexto, v Visit
 		return resumenHeuristicoDe(s, v), nil
 	}
 
-	// 360 tokens y no los 120 por defecto: el análisis son dos párrafos, y con
-	// el techo viejo se cortaba a media frase del segundo.
-	resumen, err := llmclient.CompletarConLimite(ctx, strings.TrimSpace(llmURL), systemPromptVisitas, construirPrompt(s, v), 360)
+	// 260 tokens y no los 120 por defecto: el análisis son dos párrafos y con
+	// el techo viejo se cortaba a media frase del segundo. Tampoco los 360 que
+	// se pusieron primero — sobraba tanto margen que el modelo lo llenaba
+	// repitiéndose en vez de terminar.
+	resumen, err := llmclient.CompletarConLimite(ctx, strings.TrimSpace(llmURL), systemPromptVisitas, construirPrompt(s, v), 260)
 	if err != nil {
 		return resumenHeuristicoDe(s, v), err
 	}
@@ -47,9 +49,19 @@ func GenerarResumen(ctx context.Context, llmURL string, s ScoreContexto, v Visit
 	return resumenHeuristicoDe(s, v), fmt.Errorf("el LLM respondió vacío o con placeholders sin rellenar")
 }
 
+// reOracion parte el texto en oraciones conservando el signo final.
+var reOracion = regexp.MustCompile(`[^.!?]+[.!?]*`)
+
+// reNoAlfanum se usa para normalizar una oración antes de compararla: dos
+// frases que solo difieren en espacios o puntuación son la misma repetición.
+var reNoAlfanum = regexp.MustCompile(`[^\p{L}\p{N}]+`)
+
 // resumenUtilizable rechaza lo que no se le puede enseñar al guardia: vacío, o
 // con huecos sin rellenar. No intenta parchear el texto quitando los corchetes
 // — la frase resultante quedaría coja ("llegó a la casa .") y sonaría a error.
+//
+// Sí recorta las repeticiones, que son otra cosa: el texto hasta el bucle es
+// bueno y solo sobra lo que viene después.
 func resumenUtilizable(resumen string) (string, bool) {
 	limpio := strings.TrimSpace(resumen)
 	if limpio == "" {
@@ -58,7 +70,51 @@ func resumenUtilizable(resumen string) (string, bool) {
 	if rePlaceholder.MatchString(limpio) {
 		return "", false
 	}
+
+	limpio = recortarRepeticiones(limpio)
+	// Si tras recortar no queda ni una frase de largo razonable, el modelo no
+	// llegó a decir nada: mejor el heurístico.
+	if len([]rune(limpio)) < 40 {
+		return "", false
+	}
 	return limpio, true
+}
+
+// recortarRepeticiones corta el texto en cuanto una oración se repite.
+//
+// Un modelo local chico, con margen de tokens y sin corte por línea en blanco,
+// entra en bucle y repite la misma frase hasta agotar el presupuesto. La
+// penalización de repetición del sampler lo hace menos probable pero no lo
+// garantiza, y el bucle es justo lo que no se le puede enseñar a un guardia.
+func recortarRepeticiones(texto string) string {
+	vistas := map[string]bool{}
+	var parrafos []string
+
+	for _, parrafo := range strings.Split(texto, "\n\n") {
+		var oraciones []string
+		for _, o := range reOracion.FindAllString(parrafo, -1) {
+			oracion := strings.TrimSpace(o)
+			if oracion == "" {
+				continue
+			}
+			clave := strings.ToLower(reNoAlfanum.ReplaceAllString(oracion, " "))
+			clave = strings.TrimSpace(clave)
+			// Las frases muy cortas ("Sin anomalías.") pueden repetirse de
+			// forma legítima entre párrafos; el bucle son frases largas.
+			if len([]rune(clave)) > 25 {
+				if vistas[clave] {
+					return strings.TrimSpace(strings.Join(append(parrafos, strings.Join(oraciones, " ")), "\n\n"))
+				}
+				vistas[clave] = true
+			}
+			oraciones = append(oraciones, oracion)
+		}
+		if len(oraciones) > 0 {
+			parrafos = append(parrafos, strings.Join(oraciones, " "))
+		}
+	}
+
+	return strings.TrimSpace(strings.Join(parrafos, "\n\n"))
 }
 
 // construirPrompt le da al modelo los datos reales de la visita. Antes solo
@@ -121,6 +177,13 @@ Reglas:
 - Si un dato no aparece, no lo menciones. NUNCA escribas corchetes, llaves ni campos vacíos como [nombre] o [casa].
 - Menciona el score una sola vez y en palabras ("confianza alta", "confianza baja"), no repitas el número.
 - No copies la lista tal cual: explícala con tus palabras y conecta los puntos entre sí.
+- No repitas ninguna frase. Di cada cosa una sola vez y termina.
+- Escribes SOBRE ESTA ENTRADA, no sobre el residencial. No juzgues ni comentes
+  al residencial, a su administración, a sus guardias, a sus procedimientos ni
+  a sus autoridades. Nada de frases como "falta coordinación" o "el control es
+  deficiente": no tienes datos para afirmar eso y no es lo que se te pregunta.
+- No especules sobre intenciones ni sobre lo que pudo haber pasado. Si un dato
+  falta, di que falta; no imagines por qué.
 - Nada de saludos, encabezados, viñetas ni despedidas: solo los dos párrafos.
 
 %s

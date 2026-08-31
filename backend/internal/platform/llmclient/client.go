@@ -14,6 +14,13 @@ type completionRequest struct {
 	NPredict    int      `json:"n_predict"`
 	Temperature float64  `json:"temperature"`
 	Stop        []string `json:"stop"`
+	// Penalizacion de repeticion. Un modelo local chico, con margen de tokens
+	// y sin corte por linea en blanco, entra en bucle y repite la misma frase
+	// hasta agotar el presupuesto — se vio en resumenes de entrada reales.
+	// 1.15 sobre una ventana de 256 tokens rompe el bucle sin volver el texto
+	// telegrafico.
+	RepeatPenalty float64 `json:"repeat_penalty"`
+	RepeatLastN   int     `json:"repeat_last_n"`
 }
 
 type completionResponse struct {
@@ -42,9 +49,11 @@ func CompletarConLimite(ctx context.Context, baseURL, systemPrompt, prompt strin
 	}
 
 	body, _ := json.Marshal(completionRequest{
-		Prompt:      prompt,
-		NPredict:    maxTokens,
-		Temperature: 0.3,
+		Prompt:        prompt,
+		NPredict:      maxTokens,
+		Temperature:   0.3,
+		RepeatPenalty: 1.15,
+		RepeatLastN:   256,
 		// Se quitó el corte por línea en blanco: un resumen de varios párrafos
 		// o con viñetas se truncaba en la primera. "###" sigue cortando el
 		// encabezado que el modelo a veces intenta continuar por su cuenta.
@@ -73,6 +82,10 @@ func CompletarConLimite(ctx context.Context, baseURL, systemPrompt, prompt strin
 		},
 		"max_tokens":  maxTokens,
 		"temperature": 0.3,
+		// Equivalente de repeat_penalty para el endpoint OpenAI-compatible,
+		// que no conoce ese parametro.
+		"frequency_penalty": 0.3,
+		"presence_penalty":  0.2,
 	})
 
 	reqChat, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/v1/chat/completions", bytes.NewReader(chatBody))

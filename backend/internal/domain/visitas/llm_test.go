@@ -50,7 +50,7 @@ func TestGenerarResumen_LLMFalla_DevuelveErrorYHeuristico(t *testing.T) {
 
 func TestGenerarResumen_LLMResponde_SinError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]string{"content": "Resumen real del LLM."})
+		json.NewEncoder(w).Encode(map[string]string{"content": "Ana Ruiz Mendoza llego a Casa 12 y es su cuarta entrada registrada sin incidencias."})
 	}))
 	defer srv.Close()
 
@@ -59,7 +59,7 @@ func TestGenerarResumen_LLMResponde_SinError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("no esperaba error, got %v", err)
 	}
-	if texto != "Resumen real del LLM." {
+	if texto != "Ana Ruiz Mendoza llego a Casa 12 y es su cuarta entrada registrada sin incidencias." {
 		t.Errorf("esperaba el texto del LLM, got %q", texto)
 	}
 }
@@ -102,7 +102,7 @@ func TestGenerarResumen_PromptLlevaLosDatosDeLaVisita(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		recibido = string(body)
-		json.NewEncoder(w).Encode(map[string]string{"content": "ok."})
+		json.NewEncoder(w).Encode(map[string]string{"content": "Ana Ruiz Mendoza llego a Casa 12 y es su cuarta entrada registrada sin incidencias."})
 	}))
 	defer srv.Close()
 
@@ -134,7 +134,7 @@ func TestGenerarResumenPeriodo_PromptLlevaLasCifras(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		recibido = string(body)
-		json.NewEncoder(w).Encode(map[string]string{"content": "Turno tranquilo."})
+		json.NewEncoder(w).Encode(map[string]string{"content": "Turno tranquilo: 10 entradas, ninguna requirio intervencion del guardia."})
 	}))
 	defer srv.Close()
 
@@ -143,10 +143,49 @@ func TestGenerarResumenPeriodo_PromptLlevaLasCifras(t *testing.T) {
 	if err != nil {
 		t.Fatalf("no esperaba error, got %v", err)
 	}
-	if texto != "Turno tranquilo." {
+	if texto != "Turno tranquilo: 10 entradas, ninguna requirio intervencion del guardia." {
 		t.Errorf("esperaba el texto del LLM, got %q", texto)
 	}
 	if !strings.Contains(recibido, "Visitas totales: 10") {
 		t.Errorf("esperaba las cifras del período en el prompt.\nPrompt: %s", recibido)
+	}
+}
+
+// El bucle que se vio en produccion: el modelo repite la misma frase hasta
+// agotar el presupuesto de tokens. El texto hasta la repeticion sirve; lo que
+// viene despues sobra.
+func TestRecortarRepeticiones(t *testing.T) {
+	frase := "Ana Ruiz llego a Casa 12 y su historial no muestra incidencias previas. "
+	repetido := frase + frase + frase
+
+	got := recortarRepeticiones(repetido)
+	if strings.Count(got, "Ana Ruiz llego") != 1 {
+		t.Errorf("esperaba la frase una sola vez, got %q", got)
+	}
+}
+
+func TestRecortarRepeticiones_RespetaTextoSano(t *testing.T) {
+	sano := "Ana Ruiz llego a Casa 12 a las 14:30 y es su cuarta entrada registrada.\n\n" +
+		"No hay anomalias: la placa coincide con la de siempre y la identificacion salio nitida."
+
+	if got := recortarRepeticiones(sano); got != sano {
+		t.Errorf("un texto sin repeticiones no debe tocarse.\nesperaba: %q\ngot:      %q", sano, got)
+	}
+}
+
+// Frases cortas como "Sin anomalias." pueden repetirse entre parrafos sin que
+// eso sea un bucle: cortar ahi mutilaria un resumen bueno.
+func TestRecortarRepeticiones_NoCortaEnFrasesCortas(t *testing.T) {
+	texto := "Sin anomalias. Ana Ruiz llego a Casa 12 y su historial esta limpio.\n\nSin anomalias."
+	got := recortarRepeticiones(texto)
+	if !strings.Contains(got, "Ana Ruiz") {
+		t.Errorf("no debe cortar por una frase corta repetida, got %q", got)
+	}
+}
+
+func TestResumenUtilizable_RechazaDegenerado(t *testing.T) {
+	// Solo la frase repetida: al recortar no queda nada que ensenar.
+	if _, ok := resumenUtilizable("Hola. Hola. Hola."); ok {
+		t.Error("un texto que se queda en nada tras recortar no es utilizable")
 	}
 }
