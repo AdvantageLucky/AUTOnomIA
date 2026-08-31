@@ -2,6 +2,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
@@ -20,6 +21,7 @@ class ResidentPinView extends StatefulWidget {
 class _ResidentPinViewState extends State<ResidentPinView> {
   String? _presionadoId;
   final TextToSpeakServicio _tts = TextToSpeakServicio();
+  final LedServicio _led = LedServicio();
 
   @override
   void initState() {
@@ -30,6 +32,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
   @override
   void dispose() {
     widget.viewModel.removeListener(_updateView);
+    _led.apagar();
     super.dispose();
   }
 
@@ -339,8 +342,11 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                         ),
                       ),
                     ).then((_) => vm.clear());
-                  } else if (!ok && vm.errorMsg != null && mounted) {
-                    _tts.speak(vm.errorMsg!);
+                  } else if (!ok && mounted) {
+                    _led.mostrarRechazado();
+                    if (vm.errorMsg != null) {
+                      _tts.speak(vm.errorMsg!);
+                    }
                   }
                 }
               : null,

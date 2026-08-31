@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/residente/services/reconocimiento_facial_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
@@ -39,6 +40,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   bool _camaraInicializando = false;
   String? _camaraError;
 
+  final _led = LedServicio();
   final _reconocimientoServicio = ReconocimientoFacialServicio();
   Timer? _timerVerificacion;
   bool _verificandoRostro = false;
@@ -67,6 +69,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
       _timerVerificacion?.cancel();
+      _led.apagar();
       _cameraController = null;
       controller.dispose();
       if (mounted) setState(() {});
@@ -131,6 +134,8 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         _cameraController = controller;
         _camaraInicializando = false;
       });
+
+      _led.encenderIluminacion();
 
       _timerVerificacion = Timer.periodic(
         const Duration(milliseconds: 1500),
@@ -214,6 +219,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
 
     if (_coincidenciasConsecutivas >= 2 && mounted) {
       _timerVerificacion?.cancel();
+      _led.apagar();
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ResidentWelcomeView(
@@ -231,12 +237,14 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timerVerificacion?.cancel();
+    _led.apagar();
     unawaited(_reconocimientoServicio.dispose());
     _cameraController?.dispose();
     super.dispose();
   }
 
   void _irAlPin() {
+    _led.apagar();
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ResidentPinView(viewModel: ResidentPinViewModel()),

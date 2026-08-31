@@ -37,6 +37,7 @@ class _QrResultViewState extends State<QrResultView> {
   void initState() {
     super.initState();
     widget.viewModel.addListener(_updateView);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateView());
   }
 
   @override

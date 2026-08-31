@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
+import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/marco_guia_camara.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
@@ -22,6 +23,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
   CameraController? _controller;
   bool _isInitialized = false;
 
+  final LedServicio _led = LedServicio();
   final FaceDetectorServicio _detector = FaceDetectorServicio();
   Timer? _timerAutoScan;
   bool _escaneando = false;
@@ -78,6 +80,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
         _isInitialized = true;
       });
 
+      _led.encenderIluminacion();
       _iniciarAutoDeteccion();
     } catch (e) {
       debugPrint("Error al inicializar la cámara: $e");
@@ -159,6 +162,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
     _timerAutoScan?.cancel();
     _detector.dispose();
     _controller?.dispose();
+    _led.apagar();
     super.dispose();
   }
 

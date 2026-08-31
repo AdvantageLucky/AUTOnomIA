@@ -1,10 +1,14 @@
 import 'package:flutter/services.dart';
 
 /// Controla el LED RGBW del hardware Telpo F10 (F10SDK/doc/Telpo F10SDK
-/// Manual.docx, sección LED) para dar feedback visual del resultado de un
-/// registro: verde si se aprueba, rojo si se rechaza. Silencioso ante
-/// cualquier falla — el hardware puede no tener el LED (otro modelo,
-/// emulador) y eso nunca debe tronar la pantalla de resultado.
+/// Manual.docx, sección LED) para dar feedback visual y luz de apoyo:
+/// - Verde: Aprobado / Acceso autorizado
+/// - Rojo: Rechazado / Error / PIN incorrecto
+/// - Blanco: Iluminación de apoyo durante escaneo de QR, rostro o documento
+/// - Azul: Procesando / Espera
+///
+/// Silencioso ante cualquier falla — el hardware puede no tener el LED
+/// (otro modelo, emulador) y eso nunca debe tronar la pantalla.
 class LedServicio {
   static const MethodChannel _canal = MethodChannel('com.example.kigo_kiosco/led');
 
@@ -12,12 +16,16 @@ class LedServicio {
 
   Future<void> mostrarRechazado() => _setColor('rojo');
 
+  Future<void> encenderIluminacion() => _setColor('blanco');
+
+  Future<void> encenderAzul() => _setColor('azul');
+
   Future<void> apagar() async {
     try {
       await _canal.invokeMethod('apagar');
     } on PlatformException {
       // Sin LED que apagar, no hay nada que hacer.
-    }
+    } catch (_) {}
   }
 
   Future<void> _setColor(String color) async {
@@ -25,6 +33,6 @@ class LedServicio {
       await _canal.invokeMethod('setColor', {'color': color});
     } on PlatformException {
       // Ver comentario de clase: falla silenciosa.
-    }
+    } catch (_) {}
   }
 }
