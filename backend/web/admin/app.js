@@ -1537,23 +1537,33 @@
   function renderSeccionIA(v) {
     if (v.score_ia || v.resumen_ia) {
       const s = v.score_ia || {};
+      const pct = Number.isFinite(s.confianza_pct) ? s.confianza_pct : null;
+      const nivel = s.nivel_confianza || (pct === null ? "" : (pct >= 80 ? "alta" : pct >= 55 ? "media" : "baja"));
+
       const badges = [];
       if (s.anomalia_matricula) badges.push('<span class="badge badge--pendiente">Placa distinta</span>');
       if (s.horario_inusual)    badges.push('<span class="badge badge--pendiente">Horario inusual</span>');
       if (s.rechazado_previo)   badges.push('<span class="badge badge--rechazado">Rechazo previo</span>');
       if (s.ocr_sospechoso)     badges.push('<span class="badge badge--pendiente">OCR sospechoso</span>');
       if (s.confiable)          badges.push('<span class="badge badge--aprobado">Visitante confiable</span>');
-      
+
       return `
         <div class="ia-summary-card">
           <div class="ia-summary-header">
              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand);margin-right:6px;"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
              <span style="font-weight:600;color:var(--text);">Análisis de Inteligencia Artificial</span>
           </div>
-          <div class="ia-summary-body" style="padding-top:10px;">
-            ${v.resumen_ia ? `<div style="font-size:13px;line-height:1.6;color:var(--text-2);margin-bottom:12px;">${formatMarkdown(esc(v.resumen_ia))}</div>` : ''}
-            ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${badges.join('')}</div>` : ''}
+
+          <div class="ia-cuerpo">
+            ${pct === null ? "" : renderScoreAnillo(pct, nivel)}
+            <div class="ia-texto">
+              ${v.resumen_ia ? `<div class="ia-resumen">${formatMarkdown(esc(v.resumen_ia))}</div>` : ''}
+              ${badges.length ? `<div class="ia-badges">${badges.join('')}</div>` : ''}
+            </div>
           </div>
+
+          ${renderRecomendaciones(s.recomendaciones)}
+          ${renderFactores(s.factores)}
         </div>`;
     }
 
@@ -1564,7 +1574,7 @@
           <div class="ia-summary-header">
              <span style="font-weight:600;color:var(--text);">Historial del Visitante</span>
           </div>
-          <div style="font-size:13px;color:var(--text-2);padding-top:10px;line-height:1.5;">
+          <div style="font-size:13px;color:var(--text-3);padding-top:10px;line-height:1.5;">
             <strong>Visitas previas:</strong> ${e.veces_visitado}<br>
             ${e.ultima_visita ? `<strong>Última visita:</strong> ${fmtDateShort(e.ultima_visita)}<br>` : ''}
             ${e.casa_habitual ? `<strong>Casa habitual:</strong> ${esc(e.casa_habitual)}` : ''}
@@ -1575,11 +1585,70 @@
     if (v.estado === 'PENDIENTE') {
       return `
         <div class="ia-summary-card" style="border: 1px dashed var(--border);">
-          <div class="ia-summary-header" style="color:var(--text-2);">Analizando mediante IA...</div>
+          <div class="ia-summary-header" style="color:var(--text-3);">Analizando mediante IA...</div>
         </div>`;
     }
 
     return '';
+  }
+
+  // El score es lo primero que mira el guardia, así que se pinta como un
+  // anillo grande y no como una línea más de texto. El arco se dibuja con
+  // stroke-dasharray sobre un círculo de radio 26 (perímetro ~163.4).
+  function renderScoreAnillo(pct, nivel) {
+    const P = 163.4;
+    const avance = Math.max(0, Math.min(100, pct)) / 100 * P;
+    const clase = nivel === "alta" ? "score--alta" : nivel === "media" ? "score--media" : "score--baja";
+    return `
+      <div class="score-anillo ${clase}">
+        <svg viewBox="0 0 64 64" width="88" height="88" aria-hidden="true">
+          <circle class="score-pista" cx="32" cy="32" r="26" fill="none" stroke-width="7"/>
+          <circle class="score-arco" cx="32" cy="32" r="26" fill="none" stroke-width="7"
+                  stroke-linecap="round" stroke-dasharray="${avance} ${P}"
+                  transform="rotate(-90 32 32)"/>
+        </svg>
+        <div class="score-centro">
+          <div class="score-num">${pct}</div>
+          <div class="score-de">/100</div>
+        </div>
+        <div class="score-nivel">Confianza ${esc(nivel)}</div>
+      </div>`;
+  }
+
+  // Las recomendaciones no las escribe el LLM: salen de los mismos datos que
+  // el score (ver construirRecomendaciones en el backend), así que siempre
+  // están y siempre son ciertas aunque el modelo esté apagado.
+  function renderRecomendaciones(recs) {
+    if (!Array.isArray(recs) || !recs.length) return '';
+    return `
+      <div class="ia-bloque">
+        <div class="ia-bloque-titulo">Cómo proceder</div>
+        <ul class="ia-recs">
+          ${recs.map(r => `<li>${esc(r)}</li>`).join('')}
+        </ul>
+      </div>`;
+  }
+
+  // Cada factor con su peso: un score que no se puede auditar no le sirve al
+  // guardia para decidir, solo le pide que confíe en un número.
+  function renderFactores(factores) {
+    if (!Array.isArray(factores) || !factores.length) return '';
+    const orden = { negativo: 0, faltante: 1, positivo: 2 };
+    const items = [...factores].sort((a, b) => (orden[a.tipo] ?? 3) - (orden[b.tipo] ?? 3));
+    return `
+      <details class="ia-bloque ia-factores">
+        <summary class="ia-bloque-titulo">Cómo se calculó (${items.length} factores)</summary>
+        <div class="factor-lista">
+          ${items.map(f => `
+            <div class="factor factor--${esc(f.tipo)}">
+              <div class="factor-info">
+                <div class="factor-etiqueta">${esc(f.etiqueta)}</div>
+                ${f.detalle ? `<div class="factor-detalle">${esc(f.detalle)}</div>` : ''}
+              </div>
+              <div class="factor-impacto">${f.impacto > 0 ? '+' : ''}${f.impacto}</div>
+            </div>`).join('')}
+        </div>
+      </details>`;
   }
 
   async function loadDetalle(id) {
@@ -2408,7 +2477,8 @@
     document.getElementById("cfg-tiempo-exito").value = cfg.tiempo_exito_seg ?? 5;
     document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_seg ?? 60;
     document.getElementById("cfg-autopass").checked = !!cfg.auto_pass_habilitado;
-    document.getElementById("cfg-umbral-facial").value = cfg.umbral_confianza_visitas ?? 85;
+    document.getElementById("cfg-umbral-facial").value = cfg.umbral_facial_pct ?? 85;
+    document.getElementById("cfg-umbral-autopass").value = cfg.umbral_autopass_pct ?? 80;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
 
@@ -2526,11 +2596,13 @@
       tiempo_exito_seg:         parseInt(document.getElementById("cfg-tiempo-exito").value) || 5,
       tiempo_espera_seg:        parseInt(document.getElementById("cfg-tiempo-espera").value) || 60,
       auto_pass_habilitado:     document.getElementById("cfg-autopass").checked,
-      // Se acota aqui tambien, no solo con min/max del input: el kiosko
-      // vuelve a rechazar cualquier cosa por debajo de 50, y mandar un
-      // valor que va a ignorar dejaria el dashboard mintiendo.
-      umbral_confianza_visitas: Math.min(99, Math.max(50,
+      // Se acotan aqui tambien, no solo con min/max del input: el backend
+      // vuelve a acotarlos, y mandar un valor que va a ignorar dejaria el
+      // dashboard mintiendo sobre lo que quedo guardado.
+      umbral_facial_pct:        Math.min(99, Math.max(50,
                                   parseInt(document.getElementById("cfg-umbral-facial").value) || 85)),
+      umbral_autopass_pct:      Math.min(100, Math.max(50,
+                                  parseInt(document.getElementById("cfg-umbral-autopass").value) || 80)),
       horario_inicio:           document.getElementById("cfg-horario-inicio").value,
       horario_fin:              document.getElementById("cfg-horario-fin").value,
     };
