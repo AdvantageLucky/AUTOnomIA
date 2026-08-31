@@ -13,6 +13,7 @@ import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animati
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_rostro_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
+import 'package:kigo_kiosco/features/registro/models/paso_registro.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/viewmodels/vehicular_register_viewmodel.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/views/confirmar_placa_view.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
@@ -41,13 +42,16 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     viewModel.addListener(_refresh);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Config sin capturas obligatorias: no hay nada que escanear, se pasa
-      // directo a elegir la casa destino.
+      // Sin ningún paso configurado no hay nada que pedir: es el invitado
+      // cuyo QR basta por sí solo, así que se va directo al resumen.
       if (viewModel.pasos.isEmpty) {
-        _continuarACasaDestino();
+        _irAResumen();
         return;
       }
       _narrar(AppLocalizations.t(context, 'welcome_vehicular_message'));
+      // El dashboard puede poner PLACA o DESTINO de primero: en ese caso no
+      // hay nada que capturar todavía y la pantalla arranca resolviéndolo.
+      _ejecutarSiEsAutomatico();
     });
   }
 
@@ -70,32 +74,55 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     if (viewModel.isProcessing || viewModel.pasos.isEmpty) return;
 
     switch (viewModel.pasoActual) {
-      case PasoVehicular.ine:
+      case PasoRegistro.ine:
         await _capturarIne();
-      case PasoVehicular.rostro:
+      case PasoRegistro.rostro:
         await _capturarRostro();
+      // Los automaticos no llegan por el boton: los dispara
+      // _ejecutarSiEsAutomatico al tocarles el turno.
+      case PasoRegistro.placa:
+      case PasoRegistro.destino:
+        await _ejecutarSiEsAutomatico();
     }
   }
 
-  /// Avanza al siguiente paso de captura o, si ya fue el último, cierra el flujo.
+  /// Cierra el paso actual: si era el último va al resumen, si no avanza y
+  /// deja corriendo el siguiente por si se resuelve solo.
   Future<void> _avanzar() async {
-    if (!viewModel.isLastStep) {
-      viewModel.nextStep();
+    if (viewModel.isLastStep) {
+      _irAResumen();
       return;
     }
-    await _continuarACasaDestino();
+    viewModel.nextStep();
+    await _ejecutarSiEsAutomatico();
   }
 
-  Future<void> _continuarACasaDestino() async {
-    if (!mounted) return;
+  /// PLACA y DESTINO no esperan un toque: se resuelven al llegarles el turno.
+  /// La recursión vía [_avanzar] termina siempre, porque cada vuelta consume
+  /// un paso de una lista finita.
+  Future<void> _ejecutarSiEsAutomatico() async {
+    if (!mounted || viewModel.pasos.isEmpty) return;
+    if (!esPasoAutomatico(viewModel.pasoActual)) return;
 
-    // La lectura de placa arrancó en paralelo desde que se creó el
-    // viewmodel — para cuando se llega aquí, normalmente ya está resuelta.
-    // Sin lectura y si este visitante la necesita, el teclado manual es el
-    // único respaldo (no hay cámara dedicada a la placa todavía).
+    switch (viewModel.pasoActual) {
+      case PasoRegistro.placa:
+        await _pasoPlaca();
+      case PasoRegistro.destino:
+        await _pasoCasaDestino();
+      case PasoRegistro.ine:
+      case PasoRegistro.rostro:
+        break;
+    }
+  }
+
+  Future<void> _pasoPlaca() async {
+    // La lectura arrancó en paralelo desde que se creó el viewmodel — para
+    // cuando se llega aquí, normalmente ya está resuelta. Sin lectura, el
+    // teclado manual es el único respaldo (no hay cámara dedicada a la placa
+    // todavía).
     final placa = await viewModel.leerPlaca();
     if (!mounted) return;
-    if (placa == null && viewModel.requierePlaca) {
+    if (placa == null) {
       final placaManual = await pedirConfirmacionPlaca(context);
       if (!mounted) return;
       if (placaManual == null) {
@@ -105,29 +132,32 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       }
       viewModel.confirmarPlaca(placaManual);
     }
+    await _avanzar();
+  }
 
+  Future<void> _pasoCasaDestino() async {
     if (!mounted) return;
-
-    // El invitado ya trae casa destino en su invitación.
-    if (!viewModel.registrationData.esInvitado) {
-      final String? casa = await Navigator.push<String>(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              CasaDestinoView(totalSteps: viewModel.indicatorTotalSteps),
+    final String? casa = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CasaDestinoView(
+          currentStep: viewModel.indicatorStep,
+          totalSteps: viewModel.indicatorTotalSteps,
         ),
-      );
+      ),
+    );
 
-      // Si el visitante da "atrás" aquí, se cancela toda la solicitud: no hay un
-      // punto intermedio al que reanudar.
-      if (casa == null) {
-        if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
-        return;
-      }
-
-      viewModel.registrationData.casaDestino = casa;
+    // Si el visitante da "atrás" aquí, se cancela toda la solicitud: no hay un
+    // punto intermedio al que reanudar.
+    if (casa == null) {
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
     }
+    viewModel.registrationData.casaDestino = casa;
+    await _avanzar();
+  }
 
+  void _irAResumen() {
     if (!mounted) return;
     Navigator.push(
       context,
@@ -356,7 +386,11 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
               (_) {}, // esta pantalla no usa Q&A libre por texto, solo narra
           onCampoExtraido: (_) {}, // no llena campos -- tipoCampo queda null
         ),
-        const Positioned(top: 32 + 50, right: 42, child: EtiquetaAsistente()),
+        const Positioned(
+          top: 32 + KigoDesign.offsetEtiquetaAsistente,
+          right: 42,
+          child: EtiquetaAsistente(),
+        ),
       ],
     );
   }
@@ -430,8 +464,10 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
             child: ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(24)),
               child: switch (viewModel.pasoActual) {
-                PasoVehicular.ine => const IneApproachAnimation(),
-                PasoVehicular.rostro => const FaceApproachAnimation(),
+                PasoRegistro.ine => const IneApproachAnimation(),
+                PasoRegistro.rostro => const FaceApproachAnimation(),
+                // No se alcanzan a ver: estos pasos empujan su pantalla.
+                PasoRegistro.placa || PasoRegistro.destino => const SizedBox.shrink(),
               },
             ),
           ),

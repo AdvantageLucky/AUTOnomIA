@@ -58,7 +58,9 @@ type KioskoConfig struct {
 
 	// Configuracion de IA
 	AutoPassHabilitado     bool    `gorm:"not null;default:true"`
-	UmbralConfianzaVisitas int     `gorm:"not null;default:5"`
+	// Porcentaje de similitud coseno (0-100) que el kiosko exige para dar
+	// por buena una cara. Ver migracion 000057.
+	UmbralConfianzaVisitas int     `gorm:"not null;default:85"`
 	UmbralSimilitudCara    float64 `gorm:"not null;default:0.70"` // similitud mínima para reconocimiento facial
 
 	// Nuevos campos de UI configurable

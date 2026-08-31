@@ -2243,6 +2243,7 @@
     document.getElementById("cfg-tiempo-exito").value = cfg.tiempo_exito_seg ?? 5;
     document.getElementById("cfg-tiempo-espera").value = cfg.tiempo_espera_seg ?? 60;
     document.getElementById("cfg-autopass").checked = !!cfg.auto_pass_habilitado;
+    document.getElementById("cfg-umbral-facial").value = cfg.umbral_confianza_visitas ?? 85;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
 
@@ -2360,6 +2361,11 @@
       tiempo_exito_seg:         parseInt(document.getElementById("cfg-tiempo-exito").value) || 5,
       tiempo_espera_seg:        parseInt(document.getElementById("cfg-tiempo-espera").value) || 60,
       auto_pass_habilitado:     document.getElementById("cfg-autopass").checked,
+      // Se acota aqui tambien, no solo con min/max del input: el kiosko
+      // vuelve a rechazar cualquier cosa por debajo de 50, y mandar un
+      // valor que va a ignorar dejaria el dashboard mintiendo.
+      umbral_confianza_visitas: Math.min(99, Math.max(50,
+                                  parseInt(document.getElementById("cfg-umbral-facial").value) || 85)),
       horario_inicio:           document.getElementById("cfg-horario-inicio").value,
       horario_fin:              document.getElementById("cfg-horario-fin").value,
     };

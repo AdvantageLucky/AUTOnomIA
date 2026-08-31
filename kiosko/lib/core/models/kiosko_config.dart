@@ -25,6 +25,9 @@ class KioskoConfig {
   final String horarioFin;
   final String mensajeBienvenida;
   final bool autoPassHabilitado;
+  /// Porcentaje (0-100) de similitud coseno que se exige para dar por
+  /// buena una cara en el match local. 85 = el 0.85 que antes estaba
+  /// clavado en coincidencia_facial_local.dart.
   final int umbralConfianzaVisitas;
   final int tiempoExitoSeg;
   final KioskoColorTema colorTema;
@@ -79,7 +82,7 @@ class KioskoConfig {
       horarioFin: json['horario_fin'] as String? ?? '20:00',
       mensajeBienvenida: json['mensaje_bienvenida'] as String? ?? '',
       autoPassHabilitado: json['auto_pass_habilitado'] as bool? ?? false,
-      umbralConfianzaVisitas: json['umbral_confianza_visitas'] as int? ?? 80,
+      umbralConfianzaVisitas: json['umbral_confianza_visitas'] as int? ?? 85,
       tiempoExitoSeg: json['tiempo_exito_seg'] as int? ?? 5,
       colorTema: colorStr == 'claro' ? KioskoColorTema.claro : KioskoColorTema.oscuro,
       idioma: json['idioma_kiosko'] as String? ?? 'es',
@@ -100,7 +103,7 @@ class KioskoConfig {
         horarioFin: '20:00',
         mensajeBienvenida: '',
         autoPassHabilitado: false,
-        umbralConfianzaVisitas: 80,
+        umbralConfianzaVisitas: 85,
         tiempoExitoSeg: 5,
         colorTema: KioskoColorTema.oscuro,
         idioma: 'es',

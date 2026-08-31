@@ -52,6 +52,31 @@ class KioskoServicio {
   ConnectivityService? _connectivity;
   LocalCacheDb? _cache;
 
+  /// Ultima config conocida, guardada al vuelo tanto del GET inicial como
+  /// del SSE. El match facial offline la necesita para el umbral, y ese
+  /// camino no tiene por donde recibirla: lo dispara
+  /// KioskoServicio.verificarRostroResidente, no una vista con acceso al
+  /// KioskoConfigNotifier. Antes el umbral estaba clavado en 0.85 y el
+  /// valor del dashboard no lo tocaba nadie.
+  KioskoConfig _ultimaConfig = KioskoConfig.defaults;
+
+  /// Piso duro del umbral facial. Una similitud coseno por debajo de esto no
+  /// distingue dos caras distintas, asi que un valor menor solo puede venir
+  /// de una fila vieja o de un dedazo — y aceptarlo abriria la puerta a
+  /// cualquiera. El campo vivio con default 5 antes de la migracion 000057.
+  static const int _umbralFacialMinimo = 50;
+
+  /// Umbral de similitud coseno para el match facial local, en 0..1. El
+  /// dashboard lo captura como porcentaje (0-100), asi que aqui se
+  /// convierte; fuera de rango cae al default en vez de confiar en el valor.
+  double get _umbralFacial {
+    final pct = _ultimaConfig.umbralConfianzaVisitas;
+    if (pct < _umbralFacialMinimo || pct > 100) {
+      return KioskoConfig.defaults.umbralConfianzaVisitas / 100;
+    }
+    return pct / 100;
+  }
+
   /// Debe llamarse una vez al arrancar la app (ver main.dart) antes de que
   /// cualquier flujo de registro intente usar el modo offline. Sin esto,
   /// KioskoServicio se comporta exactamente como antes (siempre en línea).
@@ -206,8 +231,9 @@ class KioskoServicio {
     }
 
     if (response.statusCode == 200) {
-      return KioskoConfig.fromJson(
+      _ultimaConfig = KioskoConfig.fromJson(
           jsonDecode(response.body) as Map<String, dynamic>);
+      return _ultimaConfig;
     }
     throw Exception('Error al obtener config (${response.statusCode})');
   }
@@ -257,6 +283,7 @@ class KioskoServicio {
             try {
               final cfg = KioskoConfig.fromJson(
                   jsonDecode(line.substring(6)) as Map<String, dynamic>);
+              _ultimaConfig = cfg;
               onConfig(cfg);
             } catch (e) {
               debugPrint('SSE config parse error: $e');
@@ -823,7 +850,7 @@ class KioskoServicio {
     List<double> embedding,
   ) async {
     final residentes = await cache.obtenerResidentes();
-    final match = mejorCoincidenciaLocal(residentes, embedding);
+    final match = mejorCoincidenciaLocal(residentes, embedding, umbral: _umbralFacial);
     if (match == null) {
       throw Exception('Rostro no reconocido');
     }

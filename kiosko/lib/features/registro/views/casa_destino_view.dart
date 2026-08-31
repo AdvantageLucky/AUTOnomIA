@@ -12,7 +12,16 @@ class CasaDestinoView extends StatefulWidget {
   /// capturas antes de llegar aquí. La casa destino siempre es el penúltimo.
   final int totalSteps;
 
-  const CasaDestinoView({super.key, this.totalSteps = 4});
+  /// Posicion de este paso en el pipeline. Ya no se deduce restando 2 al
+  /// total: DESTINO es un paso ordenable desde el dashboard, asi que puede
+  /// caer en cualquier lugar y no solo antes del resumen.
+  final int currentStep;
+
+  const CasaDestinoView({
+    super.key,
+    this.totalSteps = 4,
+    this.currentStep = 2,
+  });
 
   @override
   State<CasaDestinoView> createState() => _CasaDestinoViewState();
@@ -204,7 +213,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   StepIndicator(
-                    currentStep: widget.totalSteps - 2,
+                    currentStep: widget.currentStep,
                     totalSteps: widget.totalSteps,
                   ),
                   const SizedBox(height: 42),
@@ -229,11 +238,14 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         ),
         BotonAsistenteFlotante(
           // Esta pantalla sigue usando un AppBar real (kToolbarHeight=56)
-          // para el botón de atrás -- 6 centra los 44px del botón dentro de
-          // esa franja. rightDelBorde 16 replica el inset estándar que
-          // Flutter usa para las actions de un AppBar. Ninguno de los dos
-          // está confirmado en dispositivo real todavía.
-          topDelBorde: 6,
+          // para el botón de atrás, y el botón del asistente ya no cabe
+          // centrado en esa franja: mide KigoDesign.ladoAsistente (76). Se
+          // ancla arriba y cuelga ~20px sobre el scroll -- queda fuera del
+          // padding horizontal del contenido (42 vs 16), así que no tapa el
+          // StepIndicator. rightDelBorde 16 replica el inset estándar que
+          // Flutter usa para las actions de un AppBar. Falta confirmarlo en
+          // dispositivo real.
+          topDelBorde: 0,
           rightDelBorde: 16,
           tipoCampo: 'destino',
           onRespuestaLibre: (_) {}, // esta pantalla no usa Q&A libre
