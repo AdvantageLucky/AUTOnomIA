@@ -85,6 +85,7 @@ flutter:
 
   assets:
     - assets/models/mobilefacenet.tflite
+    - assets/models/vosk-model-small-es-0.42.zip
 
   # To add assets to your application, add an assets section, like this:
   # assets:
