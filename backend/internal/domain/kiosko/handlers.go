@@ -387,13 +387,17 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	}
 
 	if kiosko.Tipo == KioskoPeatonal {
-		if req.FotoPlacaVisitante != nil && *req.FotoPlacaVisitante {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_placa_visitante no aplica a kioskos peatonales"})
-			return
-		}
-		if req.FotoPlacaInvitado != nil && *req.FotoPlacaInvitado {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "foto_placa_invitado no aplica a kioskos peatonales"})
-			return
+		falso := false
+		req.FotoPlacaVisitante = &falso
+		req.FotoPlacaInvitado = &falso
+		if req.PasosSinInvitacion != nil {
+			limpios := make([]string, 0, len(*req.PasosSinInvitacion))
+			for _, p := range *req.PasosSinInvitacion {
+				if p != "PLACA" {
+					limpios = append(limpios, p)
+				}
+			}
+			req.PasosSinInvitacion = &limpios
 		}
 	}
 

@@ -212,6 +212,8 @@ class AppLocalizations {
       // Captura de rostro con óvalo guía
       'apunta_a_tu_rostro': 'Apunta a tu rostro',
       'centra_rostro_ovalo': 'Centra tu rostro dentro del óvalo',
+      'detectando_rostro_auto': 'Detección automática — centra tu rostro en el óvalo',
+      'rostro_detectado_capturando': '¡Rostro detectado! No te muevas...',
       'apunta_a_tu_ine': 'Apunta a tu INE',
       'deteccion_automatica_ine': 'Detección automática — mantén la INE dentro del recuadro',
       'acerca_aleja_ine': 'Acerca o aleja la INE hasta que se vea nítida',
@@ -401,6 +403,8 @@ class AppLocalizations {
       // Captura de rostro con óvalo guía
       'apunta_a_tu_rostro': 'Point at your face',
       'centra_rostro_ovalo': 'Center your face inside the oval',
+      'detectando_rostro_auto': 'Automatic detection — center your face inside the oval',
+      'rostro_detectado_capturando': 'Face detected! Hold still...',
       'apunta_a_tu_ine': 'Point at your ID',
       'deteccion_automatica_ine': 'Automatic detection — keep the ID inside the frame',
       'acerca_aleja_ine': 'Move the ID closer or farther until it looks sharp',

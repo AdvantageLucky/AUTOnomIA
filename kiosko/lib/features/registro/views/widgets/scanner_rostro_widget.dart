@@ -1,10 +1,13 @@
-import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
+import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/marco_guia_camara.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
+import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
 import 'consent_dialog.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
@@ -18,6 +21,12 @@ class EscaneoRostro extends StatefulWidget {
 class _EscaneoRostroState extends State<EscaneoRostro> {
   CameraController? _controller;
   bool _isInitialized = false;
+
+  final FaceDetectorServicio _detector = FaceDetectorServicio();
+  Timer? _timerAutoScan;
+  bool _escaneando = false;
+  bool _rostroDetectado = false;
+  bool _capturaFinalizada = false;
 
   @override
   void initState() {
@@ -68,31 +77,88 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
         _controller = controller;
         _isInitialized = true;
       });
+
+      _iniciarAutoDeteccion();
     } catch (e) {
       debugPrint("Error al inicializar la cámara: $e");
     }
   }
 
-  // Función para tomar la foto y mandarla a procesar
+  void _iniciarAutoDeteccion() {
+    _timerAutoScan?.cancel();
+    _timerAutoScan = Timer.periodic(const Duration(milliseconds: 700), (_) {
+      _intentarAutoCaptura();
+    });
+  }
+
+  Future<void> _intentarAutoCaptura() async {
+    if (_escaneando || _capturaFinalizada) return;
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized || controller.value.isTakingPicture) {
+      return;
+    }
+
+    _escaneando = true;
+    XFile? foto;
+    try {
+      foto = await controller.takePicture();
+      final esValido = await _detector.tieneRostroValido(foto.path);
+
+      if (!mounted) {
+        try { File(foto.path).deleteSync(); } catch (_) {}
+        return;
+      }
+
+      if (esValido && !_capturaFinalizada) {
+        _timerAutoScan?.cancel();
+        setState(() {
+          _rostroDetectado = true;
+          _capturaFinalizada = true;
+        });
+
+        // Breve pausa para que el usuario reciba la retroalimentación visual
+        await Future.delayed(const Duration(milliseconds: 600));
+
+        if (mounted) {
+          Navigator.pop(context, foto.path);
+        }
+        return;
+      } else {
+        // Descartar archivo temporal no válido
+        try { File(foto.path).deleteSync(); } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint("Error en auto detección de rostro: $e");
+    } finally {
+      _escaneando = false;
+    }
+  }
+
+  // Función para tomar la foto manualmente si el usuario lo prefiere
   Future<void> _tomarFotoYProcesar() async {
+    if (_capturaFinalizada) return;
     if (_controller == null || !_controller!.value.isInitialized) return;
 
+    _timerAutoScan?.cancel();
+    _capturaFinalizada = true;
+
     try {
-      // Captura la foto localmente
       final XFile foto = await _controller!.takePicture();
-      
       if (mounted) {
-        // Regresamos ÚNICAMENTE la ruta de la foto (String) a la vista principal
         Navigator.pop(context, foto.path);
       }
     } catch (e) {
-      debugPrint("Error al capturar la foto: $e");
+      debugPrint("Error al capturar la foto manualmente: $e");
+      _capturaFinalizada = false;
+      _iniciarAutoDeteccion();
     }
   }
 
   @override
   void dispose() {
-    _controller?.dispose(); // Muy importante liberar la cámara al salir
+    _timerAutoScan?.cancel();
+    _detector.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -108,6 +174,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
     final size = MediaQuery.of(context).size;
     final ovalW = size.width * 0.72;
     final ovalH = ovalW * 1.25;
+    final colorGuia = _rostroDetectado ? const Color(0xFF2DCFA8) : KigoDesign.brand;
 
     return Scaffold(
       appBar: AppBar(
@@ -115,7 +182,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
         title: Text(AppLocalizations.t(context, 'apunta_a_tu_rostro'), style: TextStyle(color: context.kTextPrimary)),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: context.kTextPrimary),
-          onPressed: () => Navigator.pop(context), // Botón físico/virtual para regresar
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: Stack(
@@ -124,37 +191,93 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
             child: VistaPreviaCamara(_controller!),
           ),
 
-          // Overlay opaco con recorte oval + guía — compartido con
-          // residente_acceso_view.dart (mismo tratamiento visual).
+          // Overlay opaco con recorte oval + guía
           Positioned.fill(
-            child: MarcoGuiaCamara(ancho: ovalW, alto: ovalH),
-          ),
-
-          // Instrucción
-          Positioned(
-            top: 16,
-            left: 0,
-            right: 0,
-            child: Text(
-              AppLocalizations.t(context, 'centra_rostro_ovalo'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+            child: MarcoGuiaCamara(
+              ancho: ovalW,
+              alto: ovalH,
+              colorBorde: colorGuia,
             ),
           ),
 
-          // Botón de captura
+          // Banner de Feedback de detección en tiempo real
           Positioned(
-            bottom: 40,
+            top: 18,
+            left: 20,
+            right: 20,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: _rostroDetectado
+                    ? const Color(0xFF2DCFA8).withValues(alpha: 0.92)
+                    : Colors.black.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: _rostroDetectado ? const Color(0xFF2DCFA8) : Colors.white24,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_rostroDetectado) ...[
+                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        AppLocalizations.t(context, 'rostro_detectado_capturando'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: KigoDesign.brand,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        AppLocalizations.t(context, 'detectando_rostro_auto'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          // Botón de captura manual (alternativo)
+          Positioned(
+            bottom: 36,
             left: 0,
             right: 0,
             child: Center(
               child: FloatingActionButton(
-                backgroundColor: KigoDesign.brand, // naranja de Kigo
-                onPressed: _tomarFotoYProcesar,
-                child: const Icon(Icons.camera_alt, color: Colors.white),
+                backgroundColor: _rostroDetectado ? const Color(0xFF2DCFA8) : KigoDesign.brand,
+                onPressed: _capturaFinalizada ? null : _tomarFotoYProcesar,
+                child: _rostroDetectado
+                    ? const Icon(Icons.check, color: Colors.white, size: 28)
+                    : const Icon(Icons.camera_alt, color: Colors.white),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
