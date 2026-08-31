@@ -484,7 +484,13 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 	// CasaDestino (texto), así que la única forma de verificar "es tu
 	// casa" es resolver el Destino y comparar su Nombre contra eso.
 	destino, err := h.destinoRepo.FindByID(req.DestinoID)
-	if err != nil || destino.TenantID != req.TenantID || destino.Nombre != m.CasaDestino {
+	// Comparación case/espacio-insensible: es el mismo criterio que usa
+	// FindCompanerosCasa (UPPER(TRIM(...))) para decidir "misma casa" --
+	// Membresia.CasaDestino y Destino.Nombre son texto libre, no una FK,
+	// así que una diferencia de mayúsculas entre ambos no debe bloquear al
+	// dueño real de invitar a su propia casa.
+	if err != nil || destino.TenantID != req.TenantID ||
+		!strings.EqualFold(strings.TrimSpace(destino.Nombre), strings.TrimSpace(m.CasaDestino)) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "solo puedes invitar a tu propia casa"})
 		return
 	}
