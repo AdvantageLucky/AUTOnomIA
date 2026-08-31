@@ -131,7 +131,12 @@ class AppLocalizations {
 
       // Diálogo de consentimiento y términos y condiciones
       'consentimiento_datos_title': 'Consentimiento de datos',
-      'consentimiento_datos_content': 'Estas a punto de confiarnos datos sencibles para acceder a las instalaciones.'
+      // Menciona la huella facial explicitamente: desde que se guarda el
+      // embedding del visitante (no solo la foto) esto es un dato biometrico,
+      // y un consentimiento generico de "datos sensibles" no lo cubre.
+      'consentimiento_datos_content': 'Para darte acceso tomaremos tu foto y, a partir de ella, una huella facial: '
+          'una serie de numeros con la que podremos reconocerte en tus proximas visitas. '
+          'No se puede reconstruir tu cara a partir de ella.'
           ' \n\n'
           '¿Aceptas el uso de tus datos para este fin?',
       'terminos_y_condiciones': 'Términos y condiciones',
@@ -312,7 +317,9 @@ class AppLocalizations {
 
       // Diálogo de consentimiento y términos y condiciones
       'consentimiento_datos_title': 'Data consent',
-      'consentimiento_datos_content': "You're about to share sensitive data with us to access the facilities."
+      'consentimiento_datos_content': 'To grant you access we will take your photo and, from it, a face signature: '
+          'a set of numbers that lets us recognise you on your next visits. '
+          'Your face cannot be reconstructed from it.'
           ' \n\n'
           'Do you agree to the use of your data for this purpose?',
       'terminos_y_condiciones': 'Terms and conditions',

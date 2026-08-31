@@ -33,7 +33,7 @@ func AnalizarYGuardarInformativo(repo *Repository, tenantID uint, v Visita, llmU
 		return
 	}
 
-	historial, err := asyncRepo.HistorialDeVisitante(v)
+	historial, err := asyncRepo.HistorialDeVisitante(v, cfg.UmbralFacialPct)
 	if err != nil {
 		return
 	}

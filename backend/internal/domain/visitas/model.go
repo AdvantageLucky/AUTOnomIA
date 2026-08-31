@@ -1,6 +1,10 @@
 package visitas
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+
+	"kigo-autonomia-backend/internal/domain/residente"
+)
 
 type (
 	TipoVisitante string
@@ -71,6 +75,11 @@ type Visita struct {
 	ResumenIA           string       `gorm:"column:resumen_ia"`
 	ScoreIA             []byte       `gorm:"column:score_ia;type:jsonb"`
 	PersonaID           *uint        `gorm:"column:persona_id;index"`
+	// EmbeddingRostro es la huella facial capturada en esta entrada. Sirve
+	// como identificador cuando no hay CURP ni placa: en un flujo de solo
+	// rostro + destino es lo unico que liga una visita con las anteriores de
+	// la misma persona (ver HistorialDeVisitante). Es un vector, no la foto.
+	EmbeddingRostro     residente.FloatArray `gorm:"column:embedding_rostro;type:float[]"`
 }
 
 func (Visita) TableName() string { return "visitas" }

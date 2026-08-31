@@ -147,6 +147,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         pathFotoPlaca: data.pathFotoPlaca,
         nitidezIneScore: data.nitidezIneScore,
         calidadIne: data.calidadIne,
+        embeddingRostro: data.embeddingRostro,
       );
 
       if (!mounted) return;

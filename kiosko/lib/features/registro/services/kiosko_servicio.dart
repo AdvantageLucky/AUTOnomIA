@@ -319,6 +319,7 @@ class KioskoServicio {
     String? clientId,
     double? nitidezIneScore,
     String? calidadIne,
+    List<double>? embeddingRostro,
   }) async {
     final connectivity = _connectivity;
     final cache = _cache;
@@ -332,6 +333,7 @@ class KioskoServicio {
         pathFotoIne: pathFotoIne,
         pathFotoRostro: pathFotoRostro,
         pathFotoPlaca: pathFotoPlaca,
+        embeddingRostro: embeddingRostro,
       );
     }
 
@@ -350,6 +352,7 @@ class KioskoServicio {
         clientId: clientId,
         nitidezIneScore: nitidezIneScore,
         calidadIne: calidadIne,
+        embeddingRostro: embeddingRostro,
       );
     } catch (e) {
       // La red parecía disponible pero la llamada falló a medio camino — si
@@ -366,6 +369,7 @@ class KioskoServicio {
           pathFotoIne: pathFotoIne,
           pathFotoRostro: pathFotoRostro,
           pathFotoPlaca: pathFotoPlaca,
+          embeddingRostro: embeddingRostro,
         );
       }
       rethrow;
@@ -381,6 +385,7 @@ class KioskoServicio {
     String? pathFotoIne,
     String? pathFotoRostro,
     String? pathFotoPlaca,
+    List<double>? embeddingRostro,
   }) async {
     final clientId = _uuid.v4();
     await cache.encolarVisita(
@@ -391,6 +396,11 @@ class KioskoServicio {
         'curp': curp,
         'casa_destino': casaDestino,
         'placa': placa,
+        // Va en el payload y no en fotoPaths: es un vector, no un archivo.
+        // Sin esto, una visita encolada offline perdia el identificador al
+        // drenarse y volvia a contar como primera visita.
+        if (embeddingRostro != null && embeddingRostro.isNotEmpty)
+          'embedding_rostro': embeddingRostro,
       },
       fotoPaths: {
         'ine': ?pathFotoIne,
@@ -1006,6 +1016,7 @@ class KioskoServicio {
     String? pathFotoRostro,
     String? pathFotoPlaca,
     required String clientId,
+    List<double>? embeddingRostro,
   }) async {
     await _ensureLogin();
     return _enviarRegistro(
@@ -1019,6 +1030,7 @@ class KioskoServicio {
       pathFotoPlaca: pathFotoPlaca,
       reintento: false,
       clientId: clientId,
+      embeddingRostro: embeddingRostro,
     );
   }
 
@@ -1132,6 +1144,7 @@ class KioskoServicio {
     String? clientId,
     double? nitidezIneScore,
     String? calidadIne,
+    List<double>? embeddingRostro,
   }) async {
     final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/visitas/');
     // Sin INE capturada, lo que respalda la visita es la placa: en un acceso
@@ -1152,6 +1165,13 @@ class KioskoServicio {
     }
     if (calidadIne != null) {
       request.fields['calidad_ine'] = calidadIne;
+    }
+
+    // La huella facial, no la foto: es lo que permite reconocer a este
+    // visitante en su siguiente entrada cuando no hay INE ni placa que lo
+    // identifiquen. La foto ya viaja aparte como evidencia.
+    if (embeddingRostro != null && embeddingRostro.isNotEmpty) {
+      request.fields['embedding_rostro'] = jsonEncode(embeddingRostro);
     }
 
     if (pathFotoIne != null && File(pathFotoIne).existsSync()) {

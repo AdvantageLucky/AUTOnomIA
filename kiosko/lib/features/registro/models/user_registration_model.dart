@@ -5,6 +5,12 @@ class UserRegistrationModel {
   String? nombreCompleto;
   String? curp;
 
+  // Huella facial calculada on-device a partir de pathFotoRostro. Viaja al
+  // backend como identificador del visitante: en un flujo de solo rostro +
+  // destino es lo único que liga esta entrada con las anteriores de la misma
+  // persona. La foto no sale de aquí más que como evidencia.
+  List<double>? embeddingRostro;
+
   // Rutas de los archivos temporales de las fotos guardadas en el teléfono
   String? pathFotoIne;
   String? pathFotoRostro;
@@ -42,6 +48,7 @@ class UserRegistrationModel {
     curp = null;
     pathFotoIne = null;
     pathFotoRostro = null;
+    embeddingRostro = null;
     pathFotoPlaca = null;
     nitidezIneScore = null;
     calidadIne = null;

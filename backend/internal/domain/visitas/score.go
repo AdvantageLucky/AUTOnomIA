@@ -145,8 +145,17 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 			add("sin_rostro", "Falta la foto de rostro",
 				"El kiosko la pedia y no quedo registrada: no hay con que verificar quien entro.", -12, FactorFaltante)
 		}
+	} else if len(v.EmbeddingRostro) > 0 {
+		// Con huella facial guardada, este rostro es comparable contra las
+		// entradas anteriores: es lo que convierte a un flujo de solo rostro +
+		// destino en algo donde alguien puede llegar a ser recurrente.
+		add("rostro_identificable", "Rostro registrado y comparable",
+			"Se guardo la huella facial de esta entrada, asi que sirve para reconocerlo despues.",
+			8, FactorPositivo)
 	} else {
-		add("rostro_capturado", "Rostro capturado", "", 4, FactorPositivo)
+		add("rostro_capturado", "Rostro capturado",
+			"Hay foto, pero sin huella facial no se puede comparar contra entradas anteriores.",
+			4, FactorPositivo)
 	}
 	if esperada.Placa && v.Placa == "" {
 		add("sin_placa", "Falta la placa",
