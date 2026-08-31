@@ -22,13 +22,20 @@ class CompanerosCasaViewModel extends ChangeNotifier {
     try {
       final data = await ApiService()
           .get('/personas/me/companeros-casa?tenant_id=$tenantId');
-      final list = (data['companeros'] as List).cast<Map<String, dynamic>>();
-      _companeros = list.map(CompaneroCasa.fromJson).toList();
+      final rawList = data['companeros'];
+      if (rawList is List) {
+        _companeros = rawList
+            .whereType<Map<String, dynamic>>()
+            .map(CompaneroCasa.fromJson)
+            .toList();
+      } else {
+        _companeros = [];
+      }
       _casaDestino = data['casa_destino'] as String? ?? '';
     } on ApiException catch (e) {
       _error = e.message;
-    } catch (_) {
-      _error = 'No se pudo conectar al servidor';
+    } catch (e) {
+      _error = 'Error al cargar compañeros de casa: $e';
     } finally {
       _isLoading = false;
       notifyListeners();

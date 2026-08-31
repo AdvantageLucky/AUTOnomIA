@@ -1,4 +1,3 @@
-// TEMPORAL: comprueba que el historial se recarga al entrar a su pestaña.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +17,10 @@ import 'package:kigo_user/views/kigo_shell.dart';
 class _AuthFake extends AuthViewModel {
   @override
   String get nombre => 'Ana';
+  @override
+  String get nombreCompleto => 'Ana Ruiz';
+  @override
+  String get telefono => '+525500000001';
   @override
   MembresiaEstado get membresiaEstado => MembresiaEstado.activa;
   @override
@@ -39,8 +42,6 @@ class _PendingFake extends PendingVisitsViewModel {
   Future<void> cargar(int tenantId) async {}
 }
 
-/// Simula el backend: al principio no hay historial; tras "aprobar" aparece
-/// una visita. Cuenta cuántas veces se le pidió recargar.
 class _HistoryFake extends VisitHistoryViewModel {
   int llamadas = 0;
   final List<int> tenantsPedidos = [];
@@ -83,7 +84,7 @@ void main() {
   SharedPreferences.setMockInitialValues({});
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  testWidgets('vuelve a pedir el historial cada vez que se entra a la pestaña',
+  testWidgets('vuelve a pedir el historial cada vez que se entra a la pestaña de Solicitudes',
       (tester) async {
     tester.view.physicalSize = const Size(1000, 2000);
     tester.view.devicePixelRatio = 2.0;
@@ -107,22 +108,27 @@ void main() {
     expect(historial.llamadas, 1);
     expect(historial.tenantsPedidos, [7]);
 
-    // El residente aprueba una solicitud mientras está en Inicio.
+    // El residente aprueba una solicitud mientras está en Mi QR.
     historial.hayVisitaAprobada = true;
 
-    await tester.tap(find.text('Visitas'));
+    // Cambia a la pestaña de Solicitudes
+    await tester.tap(find.text('Solicitudes'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Sin la recarga al entrar, aquí seguiría en 1 y la lista saldría vacía.
+    // Toca la sub-pestaña de Historial
+    await tester.tap(find.text('Historial'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
     expect(historial.llamadas, 2, reason: 'debe recargar al entrar');
     expect(find.text('LUIS RAMIREZ'), findsOneWidget);
-    expect(find.text('Aprobada'), findsOneWidget);
+    expect(find.text('Aprobado'), findsOneWidget);
 
-    // Y otra vez al volver a entrar.
-    await tester.tap(find.text('Inicio'));
+    // Y otra vez al volver a entrar
+    await tester.tap(find.text('Mi QR'));
     await tester.pump();
-    await tester.tap(find.text('Visitas'));
+    await tester.tap(find.text('Solicitudes'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(historial.llamadas, 3);

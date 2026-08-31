@@ -87,10 +87,6 @@
 						<form id="register-form">
 							<div id="reg-step-datos">
 								<div class="form-group">
-									<label for="reg-nombre" data-i18n="reg_name_label">Nombre completo</label>
-									<input id="reg-nombre" type="text" placeholder="Ej. Juan Pérez" autocomplete="name">
-								</div>
-								<div class="form-group">
 									<label for="reg-correo" data-i18n="login_email">Correo electrónico</label>
 									<input id="reg-correo" type="email" required placeholder="tu@correo.com" autocomplete="username">
 								</div>
@@ -118,6 +114,10 @@
 							<div id="reg-error" class="form-error" hidden></div>
 							<div id="reg-success" class="form-success" hidden></div>
 						</form>
+
+						<div class="login-divider"><span data-i18n="or">o continúa con</span></div>
+
+						<div id="google-btn-container-reg" style="display:flex;justify-content:center"></div>
 
 						<div class="fine-print">
 							<span data-i18n="already_account">¿Ya tienes cuenta?</span>

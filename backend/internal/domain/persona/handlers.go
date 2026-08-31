@@ -159,6 +159,9 @@ func (h *Handler) ListarCompanerosCasa(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	if companeros == nil {
+		companeros = make([]residente.CompaneroCasa, 0)
+	}
 
 	c.JSON(http.StatusOK, gin.H{"companeros": companeros, "casa_destino": m.CasaDestino})
 }
