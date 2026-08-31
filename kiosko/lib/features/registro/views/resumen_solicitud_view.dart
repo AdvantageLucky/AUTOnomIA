@@ -337,7 +337,11 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           onRespuestaLibre: (_) {},
           onCampoExtraido: (_) {},
         ),
-        const Positioned(top: 40 + 50, right: 42, child: EtiquetaAsistente()),
+        const Positioned(
+          top: 40 + KigoDesign.offsetEtiquetaAsistente,
+          right: 42,
+          child: EtiquetaAsistente(),
+        ),
       ],
     );
   }

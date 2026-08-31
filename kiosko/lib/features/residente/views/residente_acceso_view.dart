@@ -285,7 +285,11 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           onRespuestaLibre: (_) {},
           onCampoExtraido: (_) {},
         ),
-        const Positioned(top: 48 + 50, right: 34, child: EtiquetaAsistente()),
+        const Positioned(
+          top: 48 + KigoDesign.offsetEtiquetaAsistente,
+          right: 34,
+          child: EtiquetaAsistente(),
+        ),
       ],
     );
   }
