@@ -1399,12 +1399,21 @@
   function animateStat(id, value) {
     const el = document.getElementById(id);
     if (!el) return;
+    const num = Number(value);
+    if (isNaN(num)) {
+      el.textContent = "0";
+      return;
+    }
+    if (num === 0) {
+      el.textContent = "0";
+      return;
+    }
     el.textContent = "0";
-    const duration = 600;
+    const duration = 400;
     const start = performance.now();
     const step = ts => {
       const p = Math.min((ts - start) / duration, 1);
-      el.textContent = Math.round(p * value);
+      el.textContent = Math.round(p * num);
       if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
