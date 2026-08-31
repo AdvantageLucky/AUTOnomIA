@@ -1460,6 +1460,80 @@
     return html.replace(/\n/g, '<br/>');
   }
 
+  /* ─── Evidencia fotográfica + visor ─────── */
+
+  // Las fotos se muestran completas (contain), no recortadas, y se pueden
+  // abrir a tamaño real: en una INE recortada se pierden los datos de los
+  // bordes, y en un rostro recortado se pierde justo lo que hay que comparar.
+  function renderEvidencia(v) {
+    const fotos = [
+      { url: v.foto_documento_url, label: "Documento" },
+      { url: v.foto_rostro_url,    label: "Rostro" },
+      { url: v.foto_placa_url,     label: "Placa" },
+    ].filter(f => !!f.url);
+
+    if (!fotos.length) {
+      return `<div class="evidencia-grid"><div class="evidencia-vacia">Esta entrada no tiene fotos registradas.</div></div>`;
+    }
+
+    const lupa = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`;
+
+    return `<div class="evidencia-grid">${fotos.map(f => `
+      <div class="evidencia-card" tabindex="0" role="button" data-foto="${esc(f.url)}" data-foto-label="${esc(f.label)}">
+        <div class="evidencia-marco">
+          <img class="evidencia-img" src="${esc(f.url)}" alt="${esc(f.label)}" loading="lazy">
+          <span class="evidencia-zoom">${lupa}</span>
+        </div>
+        <div class="evidencia-pie"><span>${esc(f.label)}</span><span>Ver completa</span></div>
+      </div>`).join("")}</div>`;
+  }
+
+  // Delegado en document: la evidencia se re-renderiza en varios sitios
+  // (detalle y modal de solicitud) y así no hay que recablear listeners.
+  document.addEventListener("click", (e) => {
+    const card = e.target.closest?.(".evidencia-card");
+    if (card) abrirLightbox(card.dataset.foto, card.dataset.fotoLabel);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = document.activeElement?.closest?.(".evidencia-card");
+    if (card) { e.preventDefault(); abrirLightbox(card.dataset.foto, card.dataset.fotoLabel); }
+  });
+
+  function abrirLightbox(src, titulo) {
+    const box = document.getElementById("lightbox");
+    const img = document.getElementById("lightbox-img");
+    const cap = document.getElementById("lightbox-caption");
+    if (!box || !img) return;
+    img.src = src;
+    img.alt = titulo || "";
+    if (cap) cap.textContent = titulo || "";
+    box.hidden = false;
+  }
+
+  function cerrarLightbox() {
+    const box = document.getElementById("lightbox");
+    if (!box) return;
+    box.hidden = true;
+    // Se limpia el src para que no siga en memoria una imagen grande que ya
+    // nadie está viendo.
+    const img = document.getElementById("lightbox-img");
+    if (img) img.src = "";
+  }
+
+  document.getElementById("lightbox-cerrar")?.addEventListener("click", cerrarLightbox);
+  document.getElementById("lightbox")?.addEventListener("click", (e) => {
+    // Solo el fondo cierra: un clic sobre la imagen no debe cerrarla.
+    if (e.target.id === "lightbox") cerrarLightbox();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const lb = document.getElementById("lightbox");
+    if (lb && !lb.hidden) { cerrarLightbox(); return; }
+    const sol = document.getElementById("modal-solicitud");
+    if (sol && !sol.hidden) sol.hidden = true;
+  });
+
   function renderSeccionIA(v) {
     if (v.score_ia || v.resumen_ia) {
       const s = v.score_ia || {};
@@ -1474,7 +1548,7 @@
         <div class="ia-summary-card">
           <div class="ia-summary-header">
              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand);margin-right:6px;"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
-             <span style="font-weight:600;color:var(--text-1);">Análisis de Inteligencia Artificial</span>
+             <span style="font-weight:600;color:var(--text);">Análisis de Inteligencia Artificial</span>
           </div>
           <div class="ia-summary-body" style="padding-top:10px;">
             ${v.resumen_ia ? `<div style="font-size:13px;line-height:1.6;color:var(--text-2);margin-bottom:12px;">${formatMarkdown(esc(v.resumen_ia))}</div>` : ''}
@@ -1486,9 +1560,9 @@
     if (v.estadisticas) {
       const e = v.estadisticas;
       return `
-        <div class="ia-summary-card" style="border: 1px solid var(--border); background: var(--bg-1);">
+        <div class="ia-summary-card" style="border: 1px solid var(--border); background: var(--bg);">
           <div class="ia-summary-header">
-             <span style="font-weight:600;color:var(--text-1);">Historial del Visitante</span>
+             <span style="font-weight:600;color:var(--text);">Historial del Visitante</span>
           </div>
           <div style="font-size:13px;color:var(--text-2);padding-top:10px;line-height:1.5;">
             <strong>Visitas previas:</strong> ${e.veces_visitado}<br>
@@ -1526,11 +1600,6 @@
 
     body.innerHTML = `
       <div class="detalle-hero">
-        <div class="detalle-fotos">
-          ${v.foto_documento_url ? `<img class="detalle-foto" src="${esc(v.foto_documento_url)}" alt="Documento" loading="lazy">` : ""}
-          ${v.foto_rostro_url    ? `<img class="detalle-foto" src="${esc(v.foto_rostro_url)}"    alt="Rostro"    loading="lazy">` : ""}
-          ${v.foto_placa_url     ? `<img class="detalle-foto" src="${esc(v.foto_placa_url)}"     alt="Placa"     loading="lazy">` : ""}
-        </div>
         <div class="detalle-info">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
             <span class="badge ${tvBadge}">${esc(tvLabel)}</span>
@@ -1548,6 +1617,7 @@
           </div>
         </div>
       </div>
+      ${renderEvidencia(v)}
       ${renderSeccionIA(v)}
       <div class="expediente-section">
         <div class="expediente-header">
@@ -1722,10 +1792,23 @@
     container.innerHTML = visitas.map((v, i) => renderSolRow(v, i)).join("");
 
     container.querySelectorAll("[data-aprobar]").forEach(btn => {
-      btn.addEventListener("click", () => actualizarEstado(btn.dataset.aprobar, "APROBADO"));
+      btn.addEventListener("click", (e) => {
+        // La tarjeta entera abre el detalle: sin esto, aprobar también lo abriría.
+        e.stopPropagation();
+        actualizarEstado(btn.dataset.aprobar, "APROBADO");
+      });
     });
     container.querySelectorAll("[data-rechazar]").forEach(btn => {
-      btn.addEventListener("click", () => actualizarEstado(btn.dataset.rechazar, "RECHAZADO"));
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        actualizarEstado(btn.dataset.rechazar, "RECHAZADO");
+      });
+    });
+    container.querySelectorAll("[data-sol]").forEach(card => {
+      card.addEventListener("click", () => abrirSolicitudDetalle(card.dataset.sol));
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirSolicitudDetalle(card.dataset.sol); }
+      });
     });
 
     showSolState("rows");
@@ -1742,7 +1825,7 @@
 
   function renderSolRow(v, i) {
     const acceso = state.accesosById.get(v.kiosko_id);
-    return `<div class="sol-card" style="animation-delay:${i*40}ms">
+    return `<div class="sol-card" style="animation-delay:${i*40}ms" data-sol="${v.id}" role="button" tabindex="0">
       <div class="sol-card-left">
         <div class="feed-dot"></div>
         <div>
@@ -1756,6 +1839,88 @@
       </div>
     </div>`;
   }
+
+  // El listado de solicitudes viene de VisitaListItemResponse, que no trae
+  // fotos ni CURP, asi que el detalle se pide aparte. Antes solo se podia
+  // aprobar o rechazar a ciegas desde la tarjeta.
+  async function abrirSolicitudDetalle(id) {
+    const modal = document.getElementById("modal-solicitud");
+    if (!modal) return;
+
+    modal.innerHTML = `<div class="modal-box modal-box--lg"><div class="loading-state"><div class="spinner"></div></div></div>`;
+    modal.hidden = false;
+
+    const res = await api(`/visitas/${id}`);
+    if (!res || !res.ok) {
+      modal.innerHTML = `<div class="modal-box modal-box--lg">
+        <div class="modal-title">${t("load_err_title")}</div>
+        <div class="modal-actions"><button type="button" class="btn-cancel" data-cerrar-sol>Cerrar</button></div>
+      </div>`;
+      cablearCierreSolicitud(modal);
+      return;
+    }
+
+    const v = await res.json();
+    const acceso = state.accesosById.get(v.kiosko_id);
+    const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
+
+    modal.innerHTML = `<div class="modal-box modal-box--lg">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px">
+        <div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+            <span class="badge ${tvBadge}">${esc(tipoVisLabel(v.tipo_visitante))}</span>
+            <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
+            ${v.intervenida ? `<span class="badge badge--intervenida">Revisada por IA</span>` : ""}
+          </div>
+          <div class="modal-title">${esc(v.titular)}</div>
+          <div class="modal-sub" style="margin-bottom:0">
+            ${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${fmtDate(v.created_at)}
+          </div>
+        </div>
+        <button type="button" class="btn-cancel" data-cerrar-sol style="padding:4px 10px;font-size:16px;border-radius:6px;cursor:pointer">&#10005;</button>
+      </div>
+
+      ${renderEvidencia(v)}
+
+      <div class="sol-modal-campos">
+        <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
+        <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
+        <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp || "—")}</div></div>
+      </div>
+
+      ${renderSeccionIA(v)}
+
+      <div class="modal-actions">
+        <button type="button" class="btn-rechazar" data-sol-rechazar="${v.id}">Rechazar</button>
+        <button type="button" class="btn-aprobar"  data-sol-aprobar="${v.id}">Aprobar</button>
+      </div>
+    </div>`;
+
+    cablearCierreSolicitud(modal);
+
+    modal.querySelector("[data-sol-aprobar]")?.addEventListener("click", async () => {
+      modal.hidden = true;
+      await actualizarEstado(v.id, "APROBADO");
+    });
+    modal.querySelector("[data-sol-rechazar]")?.addEventListener("click", async () => {
+      modal.hidden = true;
+      await actualizarEstado(v.id, "RECHAZADO");
+    });
+  }
+
+  // Solo los botones de cerrar, que se recrean en cada apertura. El clic en el
+  // fondo se cablea una sola vez abajo: el overlay es persistente, y hacerlo
+  // aqui apilaba un listener nuevo por cada solicitud abierta.
+  function cablearCierreSolicitud(modal) {
+    modal.querySelectorAll("[data-cerrar-sol]").forEach(btn => {
+      btn.addEventListener("click", () => { modal.hidden = true; });
+    });
+  }
+
+  document.getElementById("modal-solicitud")?.addEventListener("click", (e) => {
+    // Solo el fondo cierra: un clic dentro de la caja no debe cerrarla.
+    if (e.target.id === "modal-solicitud") e.target.hidden = true;
+  });
 
   async function actualizarEstado(id, estado) {
     const res = await api(`/visitas/${id}/estado`, {
