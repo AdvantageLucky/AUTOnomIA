@@ -176,7 +176,7 @@ func TestForgotPasswordFlow(t *testing.T) {
 	r.ServeHTTP(wResetBad, reqResetBad)
 	assert.Equal(t, http.StatusUnauthorized, wResetBad.Code)
 
-	// 4. Restablecer con código correcto -> 200 OK
+	// 4. Restablecer con código correcto -> 200 OK y devuelve JWT
 	resetOk, _ := json.Marshal(RecuperarPasswordRequest{
 		Correo:      correo,
 		Codigo:      codigoRec,
@@ -187,6 +187,11 @@ func TestForgotPasswordFlow(t *testing.T) {
 	reqResetOk.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(wResetOk, reqResetOk)
 	assert.Equal(t, http.StatusOK, wResetOk.Code)
+
+	var jwtReset JWTResponse
+	err := json.Unmarshal(wResetOk.Body.Bytes(), &jwtReset)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, jwtReset.AccessToken)
 
 	// 5. Intentar login con la contraseña antigua -> 401
 	loginOld, _ := json.Marshal(LoginRequest{Correo: correo, Password: passOriginal})

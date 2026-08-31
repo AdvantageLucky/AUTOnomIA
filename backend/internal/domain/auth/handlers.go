@@ -372,7 +372,13 @@ func (h *Handler) RecuperarPasswordConOtp(c *gin.Context) {
 
 	_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
 
-	c.JSON(http.StatusOK, gin.H{"message": "contraseña actualizada correctamente"})
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, JWTResponse{AccessToken: token})
 }
 
 // LoginWithGoogle autentica a un admin usando el id_token emitido por Google Identity Services.
