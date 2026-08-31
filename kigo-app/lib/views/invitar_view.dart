@@ -94,12 +94,24 @@ class _InvitarViewState extends State<InvitarView> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int>(
-                    initialValue: _destinoIdSeleccionado,
+                    value: vm.destinos.any((d) => d.id == _destinoIdSeleccionado)
+                        ? _destinoIdSeleccionado
+                        : (vm.destinos.isNotEmpty ? vm.destinos.first.id : null),
                     decoration: const InputDecoration(labelText: 'Casa destino'),
-                    items: vm.destinos
-                        .map((d) => DropdownMenuItem(value: d.id, child: Text(d.nombre)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _destinoIdSeleccionado = v),
+                    items: vm.destinos.isEmpty
+                        ? [
+                            const DropdownMenuItem<int>(
+                              value: null,
+                              enabled: false,
+                              child: Text('Sin casas registradas'),
+                            ),
+                          ]
+                        : vm.destinos
+                            .map((d) => DropdownMenuItem(value: d.id, child: Text(d.nombre)))
+                            .toList(),
+                    onChanged: vm.destinos.isEmpty
+                        ? null
+                        : (v) => setState(() => _destinoIdSeleccionado = v),
                   ),
                   const SizedBox(height: 8),
                   SwitchListTile(
