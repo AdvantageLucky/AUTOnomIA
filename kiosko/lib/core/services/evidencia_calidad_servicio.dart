@@ -27,10 +27,20 @@ class EvidenciaCalidadServicio {
   static const double _umbralNitidez = 60.0;
 
   Future<bool> esNitida(String pathImagen, {double? umbral}) async {
+    final varianza = await puntuarNitidez(pathImagen);
+    if (varianza == null) return false;
+    return varianza >= (umbral ?? _umbralNitidez);
+  }
+
+  /// Varianza cruda del Laplaciano, sin comparar contra ningún umbral --
+  /// para quien necesite el número (ej. clasificar en niveles de calidad
+  /// además del simple acepta/rechaza de [esNitida]). `null` si la imagen
+  /// no se pudo leer/decodificar.
+  Future<double?> puntuarNitidez(String pathImagen) async {
     try {
       final bytes = await File(pathImagen).readAsBytes();
       final imagen = imglib.decodeImage(bytes);
-      if (imagen == null) return false;
+      if (imagen == null) return null;
 
       final gris = imglib.grayscale(
         imagen.width > _anchoAnalisis
@@ -38,13 +48,23 @@ class EvidenciaCalidadServicio {
             : imagen,
       );
 
-      final varianza = _varianzaLaplaciano(gris);
-      return varianza >= (umbral ?? _umbralNitidez);
+      return _varianzaLaplaciano(gris);
     } catch (e) {
       debugPrint('Error evaluando calidad de imagen: $e');
-      return false;
+      return null;
     }
   }
+
+  /// Traduce una varianza ya calculada a una etiqueta de calidad ("nitida"/
+  /// "media") para guardar junto con la foto de INE aceptada. Nunca
+  /// devuelve "borrosa": ese caso ya se descartó antes de llegar aquí --
+  /// [esNitida] rechaza cualquier foto por debajo de [_umbralNitidez], así
+  /// que solo fotos que ya pasaron el gate llegan a calificarse.
+  /// Corte de partida sin calibrar contra fotos reales del F10 -- se ajusta
+  /// después con el número crudo ya guardado, sin volver a tomar fotos.
+  static const double _umbralNitida = 120.0;
+
+  String calificar(double varianza) => varianza >= _umbralNitida ? 'nitida' : 'media';
 
   /// Kernel de Laplaciano 3x3 estándar: resalta bordes en cualquier
   /// dirección. La varianza de la respuesta es la métrica de nitidez.

@@ -112,6 +112,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           pathFotoIne: data.pathFotoIne,
           pathFotoRostro: data.pathFotoRostro,
           pathFotoPlaca: data.pathFotoPlaca,
+          nitidezIneScore: data.nitidezIneScore,
+          calidadIne: data.calidadIne,
         );
 
         if (!mounted) return;
@@ -141,6 +143,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         pathFotoIne: data.pathFotoIne,
         pathFotoRostro: data.pathFotoRostro,
         pathFotoPlaca: data.pathFotoPlaca,
+        nitidezIneScore: data.nitidezIneScore,
+        calidadIne: data.calidadIne,
       );
 
       if (!mounted) return;

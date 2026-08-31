@@ -149,6 +149,13 @@ class VehicularRegisterViewModel extends ChangeNotifier {
       registrationData.curp = datosExtraidos!.curp;
       registrationData.nombreCompleto = datosExtraidos.nombreCompleto;
       registrationData.pathFotoIne = datosExtraidos.pathFotoIne;
+      // La foto ya pasó el gate de nitidez -- se guarda también el número
+      // crudo y la etiqueta derivada, para el dataset calificable.
+      final varianza = await _calidadServicio.puntuarNitidez(pathFoto);
+      if (varianza != null) {
+        registrationData.nitidezIneScore = varianza;
+        registrationData.calidadIne = _calidadServicio.calificar(varianza);
+      }
       return CalidadCaptura.ok;
     } catch (e) {
       debugPrint('Error al procesar la INE: $e');
