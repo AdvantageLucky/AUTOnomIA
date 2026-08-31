@@ -27,6 +27,12 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
   bool _verificandoConKigo = false;
   String? _error;
 
+  /// Tras 5 intentos fallidos de Kigo Verify en este paso, se oculta la
+  /// opción y se fuerza el camino manual con la cámara propia.
+  static const _maxIntentosKigo = 5;
+  int _intentosKigoFallidos = 0;
+  bool get _kigoDisponible => _intentosKigoFallidos < _maxIntentosKigo;
+
   @override
   void initState() {
     super.initState();
@@ -90,22 +96,32 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
 
       final resultado = await _esperarResultado(enrollment.enrollmentId);
       if (resultado == null) {
-        setState(() => _error = 'No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
+        _registrarIntentoKigoFallido('No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
         return;
       }
 
       final pathLocal = await _descargarYGuardarLocal(resultado);
       final embedding = await _servicio.calcularEmbedding(pathLocal);
       if (embedding == null) {
-        setState(() => _error = 'No detectamos tu rostro con claridad en la foto de Kigo, intenta de nuevo o usa la cámara');
+        _registrarIntentoKigoFallido('No detectamos tu rostro con claridad en la foto de Kigo, intenta de nuevo o usa la cámara');
         return;
       }
       widget.onCapturado(pathLocal, embedding);
     } catch (_) {
-      if (mounted) setState(() => _error = 'No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
+      if (mounted) _registrarIntentoKigoFallido('No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
     } finally {
       if (mounted) setState(() => _verificandoConKigo = false);
     }
+  }
+
+  void _registrarIntentoKigoFallido(String mensaje) {
+    if (!mounted) return;
+    setState(() {
+      _intentosKigoFallidos++;
+      _error = _kigoDisponible
+          ? mensaje
+          : 'No se pudo verificar con Kigo tras varios intentos. Usa la cámara para continuar.';
+    });
   }
 
   /// Poll cada 3s hasta COMPLETED/FAILED, con limite duro de 3 minutos —
@@ -220,17 +236,19 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
                       : const Icon(Icons.camera_alt, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: (_procesando || _verificandoConKigo) ? null : _verificarConKigo,
-                child: _verificandoConKigo
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Verificar con Kigo', style: TextStyle(color: Colors.white)),
-              ),
+              if (_kigoDisponible) ...[
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: (_procesando || _verificandoConKigo) ? null : _verificarConKigo,
+                  child: _verificandoConKigo
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Verificar con Kigo', style: TextStyle(color: Colors.white)),
+                ),
+              ],
             ],
           ),
         ),
