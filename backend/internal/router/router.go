@@ -40,7 +40,7 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	hub := sse.NewHub()
 	visitas.IniciarAgenteReportes(db, cfg.LLMUrl)
 
-	registerAuthRoutes(api, db, cfg.JWTSecret, cfg.PublicURL)
+	registerAuthRoutes(api, db, cfg)
 	registerAdminRoutes(api, db, cfg.JWTSecret)
 	registerKioskoRoutes(api, db, cfg.JWTSecret)
 	registerVisitaRoutes(api, db, cfg, hub)
@@ -82,12 +82,14 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 	return r
 }
 
-func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, publicURL string) {
+func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config) {
+	jwtSecret, publicURL := cfg.JWTSecret, cfg.PublicURL
 	adminRepo := admin.NewRepository(db)
 	kioskoRepo := kiosko.NewRepository(db)
 	sesionRepo := auth.NewSesionRepository(db)
 	tenantRepo := tenant.NewRepository(db)
-	authHandler := auth.NewHandler(adminRepo, kioskoRepo, sesionRepo, tenantRepo, jwtSecret)
+	adminOtpRepo := auth.NewAdminOtpRepository(db)
+	authHandler := auth.NewHandler(adminRepo, kioskoRepo, sesionRepo, tenantRepo, jwtSecret, adminOtpRepo, emailOtpSender(cfg))
 	deviceRepo := auth.NewDeviceRepository(db)
 	deviceHandler := auth.NewDeviceHandler(deviceRepo, sesionRepo, kioskoRepo, publicURL)
 
@@ -95,6 +97,8 @@ func registerAuthRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret, publicURL s
 	{
 		g.POST("/sign-in", authHandler.RegisterAdminWithMailAndPassword)
 		g.POST("/login", authHandler.LoginAdminWithMailAndPassword)
+		g.POST("/admin/solicitar-otp", authHandler.SolicitarOTPAdmin)
+		g.POST("/admin/verificar-otp", authHandler.VerificarOTPAdmin)
 		g.POST("/google", authHandler.LoginWithGoogle)
 		g.POST("/google/sign-in", authHandler.RegisterWithGoogle)
 		g.POST("/kiosko/login", authHandler.LoginKiosko)

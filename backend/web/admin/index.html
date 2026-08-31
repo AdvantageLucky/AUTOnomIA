@@ -68,6 +68,29 @@
 					<div id="google-btn-container" style="display:flex;justify-content:center"></div>
 
 					<div class="fine-print">
+						<button type="button" class="link-btn" id="otp-login-toggle" data-i18n="otp_login_link">Entrar con código por correo</button>
+					</div>
+
+					<div id="otp-login-box" hidden>
+						<div class="form-group">
+							<label for="otp-correo" data-i18n="login_email">Correo electrónico</label>
+							<input id="otp-correo" type="email" required placeholder="tu@correo.com" autocomplete="username">
+						</div>
+						<div id="otp-step-solicitar">
+							<button type="button" class="btn-primary btn-block" id="otp-solicitar-btn" data-i18n="otp_send_btn">Enviar código</button>
+						</div>
+						<div id="otp-step-verificar" hidden>
+							<div class="form-group">
+								<label for="otp-codigo" data-i18n="otp_code_label">Código de 6 dígitos</label>
+								<input id="otp-codigo" type="text" inputmode="numeric" maxlength="6" placeholder="000000">
+							</div>
+							<button type="button" class="btn-primary btn-block" id="otp-verificar-btn" data-i18n="otp_verify_btn">Verificar y entrar</button>
+						</div>
+						<div id="otp-error" class="form-error" hidden></div>
+						<div id="otp-success" class="form-success" hidden data-i18n="otp_sent_msg">Código enviado, revisa tu correo.</div>
+					</div>
+
+					<div class="fine-print">
 						<span data-i18n="no_account">¿No tienes cuenta?</span>
 						<button type="button" class="link-btn" id="login-toggle-mode" data-i18n="create_account">Crear cuenta de administrador</button>
 					</div>

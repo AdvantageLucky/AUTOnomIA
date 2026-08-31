@@ -22,6 +22,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"kigo-autonomia-backend/internal/domain/admin"
 	"kigo-autonomia-backend/internal/domain/kiosko"
@@ -42,11 +44,13 @@ import (
 )
 
 type Handler struct {
-	adminRepo  *admin.Repository
-	kioskoRepo *kiosko.Repository
-	sesionRepo *SesionRepository
-	tenantRepo tenant.Repository
-	jwtSecret  string
+	adminRepo    *admin.Repository
+	kioskoRepo   *kiosko.Repository
+	sesionRepo   *SesionRepository
+	tenantRepo   tenant.Repository
+	jwtSecret    string
+	adminOtpRepo *AdminOtpRepository
+	emailSender  OtpSender
 }
 
 func NewHandler(
@@ -55,13 +59,17 @@ func NewHandler(
 	sesionRepo *SesionRepository,
 	tenantRepo tenant.Repository,
 	jwtSecret string,
+	adminOtpRepo *AdminOtpRepository,
+	emailSender OtpSender,
 ) *Handler {
 	return &Handler{
-		adminRepo:  adminRepo,
-		kioskoRepo: kioskoRepo,
-		sesionRepo: sesionRepo,
-		tenantRepo: tenantRepo,
-		jwtSecret:  jwtSecret,
+		adminRepo:    adminRepo,
+		kioskoRepo:   kioskoRepo,
+		sesionRepo:   sesionRepo,
+		tenantRepo:   tenantRepo,
+		jwtSecret:    jwtSecret,
+		adminOtpRepo: adminOtpRepo,
+		emailSender:  emailSender,
 	}
 }
 
@@ -195,6 +203,94 @@ func (h *Handler) LoginAdminWithMailAndPassword(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "contraseña invalida"})
 		return
 	}
+
+	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, JWTResponse{AccessToken: token})
+}
+
+// SolicitarOTPAdmin genera y manda por correo un código de acceso para el
+// Admin -- login alternativo al de correo+password (mismo patrón que
+// persona.SolicitarOTP, anclado a Correo en vez de Telefono). Válido 5
+// minutos.
+func (h *Handler) SolicitarOTPAdmin(c *gin.Context) {
+	var req SolicitarOtpAdminRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if _, err := h.adminRepo.FindByCorreo(req.Correo); err != nil {
+		// No se revela si el correo existe o no -- mismo mensaje que un
+		// envío exitoso, para no dejar enumerar correos de admins válidos.
+		c.JSON(http.StatusOK, gin.H{"message": "si el correo existe, se envió un código"})
+		return
+	}
+
+	if _, err := h.adminOtpRepo.FindActivaPorCorreo(req.Correo); err == nil {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "ya tienes un código activo, espera a que expire"})
+		return
+	}
+
+	codigo, err := generarCodigoOtpAdmin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	solicitud := &AdminOtpSolicitud{
+		Correo:   req.Correo,
+		Codigo:   codigo,
+		ExpiraEn: time.Now().Add(5 * time.Minute),
+	}
+	if err := h.adminOtpRepo.Create(solicitud); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.emailSender.Enviar(c.Request.Context(), req.Correo, codigo); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo enviar el código"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "si el correo existe, se envió un código"})
+}
+
+// VerificarOTPAdmin confirma el código y devuelve el mismo JWT que el login
+// por correo+password o Google.
+func (h *Handler) VerificarOTPAdmin(c *gin.Context) {
+	var req VerificarOtpAdminRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	solicitud, err := h.adminOtpRepo.FindActivaPorCorreo(req.Correo)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "código inválido o vencido"})
+		return
+	}
+	if subtle.ConstantTimeCompare([]byte(solicitud.Codigo), []byte(req.Codigo)) != 1 {
+		// Corta por fuerza bruta: tras 5 intentos fallidos, se invalida el
+		// código y hay que pedir uno nuevo.
+		if intentos, incErr := h.adminOtpRepo.IncrementarIntentos(solicitud.ID); incErr == nil && intentos >= 5 {
+			_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "código inválido o vencido"})
+		return
+	}
+
+	a, err := h.adminRepo.FindByCorreo(req.Correo)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "correo inválido"})
+		return
+	}
+
+	_ = h.adminOtpRepo.InvalidarPorCorreo(req.Correo)
 
 	token, err := GenerateAdminToken(a.ID, a.Rol, a.TenantID, h.jwtSecret)
 	if err != nil {

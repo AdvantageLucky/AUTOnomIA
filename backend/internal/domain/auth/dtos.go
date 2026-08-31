@@ -26,6 +26,18 @@ type JWTResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
+// SolicitarOtpAdminRequest DTO para pedir un código de acceso por correo
+// (login alternativo al de correo+password)
+type SolicitarOtpAdminRequest struct {
+	Correo string `json:"correo" binding:"required,email"`
+}
+
+// VerificarOtpAdminRequest DTO para confirmar el código y obtener el JWT
+type VerificarOtpAdminRequest struct {
+	Correo string `json:"correo" binding:"required,email"`
+	Codigo string `json:"codigo" binding:"required"`
+}
+
 // LoginKioskoRequest DTO para loguear a un kiosko usando el KioskoID y su ClaveKiosko
 type LoginKioskoRequest struct {
 	KioskoID    uint   `json:"kiosko_id"    binding:"required"`
