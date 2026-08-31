@@ -9,7 +9,7 @@ import (
 	"kigo-autonomia-backend/internal/platform/llmclient"
 )
 
-const systemPromptVisitas = "Eres un asistente de seguridad en caseta residencial. Escribes resúmenes breves y concretos en español para el guardia, usando únicamente los datos que se te dan. Nunca inventas datos ni escribes campos vacíos entre corchetes."
+const systemPromptVisitas = "Eres un analista de seguridad en caseta residencial. Escribes en español, para el guardia, explicando qué pasó en una entrada y qué conviene revisar. Usas únicamente los datos que se te dan: nunca inventas cifras ni antecedentes, y nunca escribes campos vacíos entre corchetes."
 
 // rePlaceholder detecta los huecos que deja un modelo cuando le falta un dato:
 // "[nombre]", "[Nombre del visitante]", "{nombre}", "<nombre>". Es el sintoma
@@ -28,7 +28,9 @@ func GenerarResumen(ctx context.Context, llmURL string, s ScoreContexto, v Visit
 		return resumenHeuristicoDe(s, v), nil
 	}
 
-	resumen, err := llmclient.Completar(ctx, strings.TrimSpace(llmURL), systemPromptVisitas, construirPrompt(s, v))
+	// 360 tokens y no los 120 por defecto: el análisis son dos párrafos, y con
+	// el techo viejo se cortaba a media frase del segundo.
+	resumen, err := llmclient.CompletarConLimite(ctx, strings.TrimSpace(llmURL), systemPromptVisitas, construirPrompt(s, v), 360)
 	if err != nil {
 		return resumenHeuristicoDe(s, v), err
 	}
@@ -92,53 +94,45 @@ func construirPrompt(s ScoreContexto, v Visita) string {
 		}
 		datos = append(datos, historial)
 	}
-	if s.Confiable {
-		datos = append(datos, "Marcado como visitante de confianza (varias entradas seguidas aprobadas sin incidencias)")
-	}
 
-	anomalias := descripcionAnomalias(s)
-	if len(anomalias) > 0 {
-		datos = append(datos, "Anomalías detectadas: "+strings.Join(anomalias, "; "))
-	} else {
-		datos = append(datos, "Anomalías detectadas: ninguna")
+	positivos, negativos, faltantes := s.DescripcionFactores()
+
+	secciones := []string{
+		"### Datos de la visita\n" + strings.Join(datos, "\n"),
+		fmt.Sprintf("### Score de confianza\n%d de 100 (confianza %s), calculado a partir de los puntos siguientes.",
+			s.ConfianzaPct, s.NivelConfianza()),
 	}
+	secciones = append(secciones, bloque("A favor", positivos, "Nada a favor por ahora."))
+	secciones = append(secciones, bloque("En contra", negativos, "Ninguna anomalía detectada."))
+	secciones = append(secciones, bloque("Evidencia que falta", faltantes, "No falta evidencia."))
 
 	return fmt.Sprintf(`### Instrucción
-Escribe para el guardia de caseta un resumen de 2 o 3 oraciones sobre esta visita, en español.
+Escribe para el guardia de caseta un análisis de esta entrada, en español, en 4 a 6 oraciones repartidas en dos párrafos.
+
+Párrafo 1 — qué pasó: quién llegó, a dónde va, cómo se identificó y qué dice su historial.
+Párrafo 2 — qué mirar: si hay puntos en contra o evidencia faltante, explícalos y di por qué importan. Si no hay ninguno, dilo en una frase.
 
 Reglas:
-- Usa solo los datos de abajo. No inventes nada.
+- Usa solo los datos de abajo. No inventes nada, ni cifras ni antecedentes.
 - Si un dato no aparece, no lo menciones. NUNCA escribas corchetes, llaves ni campos vacíos como [nombre] o [casa].
-- Empieza por quién es y a dónde va.
-- Si hay anomalías, dilas explícitamente y di qué debería revisar el guardia.
-- Si no hay anomalías y el visitante es recurrente, dilo en una frase y no alargues.
-- Nada de saludos, encabezados ni despedidas: solo el resumen.
+- Menciona el score una sola vez y en palabras ("confianza alta", "confianza baja"), no repitas el número.
+- No copies la lista tal cual: explícala con tus palabras y conecta los puntos entre sí.
+- Nada de saludos, encabezados, viñetas ni despedidas: solo los dos párrafos.
 
-### Datos de la visita
 %s
 
-### Resumen
-`, strings.Join(datos, "\n"))
+### Análisis
+`, strings.Join(secciones, "\n\n"))
 }
 
-func descripcionAnomalias(s ScoreContexto) []string {
-	var anomalias []string
-	if s.AnomaliaMatricula {
-		anomalias = append(anomalias, "llega con una placa distinta a la de sus visitas anteriores")
+// bloque arma una sección del prompt, con un texto explícito cuando la lista
+// viene vacía: dejar la sección en blanco invita al modelo a rellenarla por su
+// cuenta, que es justo lo que se quiere evitar.
+func bloque(titulo string, lineas []string, siVacio string) string {
+	if len(lineas) == 0 {
+		return "### " + titulo + "\n" + siVacio
 	}
-	if s.CambioModalidad {
-		anomalias = append(anomalias, "solía venir con invitación QR y esta vez llegó sin ella")
-	}
-	if s.HorarioInusual {
-		anomalias = append(anomalias, "el horario de llegada es inusual para este visitante")
-	}
-	if s.RechazadoPrevio {
-		anomalias = append(anomalias, "tiene un rechazo previo registrado")
-	}
-	if s.OCRSospechoso {
-		anomalias = append(anomalias, "la CURP no pasa validación de formato (posible error de lectura del INE)")
-	}
-	return anomalias
+	return "### " + titulo + "\n- " + strings.Join(lineas, "\n- ")
 }
 
 const systemPromptReporte = "Eres un analista de seguridad residencial. Resumes la actividad de un turno en español, con cifras concretas y sin inventar datos."

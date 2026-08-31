@@ -58,9 +58,12 @@ type KioskoConfig struct {
 
 	// Configuracion de IA
 	AutoPassHabilitado     bool    `gorm:"not null;default:true"`
-	// Porcentaje de similitud coseno (0-100) que el kiosko exige para dar
-	// por buena una cara. Ver migracion 000057.
-	UmbralConfianzaVisitas int     `gorm:"not null;default:85"`
+	// Similitud coseno minima (0-100) para dar por buena una cara en el
+	// kiosko. Ver migracion 000058.
+	UmbralFacialPct int `gorm:"column:umbral_facial_pct;not null;default:85"`
+	// Score de confianza minimo (0-100) para que una entrada se apruebe sola.
+	// Sustituye al contador de aprobaciones consecutivas.
+	UmbralAutopassPct int `gorm:"column:umbral_autopass_pct;not null;default:80"`
 	UmbralSimilitudCara    float64 `gorm:"not null;default:0.70"` // similitud mínima para reconocimiento facial
 
 	// Nuevos campos de UI configurable

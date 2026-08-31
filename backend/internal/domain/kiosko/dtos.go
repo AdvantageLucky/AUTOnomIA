@@ -44,7 +44,8 @@ type KioskoConfigRequest struct {
 	HorarioFin             *string   `json:"horario_fin"`
 	MensajeBienvenida      *string   `json:"mensaje_bienvenida"`
 	AutoPassHabilitado     *bool     `json:"auto_pass_habilitado"`
-	UmbralConfianzaVisitas *int      `json:"umbral_confianza_visitas"`
+	UmbralFacialPct        *int      `json:"umbral_facial_pct"`
+	UmbralAutopassPct      *int      `json:"umbral_autopass_pct"`
 	UmbralSimilitudCara    *float64  `json:"umbral_similitud_cara"`
 
 	TiempoExitoSeg *int `json:"tiempo_exito_seg"`
@@ -72,7 +73,8 @@ type KioskoConfigResponse struct {
 	HorarioFin             string     `json:"horario_fin"`
 	MensajeBienvenida      string     `json:"mensaje_bienvenida"`
 	AutoPassHabilitado     bool       `json:"auto_pass_habilitado"`
-	UmbralConfianzaVisitas int        `json:"umbral_confianza_visitas"`
+	UmbralFacialPct        int        `json:"umbral_facial_pct"`
+	UmbralAutopassPct      int        `json:"umbral_autopass_pct"`
 	UmbralSimilitudCara    float64    `json:"umbral_similitud_cara"`
 
 	TiempoExitoSeg int `json:"tiempo_exito_seg"`
@@ -126,7 +128,8 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 		HorarioFin:             cfg.HorarioFin,
 		MensajeBienvenida:      cfg.MensajeBienvenida,
 		AutoPassHabilitado:     cfg.AutoPassHabilitado,
-		UmbralConfianzaVisitas: cfg.UmbralConfianzaVisitas,
+		UmbralFacialPct:        cfg.UmbralFacialPct,
+		UmbralAutopassPct:      cfg.UmbralAutopassPct,
 		UmbralSimilitudCara:    cfg.UmbralSimilitudCara,
 
 		TiempoExitoSeg: cfg.TiempoExitoSeg,
