@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 
 class ResidentWelcomeView extends StatefulWidget {
   final ResidentWelcomeViewModel viewModel;
@@ -17,15 +20,20 @@ class ResidentWelcomeView extends StatefulWidget {
 
 class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
   Timer? _timerRegreso;
+  final TextToSpeakServicio _tts = TextToSpeakServicio();
 
   @override
   void initState() {
     super.initState();
-    // Tras mostrar la confirmación, regresa sola a la pantalla de bienvenida.
-    _timerRegreso = Timer(const Duration(seconds: 30), () {
-      if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final config = context.read<KioskoConfigNotifier>().config;
+      final segs = config.tiempoExitoSeg > 0 ? config.tiempoExitoSeg : 4;
+      _timerRegreso = Timer(Duration(seconds: segs), () {
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      });
+      _tts.speak('¡Bienvenido, ${widget.viewModel.nombre}! Acceso autorizado.');
     });
   }
 

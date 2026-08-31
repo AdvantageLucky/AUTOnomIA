@@ -5,10 +5,13 @@ import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
+import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_result_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
 import 'package:kigo_kiosco/features/welcome/views/widgets/verdict_ring.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 
 class QrResultView extends StatefulWidget {
   final QrResultViewModel viewModel;
@@ -27,6 +30,7 @@ class QrResultView extends StatefulWidget {
 class _QrResultViewState extends State<QrResultView> {
   Timer? _autoTimer;
   final _led = LedServicio();
+  final _tts = TextToSpeakServicio();
   bool _ledDisparado = false;
 
   @override
@@ -49,14 +53,18 @@ class _QrResultViewState extends State<QrResultView> {
       _ledDisparado = true;
       if (widget.viewModel.estado == QrResultEstado.exitoso) {
         _led.mostrarAprobado();
+        _tts.speak('Acceso autorizado. ¡Bienvenido!');
       } else {
         _led.mostrarRechazado();
+        _tts.speak('Invitación no válida o expirada.');
       }
     }
     if (_autoTimer == null &&
         widget.alTerminar != null &&
         widget.viewModel.estado != QrResultEstado.cargando) {
-      _autoTimer = Timer(const Duration(seconds: 5), widget.alTerminar!);
+      final config = context.read<KioskoConfigNotifier>().config;
+      final segs = config.tiempoExitoSeg > 0 ? config.tiempoExitoSeg : 4;
+      _autoTimer = Timer(Duration(seconds: segs), widget.alTerminar!);
     }
   }
 
