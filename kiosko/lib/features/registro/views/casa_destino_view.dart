@@ -387,7 +387,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
       case '':
         return AppLocalizations.t(context, 'otro_destino_label');
       default:
-        return tipo![0].toUpperCase() + tipo.substring(1);
+        return tipo[0].toUpperCase() + tipo.substring(1);
     }
   }
 

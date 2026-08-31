@@ -11,8 +11,9 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 class MarcoGuiaCamara extends StatelessWidget {
   final double ancho;
   final double alto;
+  final Color? colorBorde;
 
-  const MarcoGuiaCamara({super.key, required this.ancho, required this.alto});
+  const MarcoGuiaCamara({super.key, required this.ancho, required this.alto, this.colorBorde});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +28,7 @@ class MarcoGuiaCamara extends StatelessWidget {
           child: SizedBox(
             width: ancho,
             height: alto,
-            child: const CustomPaint(painter: _GuiaPainter()),
+            child: CustomPaint(painter: _GuiaPainter(colorBorde ?? KigoDesign.brand)),
           ),
         ),
       ],
@@ -62,18 +63,19 @@ class _OverlayOpacoPainter extends CustomPainter {
 }
 
 class _GuiaPainter extends CustomPainter {
-  const _GuiaPainter();
+  final Color color;
+  const _GuiaPainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = KigoDesign.brand
+      ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+      ..strokeWidth = 3.5;
     final rect = Offset.zero & size;
     canvas.drawOval(rect.deflate(1.5), paint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _GuiaPainter oldDelegate) => oldDelegate.color != color;
 }

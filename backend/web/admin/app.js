@@ -2447,7 +2447,7 @@
     const checkedMap = {
       ROSTRO: cfg.foto_rostro_visitante !== undefined ? !!cfg.foto_rostro_visitante : true,
       DESTINO: true,
-      PLACA: !esPeatonal ? true : !!cfg.foto_placa_visitante,
+      PLACA: esPeatonal ? false : (cfg.foto_placa_visitante !== undefined ? !!cfg.foto_placa_visitante : true),
       INE: !!cfg.foto_ine_visitante,
     };
 
@@ -2455,79 +2455,88 @@
       const def = PIPELINE_DEFS[stepId];
       if (!def) return;
 
-      const isChecked = checkedMap[stepId] ?? def.defaultChecked;
+      const isPlacaPeatonal = esPeatonal && stepId === "PLACA";
       const isPlacaVehicular = !esPeatonal && stepId === "PLACA";
+      const isChecked = isPlacaPeatonal ? false : (checkedMap[stepId] ?? def.defaultChecked);
 
       const item = document.createElement("div");
       item.className = `pipeline-item ${!isChecked ? "disabled" : ""}`;
-      item.draggable = true;
+      item.draggable = !isPlacaPeatonal;
       item.dataset.stepId = stepId;
 
+      if (isPlacaPeatonal) {
+        item.style.opacity = "0.38";
+        item.style.filter = "grayscale(1)";
+        item.title = "No aplica a kioskos peatonales";
+      }
+
       item.innerHTML = `
-        <div class="pipeline-handle" title="Arrastrar para reordenar">⠿</div>
+        <div class="pipeline-handle" title="${isPlacaPeatonal ? 'No disponible en kiosko peatonal' : 'Arrastrar para reordenar'}">⠿</div>
         <div class="pipeline-order-badge">—</div>
         <div class="pipeline-icon">${def.icon}</div>
         <div class="pipeline-info">
           <div class="pipeline-title">${def.title}</div>
-          <div class="pipeline-desc">${def.desc}</div>
+          <div class="pipeline-desc">${isPlacaPeatonal ? "Desactivado (no aplica a kioskos peatonales)" : def.desc}</div>
         </div>
         <div class="pipeline-actions">
-          <div class="pipeline-move-btns">
-            <button type="button" class="pipeline-btn-move btn-move-up" title="Mover arriba">▲</button>
-            <button type="button" class="pipeline-btn-move btn-move-down" title="Mover abajo">▼</button>
+          <div class="pipeline-move-btns" style="${isPlacaPeatonal ? 'opacity:0.3;pointer-events:none' : ''}">
+            <button type="button" class="pipeline-btn-move btn-move-up" title="Mover arriba" ${isPlacaPeatonal ? 'disabled' : ''}>▲</button>
+            <button type="button" class="pipeline-btn-move btn-move-down" title="Mover abajo" ${isPlacaPeatonal ? 'disabled' : ''}>▼</button>
           </div>
           <label class="toggle-switch">
-            <input type="checkbox" class="pipeline-toggle" ${isChecked ? "checked" : ""} ${isPlacaVehicular ? "disabled" : ""}>
+            <input type="checkbox" class="pipeline-toggle" ${isChecked ? "checked" : ""} ${(isPlacaVehicular || isPlacaPeatonal) ? "disabled" : ""}>
             <span class="toggle-slider"></span>
           </label>
         </div>
       `;
 
       const toggle = item.querySelector(".pipeline-toggle");
-      toggle.addEventListener("change", () => {
-        item.classList.toggle("disabled", !toggle.checked);
-        updatePipelineBadges();
-      });
-
-      item.querySelector(".btn-move-up").addEventListener("click", (e) => {
-        e.stopPropagation();
-        const prev = item.previousElementSibling;
-        if (prev) {
-          listEl.insertBefore(item, prev);
+      if (!isPlacaPeatonal) {
+        toggle.addEventListener("change", () => {
+          item.classList.toggle("disabled", !toggle.checked);
           updatePipelineBadges();
-        }
-      });
-      item.querySelector(".btn-move-down").addEventListener("click", (e) => {
-        e.stopPropagation();
-        const next = item.nextElementSibling;
-        if (next) {
-          listEl.insertBefore(next, item);
+        });
+
+        item.querySelector(".btn-move-up").addEventListener("click", (e) => {
+          e.stopPropagation();
+          const prev = item.previousElementSibling;
+          if (prev && prev.dataset.stepId !== "PLACA" || !esPeatonal) {
+            listEl.insertBefore(item, prev);
+            updatePipelineBadges();
+          }
+        });
+        item.querySelector(".btn-move-down").addEventListener("click", (e) => {
+          e.stopPropagation();
+          const next = item.nextElementSibling;
+          if (next) {
+            listEl.insertBefore(next, item);
+            updatePipelineBadges();
+          }
+        });
+
+        item.addEventListener("dragstart", (e) => {
+          item.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", stepId);
+        });
+
+        item.addEventListener("dragend", () => {
+          item.classList.remove("dragging");
+          listEl.querySelectorAll(".pipeline-item").forEach(el => el.classList.remove("drag-over"));
           updatePipelineBadges();
-        }
-      });
+        });
 
-      item.addEventListener("dragstart", (e) => {
-        item.classList.add("dragging");
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", stepId);
-      });
-
-      item.addEventListener("dragend", () => {
-        item.classList.remove("dragging");
-        listEl.querySelectorAll(".pipeline-item").forEach(el => el.classList.remove("drag-over"));
-        updatePipelineBadges();
-      });
-
-      item.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        const dragging = listEl.querySelector(".dragging");
-        if (dragging && dragging !== item) {
-          const rect = item.getBoundingClientRect();
-          const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
-          listEl.insertBefore(dragging, next ? item.nextSibling : item);
-        }
-      });
+        item.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          const dragging = listEl.querySelector(".dragging");
+          if (dragging && dragging !== item) {
+            const rect = item.getBoundingClientRect();
+            const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+            listEl.insertBefore(dragging, next ? item.nextSibling : item);
+          }
+        });
+      }
 
       listEl.appendChild(item);
     });
@@ -2646,6 +2655,24 @@
       placaChk.disabled = esPeatonal;
       if (esPeatonal) placaChk.checked = false;
     }
+
+    const activeSteps = [];
+    const listEl = document.getElementById("cfg-pipeline-list");
+    if (listEl) {
+      listEl.querySelectorAll(".pipeline-item").forEach(item => {
+        if (item.querySelector(".pipeline-toggle")?.checked) {
+          if (item.dataset.stepId !== "PLACA" || !esPeatonal) {
+            activeSteps.push(item.dataset.stepId);
+          }
+        }
+      });
+    }
+    renderPipeline({
+      pasos_sin_invitacion: activeSteps,
+      foto_rostro_visitante: activeSteps.includes("ROSTRO"),
+      foto_placa_visitante: esPeatonal ? false : activeSteps.includes("PLACA"),
+      foto_ine_visitante: activeSteps.includes("INE"),
+    }, esPeatonal);
   });
 
   document.getElementById("cfg-save-btn")?.addEventListener("click", async () => {
@@ -2687,6 +2714,7 @@
     if (headerSub) headerSub.textContent = kioskoActualizado.ubicacion ? kioskoActualizado.ubicacion : '';
 
     // 2. Guardar parámetros de configuración
+    const esPeatonal = tipoVal === "PEATONAL";
     const listEl = document.getElementById("cfg-pipeline-list");
     const activeSteps = [];
     let fotoRostro = false, fotoPlaca = false, fotoIne = false;
@@ -2696,6 +2724,7 @@
         const stepId = item.dataset.stepId;
         const toggle = item.querySelector(".pipeline-toggle");
         if (toggle && toggle.checked) {
+          if (stepId === "PLACA" && esPeatonal) return;
           activeSteps.push(stepId);
           if (stepId === "ROSTRO") fotoRostro = true;
           if (stepId === "PLACA") fotoPlaca = true;
@@ -2704,17 +2733,21 @@
       });
     }
 
+    if (esPeatonal) {
+      fotoPlaca = false;
+    }
+
     const payload = {
       color_kiosko:             document.getElementById("cfg-color").value,
       idioma_kiosko:            document.getElementById("cfg-idioma").value,
       mensaje_bienvenida:       document.getElementById("cfg-mensaje").value,
       foto_rostro_visitante:    fotoRostro,
-      foto_placa_visitante:     fotoPlaca,
+      foto_placa_visitante:     esPeatonal ? false : fotoPlaca,
       foto_ine_visitante:       fotoIne,
       pasos_sin_invitacion:     activeSteps,
       foto_ine_invitado:        document.getElementById("cfg-ine-invitado").checked,
       foto_rostro_invitado:     document.getElementById("cfg-rostro-invitado").checked,
-      foto_placa_invitado:      document.getElementById("cfg-placa-invitado").checked,
+      foto_placa_invitado:      esPeatonal ? false : document.getElementById("cfg-placa-invitado").checked,
       tiempo_exito_seg:         parseInt(document.getElementById("cfg-tiempo-exito").value) || 5,
       tiempo_espera_seg:        parseInt(document.getElementById("cfg-tiempo-espera").value) || 60,
       auto_pass_habilitado:     document.getElementById("cfg-autopass").checked,
