@@ -58,6 +58,29 @@ func (r *KigoVerifyRepository) ActualizarCompletado(id uint, fotoRostroURL strin
 		Updates(map[string]any{"status": "COMPLETED", "foto_rostro_url": fotoRostroURL}).Error
 }
 
+// MarcarCompletado es un compare-and-set: solo escribe si el enrollment
+// todavia no estaba COMPLETED. Devuelve la URL de la foto que quedo
+// finalmente guardada -- la nuestra si ganamos la carrera, o la que ya
+// estaba si el webhook y el polling llegaron a la vez. Sin esto, el que
+// llegara segundo pisaba la foto del primero y la app podia recibir una
+// URL distinta a la que se le habia respondido antes.
+func (r *KigoVerifyRepository) MarcarCompletado(id uint, fotoRostroURL string) (string, error) {
+	res := r.db.Model(&KigoVerifyEnrollment{}).
+		Where("id = ? AND status <> ?", id, "COMPLETED").
+		Updates(map[string]any{"status": "COMPLETED", "foto_rostro_url": fotoRostroURL})
+	if res.Error != nil {
+		return "", res.Error
+	}
+	if res.RowsAffected > 0 {
+		return fotoRostroURL, nil
+	}
+	var e KigoVerifyEnrollment
+	if err := r.db.First(&e, id).Error; err != nil {
+		return "", err
+	}
+	return e.FotoRostroURL, nil
+}
+
 func (r *KigoVerifyRepository) ActualizarEstado(id uint, status string) error {
 	return r.db.Model(&KigoVerifyEnrollment{}).Where("id = ?", id).Update("status", status).Error
 }

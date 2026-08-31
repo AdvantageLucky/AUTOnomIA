@@ -17,13 +17,23 @@ func TestCrearEnrollmentKigo(t *testing.T) {
 			t.Errorf("esperaba x-api-key='test-key', got %q", r.Header.Get("x-api-key"))
 		}
 		var body struct {
-			ExternalRef string `json:"external_ref"`
-			WebhookURL  string `json:"webhook_url"`
-			TTLHours    int    `json:"ttl_hours"`
+			ExternalRef string         `json:"external_ref"`
+			WebhookURL  string         `json:"webhook_url"`
+			RedirectURL string         `json:"redirect_url"`
+			TTLHours    int            `json:"ttl_hours"`
+			Metadata    map[string]any `json:"metadata"`
 		}
 		json.NewDecoder(r.Body).Decode(&body)
 		if body.ExternalRef == "" || body.WebhookURL == "" {
 			t.Errorf("esperaba external_ref y webhook_url no vacios, got %+v", body)
+		}
+		// Sin redirect_url, Kigo deja al usuario en su pantalla final y el
+		// WebView de kigo-app nunca detecta el fin del flujo.
+		if body.RedirectURL != RedirectURLPorDefecto {
+			t.Errorf("esperaba redirect_url=%q, got %q", RedirectURLPorDefecto, body.RedirectURL)
+		}
+		if body.Metadata["phone"] != "+525500000001" {
+			t.Errorf("esperaba metadata.phone verbatim, got %+v", body.Metadata)
 		}
 		json.NewEncoder(w).Encode(map[string]any{
 			"enrollment_id":  "enr-123",
@@ -36,7 +46,8 @@ func TestCrearEnrollmentKigo(t *testing.T) {
 	defer srv.Close()
 
 	cfg := KigoVerifyConfig{APIKey: "test-key", BaseURL: srv.URL, PublicURL: "https://autonomia.example"}
-	enrollmentID, enrollmentURL, webhookSecret, expiresAt, err := crearEnrollmentKigo(context.Background(), cfg, "persona-1-abc")
+	enrollmentID, enrollmentURL, webhookSecret, expiresAt, err := crearEnrollmentKigo(
+		context.Background(), cfg, "persona-1-abc", map[string]any{"phone": "+525500000001"})
 	if err != nil {
 		t.Fatalf("no esperaba error, got %v", err)
 	}

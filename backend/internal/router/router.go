@@ -328,7 +328,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		cfg.JWTSecret, cfg.QREd25519PrivateKeySeed,
 		membresiaRepo, tenantRepo, invitacionRepo, visitaRepo, destinoRepo, cfg.UploadsDir,
 		cfg.LLMUrl,
-		persona.KigoVerifyConfig{APIKey: cfg.KigoVerifyAPIKey, BaseURL: cfg.KigoVerifyBaseURL, PublicURL: cfg.PublicURL},
+		persona.KigoVerifyConfig{APIKey: cfg.KigoVerifyAPIKey, BaseURL: cfg.KigoVerifyBaseURL, PublicURL: cfg.PublicURL, RedirectURL: cfg.KigoVerifyRedirectURL},
 		kigoVerifyRepo,
 	)
 

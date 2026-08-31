@@ -33,6 +33,7 @@ type Config struct {
 	LLMUrl                  string
 	KigoVerifyAPIKey        string
 	KigoVerifyBaseURL       string
+	KigoVerifyRedirectURL   string
 	PublicURL               string
 	FirebaseCredentialsPath string
 	GoogleClientID          string
@@ -57,6 +58,10 @@ func Load() (*Config, error) {
 		LLMUrl:                  getEnv("LLM_URL", "http://localhost:8081"),
 		KigoVerifyAPIKey:        getEnv("KIGO_VERIFY_API_KEY", ""),
 		KigoVerifyBaseURL:       getEnv("KIGO_VERIFY_BASE_URL", "https://verify-api.kigo.dev"),
+		// Vacio deja que persona.RedirectURLPorDefecto decida. Solo hay que
+		// ponerlo si Kigo llega a rechazar el centinela .local por no ser un
+		// dominio resoluble.
+		KigoVerifyRedirectURL:   getEnv("KIGO_VERIFY_REDIRECT_URL", ""),
 		PublicURL:               getEnv("PUBLIC_URL", "http://localhost:8080"),
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
 		GoogleClientID:          getEnv("GOOGLE_CLIENT_ID", ""),
