@@ -3,16 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
+import 'package:kigo_kiosco/features/registro/models/paso_registro.dart';
 import 'package:kigo_kiosco/features/registro/models/touch_step_model.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/services/placa_lector_servicio.dart';
-
-/// Identifica qué captura corresponde a cada paso, para que la vista no dependa
-/// del índice: los pasos se arman según la config y el índice cambia. La
-/// placa ya no es un paso — se lee sola en paralelo (ver [leerPlaca]).
-enum PasoVehicular { ine, rostro }
 
 class VehicularRegisterViewModel extends ChangeNotifier {
   final DetectorServicio _detectorServicio = DetectorServicio();
@@ -25,11 +21,12 @@ class VehicularRegisterViewModel extends ChangeNotifier {
 
   int currentStep = 0;
 
-  /// Pasos activos de este kiosko. Se arman en el constructor porque el
-  /// dashboard decide qué capturas son obligatorias; pedir una foto que el
-  /// backend no exige alarga la fila en la caseta, y omitir una que sí exige
-  /// hace que el registro se rechace con 400 al final del flujo.
-  late final List<PasoVehicular> pasos;
+  /// Pasos activos de este kiosko, en el orden que armó el dashboard. Se
+  /// arman en el constructor porque el dashboard decide qué capturas son
+  /// obligatorias; pedir una foto que el backend no exige alarga la fila en
+  /// la caseta, y omitir una que sí exige hace que el registro se rechace con
+  /// 400 al final del flujo.
+  late final List<PasoRegistro> pasos;
 
   late final List<TouchStepModel> steps;
 
@@ -53,30 +50,33 @@ class VehicularRegisterViewModel extends ChangeNotifier {
     registrationData.casaDestino = casaDestino;
     final invitado = registrationData.esInvitado;
 
-    final sinInvPasos = <PasoVehicular>[];
-    for (final p in config.pasosSinInvitacion) {
-      if (p == 'INE' && config.fotoIneVisitante) sinInvPasos.add(PasoVehicular.ine);
-      if (p == 'ROSTRO' && config.fotoRostroVisitante) sinInvPasos.add(PasoVehicular.rostro);
-    }
-    if (sinInvPasos.isEmpty && config.fotoRostroVisitante) {
-      sinInvPasos.add(PasoVehicular.rostro);
-    }
+    // El invitado también respeta el orden del dashboard, sólo cambia qué
+    // pasos están habilitados: su QR ya lo identifica y su invitación ya trae
+    // la casa destino. Antes su lista estaba escrita a mano (INE y luego
+    // ROSTRO) y el orden configurado no lo tocaba.
+    requierePlaca = !invitado || config.fotoPlacaInvitado;
 
-    pasos = invitado
-        ? [
-            // Al invitado su QR ya lo identifica; lo demás depende de la config.
-            if (config.ineObligatorioInvitado) PasoVehicular.ine,
-            if (config.fotoRostroInvitado) PasoVehicular.rostro,
-          ]
-        : sinInvPasos;
+    pasos = construirPasosOrdenados(
+      orden: config.pasosSinInvitacion,
+      habilitados: {
+        if (invitado ? config.ineObligatorioInvitado : config.fotoIneVisitante)
+          PasoRegistro.ine,
+        if (invitado ? config.fotoRostroInvitado : config.fotoRostroVisitante)
+          PasoRegistro.rostro,
+        if (requierePlaca) PasoRegistro.placa,
+        // Al invitado no se le pregunta a dónde va: viene en la invitación.
+        if (!invitado) PasoRegistro.destino,
+      },
+      // Un invitado sin ninguna captura habilitada pasa sólo con su QR, así
+      // que su fallback es vacío a propósito.
+      fallback: invitado ? const [] : const [PasoRegistro.rostro, PasoRegistro.destino],
+    );
 
     steps = pasos.map(_descripcionDe).toList();
 
-    requierePlaca = !invitado || config.fotoPlacaInvitado;
-
     // Arranca apenas se crea el viewmodel — en paralelo con INE/rostro, no
-    // después. Para cuando el conductor termina esos pasos, la lectura ya
-    // suele estar resuelta.
+    // después. Para cuando el conductor llega al paso de PLACA, la lectura ya
+    // suele estar resuelta: el paso sólo la confirma.
     _lecturaPlaca = requierePlaca ? _placaLectorServicio.leer() : Future.value(null);
   }
 
@@ -101,16 +101,16 @@ class VehicularRegisterViewModel extends ChangeNotifier {
 
   // ── Navegación entre pasos ──────────────────────────────────────────────────
 
-  PasoVehicular get pasoActual => pasos[currentStep];
+  PasoRegistro get pasoActual => pasos[currentStep];
 
   TouchStepModel get currentStepData => steps[currentStep];
 
   bool get isLastStep => currentStep == pasos.length - 1;
 
-  /// El indicador visual suma los pasos de captura más el resumen. El invitado
-  /// no elige casa destino: viene en su invitación.
-  int get indicatorTotalSteps =>
-      pasos.length + (registrationData.esInvitado ? 1 : 2);
+  /// Los pasos configurados más el resumen. PLACA y DESTINO ya son pasos
+  /// ordenables, así que ya no se suman aparte como cuando estaban clavados
+  /// al final del flujo.
+  int get indicatorTotalSteps => pasos.length + 1;
 
   int get indicatorStep => currentStep;
 
@@ -196,9 +196,9 @@ class VehicularRegisterViewModel extends ChangeNotifier {
 
   // ── Copys por paso ──────────────────────────────────────────────────────────
 
-  TouchStepModel _descripcionDe(PasoVehicular paso) {
+  TouchStepModel _descripcionDe(PasoRegistro paso) {
     switch (paso) {
-      case PasoVehicular.ine:
+      case PasoRegistro.ine:
         return TouchStepModel(
           title: 'Coloca tu identificación dentro del recuadro',
           subtitle: '',
@@ -207,7 +207,7 @@ class VehicularRegisterViewModel extends ChangeNotifier {
           icon: Icons.badge_outlined,
           buttonTextKey: 'capturar_ine_button',
         );
-      case PasoVehicular.rostro:
+      case PasoRegistro.rostro:
         return TouchStepModel(
           title: 'Coloca tu rostro dentro del recuadro',
           subtitle: '',
@@ -215,6 +215,26 @@ class VehicularRegisterViewModel extends ChangeNotifier {
               'Puedes capturar una foto de tu rostro o usar evidencia desde cámaras conectadas al sistema de seguridad.',
           icon: Icons.photo_camera_outlined,
           buttonTextKey: 'reconocimiento_facial_button',
+        );
+      // PLACA y DESTINO se resuelven solos al llegarles el turno (ver
+      // esPasoAutomatico), asi que estos copys casi no se alcanzan a ver --
+      // existen para que steps quede 1:1 con pasos y el indicador de progreso
+      // no se descuadre.
+      case PasoRegistro.placa:
+        return TouchStepModel(
+          title: 'Placa del vehículo',
+          subtitle: '',
+          description: 'Confirma la placa del vehículo.',
+          icon: Icons.directions_car_outlined,
+          buttonTextKey: 'continue_button_text',
+        );
+      case PasoRegistro.destino:
+        return TouchStepModel(
+          title: '¿A qué casa vas?',
+          subtitle: '',
+          description: 'Elige tu destino dentro del residencial.',
+          icon: Icons.home_outlined,
+          buttonTextKey: 'continue_button_text',
         );
     }
   }

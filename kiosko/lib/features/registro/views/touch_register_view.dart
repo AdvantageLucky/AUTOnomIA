@@ -9,6 +9,7 @@ import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.d
 import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animation.dart';
 import 'package:flutter/material.dart';
+import 'package:kigo_kiosco/features/registro/models/paso_registro.dart';
 import 'package:kigo_kiosco/features/registro/viewmodels/touch_register_viewmodel.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
@@ -37,6 +38,9 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _narrar(AppLocalizations.t(context, 'welcome_message'));
+      // El dashboard puede poner DESTINO de primero: en ese caso no hay nada
+      // que capturar todavia y la pantalla arranca empujando su vista.
+      _ejecutarSiEsAutomatico();
     });
   }
 
@@ -58,7 +62,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   Future<void> _continueProcess() async {
     if (viewModel.isProcessingIne || viewModel.isProcessingRostro) return;
 
-    if (viewModel.pasoActual == PasoTouch.ine) {
+    if (viewModel.pasoActual == PasoRegistro.ine) {
       bool esIneValida = false;
       while (!esIneValida) {
         if (!mounted) return;
@@ -79,11 +83,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           if (mounted) {
             _narrar(AppLocalizations.t(context, 'ine_detected_title'));
           }
-          if (viewModel.isLastStep) {
-            _irACasaDestino();
-          } else {
-            viewModel.nextStep();
-          }
+          await _avanzar();
         } else {
           final esBorrosa = resultado == CalidadCaptura.borrosa;
           if (mounted) {
@@ -154,7 +154,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           }
         }
       }
-    } else if (viewModel.pasoActual == PasoTouch.rostro) {
+    } else if (viewModel.pasoActual == PasoRegistro.rostro) {
       bool esRostroValido = false;
       while (!esRostroValido) {
         if (!mounted) return;
@@ -178,11 +178,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               AppLocalizations.t(context, 'registration_complete_message'),
             );
           }
-          if (viewModel.isLastStep) {
-            _irACasaDestino();
-          } else {
-            viewModel.nextStep();
-          }
+          await _avanzar();
         } else {
           final esBorrosa = resultado == CalidadCaptura.borrosa;
           if (mounted) {
@@ -255,24 +251,65 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           }
         }
       }
+    } else {
+      // DESTINO no llega por el boton -- lo dispara _ejecutarSiEsAutomatico
+      // al tocarle el turno. Se atiende igual por si el visitante alcanza a
+      // tocar mientras se empuja la pantalla.
+      await _ejecutarSiEsAutomatico();
     }
   }
 
-  Future<void> _irACasaDestino() async {
+  /// Cierra el paso actual: si era el ultimo va al resumen, si no avanza y
+  /// deja corriendo el siguiente por si se resuelve solo.
+  Future<void> _avanzar() async {
+    if (viewModel.isLastStep) {
+      _irAResumen();
+      return;
+    }
+    viewModel.nextStep();
+    await _ejecutarSiEsAutomatico();
+  }
+
+  /// DESTINO no espera un toque: empuja su pantalla en cuanto le toca. La
+  /// recursion via _avanzar termina siempre, porque cada vuelta consume un
+  /// paso de una lista finita.
+  Future<void> _ejecutarSiEsAutomatico() async {
+    if (!mounted || viewModel.pasos.isEmpty) return;
+    if (!esPasoAutomatico(viewModel.pasoActual)) return;
+
+    switch (viewModel.pasoActual) {
+      case PasoRegistro.destino:
+        await _pasoCasaDestino();
+      // El flujo peatonal no lee placas; el viewmodel ya no arma ese paso.
+      case PasoRegistro.placa:
+      case PasoRegistro.ine:
+      case PasoRegistro.rostro:
+        break;
+    }
+  }
+
+  Future<void> _pasoCasaDestino() async {
     if (!mounted) return;
     final String? casa = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            CasaDestinoView(totalSteps: viewModel.indicatorTotalSteps),
+        builder: (_) => CasaDestinoView(
+          currentStep: viewModel.indicatorStep,
+          totalSteps: viewModel.indicatorTotalSteps,
+        ),
       ),
     );
+    // Si da "atras" aqui se cancela toda la solicitud: no hay un punto
+    // intermedio al que reanudar.
     if (casa == null) {
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
     viewModel.registrationData.casaDestino = casa;
+    await _avanzar();
+  }
 
+  void _irAResumen() {
     if (!mounted) return;
     Navigator.push(
       context,
@@ -392,7 +429,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           onCampoExtraido: (_) {}, // no llena campos -- tipoCampo queda null
         ),
         const Positioned(
-          top: 32 + 50, // debajo del icono de la mascota (44px + margen)
+          top: 32 + KigoDesign.offsetEtiquetaAsistente, // justo debajo de la mascota
           right: 42,
           child: EtiquetaAsistente(),
         ),
@@ -468,7 +505,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
             ),
             child: ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(24)),
-              child: viewModel.pasoActual == PasoTouch.ine
+              child: viewModel.pasoActual == PasoRegistro.ine
                   ? const IneApproachAnimation()
                   : const FaceApproachAnimation(),
             ),

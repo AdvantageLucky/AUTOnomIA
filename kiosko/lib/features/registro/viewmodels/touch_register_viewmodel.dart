@@ -3,12 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
+import 'package:kigo_kiosco/features/registro/models/paso_registro.dart';
 import 'package:kigo_kiosco/features/registro/models/touch_step_model.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
-
-enum PasoTouch { ine, rostro }
 
 class TouchRegisterViewModel extends ChangeNotifier {
   final KioskoConfig config;
@@ -27,27 +26,32 @@ class TouchRegisterViewModel extends ChangeNotifier {
   bool _isProcessingRostro = false;
   bool get isProcessingRostro => _isProcessingRostro;
 
-  late final List<PasoTouch> pasos;
+  late final List<PasoRegistro> pasos;
   late final List<TouchStepModel> steps;
 
   TouchRegisterViewModel([KioskoConfig? config])
       : config = config ?? KioskoConfig.defaults {
-    final list = <PasoTouch>[];
-    for (final p in this.config.pasosSinInvitacion) {
-      if (p == 'INE' && this.config.fotoIneVisitante) list.add(PasoTouch.ine);
-      if (p == 'ROSTRO' && this.config.fotoRostroVisitante) list.add(PasoTouch.rostro);
-    }
-    // Fallback si no hay ningún paso activo de captura previa
-    if (list.isEmpty) {
-      if (this.config.fotoRostroVisitante) list.add(PasoTouch.rostro);
-    }
-    pasos = list;
+    pasos = construirPasosOrdenados(
+      orden: this.config.pasosSinInvitacion,
+      habilitados: {
+        if (this.config.fotoIneVisitante) PasoRegistro.ine,
+        if (this.config.fotoRostroVisitante) PasoRegistro.rostro,
+        // Quien llega sin invitación siempre tiene que decir a dónde va, así
+        // que DESTINO no depende de un toggle. Lo que sí depende del
+        // dashboard es en qué momento se le pregunta.
+        PasoRegistro.destino,
+      },
+      // PLACA no entra aquí: este es el flujo peatonal y no hay lector de
+      // placas que ejecutar. Si el dashboard lo trae en la lista se ignora
+      // (lo atiende VehicularRegisterViewModel).
+      fallback: const [PasoRegistro.rostro, PasoRegistro.destino],
+    );
     steps = pasos.map(_stepModelPara).toList();
   }
 
-  static TouchStepModel _stepModelPara(PasoTouch p) {
+  static TouchStepModel _stepModelPara(PasoRegistro p) {
     switch (p) {
-      case PasoTouch.ine:
+      case PasoRegistro.ine:
         return TouchStepModel(
           title: 'Coloca tu identificación dentro del recuadro',
           subtitle: '',
@@ -56,7 +60,7 @@ class TouchRegisterViewModel extends ChangeNotifier {
           icon: Icons.badge_outlined,
           buttonTextKey: 'capturar_ine_button',
         );
-      case PasoTouch.rostro:
+      case PasoRegistro.rostro:
         return TouchStepModel(
           title: 'Coloca tu rostro dentro del recuadro',
           subtitle: '',
@@ -65,18 +69,40 @@ class TouchRegisterViewModel extends ChangeNotifier {
           icon: Icons.photo_camera_outlined,
           buttonTextKey: 'reconocimiento_facial_button',
         );
+      // DESTINO y PLACA empujan su propia pantalla en cuanto les toca el
+      // turno (ver esPasoAutomatico), así que este modelo casi no se alcanza
+      // a ver -- existe para que steps quede 1:1 con pasos y el indicador de
+      // progreso no se descuadre.
+      case PasoRegistro.destino:
+        return TouchStepModel(
+          title: '¿A qué casa vas?',
+          subtitle: '',
+          description: 'Elige tu destino dentro del residencial.',
+          icon: Icons.home_outlined,
+          buttonTextKey: 'continue_button_text',
+        );
+      case PasoRegistro.placa:
+        return TouchStepModel(
+          title: 'Placa del vehículo',
+          subtitle: '',
+          description: 'Confirma la placa del vehículo.',
+          icon: Icons.directions_car_outlined,
+          buttonTextKey: 'continue_button_text',
+        );
     }
   }
 
-  PasoTouch get pasoActual => pasos.isNotEmpty ? pasos[currentStep] : PasoTouch.rostro;
+  PasoRegistro get pasoActual =>
+      pasos.isNotEmpty ? pasos[currentStep] : PasoRegistro.rostro;
 
   TouchStepModel get currentStepData =>
-      steps.isNotEmpty ? steps[currentStep] : _stepModelPara(PasoTouch.rostro);
+      steps.isNotEmpty ? steps[currentStep] : _stepModelPara(PasoRegistro.rostro);
 
   bool get isLastStep => currentStep >= steps.length - 1;
 
-  // Pasos de capturas + Casa + Resumen
-  int get indicatorTotalSteps => steps.length + 2;
+  /// Los pasos configurados más el resumen. DESTINO ya es uno de los pasos,
+  /// así que ya no se suma aparte como cuando estaba clavado al final.
+  int get indicatorTotalSteps => steps.length + 1;
   int get indicatorStep => currentStep;
 
   void nextStep() {
