@@ -3543,78 +3543,84 @@
         </div>
       </div>
 
-      <div class="res-modal-grid">
-        <div class="res-modal-field">
-          <div class="res-modal-field-label">Teléfono</div>
-          <div class="res-modal-field-value">${m.telefono ? esc(m.telefono) : '—'}</div>
-        </div>
-        <div class="res-modal-field">
-          <div class="res-modal-field-label">CURP</div>
-          <div class="res-modal-field-value mono-value" style="font-size:12px">${m.curp ? esc(m.curp) : '—'}</div>
-        </div>
-        <div class="res-modal-field">
-          <div class="res-modal-field-label">Destino / Casa</div>
-          <div class="res-modal-field-value">${esc(m.casa_destino || '—')}</div>
-        </div>
-        <div class="res-modal-field">
-          <div class="res-modal-field-label">${esPendiente ? 'Solicitado el' : 'Miembro desde'}</div>
-          <div class="res-modal-field-value">${m.created_at ? fmtDateShort(m.created_at) : '—'}</div>
-        </div>
-      </div>
-
-      ${m.foto_ine_url ? `
-        <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">
-          Documento de Identidad (INE)
-        </div>
-        <div style="margin-bottom:16px">
-          <div class="evidencia-card" tabindex="0" role="button" style="display:inline-block" data-foto="${esc(m.foto_ine_url)}" data-foto-label="INE de ${esc(nombreCompleto)}">
-            <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="display:block;max-height:140px;object-fit:cover">
-          </div>
-        </div>
-      ` : ''}
-
-      <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">
-        Métodos de acceso e identidad
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px">👤</span>
-            <div>
-              <div style="font-size:13.5px;font-weight:600;color:var(--text)">Reconocimiento Facial IA</div>
-              <div style="font-size:11.5px;color:var(--text-3)">Validación biométrica instantánea en kioskos</div>
+      <div class="res-modal-cols">
+        <div>
+          <div class="res-modal-grid">
+            <div class="res-modal-field">
+              <div class="res-modal-field-label">Teléfono</div>
+              <div class="res-modal-field-value">${m.telefono ? esc(m.telefono) : '—'}</div>
+            </div>
+            <div class="res-modal-field">
+              <div class="res-modal-field-label">CURP</div>
+              <div class="res-modal-field-value mono-value" style="font-size:12px">${m.curp ? esc(m.curp) : '—'}</div>
+            </div>
+            <div class="res-modal-field">
+              <div class="res-modal-field-label">Destino / Casa</div>
+              <div class="res-modal-field-value">${esc(m.casa_destino || '—')}</div>
+            </div>
+            <div class="res-modal-field">
+              <div class="res-modal-field-label">${esPendiente ? 'Solicitado el' : 'Miembro desde'}</div>
+              <div class="res-modal-field-value">${m.created_at ? fmtDateShort(m.created_at) : '—'}</div>
             </div>
           </div>
-          <span class="badge ${tieneRostro ? 'badge--aprobado' : 'badge--rechazado'}">
-            ${tieneRostro ? 'Enrolado' : 'Sin rostro'}
-          </span>
+
+          ${m.foto_ine_url ? `
+            <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">
+              Documento de Identidad (INE)
+            </div>
+            <div>
+              <div class="evidencia-card" tabindex="0" role="button" style="display:inline-block" data-foto="${esc(m.foto_ine_url)}" data-foto-label="INE de ${esc(nombreCompleto)}">
+                <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="display:block;max-height:140px;object-fit:cover">
+              </div>
+            </div>
+          ` : ''}
         </div>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px">🔢</span>
-            <div>
-              <div style="font-size:13.5px;font-weight:600;color:var(--text)">PIN de acceso</div>
-              <div style="font-size:11.5px;color:var(--text-3)">Código numérico para teclado en caseta</div>
-            </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">
+            Métodos de acceso e identidad
           </div>
-          <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}">
-            ${tienePin ? 'Configurado' : 'Sin PIN'}
-          </span>
-        </div>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px">📱</span>
-            <div>
-              <div style="font-size:13.5px;font-weight:600;color:var(--text)">App Kigo (QR Dinámico)</div>
-              <div style="font-size:11.5px;color:var(--text-3)">Acceso con escáner de código QR móvil</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:18px">👤</span>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">Reconocimiento Facial IA</div>
+                  <div style="font-size:11.5px;color:var(--text-3)">Validación biométrica instantánea en kioskos</div>
+                </div>
+              </div>
+              <span class="badge ${tieneRostro ? 'badge--aprobado' : 'badge--rechazado'}">
+                ${tieneRostro ? 'Enrolado' : 'Sin rostro'}
+              </span>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:18px">🔢</span>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">PIN de acceso</div>
+                  <div style="font-size:11.5px;color:var(--text-3)">Código numérico para teclado en caseta</div>
+                </div>
+              </div>
+              <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}">
+                ${tienePin ? 'Configurado' : 'Sin PIN'}
+              </span>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:18px">📱</span>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">App Kigo (QR Dinámico)</div>
+                  <div style="font-size:11.5px;color:var(--text-3)">Acceso con escáner de código QR móvil</div>
+                </div>
+              </div>
+              <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}">
+                ${esPendiente ? 'Pendiente aprobación' : 'Activo'}
+              </span>
             </div>
           </div>
-          <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}">
-            ${esPendiente ? 'Pendiente aprobación' : 'Activo'}
-          </span>
         </div>
       </div>
 
