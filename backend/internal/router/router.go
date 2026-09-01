@@ -397,6 +397,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		cfg.LLMUrl,
 		persona.KigoVerifyConfig{APIKey: cfg.KigoVerifyAPIKey, BaseURL: cfg.KigoVerifyBaseURL, PublicURL: cfg.PublicURL, RedirectURL: cfg.KigoVerifyRedirectURL},
 		kigoVerifyRepo,
+		pushSender(cfg),
 	)
 
 	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)
@@ -422,6 +423,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.GET("/invitaciones", personaHandler.ListarInvitaciones)
 		p.DELETE("/invitaciones/:id", personaHandler.RevocarInvitacion)
 		p.GET("/invitaciones/recibidas", personaHandler.ListarInvitacionesRecibidas)
+		p.GET("/invitaciones/contactos", personaHandler.ListarContactosFrecuentes)
 	}
 
 	pv := rg.Group("/personas/me/visitas")

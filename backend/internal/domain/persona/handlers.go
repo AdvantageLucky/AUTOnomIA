@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,6 +41,7 @@ type Handler struct {
 	llmURL         string
 	kigoVerify     KigoVerifyConfig
 	kigoVerifyRepo *KigoVerifyRepository
+	pushSender     residente.PushSender
 }
 
 func NewHandler(
@@ -57,6 +59,7 @@ func NewHandler(
 	llmURL string,
 	kigoVerify KigoVerifyConfig,
 	kigoVerifyRepo *KigoVerifyRepository,
+	pushSender residente.PushSender,
 ) *Handler {
 	seed, err := hex.DecodeString(qrEd25519PrivateKeySeed)
 	if err != nil || len(seed) != ed25519.SeedSize {
@@ -80,6 +83,7 @@ func NewHandler(
 		kigoVerify:     kigoVerify,
 		kigoVerifyRepo: kigoVerifyRepo,
 		llmURL:         llmURL,
+		pushSender:     pushSender,
 	}
 }
 
@@ -551,6 +555,19 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, invitaciones.ToInvitacionResponse(inv, true))
+
+	// Push solo si el invitado ya tenía cuenta verificada antes de esta
+	// invitación (TelefonoVerificadoAt != nil) -- a alguien sin cuenta
+	// (Persona "en blanco" recién creada por FindOrCreateByTelefono) no
+	// hay a quién avisarle todavía; se entera cuando se registre y su
+	// "recibidas" ya la tenga esperando.
+	if h.pushSender != nil && invitado.TelefonoVerificadoAt != nil &&
+		invitado.DeviceToken != nil && *invitado.DeviceToken != "" {
+		cuerpo := "Tienes una invitación nueva a " + destino.Nombre
+		if err := h.pushSender.Send(c.Request.Context(), *invitado.DeviceToken, "Nueva invitación", cuerpo); err != nil {
+			log.Printf("CrearInvitacion: error mandando push a persona %d: %v", invitado.ID, err)
+		}
+	}
 }
 
 // ListarInvitaciones lista las invitaciones creadas por la Persona
@@ -571,6 +588,20 @@ func (h *Handler) ListarInvitaciones(c *gin.Context) {
 		resp[i] = invitaciones.ToInvitacionResponse(&inv, true)
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+// ListarContactosFrecuentes lista, una vez por persona, a quien la Persona
+// autenticada ya invitó antes -- para "invitar de nuevo" sin volver a
+// teclear teléfono y nombre. Ver invitaciones.Repository.FindContactosFrecuentes.
+func (h *Handler) ListarContactosFrecuentes(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	list, err := h.invitacionRepo.FindContactosFrecuentes(personaID, 20)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"contactos": list})
 }
 
 // ListarInvitacionesRecibidas lista las invitaciones activas dirigidas a la
