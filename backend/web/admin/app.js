@@ -3517,8 +3517,14 @@
     const esPendiente = (m.status === 'pendiente');
     const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
     const inicial = (m.nombre || 'R')[0].toUpperCase();
+    // data-foto + .evidencia-card, no onclick inline: app.js entero corre
+    // dentro del IIFE de arranque y abrirLightbox nunca se expuso a
+    // window, así que un onclick="abrirLightbox(...)" en un string HTML
+    // fallaba en silencio (ReferenceError en consola, invisible en la UI)
+    // -- el listener delegado en document ya existe para .evidencia-card,
+    // se reusa tal cual en vez de duplicar el mecanismo.
     const avatarHtml = m.foto_cara_url
-      ? `<div class="res-avatar res-avatar--lg" style="cursor:pointer" onclick="abrirLightbox('${esc(m.foto_cara_url)}', 'Rostro de ${esc(nombreCompleto)}')"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+      ? `<div class="res-avatar res-avatar--lg evidencia-card" tabindex="0" role="button" style="cursor:pointer" data-foto="${esc(m.foto_cara_url)}" data-foto-label="Rostro de ${esc(nombreCompleto)}"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
       : `<div class="res-avatar res-avatar--lg">${inicial}</div>`;
 
     const tieneRostro = m.tiene_rostro;
@@ -3561,7 +3567,9 @@
           Documento de Identidad (INE)
         </div>
         <div style="margin-bottom:16px">
-          <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="max-height:140px;border-radius:8px;border:1px solid var(--border);cursor:pointer;object-fit:cover" onclick="abrirLightbox('${esc(m.foto_ine_url)}', 'INE de ${esc(nombreCompleto)}')">
+          <div class="evidencia-card" tabindex="0" role="button" style="display:inline-block" data-foto="${esc(m.foto_ine_url)}" data-foto-label="INE de ${esc(nombreCompleto)}">
+            <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="display:block;max-height:140px;object-fit:cover">
+          </div>
         </div>
       ` : ''}
 
