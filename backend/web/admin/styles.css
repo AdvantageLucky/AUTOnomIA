@@ -1697,6 +1697,7 @@ textarea { resize: vertical; }
      viewport -- mismo tratamiento que ya tenía .modal-box--lg. */
   max-height: calc(100vh - 40px);
   overflow-y: auto;
+  overflow-x: hidden;
   animation: modal-box-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   /* Scroll explícito pero sutil: delgado y del color del borde, no la
      barra ancha por defecto del sistema. */
@@ -2907,7 +2908,13 @@ textarea { resize: vertical; }
    pantallas angostas colapsa a una sola columna, como antes. */
 .res-modal-cols {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr), no 1fr a secas: "1fr" es minmax(auto, 1fr) -- una
+     columna nunca se encoge por debajo del ancho intrínseco de su
+     contenido, así que la fila de método de acceso (ícono+texto+badge,
+     sin wrap) empujaba la columna hacia afuera del modal en vez de
+     ajustarse. Con overflow-x:hidden en .modal-box de por medio, ese
+     contenido se veía cortado a la mitad en vez de solo comprimirse. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 28px;
   align-items: start;
   margin-bottom: 20px;
