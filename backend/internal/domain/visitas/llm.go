@@ -3,11 +3,30 @@ package visitas
 import (
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
+	"time"
 
 	"kigo-autonomia-backend/internal/platform/llmclient"
 )
+
+// zonaMX se usa para formatear cualquier hora que se le muestre a un humano
+// (guardia, admin) o se le describa a un LLM. El servidor corre en un
+// contenedor con reloj en UTC (confirmado: sin TZ configurada) y GORM/pgx
+// devuelve los time.Time de TIMESTAMPTZ en esa misma zona -- sin convertir
+// antes de formatear, "Hora de llegada: 04:34" en el prompt describía una
+// entrada de las 22:34 en México, 6 horas adelantada de la hora real. Un
+// LLM al que se le da una hora incorrecta como dato "correcto" no está
+// alucinando, solo repite fielmente un dato de entrada que ya venía mal.
+var zonaMX = func() *time.Location {
+	loc, err := time.LoadLocation("America/Mexico_City")
+	if err != nil {
+		log.Printf("[visitas] no se pudo cargar America/Mexico_City, usando UTC: %v", err)
+		return time.UTC
+	}
+	return loc
+}()
 
 const systemPromptVisitas = "Eres un analista de seguridad en caseta residencial. Escribes en español, para el guardia, explicando qué pasó en UNA entrada concreta y qué conviene revisar de ella. Usas únicamente los datos que se te dan: nunca inventas cifras ni antecedentes, nunca escribes campos vacíos entre corchetes, y nunca opinas sobre el residencial, su administración ni sus procedimientos. Dices cada cosa una sola vez."
 
@@ -139,7 +158,7 @@ func construirPrompt(s ScoreContexto, v Visita) string {
 		datos = append(datos, "Llega a pie (sin placa registrada)")
 	}
 	if !v.CreatedAt.IsZero() {
-		datos = append(datos, "Hora de llegada: "+v.CreatedAt.Format("15:04"))
+		datos = append(datos, "Hora de llegada: "+v.CreatedAt.In(zonaMX).Format("15:04"))
 	}
 
 	if s.VecesVisitado == 0 {
@@ -150,7 +169,7 @@ func construirPrompt(s ScoreContexto, v Visita) string {
 			historial = fmt.Sprintf("Historial: ha entrado %d veces", s.VecesVisitado)
 		}
 		if s.UltimaVisita != nil {
-			historial += ", la última el " + s.UltimaVisita.Format("02/01/2006")
+			historial += ", la última el " + s.UltimaVisita.In(zonaMX).Format("02/01/2006")
 		}
 		datos = append(datos, historial)
 	}
@@ -213,13 +232,34 @@ func GenerarResumenPeriodo(ctx context.Context, llmURL string, d datosAgregados)
 		return resumirDatosTexto(d), nil
 	}
 
+	var porTipo []string
+	for _, tipo := range []string{"RESIDENTE", "INVITADO", "VISITANTE"} {
+		if n := d.PorTipo[tipo]; n > 0 {
+			porTipo = append(porTipo, fmt.Sprintf("%s: %d", tipo, n))
+		}
+	}
+	porTipoTxt := "Sin desglose disponible."
+	if len(porTipo) > 0 {
+		porTipoTxt = strings.Join(porTipo, ", ")
+	}
+
+	destacadasTxt := "Ninguna rechazada ni en revisión en el período."
+	if len(d.Destacadas) > 0 {
+		var lineas []string
+		for _, vd := range d.Destacadas {
+			lineas = append(lineas, fmt.Sprintf("- %s a las %s, destino %s (%s)",
+				vd.Titular, vd.Hora, vd.CasaDestino, vd.Estado))
+		}
+		destacadasTxt = strings.Join(lineas, "\n")
+	}
+
 	prompt := fmt.Sprintf(`### Instrucción
 Escribe para el administrador un resumen de 2 o 3 oraciones sobre la actividad de las últimas 12 horas, en español.
 
 Reglas:
-- Usa solo las cifras de abajo. No inventes nada.
+- Usa solo los datos de abajo. No inventes nombres, horas ni motivos que no aparezcan aquí.
 - NUNCA escribas corchetes, llaves ni campos vacíos como [dato].
-- Menciona el total y destaca lo que merezca atención (rechazos, revisiones pendientes).
+- Menciona el total y destaca lo que merezca atención (rechazos, revisiones pendientes) -- si hay entradas destacadas, puedes nombrarlas brevemente.
 - Si no hubo nada inusual, dilo en una frase y no alargues.
 
 ### Actividad del período
@@ -227,9 +267,14 @@ Visitas totales: %d
 Aprobadas: %d
 Rechazadas: %d
 En revisión: %d
+Marcadas para revisión de IA: %d
+Por tipo de visitante: %s
+
+### Entradas rechazadas o en revisión
+%s
 
 ### Resumen
-`, d.TotalVisitas, d.Aprobadas, d.Rechazadas, d.EnRevision)
+`, d.TotalVisitas, d.Aprobadas, d.Rechazadas, d.EnRevision, d.Intervenidas, porTipoTxt, destacadasTxt)
 
 	resumen, err := llmclient.Completar(ctx, strings.TrimSpace(llmURL), systemPromptReporte, prompt)
 	if err != nil {

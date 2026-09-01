@@ -120,15 +120,34 @@ func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmURL stri
 	}
 }
 
-type datosAgregados struct {
-	TotalVisitas int `json:"total_visitas"`
-	Aprobadas    int `json:"aprobadas"`
-	Rechazadas   int `json:"rechazadas"`
-	EnRevision   int `json:"en_revision"`
+// visitaDestacada es una rechazada/en revisión concreta -- sin esto, el
+// prompt solo tenía "2 rechazadas" como número suelto y el modelo llenaba el
+// hueco de "qué pasó" inventando (mala suerte con nombres/motivos que nunca
+// existieron). Dar las entradas reales que sí se pueden mencionar deja al
+// modelo con algo concreto que decir en vez de un conteo que interpretar.
+type visitaDestacada struct {
+	Titular     string `json:"titular"`
+	CasaDestino string `json:"casa_destino"`
+	Hora        string `json:"hora"`
+	Estado      string `json:"estado"`
 }
 
+type datosAgregados struct {
+	TotalVisitas int            `json:"total_visitas"`
+	Aprobadas    int            `json:"aprobadas"`
+	Rechazadas   int            `json:"rechazadas"`
+	EnRevision   int            `json:"en_revision"`
+	PorTipo      map[string]int `json:"por_tipo"`     // RESIDENTE / INVITADO / VISITANTE
+	Intervenidas int            `json:"intervenidas"` // marcadas para revisión por IA, sin importar el estado final
+	// Hasta 5 rechazadas/en revisión, las más recientes primero -- ver
+	// visitaDestacada. Vacía si no hubo ninguna.
+	Destacadas []visitaDestacada `json:"destacadas"`
+}
+
+const maxDestacadas = 5
+
 func agregarDatos(vs []Visita) datosAgregados {
-	d := datosAgregados{TotalVisitas: len(vs)}
+	d := datosAgregados{TotalVisitas: len(vs), PorTipo: map[string]int{}}
 	for _, v := range vs {
 		switch v.Estado {
 		case EstadoAprobado:
@@ -138,13 +157,29 @@ func agregarDatos(vs []Visita) datosAgregados {
 		case EstadoRevision:
 			d.EnRevision++
 		}
+		d.PorTipo[string(v.TipoVisitante)]++
+		if v.Intervenida {
+			d.Intervenidas++
+		}
+		if (v.Estado == EstadoRechazado || v.Estado == EstadoRevision) && len(d.Destacadas) < maxDestacadas {
+			d.Destacadas = append(d.Destacadas, visitaDestacada{
+				Titular:     v.Titular,
+				CasaDestino: v.CasaDestino,
+				Hora:        v.CreatedAt.In(zonaMX).Format("15:04"),
+				Estado:      string(v.Estado),
+			})
+		}
 	}
 	return d
 }
 
 func resumirDatosTexto(d datosAgregados) string {
-	return fmt.Sprintf(
+	base := fmt.Sprintf(
 		"Período de 12h: %d visitas totales. %d aprobadas, %d rechazadas, %d en revisión.",
 		d.TotalVisitas, d.Aprobadas, d.Rechazadas, d.EnRevision,
 	)
+	if d.Intervenidas > 0 {
+		base += fmt.Sprintf(" %d requirieron revisión de IA.", d.Intervenidas)
+	}
+	return base
 }

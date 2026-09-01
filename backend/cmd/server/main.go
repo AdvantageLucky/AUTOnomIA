@@ -7,6 +7,12 @@ import (
 	"log"
 
 	_ "kigo-autonomia-backend/docs"
+	// El runtime de producción es debian:bookworm-slim, que no trae el
+	// paquete tzdata instalado -- sin este import, time.LoadLocation
+	// (usado para mostrarle horas en hora de México a los resúmenes de IA)
+	// fallaría con "unknown time zone" en el contenedor aunque funcione
+	// perfecto en local. Embebe la base IANA directo en el binario.
+	_ "time/tzdata"
 )
 
 // @title AUTOnomIA API
