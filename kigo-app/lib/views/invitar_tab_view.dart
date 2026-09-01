@@ -34,6 +34,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
   final _nombreCtrl = TextEditingController();
   int? _destinoIdSeleccionado;
   bool _permiteFacial = true;
+  DateTime? _expiraEl;
   int? _tenantIdCargado;
   String? _errorLocal;
   bool _recibidasCargadas = false;
@@ -78,11 +79,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
         nombre: nombre,
         destinoId: destinoId,
         permiteReconocimientoFacial: _permiteFacial,
+        expiraEl: _expiraEl,
       );
 
       if (!mounted) return;
       _telefonoCtrl.clear();
       _nombreCtrl.clear();
+      setState(() => _expiraEl = null);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -108,6 +111,18 @@ class _InvitarTabViewState extends State<InvitarTabView>
   String _nombreDestinoSeleccionado(InvitationViewModel vm, int destinoId) {
     final d = vm.destinos.where((d) => d.id == destinoId);
     return d.isEmpty ? 'mi casa' : d.first.nombre;
+  }
+
+  Future<void> _elegirFechaExpiracion(BuildContext context) async {
+    final ahora = DateTime.now();
+    final elegida = await showDatePicker(
+      context: context,
+      initialDate: _expiraEl ?? ahora.add(const Duration(days: 1)),
+      firstDate: ahora,
+      lastDate: ahora.add(const Duration(days: 365)),
+      helpText: 'Vence el',
+    );
+    if (elegida != null) setState(() => _expiraEl = elegida);
   }
 
   void _compartir(String token) {
@@ -359,6 +374,47 @@ class _InvitarTabViewState extends State<InvitarTabView>
                     ],
                   ),
                 ),
+                const SizedBox(height: 14),
+                InkWell(
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
+                  onTap: () => _elegirFechaExpiracion(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.event_outlined, color: AppTheme.primaryOrange, size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Vence el',
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                              Text(
+                                _expiraEl == null
+                                    ? 'Sin fecha límite (toca para elegir una)'
+                                    : '${_expiraEl!.day}/${_expiraEl!.month}/${_expiraEl!.year}',
+                                style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_expiraEl != null)
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            tooltip: 'Quitar fecha límite',
+                            onPressed: () => setState(() => _expiraEl = null),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
                 if (_errorLocal != null || vm.error != null) ...[
                   const SizedBox(height: 14),
                   Text(
@@ -482,6 +538,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                        if (inv.expiresAt != null) ...[
+                          const Text(' · ', style: TextStyle(color: AppTheme.textDimmed, fontSize: 12)),
+                          Text(
+                            'Vence ${inv.expiresAt!.day}/${inv.expiresAt!.month}/${inv.expiresAt!.year}',
+                            style: const TextStyle(color: AppTheme.textDimmed, fontSize: 12),
+                          ),
+                        ],
                       ],
                     ),
                   ],
