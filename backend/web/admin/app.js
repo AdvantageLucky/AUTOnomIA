@@ -1454,6 +1454,8 @@
     return map[e] || e;
   }
 
+  const ROL_ADMIN_LABEL = { admin: "Admin", vigilante: "Vigilante" };
+
   function autorizadorLabel(v) {
     if (!v.autorizado_por_tipo) return t("sin_resolver");
     const map = {
@@ -1463,7 +1465,10 @@
       SISTEMA: t("autorizador_sistema"),
     };
     const tipo = map[v.autorizado_por_tipo] || v.autorizado_por_tipo;
-    return v.autorizado_por_nombre ? `${tipo} — ${esc(v.autorizado_por_nombre)}` : tipo;
+    if (!v.autorizado_por_nombre) return tipo;
+    const detalle = [ROL_ADMIN_LABEL[v.autorizado_por_rol] || null, v.autorizado_por_correo]
+      .filter(Boolean).map(esc).join(" · ");
+    return `${tipo} — ${esc(v.autorizado_por_nombre)}${detalle ? ` (${detalle})` : ""}`;
   }
 
   // calidad_ine viene del kiosko (EvidenciaCalidadServicio): "nitida" o
@@ -1869,7 +1874,8 @@
       const esCurrent = String(v.id) === String(visitaActual.id);
       const acceso = state.accesosById.get(v.kiosko_id);
       const accNombre = acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`;
-      const meta = [accNombre, v.casa_destino ? esc(v.casa_destino) : null].filter(Boolean).join(" · ");
+      const autorizador = v.autorizado_por_nombre ? `Autorizó: ${autorizadorLabel(v)}` : null;
+      const meta = [accNombre, v.casa_destino ? esc(v.casa_destino) : null, autorizador].filter(Boolean).join(" · ");
       return `<div class="exp-row${esCurrent ? " exp-row--current" : ""}" style="animation-delay:${i*25}ms" data-id="${v.id}">
         <div class="exp-marker"><div class="exp-dot"></div></div>
         <div class="exp-info">

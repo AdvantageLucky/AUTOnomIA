@@ -3,6 +3,8 @@ package visitas
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"kigo-autonomia-backend/internal/domain/kiosko"
@@ -297,10 +299,19 @@ func (r *Repository) UpdateEstadoPorResidente(
 // UpdateEstado cambia el estado de una visita y deja constancia de quién
 // resolvió (autorizadoPorTipo: ver constantes Autorizador* en model.go).
 func (r *Repository) UpdateEstado(id uint, estado EstadoVisita, autorizadoPorTipo, autorizadoPorNombre string) error {
+	return r.UpdateEstadoConAdmin(id, estado, autorizadoPorTipo, autorizadoPorNombre, "", "")
+}
+
+// UpdateEstadoConAdmin es UpdateEstado pero además deja constancia de correo
+// y rol cuando quien resolvió es un Admin (rol admin o vigilante) -- vacíos
+// para los demás autorizadores (RESIDENTE, AGENTE, SISTEMA).
+func (r *Repository) UpdateEstadoConAdmin(id uint, estado EstadoVisita, autorizadoPorTipo, autorizadoPorNombre, autorizadoPorCorreo, autorizadoPorRol string) error {
 	result := r.db.Scopes(ByTenant).Model(&Visita{}).Where("id = ?", id).Updates(map[string]any{
 		"estado":                estado,
 		"autorizado_por_tipo":   autorizadoPorTipo,
 		"autorizado_por_nombre": autorizadoPorNombre,
+		"autorizado_por_correo": autorizadoPorCorreo,
+		"autorizado_por_rol":    autorizadoPorRol,
 	})
 	if result.Error != nil {
 		return result.Error
@@ -483,4 +494,54 @@ func (r *Repository) EstadisticasPorPersona(personaID uint) (*EstadisticasPerson
 	stats.CasaHabitual = casaHabitual
 
 	return stats, nil
+}
+
+// TelefonoVerificadoDePersona regresa el teléfono de una Persona solo si ya
+// verificó su cuenta -- así el admin ve contacto real, nunca el número "en
+// blanco" de una invitación que nadie reclamó todavía, ni el de un
+// desconocido sin cuenta de Kigo. Consulta la tabla personas directamente
+// (sin importar el paquete persona) porque persona ya importa visitas y un
+// import de vuelta crearía un ciclo.
+func (r *Repository) TelefonoVerificadoDePersona(personaID uint) string {
+	var telefono string
+	err := r.db.Table("personas").
+		Select("telefono").
+		Where("id = ? AND telefono_verificado_at IS NOT NULL", personaID).
+		Scan(&telefono).Error
+	if err != nil {
+		return ""
+	}
+	return telefono
+}
+
+// AdminInfo es el subconjunto de datos del Admin que se guarda en la
+// bitácora de una visita al momento de resolverla.
+type AdminInfo struct {
+	Nombre string
+	Correo string
+	Rol    string
+}
+
+// InfoDeAdmin consulta la tabla admins directamente (sin importar el
+// paquete admin, mismo motivo que TelefonoVerificadoDePersona) para armar
+// el nombre completo, correo y rol de quien resolvió una visita.
+func (r *Repository) InfoDeAdmin(adminID uint) AdminInfo {
+	var fila struct {
+		Nombre          string
+		ApellidoPaterno string
+		Correo          string
+		Rol             string
+	}
+	err := r.db.Table("admins").
+		Select("nombre, apellido_paterno, correo, rol").
+		Where("id = ?", adminID).
+		Scan(&fila).Error
+	if err != nil {
+		return AdminInfo{}
+	}
+	nombre := strings.TrimSpace(fila.Nombre + " " + fila.ApellidoPaterno)
+	if nombre == "" {
+		nombre = fmt.Sprintf("admin #%d", adminID)
+	}
+	return AdminInfo{Nombre: nombre, Correo: fila.Correo, Rol: fila.Rol}
 }
