@@ -1675,6 +1675,15 @@ textarea { resize: vertical; }
   animation: modal-bg-in 0.2s ease;
 }
 
+/* El lightbox se abre ENCIMA de un modal ya abierto (foto dentro del
+   detalle de residente/solicitud), pero compartía el mismo z-index:200 de
+   .modal-overlay -- con el mismo z-index, gana quien esté más abajo en el
+   DOM, y #lightbox aparece antes que #modal-residente-detalle en el HTML,
+   así que el lightbox se abría pintado DETRÁS del modal que seguía
+   abierto: la foto no cambiaba nada visible, indistinguible de "el click
+   no hizo nada". */
+#lightbox { z-index: 300; }
+
 @keyframes modal-bg-in { from { opacity: 0; } to { opacity: 1; } }
 
 .modal-box {
@@ -1689,7 +1698,18 @@ textarea { resize: vertical; }
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   animation: modal-box-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Scroll explícito pero sutil: delgado y del color del borde, no la
+     barra ancha por defecto del sistema. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
+.modal-box::-webkit-scrollbar { width: 8px; }
+.modal-box::-webkit-scrollbar-track { background: transparent; }
+.modal-box::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+.modal-box::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 
 .modal-box--sm { width: min(320px, calc(100vw - 40px)); }
 
@@ -2879,6 +2899,21 @@ textarea { resize: vertical; }
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 20px;
+}
+
+/* Dos columnas (campos+INE a la izquierda, métodos de acceso a la
+   derecha) en vez de todo apilado -- el modal ahora es modal-box--lg
+   (más ancho) precisamente para aprovechar esto y quedar más corto. En
+   pantallas angostas colapsa a una sola columna, como antes. */
+.res-modal-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 20px;
+}
+@media (max-width: 640px) {
+  .res-modal-cols { grid-template-columns: 1fr; gap: 20px; }
 }
 
 .res-modal-grid {
