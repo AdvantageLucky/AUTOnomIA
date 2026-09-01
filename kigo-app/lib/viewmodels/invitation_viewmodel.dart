@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/destino_model.dart';
 import '../models/invitacion_model.dart';
+import '../models/invitado_frecuente_model.dart';
 import '../services/api_service.dart';
 
 /// Invitaciones y destinos de la Persona autenticada — ver spec
@@ -9,20 +10,70 @@ class InvitationViewModel extends ChangeNotifier {
   List<InvitacionModel> _invitaciones = [];
   List<InvitacionRecibidaModel> _recibidas = [];
   List<ContactoFrecuenteModel> _contactos = [];
+  List<InvitadoFrecuenteModel> _invitadosFrecuentes = [];
   List<DestinoModel> _destinos = [];
   bool _isLoading = false;
   bool _cargandoRecibidas = false;
   bool _cargandoContactos = false;
+  bool _cargandoInvitadosFrecuentes = false;
   String? _error;
 
   List<InvitacionModel> get invitaciones => _invitaciones;
   List<InvitacionRecibidaModel> get recibidas => _recibidas;
   List<ContactoFrecuenteModel> get contactos => _contactos;
+  List<InvitadoFrecuenteModel> get invitadosFrecuentes => _invitadosFrecuentes;
   List<DestinoModel> get destinos => _destinos;
   bool get isLoading => _isLoading;
   bool get cargandoRecibidas => _cargandoRecibidas;
   bool get cargandoContactos => _cargandoContactos;
+  bool get cargandoInvitadosFrecuentes => _cargandoInvitadosFrecuentes;
   String? get error => _error;
+
+  Future<void> cargarInvitadosFrecuentes(int tenantId) async {
+    _cargandoInvitadosFrecuentes = true;
+    notifyListeners();
+    try {
+      final data = await ApiService().get('/personas/me/invitados-frecuentes?tenant_id=$tenantId');
+      final list = (data['invitados_frecuentes'] as List).cast<Map<String, dynamic>>();
+      _invitadosFrecuentes = list.map(InvitadoFrecuenteModel.fromJson).toList();
+    } on ApiException catch (e) {
+      _error = e.message;
+    } finally {
+      _cargandoInvitadosFrecuentes = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> crearInvitadoFrecuente({
+    required int tenantId,
+    required String telefono,
+    required String nombre,
+  }) async {
+    try {
+      await ApiService().post(
+        '/personas/me/invitados-frecuentes',
+        {'tenant_id': tenantId, 'telefono_invitado': telefono, 'nombre_invitado': nombre},
+        auth: true,
+      );
+      await cargarInvitadosFrecuentes(tenantId);
+    } on ApiException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> revocarInvitadoFrecuente(int tenantId, int id) async {
+    try {
+      await ApiService().delete('/personas/me/invitados-frecuentes/$id?tenant_id=$tenantId');
+      _invitadosFrecuentes.removeWhere((i) => i.id == id);
+      notifyListeners();
+    } on ApiException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      rethrow;
+    }
+  }
 
   Future<void> cargarContactos() async {
     _cargandoContactos = true;

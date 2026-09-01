@@ -43,7 +43,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: 4,
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
@@ -176,6 +176,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
         vm.cargarDestinos(tenantId);
         vm.cargarInvitaciones();
         vm.cargarContactos();
+        vm.cargarInvitadosFrecuentes(tenantId);
       });
     }
 
@@ -199,6 +200,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
           ),
           child: TabBar(
             controller: _tabController,
+            // Con 4 pestañas el ancho fijo ya no alcanza sin apretar texto
+            // -- scrollable evita el juego de Flexible/ellipsis por cada
+            // pestaña nueva que se agregue.
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             indicator: BoxDecoration(
               color: AppTheme.primaryOrange,
               borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -214,18 +220,12 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 'Mis Invitaciones' + badge en un Row sin límite de ancho
-                    // desbordaba (RenderFlex overflow) al pasar de 2 a 3
-                    // pestañas: cada una tiene menos espacio disponible.
-                    // Flexible + ellipsis evita el crash visual; en pantallas
-                    // angostas el texto puede truncarse a 'Mis Invit…'.
-                    const Flexible(
-                      child: Text(
-                        'Mis Invitaciones',
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
+                    // El TabBar ahora es isScrollable (ver más arriba): cada
+                    // tab mide su ancho intrínseco, así que ya no hay
+                    // desborde que evitar -- Flexible aquí rompía el layout
+                    // (null-check en _TabLabelBarRenderer, un tab
+                    // scrollable no da constraints acotadas para Flexible).
+                    const Text('Mis Invitaciones'),
                     if (vigentesCount > 0) ...[
                       const SizedBox(width: 6),
                       Container(
@@ -248,6 +248,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 ),
               ),
               const Tab(text: 'Recibidas'),
+              const Tab(text: 'Acceso frecuente'),
             ],
           ),
         ),
@@ -277,6 +278,15 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 onRefresh: () => vm.cargarRecibidas(),
                 child: _buildListaRecibidas(context, vm, isDark),
               ),
+
+              // 4. ACCESO FRECUENTE
+              if (tenantId == null)
+                const Center(child: Text('No tienes una membresía activa'))
+              else
+                RefreshIndicator(
+                  onRefresh: () => vm.cargarInvitadosFrecuentes(tenantId),
+                  child: _buildInvitadosFrecuentes(context, vm, isDark, tenantId),
+                ),
             ],
           ),
         ),
@@ -688,5 +698,161 @@ class _InvitarTabViewState extends State<InvitarTabView>
         );
       },
     );
+  }
+
+  Widget _buildInvitadosFrecuentes(
+    BuildContext context,
+    InvitationViewModel vm,
+    bool isDark,
+    int tenantId,
+  ) {
+    if (vm.cargandoInvitadosFrecuentes && vm.invitadosFrecuentes.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        Text(
+          'Dale acceso por reconocimiento facial a alguien de tu confianza -- entra por rostro '
+          'en el kiosko, sin invitación cada vez. Lo puedes quitar cuando quieras.',
+          style: TextStyle(fontSize: 12.5, color: isDark ? AppTheme.textGrey : AppTheme.textDimmed),
+        ),
+        const SizedBox(height: 14),
+        KigoPrimaryButton(
+          label: 'Agregar invitado frecuente',
+          onPressed: () => _mostrarDialogoInvitadoFrecuente(context, tenantId),
+        ),
+        const SizedBox(height: 20),
+        if (vm.invitadosFrecuentes.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 40),
+            child: Column(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.face_retouching_natural, size: 34, color: AppTheme.textGrey),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Nadie tiene acceso frecuente todavía',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          )
+        else
+          ...vm.invitadosFrecuentes.map((inv) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
+                  border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryOrange.withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.face_rounded, color: AppTheme.primaryOrange, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        inv.nombre.isNotEmpty ? inv.nombre : inv.telefono,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.cancel_outlined, color: AppTheme.error),
+                      tooltip: 'Quitar acceso',
+                      onPressed: () => _revocarInvitadoFrecuente(context, tenantId, inv.id),
+                    ),
+                  ],
+                ),
+              )),
+      ],
+    );
+  }
+
+  Future<void> _mostrarDialogoInvitadoFrecuente(BuildContext context, int tenantId) async {
+    final nombreCtrl = TextEditingController();
+    final telefonoCtrl = TextEditingController();
+    final vm = context.read<InvitationViewModel>();
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nuevo invitado frecuente'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            KigoTextField(controller: nombreCtrl, label: 'Nombre completo'),
+            const SizedBox(height: 12),
+            KigoTextField(controller: telefonoCtrl, label: 'Teléfono', keyboardType: TextInputType.phone),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Agregar')),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+    final nombre = nombreCtrl.text.trim();
+    final telefono = telefonoCtrl.text.trim();
+    if (nombre.isEmpty || telefono.isEmpty) return;
+
+    try {
+      await vm.crearInvitadoFrecuente(tenantId: tenantId, telefono: telefono, nombre: nombre);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Acceso frecuente agregado'), backgroundColor: AppTheme.success),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(vm.error ?? 'No se pudo agregar')),
+      );
+    }
+  }
+
+  Future<void> _revocarInvitadoFrecuente(BuildContext context, int tenantId, int id) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Quitar acceso frecuente?'),
+        content: const Text('Ya no podrá entrar por reconocimiento facial.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Quitar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+
+    try {
+      await context.read<InvitationViewModel>().revocarInvitadoFrecuente(tenantId, id);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo quitar el acceso')),
+      );
+    }
   }
 }
