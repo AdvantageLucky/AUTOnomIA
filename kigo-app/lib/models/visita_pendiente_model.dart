@@ -19,6 +19,11 @@ class VisitaPendienteModel {
   final String placa;
   final String tipoVisitante; // 'VISITANTE' | 'INVITADO' | 'RESIDENTE'
 
+  /// Solo viene si el visitante ya es una cuenta verificada de Kigo -- ver
+  /// telefonoVerificadoDe en el backend. Vacío si no hay con quién
+  /// contactar (desconocido, o invitación nunca reclamada).
+  final String telefono;
+
   /// Análisis de confianza, ya recortado por el backend a lo que es seguro
   /// mostrarle a un residente (ver ScoreIaModel). Null si no se calculó.
   final ScoreIaModel? scoreIa;
@@ -34,6 +39,7 @@ class VisitaPendienteModel {
     this.fotoPlacaUrl = '',
     this.placa = '',
     this.tipoVisitante = '',
+    this.telefono = '',
     this.scoreIa,
     required this.createdAt,
   });
@@ -48,6 +54,7 @@ class VisitaPendienteModel {
       fotoPlacaUrl: AppConstants.mediaUrl(json['foto_placa_url'] as String? ?? ''),
       placa: json['placa'] as String? ?? '',
       tipoVisitante: json['tipo_visitante'] as String? ?? '',
+      telefono: json['telefono'] as String? ?? '',
       scoreIa: json['score_ia'] != null
           ? ScoreIaModel.fromJson(json['score_ia'] as Map<String, dynamic>)
           : null,

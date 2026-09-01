@@ -102,6 +102,7 @@ class SolicitudAccesoCard extends StatelessWidget {
           fotoPlacaUrl: visita.fotoPlacaUrl,
           placa: visita.placa,
           tipoVisitante: visita.tipoVisitante,
+          telefono: visita.telefono,
           scoreIa: visita.scoreIa,
           createdAt: visita.createdAt,
         ),

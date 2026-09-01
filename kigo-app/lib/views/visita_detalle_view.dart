@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/score_ia_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/visita_foto.dart';
@@ -20,6 +21,7 @@ class VisitaDetalleView extends StatelessWidget {
     required this.tipoVisitante,
     required this.scoreIa,
     required this.createdAt,
+    this.telefono = '',
     this.estado,
     this.autorizadoPorNombre,
   });
@@ -31,6 +33,9 @@ class VisitaDetalleView extends StatelessWidget {
   final String fotoPlacaUrl;
   final String placa;
   final String tipoVisitante;
+
+  /// Solo viene si el visitante ya es una cuenta verificada de Kigo.
+  final String telefono;
 
   /// Null si el backend no pudo calcularlo (p. ej. visita muy vieja, antes
   /// de que existiera el análisis).
@@ -79,6 +84,30 @@ class VisitaDetalleView extends StatelessWidget {
           if (estado != null) ...[
             const SizedBox(height: 10),
             _ChipEstado(estado: estado!, autorizadoPorNombre: autorizadoPorNombre),
+          ],
+          if (telefono.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => launchUrl(Uri(scheme: 'tel', path: telefono)),
+                    icon: const Icon(Icons.call_outlined, size: 18),
+                    label: const Text('Llamar'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => launchUrl(
+                      Uri.parse('https://wa.me/${telefono.replaceAll(RegExp(r'[^0-9]'), '')}'),
+                    ),
+                    icon: const Icon(Icons.chat_outlined, size: 18),
+                    label: const Text('WhatsApp'),
+                  ),
+                ),
+              ],
+            ),
           ],
           const SizedBox(height: 20),
           SizedBox(
