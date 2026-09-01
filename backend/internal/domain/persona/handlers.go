@@ -604,6 +604,136 @@ func (h *Handler) ListarContactosFrecuentes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"contactos": list})
 }
 
+// CrearInvitadoFrecuente le da a alguien acceso recurrente por
+// reconocimiento facial a la propia casa de la Persona autenticada --
+// crea una Membresia con Rol=RolInvitadoFrecuente, activa de inmediato
+// (el residente responde por su propia casa, igual que CrearInvitacion no
+// necesita aprobación del admin). Reusa el mismo match facial que un
+// residente: no hay reconocimiento "de segunda clase" para un invitado
+// frecuente, solo permisos distintos.
+func (h *Handler) CrearInvitadoFrecuente(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	var req CrearInvitadoFrecuenteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, req.TenantID)
+	if err != nil || m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía activa en ese centro"})
+		return
+	}
+
+	invitado, err := h.repo.FindOrCreateByTelefono(NormalizarTelefono(req.TelefonoInvitado))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if _, err := h.membresiaRepo.FindByPersonaAndTenant(invitado.ID, req.TenantID); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "esa persona ya tiene una membresía en este centro"})
+		return
+	}
+
+	codigo, hash, err := h.generarPinParaTenant(req.TenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo generar el PIN"})
+		return
+	}
+
+	nombre := strings.TrimSpace(req.NombreInvitado)
+	if nombre != "" && invitado.Nombre == "" {
+		// Persona "en blanco" (nunca ha usado Kigo): se le precarga el
+		// nombre que puso quien lo patrocina, igual que CrearInvitacion.
+		invitado.Nombre = nombre
+		_ = h.repo.Update(invitado)
+	}
+
+	nueva := &residente.Membresia{
+		PersonaID:                   invitado.ID,
+		TenantID:                    req.TenantID,
+		CasaDestino:                 m.CasaDestino,
+		Pin:                         hash,
+		PinCodigo:                   codigo,
+		Status:                      residente.ResidenteStatusActivo,
+		Rol:                         residente.RolInvitadoFrecuente,
+		PermiteReconocimientoFacial: true,
+	}
+	if err := h.membresiaRepo.Create(nueva); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, InvitadoFrecuenteResponse{
+		ID:       nueva.ID,
+		Nombre:   invitado.Nombre,
+		Telefono: invitado.Telefono,
+	})
+}
+
+// ListarInvitadosFrecuentes lista los invitados frecuentes de la casa de la
+// Persona autenticada -- cualquier residente activo de esa casa los ve.
+func (h *Handler) ListarInvitadosFrecuentes(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
+	if err != nil || m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía activa en ese centro"})
+		return
+	}
+
+	list, err := h.membresiaRepo.FindInvitadosFrecuentesPorCasa(tenantID, m.CasaDestino)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"invitados_frecuentes": list})
+}
+
+// RevocarInvitadoFrecuente quita el acceso recurrente -- acotado a la misma
+// casa de quien revoca (ver MembresiaRepository.RevocarInvitadoFrecuente).
+func (h *Handler) RevocarInvitadoFrecuente(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
+	if err != nil || m.Status != residente.ResidenteStatusActivo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía activa en ese centro"})
+		return
+	}
+
+	if err := h.membresiaRepo.RevocarInvitadoFrecuente(uint(id), tenantID, m.CasaDestino); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "invitado frecuente no encontrado"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "acceso revocado"})
+}
+
 // ListarInvitacionesRecibidas lista las invitaciones activas dirigidas a la
 // Persona autenticada — lo que ve en "invitaciones recibidas" en kigo-app.
 // A diferencia de ListarInvitaciones (las que ella creó), estas ya llegan
@@ -860,9 +990,25 @@ func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
 		item.ResumenIA = nil
 		item.ScoreIA = visitas.FiltrarScoreParaResidente(item.ScoreIA)
 		item.Estadisticas = nil
+		item.Telefono = h.telefonoVerificadoDe(v.PersonaID)
 		items = append(items, item)
 	}
 	c.JSON(http.StatusOK, gin.H{"visitas": items})
+}
+
+// telefonoVerificadoDe regresa el teléfono de una Persona solo si ya
+// verificó su cuenta (TelefonoVerificadoAt != nil) -- así el residente ve
+// contacto real, nunca el número "en blanco" de una invitación que nadie
+// reclamó todavía, ni el de un desconocido sin cuenta de Kigo.
+func (h *Handler) telefonoVerificadoDe(personaID *uint) string {
+	if personaID == nil {
+		return ""
+	}
+	p, err := h.repo.FindByID(*personaID)
+	if err != nil || p.TelefonoVerificadoAt == nil {
+		return ""
+	}
+	return p.Telefono
 }
 
 // ListarHistorialVisitas devuelve las visitas que la Persona autenticada
@@ -918,6 +1064,7 @@ func (h *Handler) ListarHistorialVisitas(c *gin.Context) {
 		item.ResumenIA = nil
 		item.ScoreIA = visitas.FiltrarScoreParaResidente(item.ScoreIA)
 		item.Estadisticas = nil
+		item.Telefono = h.telefonoVerificadoDe(v.PersonaID)
 		items = append(items, item)
 	}
 	c.JSON(http.StatusOK, gin.H{

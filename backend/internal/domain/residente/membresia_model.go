@@ -10,6 +10,16 @@ const (
 	ResidenteStatusActivo    = "activo"
 	ResidenteStatusPendiente = "pendiente"
 	ResidenteStatusRechazado = "rechazado"
+
+	// Membresia.Rol -- RolInvitadoFrecuente reusa exactamente el mismo
+	// mecanismo de reconocimiento facial que un residente (cualquier
+	// Membresia activa con embedding entra por match de rostro, ver
+	// persona.Repository.FindActivasPorTenant) en vez de un sistema de
+	// reconocimiento paralelo. Lo que cambia es semántico: no es
+	// "residente" de la casa, es un invitado al que un residente le dio
+	// acceso recurrente y puede revocar cuando quiera.
+	RolResidente         = "residente"
+	RolInvitadoFrecuente = "invitado_frecuente"
 )
 
 // Membresia es la relación de una Persona (internal/domain/persona) con un
@@ -22,9 +32,9 @@ const (
 // pendiente | rechazado) — el ciclo de aprobación es el mismo.
 type Membresia struct {
 	gorm.Model
-	PersonaID                   uint   `gorm:"column:persona_id;not null;index"`
-	TenantID                    uint   `gorm:"column:tenant_id;not null;index"`
-	CasaDestino                 string `gorm:"not null"`
+	PersonaID   uint   `gorm:"column:persona_id;not null;index"`
+	TenantID    uint   `gorm:"column:tenant_id;not null;index"`
+	CasaDestino string `gorm:"not null"`
 	// Pin guarda el hash bcrypt (lo que compara el kiosko, incluso
 	// offline); PinCodigo guarda los 5 dígitos en claro que genera el
 	// backend al crear la membresía, porque la app se los tiene que poder
@@ -36,6 +46,10 @@ type Membresia struct {
 	PermiteReconocimientoFacial bool   `gorm:"not null;default:false"`
 	KioskoID                    *uint
 	TiempoEsperaMin             *int
+	// Rol distingue un residente real de un invitado frecuente -- ver
+	// RolInvitadoFrecuente arriba. Default 'residente' para no romper filas
+	// existentes.
+	Rol string `gorm:"not null;default:'residente'"`
 }
 
 func (Membresia) TableName() string { return "membresias" }

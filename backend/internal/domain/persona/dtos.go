@@ -44,6 +44,23 @@ type MembresiaResponse struct {
 	Pin         string `json:"pin"`
 }
 
+// CrearInvitadoFrecuenteRequest DTO para que un residente le dé acceso
+// recurrente por reconocimiento facial a alguien, en su propia casa.
+type CrearInvitadoFrecuenteRequest struct {
+	TenantID         uint   `json:"tenant_id"          binding:"required"`
+	TelefonoInvitado string `json:"telefono_invitado"  binding:"required"`
+	NombreInvitado   string `json:"nombre_invitado"`
+}
+
+// InvitadoFrecuenteResponse DTO de un invitado frecuente para el residente
+// que lo patrocina -- nunca lleva Pin ni PinCodigo: el acceso es por rostro,
+// no hace falta mostrarle un PIN a nadie.
+type InvitadoFrecuenteResponse struct {
+	ID       uint   `json:"id"`
+	Nombre   string `json:"nombre"`
+	Telefono string `json:"telefono"`
+}
+
 type VerificarQRRequest struct {
 	PersonaID uint      `json:"persona_id" binding:"required"`
 	Firma     string    `json:"firma"      binding:"required"`

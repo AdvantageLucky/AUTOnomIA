@@ -424,6 +424,9 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.DELETE("/invitaciones/:id", personaHandler.RevocarInvitacion)
 		p.GET("/invitaciones/recibidas", personaHandler.ListarInvitacionesRecibidas)
 		p.GET("/invitaciones/contactos", personaHandler.ListarContactosFrecuentes)
+		p.POST("/invitados-frecuentes", personaHandler.CrearInvitadoFrecuente)
+		p.GET("/invitados-frecuentes", personaHandler.ListarInvitadosFrecuentes)
+		p.DELETE("/invitados-frecuentes/:id", personaHandler.RevocarInvitadoFrecuente)
 	}
 
 	pv := rg.Group("/personas/me/visitas")

@@ -50,6 +50,48 @@ func (r *MembresiaRepository) FindByCasaDestinoYTenant(tenantID uint, casaDestin
 	return list, nil
 }
 
+// InvitadoFrecuenteFila es una fila de FindInvitadosFrecuentesPorCasa —
+// deliberadamente angosta, igual que CompaneroCasa: solo lo que el
+// residente que patrocina necesita ver.
+type InvitadoFrecuenteFila struct {
+	ID       uint   `json:"id"`
+	Nombre   string `json:"nombre"`
+	Telefono string `json:"telefono"`
+}
+
+// FindInvitadosFrecuentesPorCasa lista los invitados frecuentes (Rol =
+// RolInvitadoFrecuente) de una casa -- cualquier residente activo de esa
+// casa los ve y puede revocarlos, no solo quien los creó (misma casa,
+// misma confianza que ya se comparte para aprobar/rechazar visitas).
+func (r *MembresiaRepository) FindInvitadosFrecuentesPorCasa(tenantID uint, casaDestino string) ([]InvitadoFrecuenteFila, error) {
+	var filas []InvitadoFrecuenteFila
+	err := r.db.Table("membresias").
+		Select("membresias.id AS id, personas.nombre AS nombre, personas.telefono AS telefono").
+		Joins("JOIN personas ON personas.id = membresias.persona_id").
+		Where("membresias.tenant_id = ? AND UPPER(membresias.casa_destino) = UPPER(?) AND membresias.rol = ? AND membresias.status = ?",
+			tenantID, casaDestino, RolInvitadoFrecuente, ResidenteStatusActivo).
+		Where("membresias.deleted_at IS NULL AND personas.deleted_at IS NULL").
+		Order("membresias.created_at DESC").
+		Scan(&filas).Error
+	return filas, err
+}
+
+// RevocarInvitadoFrecuente hace soft-delete de un invitado frecuente,
+// acotado a la misma casa y tenant de quien lo revoca -- evita que un
+// residente de otra casa revoque el invitado frecuente de alguien más.
+func (r *MembresiaRepository) RevocarInvitadoFrecuente(id, tenantID uint, casaDestino string) error {
+	result := r.db.
+		Where("tenant_id = ? AND UPPER(casa_destino) = UPPER(?) AND rol = ?", tenantID, casaDestino, RolInvitadoFrecuente).
+		Delete(&Membresia{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 // CompaneroCasa es una fila de FindCompanerosCasa — deliberadamente angosta:
 // solo nombre y rol, nunca teléfono/CURP/foto. La restricción de privacidad
 // vive en la query (Select explícito), no en un filtro posterior sobre un
@@ -98,10 +140,10 @@ type MembresiaPendienteConPersona struct {
 func (r *MembresiaRepository) FindPendientesPorTenant(tenantID uint) ([]MembresiaPendienteConPersona, error) {
 	var list []MembresiaPendienteConPersona
 	err := r.db.Table("membresias").
-		Select("membresias.id as id, membresias.persona_id as persona_id, personas.nombre as nombre, personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, " +
-			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, personas.foto_ine_url as foto_ine_url, " +
-			"(personas.embedding IS NOT NULL) as tiene_rostro, " +
-			"(membresias.pin != '') as tiene_pin, " +
+		Select("membresias.id as id, membresias.persona_id as persona_id, personas.nombre as nombre, personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, "+
+			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, personas.foto_ine_url as foto_ine_url, "+
+			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
+			"(membresias.pin != '') as tiene_pin, "+
 			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusPendiente).
@@ -134,10 +176,10 @@ type MembresiaActivaConPersona struct {
 func (r *MembresiaRepository) FindActivasPorTenant(tenantID uint) ([]MembresiaActivaConPersona, error) {
 	var list []MembresiaActivaConPersona
 	err := r.db.Table("membresias").
-		Select("membresias.id as id, membresias.persona_id as persona_id, personas.nombre as nombre, personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, " +
-			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, personas.foto_ine_url as foto_ine_url, " +
-			"(personas.embedding IS NOT NULL) as tiene_rostro, " +
-			"(membresias.pin != '') as tiene_pin, " +
+		Select("membresias.id as id, membresias.persona_id as persona_id, personas.nombre as nombre, personas.apellido_paterno as apellido_paterno, personas.apellido_materno as apellido_materno, "+
+			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, personas.foto_ine_url as foto_ine_url, "+
+			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
+			"(membresias.pin != '') as tiene_pin, "+
 			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusActivo).
