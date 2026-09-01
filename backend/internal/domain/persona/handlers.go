@@ -848,12 +848,17 @@ func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
 	items := make([]visitas.VisitaResponse, 0, len(visitasPendientes))
 	for _, v := range visitasPendientes {
 		item := visitas.ToVisitaResponse(v)
-		// El residente no debe ver el análisis de IA (resumen/heurísticas) de
-		// sus solicitudes pendientes — es información para el dashboard admin,
-		// no para la app de residente. rechazado_previo en particular podría
-		// filtrar que hubo un rechazo en otra casa del mismo tenant.
+		// El resumen narrativo del LLM se redacta con el historial completo
+		// del visitante (puede mencionar en prosa un rechazo en otra casa) y
+		// Estadisticas.CasaHabitual es directamente "qué otra casa visita
+		// seguido" -- ambos se quedan ocultos por completo. ScoreIA sí se
+		// expone, pero filtrado a solo lo que describe ESTA visita (ver
+		// FiltrarScoreParaResidente): el número de confianza no revela nada
+		// que no sepa ya el residente, y los factores cross-casa
+		// (rechazo_previo, recurrencia, placa habitual, horario inusual)
+		// quedan fuera.
 		item.ResumenIA = nil
-		item.ScoreIA = nil
+		item.ScoreIA = visitas.FiltrarScoreParaResidente(item.ScoreIA)
 		item.Estadisticas = nil
 		items = append(items, item)
 	}
@@ -909,10 +914,9 @@ func (h *Handler) ListarHistorialVisitas(c *gin.Context) {
 	items := make([]visitas.VisitaResponse, 0, len(historial))
 	for _, v := range historial {
 		item := visitas.ToVisitaResponse(v)
-		// Mismo recorte que en pendientes: el analisis de IA es para el
-		// dashboard admin, no para la app del residente.
+		// Mismo recorte que en pendientes (ver ahí el porqué de cada campo).
 		item.ResumenIA = nil
-		item.ScoreIA = nil
+		item.ScoreIA = visitas.FiltrarScoreParaResidente(item.ScoreIA)
 		item.Estadisticas = nil
 		items = append(items, item)
 	}
