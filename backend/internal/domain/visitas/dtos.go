@@ -78,6 +78,11 @@ type VisitaResponse struct {
 	// Lo rellena el dominio persona, que sí tiene esa distinción a la mano
 	// (ver ListarVisitasPendientes/ListarHistorialVisitas).
 	Telefono string `json:"telefono,omitempty"`
+	// PersonaCurp es la CURP del perfil de la Persona vinculada (si la
+	// dio al enrolarse), NO la capturada en esta entrada -- se muestra
+	// aparte para no mezclar "lo que se leyó ahora" con "lo que ya
+	// sabíamos de antes". Solo aplica a TipoResidente.
+	PersonaCurp string `json:"persona_curp,omitempty"`
 }
 
 // VisitaListItemResponse DTO reducido para el listado del dashboard (omite CURP y clave_lector)

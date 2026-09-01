@@ -294,6 +294,22 @@ textarea { resize: vertical; }
 }
 .btn-copy:hover { background: var(--border); color: var(--text); }
 
+.btn-contact {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-contact:hover { background: var(--border); color: var(--text); }
+
 .btn-danger {
   background: var(--red);
   color: #fff;
