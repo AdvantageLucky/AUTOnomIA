@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/visita_pendiente_model.dart';
 import '../theme/app_theme.dart';
+import '../views/visita_detalle_view.dart';
 import 'visita_foto.dart';
 
 /// Solicitud de acceso con la foto que tomó el kiosko como protagonista: el
@@ -28,31 +29,40 @@ class SolicitudAccesoCard extends StatelessWidget {
         children: [
           // Vertical, no apaisado: la captura del kiosko es un retrato, y con
           // un marco horizontal el BoxFit.cover recorta justo la cabeza.
-          AspectRatio(
-            aspectRatio: 3 / 4,
-            child: VisitaFoto(url: visita.fotoRostroUrl),
+          // Tocar la foto o el nombre abre el detalle -- los botones de
+          // aprobar/rechazar quedan fuera de este gesto, ya tienen el suyo.
+          GestureDetector(
+            onTap: () => _abrirDetalle(context),
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: VisitaFoto(url: visita.fotoRostroUrl),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
             child: Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        visita.titular,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        visita.casaDestino,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? AppTheme.textGrey : const Color(0xFF8A8BA8),
+                  child: GestureDetector(
+                    onTap: () => _abrirDetalle(context),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          visita.titular,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          visita.casaDestino,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? AppTheme.textGrey : const Color(0xFF8A8BA8),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -76,6 +86,25 @@ class SolicitudAccesoCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _abrirDetalle(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VisitaDetalleView(
+          titular: visita.titular,
+          casaDestino: visita.casaDestino,
+          fotoRostroUrl: visita.fotoRostroUrl,
+          fotoDocumentoUrl: visita.fotoDocumentoUrl,
+          fotoPlacaUrl: visita.fotoPlacaUrl,
+          placa: visita.placa,
+          tipoVisitante: visita.tipoVisitante,
+          scoreIa: visita.scoreIa,
+          createdAt: visita.createdAt,
+        ),
       ),
     );
   }

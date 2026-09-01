@@ -7,6 +7,7 @@ import '../viewmodels/pending_visits_viewmodel.dart';
 import '../viewmodels/visit_history_viewmodel.dart';
 import '../widgets/solicitud_acceso_card.dart';
 import '../widgets/visita_foto.dart';
+import 'visita_detalle_view.dart';
 
 /// Pestaña unificada de Solicitudes: integra las Solicitudes pendientes de
 /// autorización en tiempo real y el Historial de visitas resueltas.
@@ -337,7 +338,27 @@ class _HistorialCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final esAprobado = visita.estado.toUpperCase() == 'APROBADO';
 
-    return Container(
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VisitaDetalleView(
+            titular: visita.titular,
+            casaDestino: visita.casaDestino,
+            fotoRostroUrl: visita.fotoRostroUrl,
+            fotoDocumentoUrl: visita.fotoDocumentoUrl,
+            fotoPlacaUrl: visita.fotoPlacaUrl,
+            placa: visita.placa,
+            tipoVisitante: visita.tipoVisitante,
+            scoreIa: visita.scoreIa,
+            createdAt: visita.createdAt,
+            estado: visita.estado,
+            autorizadoPorNombre: visita.autorizadoPorNombre,
+          ),
+        ),
+      ),
+      child: Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
@@ -418,6 +439,7 @@ class _HistorialCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
