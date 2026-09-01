@@ -61,7 +61,7 @@ func TestConsultarEstadoKigoVerify_CompletaSinWebhook(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, tmpDir, "",
-		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL, PublicURL: "https://autonomia.example"}, kigoRepo)
+		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL, PublicURL: "https://autonomia.example"}, kigoRepo, nil)
 
 	router := gin.New()
 	router.GET("/personas/me/kigo-verify/estado", func(c *gin.Context) {
@@ -113,7 +113,7 @@ func TestConsultarEstadoKigoVerify_EstadoIntermedioSiguePendiente(t *testing.T) 
 	defer srv.Close()
 
 	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, t.TempDir(), "",
-		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL}, kigoRepo)
+		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL}, kigoRepo, nil)
 
 	router := gin.New()
 	router.GET("/estado", func(c *gin.Context) {
@@ -159,7 +159,7 @@ func TestWebhookKigoVerify_FirmaHMACHex(t *testing.T) {
 	defer srv.Close()
 
 	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, t.TempDir(), "",
-		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL, PublicURL: "https://autonomia.example"}, kigoRepo)
+		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL, PublicURL: "https://autonomia.example"}, kigoRepo, nil)
 
 	router := gin.New()
 	router.POST("/webhooks/kigo-verify", h.WebhookKigoVerify)
