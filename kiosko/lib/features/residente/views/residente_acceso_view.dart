@@ -44,6 +44,8 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   final _reconocimientoServicio = ReconocimientoFacialServicio();
   Timer? _timerVerificacion;
   bool _verificandoRostro = false;
+  // Controla el bucle de reintentos -- ver _programarSiguienteIntento.
+  bool _bucleVerificacionActivo = false;
 
   // Exigimos 2 coincidencias seguidas contra el mismo residente antes de dar
   // el acceso por bueno (mitigación básica de falsos positivos/spoofing).
@@ -68,6 +70,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
 
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
+      _bucleVerificacionActivo = false;
       _timerVerificacion?.cancel();
       _led.apagar();
       _cameraController = null;
@@ -137,10 +140,8 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
 
       _led.encenderIluminacion();
 
-      _timerVerificacion = Timer.periodic(
-        const Duration(milliseconds: 1500),
-        (_) => _intentarVerificarRostro(),
-      );
+      _bucleVerificacionActivo = true;
+      _programarSiguienteIntento(Duration.zero);
     } catch (e) {
       debugPrint('Error al inicializar la cámara: $e');
       if (mounted) {
@@ -153,6 +154,29 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         });
       }
     }
+  }
+
+  // Encadena el siguiente intento justo después de que termina el anterior,
+  // en vez de un Timer.periodic de intervalo fijo.
+  //
+  // Root cause del reconocimiento "ultra lento": con Timer.periodic(1500ms),
+  // si un intento (cámara + ML Kit + TFLite + ida y vuelta al backend) tarda
+  // más de 1500ms -- muy probable en el hardware del kiosko -- el siguiente
+  // tick llega ocupado y se descarta (ver el guard al inicio de
+  // _intentarVerificarRostro), así que el intento real empieza hasta el
+  // *próximo* tick de 1500ms. Eso suma hasta 1500ms de espera muerta por
+  // ciclo que no tiene nada que ver con el trabajo real, y como se exigen 2
+  // coincidencias seguidas (mitigación de spoofing, no se toca aquí), esa
+  // espera se paga dos veces. Encadenar el siguiente intento apenas termina
+  // el anterior elimina ese tiempo muerto sin tocar la exigencia de 2
+  // coincidencias.
+  void _programarSiguienteIntento([Duration espera = const Duration(milliseconds: 300)]) {
+    _timerVerificacion = Timer(espera, () async {
+      await _intentarVerificarRostro();
+      if (_bucleVerificacionActivo && mounted) {
+        _programarSiguienteIntento();
+      }
+    });
   }
 
   // Toma una foto silenciosa, valida que haya un rostro, calcula su huella
@@ -218,6 +242,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     }
 
     if (_coincidenciasConsecutivas >= 2 && mounted) {
+      _bucleVerificacionActivo = false;
       _timerVerificacion?.cancel();
       _led.apagar();
       Navigator.of(context).push(
@@ -236,6 +261,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _bucleVerificacionActivo = false;
     _timerVerificacion?.cancel();
     _led.apagar();
     unawaited(_reconocimientoServicio.dispose());
