@@ -2817,7 +2817,7 @@ textarea { resize: vertical; }
 /* ── Residentes: Avatar, filas interactivas y modal de detalle ── */
 .res-row {
   display: grid;
-  grid-template-columns: 46px minmax(160px, 1.5fr) minmax(120px, 1fr) minmax(100px, 0.8fr) auto;
+  grid-template-columns: 18px 46px minmax(160px, 1.5fr) minmax(120px, 1fr) minmax(100px, 0.8fr) auto;
   align-items: center;
   gap: 18px;
   padding: 14px 20px;
@@ -2851,7 +2851,7 @@ textarea { resize: vertical; }
 
 @media (max-width: 768px) {
   .res-row {
-    grid-template-columns: 44px 1fr auto;
+    grid-template-columns: 18px 44px 1fr auto;
     gap: 12px;
     padding: 12px 14px;
   }

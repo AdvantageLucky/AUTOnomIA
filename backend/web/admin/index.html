@@ -1229,6 +1229,23 @@
 			</div>
 		</div>
 
+		<!-- Confirmación genérica para acciones destructivas (revocar, etc.) --
+		     reemplaza al confirm() nativo del navegador, que no se puede
+		     estilizar ni explicar la consecuencia con el mismo detalle. -->
+		<div id="modal-confirmar" class="modal-overlay" hidden>
+			<div class="modal-box modal-box--sm">
+				<div class="modal-del-icon" id="confirmar-icon">
+					<svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
+				</div>
+				<div class="modal-title" id="confirmar-titulo">¿Confirmar?</div>
+				<div class="modal-del-text" id="confirmar-texto"></div>
+				<div class="modal-actions">
+					<button type="button" class="btn-cancel" id="confirmar-cancelar">Cancelar</button>
+					<button type="button" class="btn-danger" id="confirmar-aceptar">Confirmar</button>
+				</div>
+			</div>
+		</div>
+
 		<div id="modal-vigilante" class="modal-overlay" hidden>
 			<div class="modal-box">
 				<div class="modal-title">Nuevo vigilante</div>

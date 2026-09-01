@@ -68,7 +68,15 @@ func (h *Handler) ListarDestinos(c *gin.Context) {
 		return
 	}
 
-	list, err := h.repo.WithContext(c.Request.Context()).FindByTenantID(tenantID)
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	list, err := repoCtx.FindByTenantID(tenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	counts, err := repoCtx.CountResidentesPorDestino(tenantID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -76,7 +84,9 @@ func (h *Handler) ListarDestinos(c *gin.Context) {
 
 	items := make([]DestinoResponse, 0, len(list))
 	for _, d := range list {
-		items = append(items, toDestinoResponse(d))
+		item := toDestinoResponse(d)
+		item.ResidentesActivos = counts[d.ID]
+		items = append(items, item)
 	}
 	c.JSON(http.StatusOK, items)
 }
