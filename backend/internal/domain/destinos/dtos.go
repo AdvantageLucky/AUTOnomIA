@@ -10,6 +10,10 @@ type DestinoResponse struct {
 	Numero    string    `json:"numero"`
 	Titular   string    `json:"titular"`
 	CreatedAt time.Time `json:"created_at"`
+	// ResidentesActivos solo lo llena ListarDestinos (vista admin) --
+	// ListarDestinosPorAcceso es la que usa el kiosko, que no necesita ni
+	// debe conocer ese número.
+	ResidentesActivos int `json:"residentes_activos,omitempty"`
 }
 
 // DestinoKioskoResponse mantenido por compatibilidad con la app kiosko

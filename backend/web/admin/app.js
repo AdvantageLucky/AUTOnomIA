@@ -423,6 +423,35 @@
     setTimeout(remove, 5000);
   }
 
+  // Reemplaza confirm() nativo para acciones destructivas -- se puede
+  // explicar la consecuencia con más detalle que un diálogo genérico del
+  // navegador, y se ve consistente con el resto del dashboard.
+  function confirmarAccion({ titulo, texto, textoBoton = "Confirmar" }) {
+    return new Promise(resolve => {
+      const modal = document.getElementById("modal-confirmar");
+      if (!modal) { resolve(window.confirm(texto || titulo)); return; }
+
+      document.getElementById("confirmar-titulo").textContent = titulo || "¿Confirmar?";
+      document.getElementById("confirmar-texto").textContent = texto || "";
+      const btnAceptar = document.getElementById("confirmar-aceptar");
+      const btnCancelar = document.getElementById("confirmar-cancelar");
+      btnAceptar.textContent = textoBoton;
+
+      const cerrar = (resultado) => {
+        modal.hidden = true;
+        btnAceptar.removeEventListener("click", onAceptar);
+        btnCancelar.removeEventListener("click", onCancelar);
+        resolve(resultado);
+      };
+      const onAceptar = () => cerrar(true);
+      const onCancelar = () => cerrar(false);
+      btnAceptar.addEventListener("click", onAceptar);
+      btnCancelar.addEventListener("click", onCancelar);
+
+      modal.hidden = false;
+    });
+  }
+
   function initSSE(token) {
     if (state.sseSource) { state.sseSource.close(); state.sseSource = null; }
     const url = `${API_BASE}/kioskos/solicitudes/stream?token=${encodeURIComponent(token)}`;
@@ -3277,34 +3306,64 @@
       porCalle.get(calle).push(d);
     }
 
+    // Ícono por tipo -- edificio/departamento/oficina/bodega comparten la
+    // silueta de edificio, casa/lote la de casa, así se distinguen de un
+    // vistazo en la vista de tarjetas sin tener que leer la etiqueta.
+    const iconoEdificio = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="7" x2="9" y2="7.01"/><line x1="15" y1="7" x2="15" y2="7.01"/><line x1="9" y1="12" x2="9" y2="12.01"/><line x1="15" y1="12" x2="15" y2="12.01"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`;
+    const iconoCasa = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+    const esEdificioLike = tipo => ['edificio', 'departamento', 'oficina', 'bodega', 'local'].includes((tipo || '').toLowerCase());
+
     rowsEl.innerHTML = [...porCalle.entries()].map(([calle, destinos]) => `
-      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-          <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.7"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;display:flex;align-items:center;gap:8px">
+            ${iconoCasa}
             ${esc(calle)}
           </div>
           <span class="badge badge--neutral" style="font-size:11.5px">${destinos.length} ${destinos.length === 1 ? 'destino' : 'destinos'}</span>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
-          ${destinos.map(d => `
-            <div id="dest-row-${d.id}" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:13px">
-              <span style="font-weight:600;color:var(--text)">${formatTipoDestino(d.tipo)} ${esc(d.numero || '')}</span>
-              ${d.titular ? `<span style="font-size:11px;color:var(--text-3)">· ${esc(d.titular)}</span>` : ''}
-              <button type="button" class="btn-ghost" style="color:var(--red);padding:2px 4px;margin-left:4px;display:flex;align-items:center" data-del-dest="${d.id}" title="Eliminar destino">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+          ${destinos.map(d => {
+            const n = d.residentes_activos || 0;
+            return `
+            <div id="dest-row-${d.id}" class="dest-card" data-dest-nombre="${esc(d.nombre)}" style="position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s,transform .15s">
+              <button type="button" class="btn-ghost" style="position:absolute;top:8px;right:8px;color:var(--text-3);padding:4px;display:flex" data-del-dest="${d.id}" title="Eliminar destino">
                 <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
               </button>
-            </div>`).join('')}
+              <div style="color:var(--text-3);margin-bottom:8px">${esEdificioLike(d.tipo) ? iconoEdificio : iconoCasa}</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text)">${formatTipoDestino(d.tipo)} ${esc(d.numero || '')}</div>
+              ${d.titular ? `<div style="font-size:11.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.titular)}</div>` : ''}
+              <div style="display:flex;align-items:center;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+                <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" style="color:${n > 0 ? 'var(--brand)' : 'var(--text-3)'}"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>
+                <span style="font-size:13px;font-weight:700;color:${n > 0 ? 'var(--text)' : 'var(--text-3)'}">${n}</span>
+                <span style="font-size:11.5px;color:var(--text-3)">residente${n !== 1 ? 's' : ''}</span>
+              </div>
+            </div>`;
+          }).join('')}
         </div>
       </div>`).join('');
 
+    rowsEl.querySelectorAll('.dest-card').forEach(card => {
+      card.addEventListener('mouseenter', () => { card.style.borderColor = 'var(--brand)'; });
+      card.addEventListener('mouseleave', () => { card.style.borderColor = 'var(--border)'; });
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-del-dest]')) return;
+        verResidentesDeDestino(card.dataset.destNombre);
+      });
+    });
+
     rowsEl.querySelectorAll('[data-del-dest]').forEach(btn => {
-      btn.addEventListener('click', () => deleteDestino(+btn.dataset.delDest));
+      btn.addEventListener('click', (e) => { e.stopPropagation(); deleteDestino(+btn.dataset.delDest); });
     });
   }
 
   async function deleteDestino(id) {
-    if (!confirm('¿Eliminar este destino?')) return;
+    const ok = await confirmarAccion({
+      titulo: '¿Eliminar este destino?',
+      texto: 'Los residentes ya enlazados a esta casa no se eliminan, pero el destino dejará de estar disponible para nuevos registros.',
+      textoBoton: 'Eliminar',
+    });
+    if (!ok) return;
     const res = await api(`/destinos/${id}`, { method: 'DELETE' });
     if (res && res.ok) {
       document.getElementById(`dest-row-${id}`)?.remove();
@@ -3555,7 +3614,7 @@
 
     return `
       <div class="res-row" data-res-id="${m.id}">
-        <input type="checkbox" class="res-check" data-check-id="${m.id}" ${checked} style="margin-right:10px;width:16px;height:16px;cursor:pointer;flex-shrink:0">
+        <input type="checkbox" class="res-check" data-check-id="${m.id}" ${checked} style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
         ${avatarHtml}
         <div class="res-info-main">
           <div class="res-name">${esc(nombreCompleto)}</div>
@@ -3649,11 +3708,16 @@
   document.getElementById('resa-revocar-btn')?.addEventListener('click', async () => {
     const ids = [...residentesSeleccion];
     if (!ids.length) return;
-    if (!confirm(`¿Revocar el acceso de ${ids.length} residente${ids.length !== 1 ? 's' : ''}? Ya no podrán entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo.`)) return;
+    const ok = await confirmarAccion({
+      titulo: `¿Revocar a ${ids.length} residente${ids.length !== 1 ? 's' : ''}?`,
+      texto: 'Ya no podrán entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo, solo su acceso a este centro.',
+      textoBoton: 'Revocar',
+    });
+    if (!ok) return;
 
     const res = await api('/membresias/revocar', { method: 'POST', body: JSON.stringify({ ids }) });
     if (!res || !res.ok) {
-      alert('No se pudo revocar. Intenta de nuevo.');
+      mostrarToast('No se pudo revocar. Intenta de nuevo.', 'err');
       return;
     }
     await loadResidentesActivos();
@@ -3841,7 +3905,12 @@
 
     document.getElementById('res-modal-revocar-btn')?.addEventListener('click', async () => {
       const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''}`.trim() || 'este residente';
-      if (!confirm(`¿Revocar el acceso de ${nombreCompleto}? Ya no podrá entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo.`)) return;
+      const ok = await confirmarAccion({
+        titulo: `¿Revocar a ${nombreCompleto}?`,
+        texto: 'Ya no podrá entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo, solo su acceso a este centro.',
+        textoBoton: 'Revocar',
+      });
+      if (!ok) return;
       const res = await api('/membresias/revocar', { method: 'POST', body: JSON.stringify({ ids: [m.id] }) });
       if (res && res.ok) {
         modal.hidden = true;

@@ -45,6 +45,31 @@ func (r *Repository) FindByTenantID(tenantID uint) ([]Destino, error) {
 	return list, nil
 }
 
+// CountResidentesPorDestino cuenta las membresías activas por destino_id —
+// para la vista gráfica de "Destinos" del dashboard, que muestra cuántos
+// residentes tiene cada casa. Consulta la tabla membresias directamente
+// (sin importar el paquete residente, mismo motivo que otras consultas
+// cross-dominio del proyecto: evitar un ciclo de imports).
+func (r *Repository) CountResidentesPorDestino(tenantID uint) (map[uint]int, error) {
+	var filas []struct {
+		DestinoID uint
+		Total     int
+	}
+	err := r.db.Table("membresias").
+		Select("destino_id, count(*) as total").
+		Where("tenant_id = ? AND status = 'activo' AND deleted_at IS NULL AND destino_id IS NOT NULL", tenantID).
+		Group("destino_id").
+		Scan(&filas).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[uint]int, len(filas))
+	for _, f := range filas {
+		out[f.DestinoID] = f.Total
+	}
+	return out, nil
+}
+
 // ListNombresByTenantID devuelve solo los nombres de los destinos del tenant,
 // usado por el registro público de residentes para ofrecer un selector de casas.
 func (r *Repository) ListNombresByTenantID(tenantID uint) ([]string, error) {
