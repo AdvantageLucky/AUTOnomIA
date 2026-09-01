@@ -1466,6 +1466,15 @@
     return v.autorizado_por_nombre ? `${tipo} — ${esc(v.autorizado_por_nombre)}` : tipo;
   }
 
+  // calidad_ine viene del kiosko (EvidenciaCalidadServicio): "nitida" o
+  // "media" -- nunca "borrosa", esa se rechaza antes de llegar al backend.
+  const CALIDAD_INE_LABEL = { nitida: "Nítida", media: "Media" };
+  function calidadIneField(v) {
+    if (!v.calidad_ine) return "";
+    const label = CALIDAD_INE_LABEL[v.calidad_ine] || v.calidad_ine;
+    return `<div><div class="campo-label">Calidad de INE</div><div class="campo-value">${esc(label)}</div></div>`;
+  }
+
   /* ─── Visitas ────────────────────────────── */
   async function loadVisitas(page) {
     state.visPage = page;
@@ -1789,6 +1798,12 @@
             <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
             <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
             <div><div class="campo-label">${t("autorizado_por")}</div><div class="campo-value">${autorizadorLabel(v)}</div></div>
+            ${v.telefono ? `<div><div class="campo-label">Teléfono</div><div class="campo-value" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="campo-mono">${esc(v.telefono)}</span>
+              <a href="tel:${esc(v.telefono)}" class="btn-ghost" style="padding:2px 10px;font-size:12px;text-decoration:none">Llamar</a>
+              <a href="https://wa.me/${esc(v.telefono.replace(/\D/g, ""))}" target="_blank" rel="noopener" class="btn-ghost" style="padding:2px 10px;font-size:12px;text-decoration:none">WhatsApp</a>
+            </div></div>` : ""}
+            ${calidadIneField(v)}
           </div>
         </div>
       </div>
