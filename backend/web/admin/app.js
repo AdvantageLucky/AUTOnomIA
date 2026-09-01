@@ -1620,6 +1620,24 @@
   document.addEventListener("click", (e) => {
     const card = e.target.closest?.(".evidencia-card");
     if (card) abrirLightbox(card.dataset.foto, card.dataset.fotoLabel);
+
+    const filtroVisitas = e.target.closest?.(".campo-link[data-filtro-visitas]");
+    if (filtroVisitas) {
+      const q = filtroVisitas.dataset.filtroVisitas;
+      const fQ = document.getElementById("vis-quick-search");
+      if (fQ) fQ.value = q;
+      const fTipo = document.getElementById("vis-filter-tipo");
+      if (fTipo) fTipo.value = "";
+      const fEstado = document.getElementById("vis-filter-estado");
+      if (fEstado) fEstado.value = "";
+      const fFecha = document.getElementById("vis-filter-fecha");
+      if (fFecha) fFecha.value = "";
+      navTo("visitas");
+      return;
+    }
+
+    const verDestino = e.target.closest?.(".campo-link[data-ver-destino]");
+    if (verDestino) verResidentesDeDestino(verDestino.dataset.verDestino);
   });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" && e.key !== " ") return;
@@ -1808,9 +1826,12 @@
           <div class="detalle-nombre">${esc(v.titular)}</div>
           <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${fmtDate(v.created_at)}</div>
           <div class="detalle-campos">
-            <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${v.curp ? esc(v.curp) : (v.persona_curp ? `${esc(v.persona_curp)} <span style="color:var(--text-3);font-weight:400;font-family:inherit">(del perfil)</span>` : "—")}</div></div>
-            <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
-            <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
+            <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${
+              v.curp ? `<span class="campo-link" data-filtro-visitas="${esc(v.curp)}">${esc(v.curp)}</span>`
+              : (v.persona_curp ? `<span class="campo-link" data-filtro-visitas="${esc(v.persona_curp)}">${esc(v.persona_curp)}</span> <span style="color:var(--text-3);font-weight:400;font-family:inherit">(del perfil)</span>` : "—")
+            }</div></div>
+            <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${v.casa_destino ? `<span class="campo-link" data-ver-destino="${esc(v.casa_destino)}">${esc(v.casa_destino)}</span>` : "—"}</div></div>
+            <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? `<span class="campo-link" data-filtro-visitas="${esc(v.placa)}">${esc(v.placa)}</span>` : t("no_placa")}</div></div>
             <div><div class="campo-label">${t("autorizado_por")}</div><div class="campo-value">${autorizadorLabel(v)}</div></div>
             ${v.telefono ? `<div><div class="campo-label">Teléfono</div><div class="campo-value" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span class="campo-mono">${esc(v.telefono)}</span>
@@ -3460,6 +3481,29 @@
   /* ─── Residentes (Persona + Membresia) ─── */
 
   let residentesActivosCache = [];
+  let residentesSeleccion = new Set();
+  let residentesFiltroDestino = null;
+
+  const TIPO_DESTINO_LABEL = { casa: 'Casa', edificio: 'Edificio' };
+
+  function residentesAgruparPor() {
+    return document.getElementById('resa-agrupar')?.value || 'destino';
+  }
+
+  function residentesClaveGrupo(m, criterio) {
+    if (criterio === 'calle') return m.destino_calle || 'Sin calle registrada';
+    if (criterio === 'tipo') return TIPO_DESTINO_LABEL[m.destino_tipo] || 'Sin tipo';
+    if (criterio === 'ninguno') return null;
+    return m.casa_destino || 'Sin destino';
+  }
+
+  function actualizarToolbarSeleccion() {
+    const count = document.getElementById('resa-sel-count');
+    const btn = document.getElementById('resa-revocar-btn');
+    const n = residentesSeleccion.size;
+    if (count) { count.hidden = n === 0; count.textContent = `${n} seleccionado${n !== 1 ? 's' : ''}`; }
+    if (btn) btn.hidden = n === 0;
+  }
 
   async function loadResidentesActivos() {
     const loadEl  = document.getElementById('resa-loading');
@@ -3486,6 +3530,8 @@
     } catch (e) { console.error(e); }
 
     residentesActivosCache = activos;
+    residentesSeleccion = new Set();
+    actualizarToolbarSeleccion();
 
     if (!activos.length) {
       if (emptyEl) emptyEl.hidden = false;
@@ -3493,40 +3539,89 @@
     }
     if (emptyEl) emptyEl.hidden = true;
 
-    rowsEl.innerHTML = activos.map(m => {
-      const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
-      const inicial = (m.nombre || 'R')[0].toUpperCase();
-      const avatarHtml = m.foto_cara_url
-        ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
-        : `<div class="res-avatar">${inicial}</div>`;
+    renderResidentesActivos();
+  }
 
-      const contacto = m.telefono ? `${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : 'Residente activo');
-      const fechaAlta = m.created_at ? fmtDateShort(m.created_at) : '—';
+  function residenteRowHtml(m) {
+    const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
+    const inicial = (m.nombre || 'R')[0].toUpperCase();
+    const avatarHtml = m.foto_cara_url
+      ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+      : `<div class="res-avatar">${inicial}</div>`;
 
-      return `
-        <div class="res-row" data-res-id="${m.id}">
-          ${avatarHtml}
-          <div class="res-info-main">
-            <div class="res-name">${esc(nombreCompleto)}</div>
-            <div class="res-sub">${contacto}</div>
-          </div>
-          <div class="res-dest-col">
-            <span class="badge badge--aprobado" style="font-size:12px;padding:4px 10px;font-weight:600">
-               ${esc(m.casa_destino || 'Sin casa')}
-            </span>
-          </div>
-          <div class="res-date-col">
-            <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Alta</div>
-            <div style="font-size:12.5px;color:var(--text-2);font-weight:500">${fechaAlta}</div>
-          </div>
-          <div class="res-action-col">
-            <button type="button" class="btn-cancel" style="padding:6px 12px;font-size:12px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:4px">
-              Ver detalle
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
-            </button>
-          </div>
-        </div>`;
-    }).join('');
+    const contacto = m.telefono ? `${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : 'Residente activo');
+    const fechaAlta = m.created_at ? fmtDateShort(m.created_at) : '—';
+    const checked = residentesSeleccion.has(m.id) ? 'checked' : '';
+
+    return `
+      <div class="res-row" data-res-id="${m.id}">
+        <input type="checkbox" class="res-check" data-check-id="${m.id}" ${checked} style="margin-right:10px;width:16px;height:16px;cursor:pointer;flex-shrink:0">
+        ${avatarHtml}
+        <div class="res-info-main">
+          <div class="res-name">${esc(nombreCompleto)}</div>
+          <div class="res-sub">${contacto}</div>
+        </div>
+        <div class="res-dest-col">
+          <span class="badge badge--aprobado" style="font-size:12px;padding:4px 10px;font-weight:600">
+             ${esc(m.casa_destino || 'Sin casa')}
+          </span>
+        </div>
+        <div class="res-date-col">
+          <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Alta</div>
+          <div style="font-size:12.5px;color:var(--text-2);font-weight:500">${fechaAlta}</div>
+        </div>
+        <div class="res-action-col">
+          <button type="button" class="btn-cancel" style="padding:6px 12px;font-size:12px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+            Ver detalle
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }
+
+  // Agrupa la lista ya cargada según el criterio elegido en el toolbar
+  // (destino/calle/tipo) -- todo desde caché, sin volver a pedir al backend.
+  function renderResidentesActivos() {
+    const rowsEl = document.getElementById('resa-rows');
+    if (!rowsEl) return;
+
+    const chipEl = document.getElementById('resa-filtro-chip');
+    if (chipEl) {
+      chipEl.hidden = !residentesFiltroDestino;
+      chipEl.querySelector('span').textContent = `Filtrando por: ${residentesFiltroDestino || ''}`;
+    }
+
+    const base = residentesFiltroDestino
+      ? residentesActivosCache.filter(m => m.casa_destino === residentesFiltroDestino)
+      : residentesActivosCache;
+
+    const criterio = residentesAgruparPor();
+    if (criterio === 'ninguno') {
+      rowsEl.innerHTML = base.map(residenteRowHtml).join('');
+    } else {
+      const grupos = new Map();
+      base.forEach(m => {
+        const clave = residentesClaveGrupo(m, criterio);
+        if (!grupos.has(clave)) grupos.set(clave, []);
+        grupos.get(clave).push(m);
+      });
+      const claves = [...grupos.keys()].sort((a, b) => a.localeCompare(b));
+      rowsEl.innerHTML = claves.map(clave => `
+        <div class="res-group-header" style="font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">
+          ${esc(clave)} <span style="font-weight:400;color:var(--text-3)">(${grupos.get(clave).length})</span>
+        </div>
+        ${grupos.get(clave).map(residenteRowHtml).join('')}
+      `).join('');
+    }
+
+    rowsEl.querySelectorAll('.res-check').forEach(chk => {
+      chk.addEventListener('click', e => e.stopPropagation());
+      chk.addEventListener('change', () => {
+        const id = Number(chk.dataset.checkId);
+        if (chk.checked) residentesSeleccion.add(id); else residentesSeleccion.delete(id);
+        actualizarToolbarSeleccion();
+      });
+    });
 
     rowsEl.querySelectorAll('[data-res-id]').forEach(el => {
       el.addEventListener('click', () => {
@@ -3536,6 +3631,33 @@
       });
     });
   }
+
+  document.getElementById('resa-agrupar')?.addEventListener('change', renderResidentesActivos);
+
+  document.getElementById('resa-filtro-quitar')?.addEventListener('click', () => {
+    residentesFiltroDestino = null;
+    renderResidentesActivos();
+  });
+
+  // Entrada desde "Destino" en el detalle de una visita -- ver residentes
+  // enlazados a esa casa/edificio, ya agrupados/filtrados a solo esa clave.
+  function verResidentesDeDestino(casaDestino) {
+    residentesFiltroDestino = casaDestino;
+    navTo('residentes'); // dispara loadResidentesActivos() (ver navTo, caso "residentes")
+  }
+
+  document.getElementById('resa-revocar-btn')?.addEventListener('click', async () => {
+    const ids = [...residentesSeleccion];
+    if (!ids.length) return;
+    if (!confirm(`¿Revocar el acceso de ${ids.length} residente${ids.length !== 1 ? 's' : ''}? Ya no podrán entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo.`)) return;
+
+    const res = await api('/membresias/revocar', { method: 'POST', body: JSON.stringify({ ids }) });
+    if (!res || !res.ok) {
+      alert('No se pudo revocar. Intenta de nuevo.');
+      return;
+    }
+    await loadResidentesActivos();
+  });
 
   let residentesPendientesCache = [];
 
@@ -3666,10 +3788,13 @@
             <button type="button" class="btn-ghost" id="res-modal-rechazar-btn" style="color:var(--danger,#e55);padding:8px 12px">Rechazar</button>
           </div>
         ` : `
-          <button type="button" class="btn-cancel" id="res-modal-ver-visitas">
-            <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:middle;margin-right:4px"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
-            Ver entradas de este residente
-          </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn-cancel" id="res-modal-ver-visitas">
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:middle;margin-right:4px"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
+              Ver entradas de este residente
+            </button>
+            <button type="button" class="btn-ghost" id="res-modal-revocar-btn" style="color:var(--danger,#e55)">Revocar acceso</button>
+          </div>
         `}
         <button type="button" class="btn-cancel" id="res-modal-cerrar-btn">Cerrar</button>
       </div>
@@ -3712,6 +3837,19 @@
       const fEstado = document.getElementById('vis-filter-estado');
       if (fEstado) fEstado.value = '';
       navTo('visitas');
+    });
+
+    document.getElementById('res-modal-revocar-btn')?.addEventListener('click', async () => {
+      const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''}`.trim() || 'este residente';
+      if (!confirm(`¿Revocar el acceso de ${nombreCompleto}? Ya no podrá entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo.`)) return;
+      const res = await api('/membresias/revocar', { method: 'POST', body: JSON.stringify({ ids: [m.id] }) });
+      if (res && res.ok) {
+        modal.hidden = true;
+        mostrarToast('Acceso revocado', 'ok');
+        await loadResidentesActivos();
+      } else {
+        mostrarToast('No se pudo revocar', 'err');
+      }
     });
 
     document.getElementById('res-modal-cerrar-btn')?.addEventListener('click', () => {
