@@ -83,10 +83,14 @@ func NewHandler(
 	}
 }
 
-// ListarDestinos devuelve los destinos (casas/unidades) del tenant pedido —
-// la Persona necesita el ID real (no solo el nombre) para crear una
-// invitación con destino_id. Verifica membresía activa igual que
-// ListarVisitasPendientes: el tenant no viene del JWT (identidad global).
+// ListarDestinos devuelve el/los destino(s) propio(s) de la Persona en el
+// tenant pedido — la app necesita el ID real (no solo el nombre) para crear
+// una invitación con destino_id. Antes devolvía TODOS los destinos del
+// tenant: el selector de "Nueva Invitación" mostraba cualquier casa del
+// fraccionamiento, no solo la del residente que invita (CrearInvitacion ya
+// rechaza invitar a una casa ajena, pero el dropdown seguía ofreciéndolas).
+// Verifica membresía activa igual que ListarVisitasPendientes: el tenant no
+// viene del JWT (identidad global).
 func (h *Handler) ListarDestinos(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
 
@@ -117,9 +121,13 @@ func (h *Handler) ListarDestinos(c *gin.Context) {
 		return
 	}
 
-	items := make([]gin.H, 0, len(list))
+	// Mismo criterio case/espacio-insensible que CrearInvitacion: Destino.Nombre
+	// y Membresia.CasaDestino son texto libre, no una FK.
+	items := make([]gin.H, 0, 1)
 	for _, d := range list {
-		items = append(items, gin.H{"id": d.ID, "nombre": d.Nombre})
+		if strings.EqualFold(strings.TrimSpace(d.Nombre), strings.TrimSpace(m.CasaDestino)) {
+			items = append(items, gin.H{"id": d.ID, "nombre": d.Nombre})
+		}
 	}
 	c.JSON(http.StatusOK, gin.H{"destinos": items})
 }
