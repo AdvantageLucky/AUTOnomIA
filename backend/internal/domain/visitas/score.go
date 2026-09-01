@@ -94,7 +94,7 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 		detalle := fmt.Sprintf("%d entradas previas registradas.", sc.VecesVisitado)
 		if sc.UltimaVisita != nil {
 			detalle = fmt.Sprintf("%d entradas previas, la ultima el %s.",
-				sc.VecesVisitado, sc.UltimaVisita.Format("02/01/2006"))
+				sc.VecesVisitado, sc.UltimaVisita.In(zonaMX).Format("02/01/2006"))
 		}
 		add("recurrencia", "Visitante recurrente", detalle, visitasContadas*puntosPorVisita, FactorPositivo)
 	}
@@ -187,7 +187,7 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 	// ── Contexto ─────────────────────────────────────────────────────────────
 	if sc.HorarioInusual {
 		add("horario_inusual", "Horario inusual",
-			fmt.Sprintf("Llega a las %s, fuera de su franja habitual.", v.CreatedAt.Format("15:04")),
+			fmt.Sprintf("Llega a las %s, fuera de su franja habitual.", v.CreatedAt.In(zonaMX).Format("15:04")),
 			-12, FactorNegativo)
 	}
 	if sc.CambioModalidad {
