@@ -3543,7 +3543,7 @@
         </div>
       </div>
 
-      <div class="res-modal-cols">
+      <div class="${m.foto_ine_url ? 'res-modal-cols' : ''}">
         <div>
           <div class="res-modal-grid">
             <div class="res-modal-field">
@@ -3563,26 +3563,32 @@
               <div class="res-modal-field-value">${m.created_at ? fmtDateShort(m.created_at) : '—'}</div>
             </div>
           </div>
+        </div>
 
-          ${m.foto_ine_url ? `
+        ${m.foto_ine_url ? `
+          <div>
             <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">
               Documento de Identidad (INE)
             </div>
-            <div>
-              <div class="evidencia-card" tabindex="0" role="button" style="display:block;width:100%;max-width:280px" data-foto="${esc(m.foto_ine_url)}" data-foto-label="INE de ${esc(nombreCompleto)}">
-                <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="display:block;width:100%;height:160px;object-fit:cover">
-              </div>
+            <div class="evidencia-card" tabindex="0" role="button" style="display:block;width:100%" data-foto="${esc(m.foto_ine_url)}" data-foto-label="INE de ${esc(nombreCompleto)}">
+              <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="display:block;width:100%;height:130px;object-fit:cover">
             </div>
-          ` : ''}
+          </div>
+        ` : ''}
+      </div>
+
+      <div style="margin-top:20px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">
+          Métodos de acceso e identidad
         </div>
 
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">
-            Métodos de acceso e identidad
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+        <!-- A todo el ancho del modal, no en media columna: ícono+título+
+             descripción+badge es contenido inherentemente ancho, apretarlo
+             en una columna angosta es lo que causaba el badge encimado
+             sobre el texto. flex-wrap deja 2-3 tarjetas por fila según
+             quepan, en vez de una columna angosta o un grid que fuerza 2. -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <div style="flex:1 1 220px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
               <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">👤</span>
                 <div>
@@ -3590,12 +3596,12 @@
                   <div style="font-size:11.5px;color:var(--text-3)">Validación biométrica instantánea en kioskos</div>
                 </div>
               </div>
-              <span class="badge ${tieneRostro ? 'badge--aprobado' : 'badge--rechazado'}">
+              <span class="badge ${tieneRostro ? 'badge--aprobado' : 'badge--rechazado'}" style="flex-shrink:0">
                 ${tieneRostro ? 'Enrolado' : 'Sin rostro'}
               </span>
             </div>
 
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+            <div style="flex:1 1 220px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
               <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">🔢</span>
                 <div>
@@ -3603,12 +3609,12 @@
                   <div style="font-size:11.5px;color:var(--text-3)">Código numérico para teclado en caseta</div>
                 </div>
               </div>
-              <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}">
+              <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}" style="flex-shrink:0">
                 ${tienePin ? 'Configurado' : 'Sin PIN'}
               </span>
             </div>
 
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+            <div style="flex:1 1 220px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
               <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">📱</span>
                 <div>
@@ -3616,13 +3622,12 @@
                   <div style="font-size:11.5px;color:var(--text-3)">Acceso con escáner de código QR móvil</div>
                 </div>
               </div>
-              <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}">
+              <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}" style="flex-shrink:0">
                 ${esPendiente ? 'Pendiente aprobación' : 'Activo'}
               </span>
             </div>
           </div>
         </div>
-      </div>
 
       <div class="modal-actions" style="justify-content:space-between;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         ${esPendiente ? `
