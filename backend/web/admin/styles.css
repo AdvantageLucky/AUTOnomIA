@@ -1370,11 +1370,6 @@ textarea { resize: vertical; }
 .sol-card:hover { border-color: var(--brand); }
 .sol-card-actions { cursor: default; }
 
-.modal-box--lg {
-  width: min(760px, calc(100vw - 40px));
-  max-height: calc(100vh - 60px);
-  overflow-y: auto;
-}
 
 .sol-modal-campos {
   display: grid;
@@ -1711,6 +1706,8 @@ textarea { resize: vertical; }
   border-radius: 8px;
 }
 .modal-box::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+.modal-box--lg { width: min(760px, calc(100vw - 40px)); }
 
 .modal-box--sm { width: min(320px, calc(100vw - 40px)); }
 
