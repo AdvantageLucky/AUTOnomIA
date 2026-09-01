@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/models/campo_extraido.dart';
+import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/services/asistente_controller.dart';
 import 'package:kigo_kiosco/core/services/asistente_servicio.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/faq_offline_sheet.dart';
 import 'package:kigo_kiosco/core/widgets/mascota_asistente.dart';
+import 'package:kigo_kiosco/core/widgets/menu_ayuda_sheet.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 
@@ -157,6 +159,11 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
   @override
   Widget build(BuildContext context) {
     final offline = context.watch<ConnectivityService>().isOffline;
+    // El teléfono viaja en la config cacheada localmente -- por eso el botón
+    // "llamar al administrador" funciona incluso sin conexión del kiosko: no
+    // hace falta pedirle nada al backend, y quien llama es el celular del
+    // visitante (red móvil), no el wifi del kiosko.
+    final telefonoContacto = context.watch<KioskoConfigNotifier>().config.telefonoContacto;
 
     // Sin red, el llenado de campos (placa/destino) no tiene alternativa —
     // necesita el LLM sí o sí. La pregunta libre (tipoCampo null) sí tiene
@@ -164,23 +171,30 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
     if (offline && widget.tipoCampo != null) {
       return Tooltip(
         message: 'Sin conexión — usa el teclado/selector manual',
-        child: Container(
-          width: KigoDesign.ladoAsistente,
-          height: KigoDesign.ladoAsistente,
-          decoration: BoxDecoration(
-            color: KigoDesign.brand.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
+        child: Presionable(
+          onTap: () => mostrarMenuAyuda(context, telefonoContacto: telefonoContacto),
+          child: Container(
+            width: KigoDesign.ladoAsistente,
+            height: KigoDesign.ladoAsistente,
+            decoration: BoxDecoration(
+              color: KigoDesign.brand.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
+            ),
+            child: const Icon(Icons.mic_off_rounded, color: Colors.white, size: _ladoIcono),
           ),
-          child: const Icon(Icons.mic_off_rounded, color: Colors.white, size: _ladoIcono),
         ),
       );
     }
 
     if (offline) {
       return Tooltip(
-        message: 'Sin conexión — toca para ver preguntas frecuentes',
+        message: 'Sin conexión — toca para ver ayuda',
         child: Presionable(
-          onTap: () => mostrarFaqOffline(context),
+          onTap: () => mostrarMenuAyuda(
+            context,
+            telefonoContacto: telefonoContacto,
+            onFaq: () => mostrarFaqOffline(context),
+          ),
           child: Container(
             width: KigoDesign.ladoAsistente,
             height: KigoDesign.ladoAsistente,
@@ -194,17 +208,22 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
       );
     }
 
+    final sufijoAyuda = telefonoContacto.trim().isEmpty ? '' : ' · toca para llamar al administrador';
     return Tooltip(
       message: _micDisponible
-          ? 'Mantén presionado para hablar'
+          ? 'Mantén presionado para hablar$sufijoAyuda'
           : 'Activa el permiso de micrófono para usar el asistente',
       child: GestureDetector(
-        // onTapDown/onTapCancel solo pintan el estado presionado: el gesto
-        // sigue siendo long-press. Un tap corto no dispara nada, igual que
-        // antes, pero ahora al menos se ve que el toque llego.
+        // onTapDown/onTapCancel solo pintan el estado presionado: la acción
+        // principal sigue siendo long-press (hablar). Un tap corto abre el
+        // menú de ayuda (llamar al administrador) -- solo si hay teléfono
+        // configurado, para no mostrar un menú vacío en kioskos sin uno.
         onTapDown: (_) => setState(() => _presionado = true),
         onTapUp: (_) => setState(() => _presionado = false),
         onTapCancel: () => setState(() => _presionado = false),
+        onTap: telefonoContacto.trim().isEmpty
+            ? null
+            : () => mostrarMenuAyuda(context, telefonoContacto: telefonoContacto),
         onLongPressStart: (_) {
           setState(() => _presionado = true);
           _onPressStart();

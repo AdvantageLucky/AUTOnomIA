@@ -7,7 +7,10 @@ Usado en endpoints para recibir una respuesta o enviar una respuesta con un cuer
 */
 package kiosko
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 // RegisterKioskoRequest DTO para dar de alta o modificar un kiosko
 type RegisterKioskoRequest struct {
@@ -26,6 +29,7 @@ type KioskoResponse struct {
 	Ubicacion   string     `json:"ubicacion"`
 	AdminID     uint       `json:"usuario_id"`
 	ClaveKiosko string     `json:"clave_kiosko,omitempty"`
+	UltimoPing  *time.Time `json:"ultimo_ping,omitempty"`
 }
 
 // KioskoConfigRequest DTO para actualizar la config de un kiosko
@@ -49,6 +53,8 @@ type KioskoConfigRequest struct {
 	UmbralSimilitudCara    *float64  `json:"umbral_similitud_cara"`
 
 	TiempoExitoSeg *int `json:"tiempo_exito_seg"`
+
+	TelefonoContacto *string `json:"telefono_contacto"`
 }
 
 // KioskoConfigResponse DTO de respuesta de la config del kiosko
@@ -78,16 +84,21 @@ type KioskoConfigResponse struct {
 	UmbralSimilitudCara    float64    `json:"umbral_similitud_cara"`
 
 	TiempoExitoSeg int `json:"tiempo_exito_seg"`
+
+	// Ver KioskoConfig.TelefonoContacto -- vacío oculta el botón "hablar con
+	// el administrador" en la app del kiosko.
+	TelefonoContacto string `json:"telefono_contacto"`
 }
 
 // helper func para convertir un Kiosko (DB Model) a DTO Reponse
 func toKioskoResponse(a *Kiosko) KioskoResponse {
 	return KioskoResponse{
-		ID:        a.ID,
-		Nombre:    a.Nombre,
-		Ubicacion: a.Ubicacion,
-		Tipo:      a.Tipo,
-		AdminID:   a.AdminID,
+		ID:         a.ID,
+		Nombre:     a.Nombre,
+		Ubicacion:  a.Ubicacion,
+		Tipo:       a.Tipo,
+		AdminID:    a.AdminID,
+		UltimoPing: a.UltimoPing,
 	}
 }
 
@@ -123,15 +134,17 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 		FotoRostroInvitado:     cfg.FotoRostroInvitado,
 		IneObligatorioInvitado: cfg.IneObligatorioInvitado,
 
-		TiempoEsperaSeg:        cfg.TiempoEsperaSeg,
-		HorarioInicio:          cfg.HorarioInicio,
-		HorarioFin:             cfg.HorarioFin,
-		MensajeBienvenida:      cfg.MensajeBienvenida,
-		AutoPassHabilitado:     cfg.AutoPassHabilitado,
-		UmbralFacialPct:        cfg.UmbralFacialPct,
-		UmbralAutopassPct:      cfg.UmbralAutopassPct,
-		UmbralSimilitudCara:    cfg.UmbralSimilitudCara,
+		TiempoEsperaSeg:     cfg.TiempoEsperaSeg,
+		HorarioInicio:       cfg.HorarioInicio,
+		HorarioFin:          cfg.HorarioFin,
+		MensajeBienvenida:   cfg.MensajeBienvenida,
+		AutoPassHabilitado:  cfg.AutoPassHabilitado,
+		UmbralFacialPct:     cfg.UmbralFacialPct,
+		UmbralAutopassPct:   cfg.UmbralAutopassPct,
+		UmbralSimilitudCara: cfg.UmbralSimilitudCara,
 
 		TiempoExitoSeg: cfg.TiempoExitoSeg,
+
+		TelefonoContacto: cfg.TelefonoContacto,
 	}
 }

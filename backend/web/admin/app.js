@@ -488,6 +488,7 @@
     document.getElementById("app-shell").hidden = true;
     clearToken();
     stopSolPolling();
+    stopKioPolling();
     switchAuthView("login");
   }
 
@@ -524,11 +525,12 @@
     }
 
     stopSolPolling();
+    stopKioPolling();
     if (screen === "dashboard")     loadDashboard();
     if (screen === "visitas")       loadVisitas(1);
     if (screen === "solicitudes")   startSolPolling();
     if (screen === "residentes")    { loadResidentesActivos(); loadResidentesPendientesBadge(); }
-    if (screen === "kioskos")       loadAccesos();
+    if (screen === "kioskos")       startKioPolling();
     if (screen === "instalacion")   { loadDestinosSection(); }
     if (screen === "configuracion") loadConfigAccesos();
     if (screen === "perfil")        loadPerfil();
@@ -1880,6 +1882,19 @@
     }
   }
 
+  /* ─── Kioskos (heartbeat) ────────────────── */
+  function startKioPolling() {
+    loadAccesos();
+    state.kioPollingId = setInterval(loadAccesos, 15000);
+  }
+
+  function stopKioPolling() {
+    if (state.kioPollingId) {
+      clearInterval(state.kioPollingId);
+      state.kioPollingId = null;
+    }
+  }
+
   function updateNavBadge(count) {
     const text = count > 99 ? "99+" : String(count);
     const hidden = count <= 0;
@@ -2093,6 +2108,23 @@
   }
 
   /* ─── Accesos ────────────────────────────── */
+  // Heartbeat: el kiosko manda POST /kioskos/:id/ping cada 30s (ver
+  // KioskoConfigNotifier en Flutter) mientras tenga sesión. Con 90s de
+  // margen (3x el intervalo) se toleran un par de ciclos perdidos por red
+  // lenta antes de marcarlo desconectado -- evita falsos "offline" por un
+  // solo ping tardío.
+  const KIO_PING_MARGEN_MS = 90000;
+
+  function estadoConexionKiosko(ultimoPing) {
+    if (!ultimoPing) return { clase: 'nunca', texto: 'Nunca conectado' };
+    const ms = Date.now() - new Date(ultimoPing).getTime();
+    if (ms < KIO_PING_MARGEN_MS) return { clase: 'online', texto: 'En línea' };
+    const mins = Math.floor(ms / 60000);
+    if (mins < 60) return { clase: 'offline', texto: `Desconectado hace ${mins}m` };
+    const hrs = Math.floor(mins / 60);
+    return { clase: 'offline', texto: `Desconectado hace ${hrs}h` };
+  }
+
   async function loadAccesos() {
     const loadEl  = document.getElementById("kio-loading");
     const emptyEl = document.getElementById("kio-empty");
@@ -2120,10 +2152,17 @@
     }
 
     if (emptyEl) emptyEl.hidden = true;
-    container.innerHTML = list.map(a => `
+    container.innerHTML = list.map(a => {
+      const conn = estadoConexionKiosko(a.ultimo_ping);
+      return `
       <div class="acceso-card">
         <div class="acceso-info">
-          <div class="acceso-nombre">${esc(a.nombre)}</div>
+          <div class="acceso-nombre">
+            ${esc(a.nombre)}
+            <span class="kio-conn kio-conn--${conn.clase}" title="${esc(conn.texto)}">
+              <span class="kio-conn-dot"></span>${esc(conn.texto)}
+            </span>
+          </div>
           ${a.ubicacion ? `<div class="acceso-ubi">${esc(a.ubicacion)}</div>` : ""}
           <div class="acceso-id">${esc(a.tipo || "—")}</div>
         </div>
@@ -2136,7 +2175,8 @@
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
           </button>
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
 
     container.querySelectorAll("[data-cfg-acceso]").forEach(btn => {
       btn.addEventListener("click", () => openConfigParaAcceso(parseInt(btn.dataset.cfgAcceso)));
@@ -2287,6 +2327,7 @@
       foto_rostro_visitante: document.getElementById('nk-cfg-rostro').checked,
       auto_pass_habilitado:  document.getElementById('nk-cfg-autopass').checked,
       mensaje_bienvenida:    document.getElementById('nk-cfg-mensaje').value.trim(),
+      telefono_contacto:     document.getElementById('nk-cfg-telefono-contacto').value.trim(),
     };
     const res = await api(`/kioskos/${nkNuevoKioskoId}/config`, {
       method: 'PATCH', body: JSON.stringify(payload),
@@ -2606,6 +2647,7 @@
     document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
     document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
+    document.getElementById("cfg-telefono-contacto").value = cfg.telefono_contacto || "";
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
     document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
@@ -2745,6 +2787,7 @@
       color_kiosko:             document.getElementById("cfg-color").value,
       idioma_kiosko:            document.getElementById("cfg-idioma").value,
       mensaje_bienvenida:       document.getElementById("cfg-mensaje").value,
+      telefono_contacto:        document.getElementById("cfg-telefono-contacto").value.trim(),
       foto_rostro_visitante:    fotoRostro,
       foto_placa_visitante:     esPeatonal ? false : fotoPlaca,
       foto_ine_visitante:       fotoIne,

@@ -466,6 +466,9 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.TiempoExitoSeg != nil {
 		cfg.TiempoExitoSeg = *req.TiempoExitoSeg
 	}
+	if req.TelefonoContacto != nil {
+		cfg.TelefonoContacto = *req.TelefonoContacto
+	}
 
 	if err := repoCtx.UpdateConfig(cfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -517,6 +520,29 @@ func (h *Handler) StreamConfig(c *gin.Context) {
 			return false
 		}
 	})
+}
+
+// Ping registra que el kiosko sigue vivo -- lo llama la propia app en cada
+// ciclo de su chequeo de conectividad (cada 8s, ver ConnectivityService en
+// Flutter). El dashboard admin usa UltimoPing para mostrar "en línea" /
+// "desconectado hace Xm" sin depender de que alguien mire el kiosko en
+// persona.
+//
+// @Summary Heartbeat del kiosko
+// @Tags kioskos
+// @Produce json
+// @Param id path int true "ID del kiosko"
+// @Success 200 {object} map[string]string
+// @Router /kioskos/{id}/ping [post]
+func (h *Handler) Ping(c *gin.Context) {
+	kioskoID := c.MustGet(ctxkeys.KioskoID).(uint)
+
+	if err := h.repo.WithContext(c.Request.Context()).UpdateUltimoPing(kioskoID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "ok"})
 }
 
 // acotarPct deja un porcentaje dentro de un rango util. Fuera de el, el valor

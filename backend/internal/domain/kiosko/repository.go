@@ -9,6 +9,7 @@ package kiosko
 
 import (
 	"context"
+	"time"
 
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
@@ -108,6 +109,14 @@ func (r *Repository) UpdateConfig(cfg *KioskoConfig) error {
 		return err
 	}
 	return r.db.Save(cfg).Error
+}
+
+// UpdateUltimoPing marca el heartbeat de un kiosko autenticado por su propia
+// sesión -- no se filtra por tenant/admin porque la identidad ya la validó
+// el middleware RequireKiosko.
+func (r *Repository) UpdateUltimoPing(id uint) error {
+	ahora := time.Now()
+	return r.db.Model(&Kiosko{}).Where("id = ?", id).Update("ultimo_ping", &ahora).Error
 }
 
 // Delete elimina un Kiosko usando kiosko_id, admin_id y el tenant activo
