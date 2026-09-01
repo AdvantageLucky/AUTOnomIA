@@ -48,6 +48,35 @@ class InvitacionModel {
   }
 }
 
+/// Una fila de GET /personas/me/invitaciones/contactos — alguien a quien ya
+/// se invitó antes desde esta cuenta, para "invitar de nuevo" sin volver a
+/// teclear teléfono y nombre.
+class ContactoFrecuenteModel {
+  final int personaId;
+  final String nombre;
+  final String telefono;
+  final String titular;
+  final int destinoId;
+
+  ContactoFrecuenteModel({
+    required this.personaId,
+    required this.nombre,
+    required this.telefono,
+    required this.titular,
+    required this.destinoId,
+  });
+
+  factory ContactoFrecuenteModel.fromJson(Map<String, dynamic> json) {
+    return ContactoFrecuenteModel(
+      personaId: json['persona_id'] as int,
+      nombre: json['nombre'] as String? ?? '',
+      telefono: json['telefono'] as String? ?? '',
+      titular: json['titular'] as String? ?? '',
+      destinoId: json['destino_id'] as int,
+    );
+  }
+}
+
 /// Una fila de GET /personas/me/invitaciones/recibidas — invitaciones que
 /// otra Persona te hizo a ti, ya adjuntas por teléfono desde su creación.
 class InvitacionRecibidaModel {

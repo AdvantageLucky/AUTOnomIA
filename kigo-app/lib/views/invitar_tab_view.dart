@@ -175,6 +175,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         vm.cargarDestinos(tenantId);
         vm.cargarInvitaciones();
+        vm.cargarContactos();
       });
     }
 
@@ -298,6 +299,34 @@ class _InvitarTabViewState extends State<InvitarTabView>
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       children: [
+        if (vm.contactos.isNotEmpty) ...[
+          Text(
+            'Invitar de nuevo',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: vm.contactos.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final contacto = vm.contactos[i];
+                return ActionChip(
+                  avatar: const Icon(Icons.person_outline, size: 16),
+                  label: Text(contacto.nombre.isNotEmpty ? contacto.nombre : contacto.telefono),
+                  onPressed: () => setState(() {
+                    _nombreCtrl.text = contacto.nombre;
+                    _telefonoCtrl.text = contacto.telefono;
+                    _destinoIdSeleccionado = contacto.destinoId;
+                  }),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         Card(
           child: Padding(
             padding: const EdgeInsets.all(20),

@@ -8,17 +8,36 @@ import '../services/api_service.dart';
 class InvitationViewModel extends ChangeNotifier {
   List<InvitacionModel> _invitaciones = [];
   List<InvitacionRecibidaModel> _recibidas = [];
+  List<ContactoFrecuenteModel> _contactos = [];
   List<DestinoModel> _destinos = [];
   bool _isLoading = false;
   bool _cargandoRecibidas = false;
+  bool _cargandoContactos = false;
   String? _error;
 
   List<InvitacionModel> get invitaciones => _invitaciones;
   List<InvitacionRecibidaModel> get recibidas => _recibidas;
+  List<ContactoFrecuenteModel> get contactos => _contactos;
   List<DestinoModel> get destinos => _destinos;
   bool get isLoading => _isLoading;
   bool get cargandoRecibidas => _cargandoRecibidas;
+  bool get cargandoContactos => _cargandoContactos;
   String? get error => _error;
+
+  Future<void> cargarContactos() async {
+    _cargandoContactos = true;
+    notifyListeners();
+    try {
+      final data = await ApiService().get('/personas/me/invitaciones/contactos');
+      final list = (data['contactos'] as List).cast<Map<String, dynamic>>();
+      _contactos = list.map(ContactoFrecuenteModel.fromJson).toList();
+    } on ApiException catch (e) {
+      _error = e.message;
+    } finally {
+      _cargandoContactos = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> cargarRecibidas() async {
     _cargandoRecibidas = true;
