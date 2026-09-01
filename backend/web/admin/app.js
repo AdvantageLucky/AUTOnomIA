@@ -3583,7 +3583,7 @@
 
           <div style="display:flex;flex-direction:column;gap:8px">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
-              <div style="display:flex;align-items:center;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">👤</span>
                 <div>
                   <div style="font-size:13.5px;font-weight:600;color:var(--text)">Reconocimiento Facial IA</div>
@@ -3596,7 +3596,7 @@
             </div>
 
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
-              <div style="display:flex;align-items:center;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">🔢</span>
                 <div>
                   <div style="font-size:13.5px;font-weight:600;color:var(--text)">PIN de acceso</div>
@@ -3609,7 +3609,7 @@
             </div>
 
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
-              <div style="display:flex;align-items:center;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">📱</span>
                 <div>
                   <div style="font-size:13.5px;font-weight:600;color:var(--text)">App Kigo (QR Dinámico)</div>
