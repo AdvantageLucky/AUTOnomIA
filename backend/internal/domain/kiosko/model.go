@@ -11,7 +11,11 @@ Kiosko 1:1 KioskoConfig
 */
 package kiosko
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type TipoKiosko string
 
@@ -28,6 +32,10 @@ type Kiosko struct {
 	Ubicacion   string
 	ClaveKiosko string `gorm:"not null" json:"-"` // hash bcrypt de la credencial con la que el kiosko inicia sesion (ver internal/domain/auth/)
 	AdminID     uint   `gorm:"not null"`
+	// UltimoPing se actualiza en cada POST /kioskos/:id/ping -- el dashboard
+	// admin lo usa para mostrar "en línea" / "desconectado hace Xm" sin
+	// depender de que alguien mire el kiosko en persona.
+	UltimoPing *time.Time
 }
 
 type KioskoConfig struct {
@@ -57,17 +65,23 @@ type KioskoConfig struct {
 	MensajeBienvenida string
 
 	// Configuracion de IA
-	AutoPassHabilitado     bool    `gorm:"not null;default:true"`
+	AutoPassHabilitado bool `gorm:"not null;default:true"`
 	// Similitud coseno minima (0-100) para dar por buena una cara en el
 	// kiosko. Ver migracion 000058.
 	UmbralFacialPct int `gorm:"column:umbral_facial_pct;not null;default:85"`
 	// Score de confianza minimo (0-100) para que una entrada se apruebe sola.
 	// Sustituye al contador de aprobaciones consecutivas.
-	UmbralAutopassPct int `gorm:"column:umbral_autopass_pct;not null;default:80"`
-	UmbralSimilitudCara    float64 `gorm:"not null;default:0.70"` // similitud mínima para reconocimiento facial
+	UmbralAutopassPct   int     `gorm:"column:umbral_autopass_pct;not null;default:80"`
+	UmbralSimilitudCara float64 `gorm:"not null;default:0.70"` // similitud mínima para reconocimiento facial
 
 	// Nuevos campos de UI configurable
 	TiempoExitoSeg int `gorm:"not null;default:5"`
+
+	// Numero del vigilante/admin que muestra el botón "hablar con el
+	// administrador" del kiosko -- funciona incluso sin internet en el
+	// kiosko porque el visitante marca desde su propio celular (red móvil,
+	// no el wifi del kiosko).
+	TelefonoContacto string `gorm:"column:telefono_contacto;not null;default:''"`
 }
 
 func (Kiosko) TableName() string       { return "kioskos" }

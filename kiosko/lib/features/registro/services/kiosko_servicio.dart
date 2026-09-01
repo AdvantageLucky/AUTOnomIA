@@ -38,6 +38,7 @@ class KioskoServicio {
   static const String _keyToken = 'kiosko_token';
   static const String _keyKioskoId = 'kiosko_id';
   static const String _keyClave = 'kiosko_clave';
+  static const String _keyTelefonoContacto = 'kiosko_telefono_contacto';
 
   static final KioskoServicio _instance = KioskoServicio._internal();
   factory KioskoServicio() => _instance;
@@ -233,9 +234,50 @@ class KioskoServicio {
     if (response.statusCode == 200) {
       _ultimaConfig = KioskoConfig.fromJson(
           jsonDecode(response.body) as Map<String, dynamic>);
+      // Se respalda aparte (no solo en memoria) para el arranque en frío
+      // sin internet: si el kiosko se prende ya desconectado, obtenerConfig
+      // nunca llega a esta línea y KioskoConfigNotifier se queda en
+      // KioskoConfig.defaults (teléfono vacío) -- sin este respaldo el
+      // botón "llamar al administrador" quedaría inservible justo en el
+      // caso para el que existe.
+      if (_ultimaConfig.telefonoContacto.isNotEmpty) {
+        await _storage.write(
+            key: _keyTelefonoContacto, value: _ultimaConfig.telefonoContacto);
+      }
       return _ultimaConfig;
     }
     throw Exception('Error al obtener config (${response.statusCode})');
+  }
+
+  /// Último teléfono de contacto conocido, persistido en el arranque
+  /// anterior -- respaldo para cuando obtenerConfig() falla por completo
+  /// (kiosko sin internet desde antes de arrancar).
+  Future<String> telefonoContactoRespaldo() async {
+    return await _storage.read(key: _keyTelefonoContacto) ?? '';
+  }
+
+  /// Heartbeat -- se llama en cada ciclo del chequeo de conectividad para que
+  /// el dashboard admin sepa que este kiosko sigue vivo (ver UltimoPing).
+  /// Falla en silencio: un ping perdido no debe interrumpir nada del flujo
+  /// del kiosko, el siguiente intento en unos segundos ya lo resuelve solo.
+  Future<void> ping() async {
+    try {
+      await _ensureLogin();
+      final response = await http.post(
+        Uri.parse('$_baseUrl/kioskos/$_kioskoId/ping'),
+        headers: {'Authorization': 'Bearer $_sessionToken'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 401) {
+        _sessionToken = null;
+        if (await _reLogin()) {
+          await http.post(
+            Uri.parse('$_baseUrl/kioskos/$_kioskoId/ping'),
+            headers: {'Authorization': 'Bearer $_sessionToken'},
+          ).timeout(const Duration(seconds: 8));
+        }
+      }
+    } catch (_) {}
   }
 
   /// [onRevocado] se llama si la sesión del kiosko fue revocada (ej. el admin lo

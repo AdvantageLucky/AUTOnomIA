@@ -159,6 +159,14 @@ func registerKioskoRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) {
 		k.GET("/mia", kioskoHandler.GetConfigDesdeKiosko)
 		k.GET("/stream", kioskoHandler.StreamConfig)
 	}
+
+	// heartbeat: el kiosko marca que sigue vivo en cada ciclo de su propio
+	// chequeo de conectividad (ver ConnectivityService en Flutter).
+	p := rg.Group("/kioskos/:id")
+	p.Use(auth.RequireKiosko(sesionRepo))
+	{
+		p.POST("/ping", kioskoHandler.Ping)
+	}
 }
 
 // pushSender decide entre FCM real y el falso que solo loguea, según si hay

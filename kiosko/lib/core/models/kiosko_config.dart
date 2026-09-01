@@ -36,6 +36,9 @@ class KioskoConfig {
   final int tiempoExitoSeg;
   final KioskoColorTema colorTema;
   final String idioma; // 'es' | 'en'
+  /// Número del vigilante/admin para el botón "hablar con el administrador".
+  /// Vacío = el botón no aparece (nada configurado).
+  final String telefonoContacto;
 
   const KioskoConfig({
     this.tipo = TipoKiosko.peatonal,
@@ -55,6 +58,7 @@ class KioskoConfig {
     this.tiempoExitoSeg = 5,
     this.colorTema = KioskoColorTema.oscuro,
     this.idioma = 'es',
+    this.telefonoContacto = '',
   });
 
   factory KioskoConfig.fromJson(Map<String, dynamic> json) {
@@ -90,6 +94,7 @@ class KioskoConfig {
       tiempoExitoSeg: json['tiempo_exito_seg'] as int? ?? 5,
       colorTema: colorStr == 'claro' ? KioskoColorTema.claro : KioskoColorTema.oscuro,
       idioma: json['idioma_kiosko'] as String? ?? 'es',
+      telefonoContacto: json['telefono_contacto'] as String? ?? '',
     );
   }
 
@@ -111,5 +116,30 @@ class KioskoConfig {
         tiempoExitoSeg: 5,
         colorTema: KioskoColorTema.oscuro,
         idioma: 'es',
+        telefonoContacto: '',
+      );
+
+  /// Copia con un teléfono de contacto distinto -- usado por
+  /// KioskoConfigNotifier para rellenar el respaldo persistido cuando el
+  /// arranque en frío no logra traer la config real del backend.
+  KioskoConfig withTelefonoContacto(String telefono) => KioskoConfig(
+        tipo: tipo,
+        fotoPlacaVisitante: fotoPlacaVisitante,
+        fotoRostroVisitante: fotoRostroVisitante,
+        fotoIneVisitante: fotoIneVisitante,
+        pasosSinInvitacion: pasosSinInvitacion,
+        fotoPlacaInvitado: fotoPlacaInvitado,
+        fotoRostroInvitado: fotoRostroInvitado,
+        ineObligatorioInvitado: ineObligatorioInvitado,
+        tiempoEsperaSeg: tiempoEsperaSeg,
+        horarioInicio: horarioInicio,
+        horarioFin: horarioFin,
+        mensajeBienvenida: mensajeBienvenida,
+        autoPassHabilitado: autoPassHabilitado,
+        umbralFacialPct: umbralFacialPct,
+        tiempoExitoSeg: tiempoExitoSeg,
+        colorTema: colorTema,
+        idioma: idioma,
+        telefonoContacto: telefono,
       );
 }
