@@ -1419,6 +1419,14 @@ textarea { resize: vertical; }
 
 .campo-value { font-size: 14px; font-weight: 500; }
 .campo-mono  { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.campo-link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 2px;
+  transition: color 0.12s;
+}
+.campo-link:hover { color: var(--brand); text-decoration-color: var(--brand); }
 
 /* ================================================================
    EXPEDIENTE — timeline de visitas de una persona
