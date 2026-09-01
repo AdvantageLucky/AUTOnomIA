@@ -400,6 +400,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 			return
 		}
 		existente.CasaDestino = casaDestino
+		existente.DestinoID = &destino.ID
 		// El PIN no cambia: quien ya tenía uno vuelve a entrar con el
 		// mismo aunque el admin lo haya rechazado y se reinscriba.
 		if existente.PinCodigo == "" {
@@ -439,6 +440,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		PersonaID:   personaID,
 		TenantID:    t.ID,
 		CasaDestino: casaDestino,
+		DestinoID:   &destino.ID,
 		Pin:         hash,
 		PinCodigo:   codigo,
 		Status:      residente.ResidenteStatusPendiente,
@@ -655,6 +657,7 @@ func (h *Handler) CrearInvitadoFrecuente(c *gin.Context) {
 		PersonaID:                   invitado.ID,
 		TenantID:                    req.TenantID,
 		CasaDestino:                 m.CasaDestino,
+		DestinoID:                   m.DestinoID,
 		Pin:                         hash,
 		PinCodigo:                   codigo,
 		Status:                      residente.ResidenteStatusActivo,
@@ -869,6 +872,7 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 			TipoVisitante: visitas.TipoConInvitacion,
 			TipoDocumento: visitas.DocumentoQR,
 			CasaDestino:   destino.Nombre,
+			DestinoID:     &destino.ID,
 			Estado:        visitas.EstadoAprobado,
 			KioskoID:      kioskoID,
 			ClientID:      visitas.ClientIDPtr(req.ClientID),

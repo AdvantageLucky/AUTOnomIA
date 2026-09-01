@@ -35,6 +35,9 @@ type Membresia struct {
 	PersonaID   uint   `gorm:"column:persona_id;not null;index"`
 	TenantID    uint   `gorm:"column:tenant_id;not null;index"`
 	CasaDestino string `gorm:"not null"`
+	// DestinoID liga con destinos.id cuando CasaDestino pudo resolverse a un
+	// Destino real -- null en membresías viejas sin match.
+	DestinoID *uint `gorm:"column:destino_id;index"`
 	// Pin guarda el hash bcrypt (lo que compara el kiosko, incluso
 	// offline); PinCodigo guarda los 5 dígitos en claro que genera el
 	// backend al crear la membresía, porque la app se los tiene que poder

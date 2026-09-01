@@ -57,11 +57,15 @@ type Visita struct {
 	// EvidenciaCalidadServicio) y la etiqueta derivada de esa varianza.
 	// El número crudo se guarda para poder recalibrar los cortes de
 	// CalidadIne despues sin volver a tomar fotos.
-	NitidezIneScore     float64 `gorm:"column:nitidez_ine_score;not null;default:0"`
-	CalidadIne          string  `gorm:"column:calidad_ine;not null;default:''"`
-	FotoRostroURL       string  `gorm:"not null"`
-	FotoPlacaURL        string
-	CasaDestino         string `gorm:"not null"`
+	NitidezIneScore float64 `gorm:"column:nitidez_ine_score;not null;default:0"`
+	CalidadIne      string  `gorm:"column:calidad_ine;not null;default:''"`
+	FotoRostroURL   string  `gorm:"not null"`
+	FotoPlacaURL    string
+	CasaDestino     string `gorm:"not null"`
+	// DestinoID liga con destinos.id cuando CasaDestino pudo resolverse a un
+	// Destino real (backfill por texto + resuelto en cada punto de escritura
+	// nuevo) -- null en registros viejos sin match, la UI cae al texto.
+	DestinoID           *uint `gorm:"column:destino_id;index"`
 	Placa               string
 	Estado              EstadoVisita `gorm:"not null;default:'PENDIENTE'"`
 	Intervenida         bool         `gorm:"not null;default:false"`

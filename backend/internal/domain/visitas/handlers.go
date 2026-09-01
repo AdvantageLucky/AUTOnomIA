@@ -231,6 +231,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		FotoRostroURL:    fotoRostroURL,
 		FotoPlacaURL:     fotoPlacaURL,
 		CasaDestino:      strings.ToUpper(strings.TrimSpace(req.CasaDestino)),
+		DestinoID:        repoCtx.ResolverDestinoID(tenantID, req.CasaDestino),
 		Placa:            placa,
 		Estado:           EstadoPendiente,
 		KioskoID:         uint(kioskoID),

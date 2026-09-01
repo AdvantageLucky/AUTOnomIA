@@ -452,6 +452,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		a.GET("/pendientes", membresiaHandler.ListarPendientes)
 		a.POST("/:id/aprobar", membresiaHandler.Aprobar)
 		a.POST("/:id/rechazar", membresiaHandler.Rechazar)
+		a.POST("/revocar", membresiaHandler.Revocar)
 	}
 }
 

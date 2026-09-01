@@ -99,3 +99,30 @@ func (h *MembresiaHandler) Rechazar(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "membresía rechazada"})
 }
+
+// Revocar da de baja a uno o varios residentes de este centro (soft-delete
+// de su Membresia, no de la Persona -- puede seguir teniendo cuenta Kigo y
+// membresías en otros centros). Acepta un array de ids para poder revocar
+// por lote desde el dashboard.
+func (h *MembresiaHandler) Revocar(c *gin.Context) {
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	var body struct {
+		IDs []uint `json:"ids" binding:"required,min=1"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	afectadas, err := h.repo.RevocarPorTenant(tenantID, body.IDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if afectadas == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no se encontraron membresías para revocar"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"revocadas": afectadas})
+}
