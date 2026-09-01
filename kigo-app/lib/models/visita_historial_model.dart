@@ -14,6 +14,7 @@ class VisitaHistorialModel {
   final String fotoPlacaUrl;
   final String placa;
   final String tipoVisitante;
+  final String telefono;
   final ScoreIaModel? scoreIa;
 
   /// PENDIENTE · APROBADO · RECHAZADO · REVISION, tal cual lo guarda el backend.
@@ -34,6 +35,7 @@ class VisitaHistorialModel {
     this.fotoPlacaUrl = '',
     this.placa = '',
     this.tipoVisitante = '',
+    this.telefono = '',
     this.scoreIa,
     required this.estado,
     required this.createdAt,
@@ -50,6 +52,7 @@ class VisitaHistorialModel {
       fotoPlacaUrl: AppConstants.mediaUrl(json['foto_placa_url'] as String? ?? ''),
       placa: json['placa'] as String? ?? '',
       tipoVisitante: json['tipo_visitante'] as String? ?? '',
+      telefono: json['telefono'] as String? ?? '',
       scoreIa: json['score_ia'] != null
           ? ScoreIaModel.fromJson(json['score_ia'] as Map<String, dynamic>)
           : null,

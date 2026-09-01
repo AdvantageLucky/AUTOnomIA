@@ -27,20 +27,20 @@ import (
 // vehicular sin INE no tiene ni nombre ni documento que ofrecer; su obligatoriedad
 // se decide en ValidarCamposCondicionales segun el tipo de kiosko (ADR-0016 §4).
 type VisitaRequest struct {
-	Titular       string                `form:"titular"`
-	TipoVisitante TipoVisitante         `form:"tipo_visitante" binding:"required,oneof=VISITANTE INVITADO"`
-	TipoDocumento TipoDocumento         `form:"tipo_documento" binding:"omitempty,oneof=INE PASAPORTE LICENCIA QR PLACA"`
-	Curp          string                `form:"curp"`
-	CasaDestino   string                `form:"casa_destino"   binding:"required"`
-	Placa         string                `form:"placa"`
-	ClientID      string                `form:"client_id"`      // idempotencia: reenvios del kiosko tras sync offline
+	Titular       string        `form:"titular"`
+	TipoVisitante TipoVisitante `form:"tipo_visitante" binding:"required,oneof=VISITANTE INVITADO"`
+	TipoDocumento TipoDocumento `form:"tipo_documento" binding:"omitempty,oneof=INE PASAPORTE LICENCIA QR PLACA"`
+	Curp          string        `form:"curp"`
+	CasaDestino   string        `form:"casa_destino"   binding:"required"`
+	Placa         string        `form:"placa"`
+	ClientID      string        `form:"client_id"` // idempotencia: reenvios del kiosko tras sync offline
 	// EmbeddingRostro viaja como JSON ("[0.1,0.2,...]") en un campo de texto
 	// del multipart: el binding de formularios no arma un slice de floats
 	// desde un solo campo. Opcional — un kiosko viejo simplemente no lo manda.
-	EmbeddingRostro string              `form:"embedding_rostro"`
-	FotoDocumento *multipart.FileHeader `form:"foto_documento"` // Content-Type image
-	FotoRostro    *multipart.FileHeader `form:"foto_rostro"`    // Content-Type image
-	FotoPlaca     *multipart.FileHeader `form:"foto_placa"`     // Content-Type image
+	EmbeddingRostro string                `form:"embedding_rostro"`
+	FotoDocumento   *multipart.FileHeader `form:"foto_documento"` // Content-Type image
+	FotoRostro      *multipart.FileHeader `form:"foto_rostro"`    // Content-Type image
+	FotoPlaca       *multipart.FileHeader `form:"foto_placa"`     // Content-Type image
 	// Nitidez de FotoDocumento, calculada en el kiosko (EvidenciaCalidadServicio).
 	// Ninguno de los dos es obligatorio: solo aplica cuando hay foto de INE.
 	NitidezIneScore float64 `form:"nitidez_ine_score"`
@@ -70,6 +70,12 @@ type VisitaResponse struct {
 	ResumenIA           *string              `json:"resumen_ia,omitempty"`
 	ScoreIA             *ScoreIA             `json:"score_ia,omitempty"`
 	Estadisticas        *EstadisticasPersona `json:"estadisticas,omitempty"`
+	// Telefono nunca lo llena este paquete -- v.PersonaID no dice por sí
+	// solo si esa Persona ya verificó su teléfono (cuenta real de Kigo) o
+	// es solo un registro "en blanco" de una invitación nunca reclamada.
+	// Lo rellena el dominio persona, que sí tiene esa distinción a la mano
+	// (ver ListarVisitasPendientes/ListarHistorialVisitas).
+	Telefono string `json:"telefono,omitempty"`
 }
 
 // VisitaListItemResponse DTO reducido para el listado del dashboard (omite CURP y clave_lector)
