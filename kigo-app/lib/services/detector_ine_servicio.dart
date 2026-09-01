@@ -24,9 +24,16 @@ class DetectorIneServicio {
 
       final textoPlano = lineas.join(' ');
       final curp = _extraerCurp(textoPlano, lineas);
-      final nombreCompleto = _extraerNombre(lineas);
+      final estructurado = _extraerNombreEstructurado(lineas);
 
-      return IneOcrResult(pathFotoIne: pathImagen, curp: curp, nombreCompleto: nombreCompleto);
+      return IneOcrResult(
+        pathFotoIne: pathImagen,
+        curp: curp,
+        nombreCompleto: estructurado.nombreCompleto,
+        apellidoPaterno: estructurado.apellidoPaterno,
+        apellidoMaterno: estructurado.apellidoMaterno,
+        nombre: estructurado.nombre,
+      );
     } catch (e) {
       debugPrint('Error en OCR: $e');
       return IneOcrResult(pathFotoIne: pathImagen);
@@ -108,7 +115,8 @@ class DetectorIneServicio {
   // ---------------------------------------------------------------------------
   // Nombre: busca cerca de "NOMBRE" / "APELLIDOS" / "APELLIDO PATERNO"
   // ---------------------------------------------------------------------------
-  String? _extraerNombre(List<String> lineas) {
+  ({String? nombreCompleto, String? apellidoPaterno, String? apellidoMaterno, String? nombre})
+      _extraerNombreEstructurado(List<String> lineas) {
     final filtros = {
       'DOMICILIO', 'CALLE', 'AVENIDA', 'AV', 'COL', 'COLONIA',
       'MUNICIPIO', 'ESTADO', 'CP', 'NUM', 'NUMERO', 'INTERIOR',
@@ -138,20 +146,38 @@ class DetectorIneServicio {
             .replaceAll(RegExp(r'\bAPELLIDO(S)?\s*(PATERNO|MATERNO)?\b'), '')
             .replaceAll(RegExp(r'\bNOMBRES?\b'), '')
             .trim();
-        if (sinEtiqueta.length > 3 && esValida(sinEtiqueta)) return sinEtiqueta;
+        if (sinEtiqueta.length > 3 && esValida(sinEtiqueta)) {
+          // Todo en la misma línea que la etiqueta: no hay separación
+          // fiable de apellido paterno/materno/nombre, solo referencia.
+          return (nombreCompleto: sinEtiqueta, apellidoPaterno: null, apellidoMaterno: null, nombre: null);
+        }
 
-        String acumulado = '';
+        final validas = <String>[];
         for (int j = 1; j <= 4; j++) {
           if (i + j >= lineas.length) break;
           final linea = lineas[i + j];
           if (!esValida(linea)) break;
-          acumulado += '$linea ';
+          validas.add(linea);
         }
-        final resultado = acumulado.trim();
-        if (resultado.isNotEmpty) return resultado;
+        if (validas.isEmpty) continue;
+
+        final completo = validas.join(' ');
+        // El INE moderno imprime exactamente 3 líneas en este orden bajo
+        // "NOMBRE": apellido paterno, apellido materno, nombre(s). Con
+        // menos o más líneas no se puede asumir esa posición con
+        // confianza -- se deja solo la referencia sin separar.
+        if (etiqueta == 'NOMBRE' && validas.length == 3) {
+          return (
+            nombreCompleto: completo,
+            apellidoPaterno: validas[0],
+            apellidoMaterno: validas[1],
+            nombre: validas[2],
+          );
+        }
+        return (nombreCompleto: completo, apellidoPaterno: null, apellidoMaterno: null, nombre: null);
       }
     }
 
-    return null;
+    return (nombreCompleto: null, apellidoPaterno: null, apellidoMaterno: null, nombre: null);
   }
 }

@@ -5,9 +5,11 @@ import '../../../../widgets/kigo_primary_button.dart';
 import '../../../../widgets/kigo_text_field.dart';
 
 /// Segundo paso del wizard de identidad: confirma/corrige nombre, apellidos
-/// y CURP. El nombre completo NO se separa automáticamente en nombre/
-/// apellidos (el orden en que aparecen en una INE no es confiable) —
-/// se muestra como referencia y la persona llena los 3 campos a mano.
+/// y CURP. Los 3 campos se precargan cuando el OCR reconoció el bloque
+/// estándar de INE (apellido paterno/materno/nombre en 3 líneas fijas bajo
+/// "NOMBRE" -- ver DetectorIneServicio); si el OCR solo encontró el nombre
+/// en un formato menos estándar, quedan vacíos con el texto detectado como
+/// referencia y la persona los llena a mano, como antes.
 class StepConfirmarDatos extends StatefulWidget {
   final IneOcrResult resultadoOcr;
   final void Function(String nombre, String apellidoPaterno, String apellidoMaterno, String curp)
@@ -20,16 +22,24 @@ class StepConfirmarDatos extends StatefulWidget {
 }
 
 class _StepConfirmarDatosState extends State<StepConfirmarDatos> {
-  final _nombreCtrl = TextEditingController();
-  final _apellidoPaternoCtrl = TextEditingController();
-  final _apellidoMaternoCtrl = TextEditingController();
+  late final TextEditingController _nombreCtrl;
+  late final TextEditingController _apellidoPaternoCtrl;
+  late final TextEditingController _apellidoMaternoCtrl;
   late final TextEditingController _curpCtrl;
   String? _errorLocal;
 
   @override
   void initState() {
     super.initState();
-    _curpCtrl = TextEditingController(text: widget.resultadoOcr.curp ?? '');
+    final ocr = widget.resultadoOcr;
+    // Solo se precargan cuando el OCR separó las 3 líneas del bloque
+    // estándar de INE (ver DetectorIneServicio) -- si solo hay
+    // nombreCompleto sin separar, esos campos quedan vacíos y el texto de
+    // referencia abajo del título es la única ayuda, como antes.
+    _apellidoPaternoCtrl = TextEditingController(text: ocr.apellidoPaterno ?? '');
+    _apellidoMaternoCtrl = TextEditingController(text: ocr.apellidoMaterno ?? '');
+    _nombreCtrl = TextEditingController(text: ocr.nombre ?? '');
+    _curpCtrl = TextEditingController(text: ocr.curp ?? '');
   }
 
   @override
@@ -59,7 +69,10 @@ class _StepConfirmarDatosState extends State<StepConfirmarDatos> {
 
   @override
   Widget build(BuildContext context) {
-    final nombreDetectado = widget.resultadoOcr.nombreCompleto;
+    // Si ya se precargaron los 3 campos, el texto de referencia sería
+    // redundante -- solo se muestra cuando el OCR no pudo separarlos.
+    final nombreDetectado =
+        widget.resultadoOcr.apellidoPaterno == null ? widget.resultadoOcr.nombreCompleto : null;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
