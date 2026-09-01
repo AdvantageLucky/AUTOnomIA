@@ -48,6 +48,55 @@ type ScoreIA struct {
 	Confiable         bool          `json:"confiable"`
 }
 
+// clavesSeguraParaResidente son los factores que describen solo ESTA
+// visita -- nunca comparan contra el historial del visitante en el resto
+// del tenant. El resto (recurrencia, racha_limpia, rechazo_previo,
+// placa_distinta/coincide, horario_inusual, cambio_modalidad) se calculan
+// contra visitas del mismo visitante en CUALQUIER casa del fraccionamiento
+// (ver historialPrevio en informativo.go/handlers.go): mostrárselos a un
+// residente filtraría, por ejemplo, que ese visitante fue rechazado en
+// otra casa. Ver FiltrarScoreParaResidente.
+var clavesSeguraParaResidente = map[string]bool{
+	"primera_visita":       true,
+	"identidad_vinculada":  true,
+	"match_rostro":         true,
+	"match_pin":            true,
+	"match_qr":             true,
+	"curp_invalida":        true,
+	"curp_valida":          true,
+	"sin_rostro":           true,
+	"rostro_identificable": true,
+	"rostro_capturado":     true,
+	"sin_placa":            true,
+	"sin_documento":        true,
+	"documento_borroso":    true,
+	"documento_nitido":     true,
+}
+
+// FiltrarScoreParaResidente regresa una copia de ScoreIA con solo lo que es
+// seguro mostrarle a un residente: el número y nivel de confianza, y los
+// factores de la lista blanca de arriba. Recomendaciones se descarta
+// completo (puede mencionar en texto libre un rechazo previo) y los campos
+// sueltos que resumen el historial cross-casa (VecesVisitado, UltimaVisita,
+// RechazadoPrevio, AnomaliaMatricula, HorarioInusual) se quedan en su
+// zero-value en vez de copiarse.
+func FiltrarScoreParaResidente(s *ScoreIA) *ScoreIA {
+	if s == nil {
+		return nil
+	}
+	factoresSeguros := make([]FactorScore, 0, len(s.Factores))
+	for _, f := range s.Factores {
+		if clavesSeguraParaResidente[f.Clave] {
+			factoresSeguros = append(factoresSeguros, f)
+		}
+	}
+	return &ScoreIA{
+		ConfianzaPct:   s.ConfianzaPct,
+		NivelConfianza: s.NivelConfianza,
+		Factores:       factoresSeguros,
+	}
+}
+
 // GenerarResumenHeuristico genera un resumen determinista y claro en caso de que el LLM esté offline
 func (s ScoreIA) GenerarResumenHeuristico() string {
 	var partes []string
@@ -230,4 +279,3 @@ func horarioInusual(historial []Visita, llegada time.Time) bool {
 	}
 	return diff > 4
 }
-
