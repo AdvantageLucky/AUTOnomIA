@@ -3,6 +3,8 @@ package residente
 import (
 	"testing"
 
+	"kigo-autonomia-backend/internal/domain/destinos"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -30,7 +32,7 @@ func setupMembresiaTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("no se pudo abrir sqlite en memoria: %v", err)
 	}
-	if err := db.AutoMigrate(&testPersona{}, &Membresia{}); err != nil {
+	if err := db.AutoMigrate(&testPersona{}, &Membresia{}, &destinos.Destino{}); err != nil {
 		t.Fatalf("no se pudo migrar: %v", err)
 	}
 	return db
@@ -67,6 +69,48 @@ func TestFindActivasPorTenant(t *testing.T) {
 	}
 	if list[0].CasaDestino != "Casa 1" {
 		t.Errorf("esperaba casa 'Casa 1', got %q", list[0].CasaDestino)
+	}
+}
+
+// TestRevocarPorTenant_NoAfectaOtroTenant es el caso de seguridad que
+// importa: un admin del tenant 1 nunca debe poder revocar (ni por error de
+// id, ni por lote) una membresía que pertenece al tenant 2.
+func TestRevocarPorTenant_NoAfectaOtroTenant(t *testing.T) {
+	db := setupMembresiaTestDB(t)
+	repo := NewMembresiaRepository(db)
+
+	p1 := testPersona{Nombre: "Ana", Telefono: "+525500000001"}
+	db.Create(&p1)
+	m1 := Membresia{PersonaID: p1.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo}
+	db.Create(&m1)
+
+	p2 := testPersona{Nombre: "Beto", Telefono: "+525500000002"}
+	db.Create(&p2)
+	m2 := Membresia{PersonaID: p2.ID, TenantID: 2, CasaDestino: "Casa 2", Status: ResidenteStatusActivo}
+	db.Create(&m2)
+
+	afectadas, err := repo.RevocarPorTenant(1, []uint{m1.ID, m2.ID})
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if afectadas != 1 {
+		t.Fatalf("esperaba revocar solo 1 membresía (la del tenant 1), got %d", afectadas)
+	}
+
+	activasT2, err := repo.FindActivasPorTenant(2)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(activasT2) != 1 {
+		t.Fatalf("la membresía del tenant 2 no debía revocarse, quedaron %d activas", len(activasT2))
+	}
+
+	activasT1, err := repo.FindActivasPorTenant(1)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(activasT1) != 0 {
+		t.Fatalf("esperaba 0 membresías activas en tenant 1 tras revocar, got %d", len(activasT1))
 	}
 }
 

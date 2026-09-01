@@ -170,6 +170,13 @@ type MembresiaActivaConPersona struct {
 	CasaDestino     string    `json:"casa_destino" gorm:"column:casa_destino"`
 	Status          string    `json:"status"`
 	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at"`
+	// Datos del Destino resuelto (join opcional -- nil/"" en membresías
+	// viejas cuyo casa_destino no matcheó ningún Destino real, ver
+	// migración 000064). La UI agrupa/ordena por estos cuando existen y
+	// cae al texto de CasaDestino si no.
+	DestinoID    *uint  `json:"destino_id" gorm:"column:destino_id"`
+	DestinoCalle string `json:"destino_calle" gorm:"column:destino_calle"`
+	DestinoTipo  string `json:"destino_tipo" gorm:"column:destino_tipo"`
 }
 
 // FindActivasPorTenant devuelve las membresías activas de un tenant.
@@ -180,8 +187,10 @@ func (r *MembresiaRepository) FindActivasPorTenant(tenantID uint) ([]MembresiaAc
 			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, personas.foto_ine_url as foto_ine_url, "+
 			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
 			"(membresias.pin != '') as tiene_pin, "+
-			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at").
+			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at, "+
+			"membresias.destino_id as destino_id, destinos.calle as destino_calle, destinos.tipo as destino_tipo").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
+		Joins("LEFT JOIN destinos ON destinos.id = membresias.destino_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusActivo).
 		Order("membresias.created_at DESC").
 		Scan(&list).Error
@@ -197,6 +206,19 @@ func (r *MembresiaRepository) FindByTenantAndID(tenantID, id uint) (*Membresia, 
 		return nil, err
 	}
 	return &m, nil
+}
+
+// RevocarPorTenant hace soft-delete de una o varias membresías, acotado al
+// tenant de quien revoca -- un admin nunca puede revocar membresías de otro
+// centro, ni por error de id ni maliciosamente. No borra la Persona: sigue
+// pudiendo tener cuenta y membresías en otros tenants, y el historial de
+// visitas conserva la referencia para auditoría.
+func (r *MembresiaRepository) RevocarPorTenant(tenantID uint, ids []uint) (int64, error) {
+	result := r.db.Where("tenant_id = ? AND id IN ?", tenantID, ids).Delete(&Membresia{})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
 }
 
 // UpdateStatus cambia el status de una membresía.

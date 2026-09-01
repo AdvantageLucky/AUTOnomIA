@@ -514,6 +514,27 @@ func (r *Repository) TelefonoVerificadoDePersona(personaID uint) string {
 	return telefono
 }
 
+// ResolverDestinoID busca el Destino cuyo nombre coincide (sin distinguir
+// mayúsculas ni espacios, mismo idioma que destinos.FindCanonicoPorTenant)
+// con el texto libre que llega en CasaDestino desde el kiosko. Consulta la
+// tabla destinos directamente para no importar ese paquete desde visitas
+// (mismo motivo que TelefonoVerificadoDePersona). nil si no hay match --
+// registros sin destino resoluble se guardan igual, solo sin el enlace.
+func (r *Repository) ResolverDestinoID(tenantID uint, casaDestino string) *uint {
+	if casaDestino == "" {
+		return nil
+	}
+	var id uint
+	err := r.db.Table("destinos").
+		Select("id").
+		Where("tenant_id = ? AND UPPER(TRIM(nombre)) = UPPER(TRIM(?)) AND deleted_at IS NULL", tenantID, casaDestino).
+		Scan(&id).Error
+	if err != nil || id == 0 {
+		return nil
+	}
+	return &id
+}
+
 // CurpDePersona consulta la CURP registrada en el perfil de una Persona --
 // para un residente que entra por PIN/rostro la Visita nunca captura CURP
 // (no se escanea INE en cada entrada), pero su perfil ya la tiene si la
