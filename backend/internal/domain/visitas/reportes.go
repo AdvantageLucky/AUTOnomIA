@@ -20,6 +20,13 @@ type ReporteIA struct {
 	PeriodoFin    time.Time       `gorm:"not null"                        json:"periodo_fin"`
 	Texto         string          `gorm:"not null"                        json:"texto"`
 	DatosRaw      json.RawMessage `gorm:"type:jsonb"                      json:"datos_raw"`
+	// GeneradoPorIA es false cuando el LLM está apagado, inalcanzable, o
+	// respondió algo inservible y Texto cayó al heurístico de plantilla
+	// (resumirDatosTexto) -- sin esto, el dashboard mostraba ese texto
+	// plano bajo el mismo encabezado "Análisis de IA" que el resumen real,
+	// que es exactamente lo que este sistema evita en todos los demás
+	// prompts ("nunca inventes", "no digas algo que no sea cierto").
+	GeneradoPorIA bool `gorm:"not null;default:false" json:"generado_por_ia"`
 }
 
 func (ReporteIA) TableName() string { return "reportes_ia" }
@@ -115,6 +122,7 @@ func generarReporte(repo *reporteRepository, visitaRepo *Repository, llmURL stri
 		PeriodoFin:    fin,
 		Texto:         texto,
 		DatosRaw:      datosJSON,
+		GeneradoPorIA: err == nil,
 	}); err != nil {
 		log.Printf("[agente-reportes] tenant %d: error guardando reporte: %v", tenantID, err)
 	}

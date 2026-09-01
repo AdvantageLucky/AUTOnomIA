@@ -1267,6 +1267,8 @@
       const rech = raw ? (raw.rechazadas ?? raw.Rechazadas ?? 0) : visitas.filter(v => v.estado === 'RECHAZADO').length;
       const rev = raw ? (raw.en_revision ?? raw.EnRevision ?? 0) : visitas.filter(v => v.estado === 'REVISION' || v.estado === 'PENDIENTE').length;
 
+      const generadoPorIA = !!(r.generado_por_ia ?? r.GeneradoPorIA);
+
       if (periodoEl) {
         periodoEl.textContent = (inicio && fin) ? `Período: ${fmtDate(inicio)} – ${fmtDate(fin)}` : 'Último período';
       }
@@ -1280,7 +1282,12 @@
         `;
       }
 
-      if (textoEl) textoEl.innerHTML = formatMarkdown(esc(texto)) || '';
+      if (textoEl) {
+        const etiqueta = generadoPorIA
+          ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.04em">✨ Análisis de Inteligencia Artificial</div>`
+          : `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Resumen automático · IA no disponible</div>`;
+        textoEl.innerHTML = etiqueta + (formatMarkdown(esc(texto)) || '');
+      }
       bodyEl.hidden = false;
       return;
     }
@@ -1372,8 +1379,13 @@
         </div>`;
       }
 
+      const generadoPorIA = !!(r.generado_por_ia ?? r.GeneradoPorIA);
+      const etiqueta = generadoPorIA
+        ? `<span style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.04em">✨ IA</span>`
+        : `<span style="font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Automático</span>`;
+
       return `<div class="panel-padded" style="padding:12px 0;border-bottom:1px solid var(--border)">
-        <div class="row-sub" style="margin-bottom:6px">${(inicio && fin) ? `${fmtDate(inicio)} – ${fmtDate(fin)}` : 'Período'}</div>
+        <div class="row-sub" style="margin-bottom:6px;display:flex;align-items:center;gap:8px">${(inicio && fin) ? `${fmtDate(inicio)} – ${fmtDate(fin)}` : 'Período'} ${etiqueta}</div>
         ${chips}
         <div style="line-height:1.5; font-size:13px; color:var(--text-2); margin-top:8px;" class="ia-summary-card-content">${formatMarkdown(esc(texto))}</div>
       </div>`;
