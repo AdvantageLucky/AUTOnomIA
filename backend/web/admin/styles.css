@@ -1683,6 +1683,11 @@ textarea { resize: vertical; }
   border-radius: 14px;
   padding: 28px;
   width: min(420px, calc(100vw - 40px));
+  /* Sin esto un modal con contenido largo (detalle de residente con foto+
+     documento+métodos de acceso) crecía sin límite y se salía del
+     viewport -- mismo tratamiento que ya tenía .modal-box--lg. */
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   animation: modal-box-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
