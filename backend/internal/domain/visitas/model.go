@@ -45,20 +45,20 @@ const (
 
 type Visita struct {
 	gorm.Model
-	TenantID            uint          `gorm:"column:tenant_id;not null;index"`
-	Titular             string        `gorm:"not null"`
-	TipoVisitante       TipoVisitante `gorm:"not null;default:'VISITANTE'"`
-	TipoDocumento       TipoDocumento `gorm:"not null;default:''"`
-	Curp                string        `gorm:"not null"`
-	FotoDocumentoURL    string        `gorm:"not null"`
+	TenantID         uint          `gorm:"column:tenant_id;not null;index"`
+	Titular          string        `gorm:"not null"`
+	TipoVisitante    TipoVisitante `gorm:"not null;default:'VISITANTE'"`
+	TipoDocumento    TipoDocumento `gorm:"not null;default:''"`
+	Curp             string        `gorm:"not null"`
+	FotoDocumentoURL string        `gorm:"not null"`
 	// Nitidez de FotoDocumentoURL: varianza cruda del Laplaciano calculada
 	// en el kiosko (mismo umbral que ya decide si aceptar la foto, ver
 	// EvidenciaCalidadServicio) y la etiqueta derivada de esa varianza.
 	// El número crudo se guarda para poder recalibrar los cortes de
 	// CalidadIne despues sin volver a tomar fotos.
-	NitidezIneScore     float64       `gorm:"column:nitidez_ine_score;not null;default:0"`
-	CalidadIne          string        `gorm:"column:calidad_ine;not null;default:''"`
-	FotoRostroURL       string        `gorm:"not null"`
+	NitidezIneScore     float64 `gorm:"column:nitidez_ine_score;not null;default:0"`
+	CalidadIne          string  `gorm:"column:calidad_ine;not null;default:''"`
+	FotoRostroURL       string  `gorm:"not null"`
 	FotoPlacaURL        string
 	CasaDestino         string `gorm:"not null"`
 	Placa               string
@@ -68,18 +68,22 @@ type Visita struct {
 	ClientID            *string      `gorm:"column:client_id;uniqueIndex"`
 	AutorizadoPorTipo   string       `gorm:"column:autorizado_por_tipo"`
 	AutorizadoPorNombre string       `gorm:"column:autorizado_por_nombre"`
+	// Correo y rol del Admin (rol admin o vigilante) que resolvió -- vacíos
+	// cuando el autorizador no es un ADMIN (RESIDENTE, AGENTE, SISTEMA).
+	AutorizadoPorCorreo string `gorm:"column:autorizado_por_correo"`
+	AutorizadoPorRol    string `gorm:"column:autorizado_por_rol"`
 	// Quien resolvio, cuando fue una Persona desde la app. El tipo dice el rol
 	// ("RESIDENTE"), pero no cual de los residentes de la casa: eso hace falta
 	// para que el historial de cada quien liste solo lo suyo.
-	AutorizadoPorPersonaID *uint `gorm:"column:autorizado_por_persona_id;index"`
-	ResumenIA           string       `gorm:"column:resumen_ia"`
-	ScoreIA             []byte       `gorm:"column:score_ia;type:jsonb"`
-	PersonaID           *uint        `gorm:"column:persona_id;index"`
+	AutorizadoPorPersonaID *uint  `gorm:"column:autorizado_por_persona_id;index"`
+	ResumenIA              string `gorm:"column:resumen_ia"`
+	ScoreIA                []byte `gorm:"column:score_ia;type:jsonb"`
+	PersonaID              *uint  `gorm:"column:persona_id;index"`
 	// EmbeddingRostro es la huella facial capturada en esta entrada. Sirve
 	// como identificador cuando no hay CURP ni placa: en un flujo de solo
 	// rostro + destino es lo unico que liga una visita con las anteriores de
 	// la misma persona (ver HistorialDeVisitante). Es un vector, no la foto.
-	EmbeddingRostro     residente.FloatArray `gorm:"column:embedding_rostro;type:float[]"`
+	EmbeddingRostro residente.FloatArray `gorm:"column:embedding_rostro;type:float[]"`
 }
 
 func (Visita) TableName() string { return "visitas" }

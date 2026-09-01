@@ -428,6 +428,7 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 		if stats, err := repoCtx.EstadisticasPorPersona(*v.PersonaID); err == nil {
 			item.Estadisticas = stats
 		}
+		item.Telefono = repoCtx.TelefonoVerificadoDePersona(*v.PersonaID)
 	}
 	c.JSON(http.StatusOK, item)
 }
@@ -558,8 +559,8 @@ func (h *Handler) ActualizarEstado(c *gin.Context) {
 		return
 	}
 
-	nombre := fmt.Sprintf("admin #%d", adminID)
-	if err := repoCtx.UpdateEstado(uint(id), estado, AutorizadorAdmin, nombre); err != nil {
+	info := repoCtx.InfoDeAdmin(adminID)
+	if err := repoCtx.UpdateEstadoConAdmin(uint(id), estado, AutorizadorAdmin, info.Nombre, info.Correo, info.Rol); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -66,6 +66,8 @@ type VisitaResponse struct {
 	KioskoID            uint                 `json:"kiosko_id"`
 	AutorizadoPorTipo   string               `json:"autorizado_por_tipo,omitempty"`
 	AutorizadoPorNombre string               `json:"autorizado_por_nombre,omitempty"`
+	AutorizadoPorCorreo string               `json:"autorizado_por_correo,omitempty"`
+	AutorizadoPorRol    string               `json:"autorizado_por_rol,omitempty"`
 	CreatedAt           time.Time            `json:"created_at"`
 	ResumenIA           *string              `json:"resumen_ia,omitempty"`
 	ScoreIA             *ScoreIA             `json:"score_ia,omitempty"`
@@ -90,6 +92,8 @@ type VisitaListItemResponse struct {
 	KioskoID            uint                 `json:"kiosko_id"`
 	AutorizadoPorTipo   string               `json:"autorizado_por_tipo,omitempty"`
 	AutorizadoPorNombre string               `json:"autorizado_por_nombre,omitempty"`
+	AutorizadoPorCorreo string               `json:"autorizado_por_correo,omitempty"`
+	AutorizadoPorRol    string               `json:"autorizado_por_rol,omitempty"`
 	CreatedAt           time.Time            `json:"created_at"`
 	ResumenIA           *string              `json:"resumen_ia,omitempty"`
 	ScoreIA             *ScoreIA             `json:"score_ia,omitempty"`
@@ -137,6 +141,8 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		KioskoID:            v.KioskoID,
 		AutorizadoPorTipo:   v.AutorizadoPorTipo,
 		AutorizadoPorNombre: v.AutorizadoPorNombre,
+		AutorizadoPorCorreo: v.AutorizadoPorCorreo,
+		AutorizadoPorRol:    v.AutorizadoPorRol,
 		CreatedAt:           v.CreatedAt,
 	}
 	aplicarAnalisisIA(&resp.ResumenIA, &resp.ScoreIA, v)
@@ -157,6 +163,8 @@ func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 		KioskoID:            v.KioskoID,
 		AutorizadoPorTipo:   v.AutorizadoPorTipo,
 		AutorizadoPorNombre: v.AutorizadoPorNombre,
+		AutorizadoPorCorreo: v.AutorizadoPorCorreo,
+		AutorizadoPorRol:    v.AutorizadoPorRol,
 		CreatedAt:           v.CreatedAt,
 	}
 	aplicarAnalisisIA(&item.ResumenIA, &item.ScoreIA, v)
