@@ -3569,8 +3569,8 @@
               Documento de Identidad (INE)
             </div>
             <div>
-              <div class="evidencia-card" tabindex="0" role="button" style="display:inline-block" data-foto="${esc(m.foto_ine_url)}" data-foto-label="INE de ${esc(nombreCompleto)}">
-                <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="display:block;max-height:140px;object-fit:cover">
+              <div class="evidencia-card" tabindex="0" role="button" style="display:block;width:100%;max-width:280px" data-foto="${esc(m.foto_ine_url)}" data-foto-label="INE de ${esc(nombreCompleto)}">
+                <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="display:block;width:100%;height:160px;object-fit:cover">
               </div>
             </div>
           ` : ''}
