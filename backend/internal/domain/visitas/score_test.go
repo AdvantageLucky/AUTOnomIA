@@ -171,6 +171,14 @@ func TestEvidenciaEsperadaDe_DistingueInvitadoDeWalkIn(t *testing.T) {
 		t.Errorf("al invitado solo se le pide lo suyo, got %+v", invitado)
 	}
 
+	// Un residente entra por PIN o match facial contra su enrolamiento, no
+	// por el flujo de visitante -- no hereda FotoRostroVisitante/etc. del
+	// kiosko aunque estén activados, porque su acceso nunca los captura.
+	residente := evidenciaEsperadaDe(cfg, Visita{TipoVisitante: TipoResidente})
+	if (residente != EvidenciaEsperada{}) {
+		t.Errorf("a un residente no se le debe exigir nada del flujo de visitante, got %+v", residente)
+	}
+
 	if (evidenciaEsperadaDe(nil, Visita{}) != EvidenciaEsperada{}) {
 		t.Error("sin config no se debe exigir nada")
 	}
