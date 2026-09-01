@@ -514,6 +514,22 @@ func (r *Repository) TelefonoVerificadoDePersona(personaID uint) string {
 	return telefono
 }
 
+// CurpDePersona consulta la CURP registrada en el perfil de una Persona --
+// para un residente que entra por PIN/rostro la Visita nunca captura CURP
+// (no se escanea INE en cada entrada), pero su perfil ya la tiene si la
+// dio al enrolarse. Vacío si no se conoce.
+func (r *Repository) CurpDePersona(personaID uint) string {
+	var curp string
+	err := r.db.Table("personas").
+		Select("curp").
+		Where("id = ?", personaID).
+		Scan(&curp).Error
+	if err != nil {
+		return ""
+	}
+	return curp
+}
+
 // AdminInfo es el subconjunto de datos del Admin que se guarda en la
 // bitácora de una visita al momento de resolverla.
 type AdminInfo struct {

@@ -109,7 +109,7 @@
       delete_acceso: "¿Eliminar acceso?",
       delete_acceso_text: "Esta acción no se puede deshacer. El acceso dejará de estar disponible.",
       delete: "Eliminar",
-      casa_destino: "Casa / Destino",
+      casa_destino: "Destino",
       placa: "Placa",
       no_placa: "Sin placa",
       autorizado_por: "Autorizado por",
@@ -118,6 +118,7 @@
       autorizador_residente: "Residente",
       autorizador_agente: "Agente IA",
       autorizador_sistema: "Sistema (sin respuesta)",
+      autorizador_propio: "Acceso propio",
       visits: n => `${n} entrada${n !== 1 ? "s" : ""} registrada${n !== 1 ? "s" : ""}`,
       hello: name => `Hola, ${name}`,
       nav_inicio: "Inicio",
@@ -250,7 +251,7 @@
       delete_acceso: "Delete entry?",
       delete_acceso_text: "This cannot be undone. The entry will no longer be available.",
       delete: "Delete",
-      casa_destino: "House / Destination",
+      casa_destino: "Destination",
       placa: "License plate",
       no_placa: "No plate",
       autorizado_por: "Authorized by",
@@ -259,6 +260,7 @@
       autorizador_residente: "Resident",
       autorizador_agente: "AI agent",
       autorizador_sistema: "System (no response)",
+      autorizador_propio: "Self check-in",
       visits: n => `${n} entr${n !== 1 ? "ies" : "y"} recorded`,
       hello: name => `Hello, ${name}`,
       nav_inicio: "Home",
@@ -1457,12 +1459,19 @@
   const ROL_ADMIN_LABEL = { admin: "Admin", vigilante: "Vigilante" };
 
   function autorizadorLabel(v) {
-    if (!v.autorizado_por_tipo) return t("sin_resolver");
+    if (!v.autorizado_por_tipo) {
+      // Entradas viejas de residente por PIN/rostro creadas antes de que
+      // esas rutas empezaran a guardar AutorizadorPropio -- sin esto se ve
+      // "Sin resolver" junto a un badge "APROBADO", contradictorio.
+      if (v.tipo_visitante === "RESIDENTE") return t("autorizador_propio");
+      return t("sin_resolver");
+    }
     const map = {
       ADMIN: t("autorizador_admin"),
       RESIDENTE: t("autorizador_residente"),
       AGENTE: t("autorizador_agente"),
       SISTEMA: t("autorizador_sistema"),
+      PROPIO: t("autorizador_propio"),
     };
     const tipo = map[v.autorizado_por_tipo] || v.autorizado_por_tipo;
     if (!v.autorizado_por_nombre) return tipo;
@@ -1799,14 +1808,14 @@
           <div class="detalle-nombre">${esc(v.titular)}</div>
           <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${fmtDate(v.created_at)}</div>
           <div class="detalle-campos">
-            <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${esc(v.curp || "—")}</div></div>
+            <div><div class="campo-label">CURP</div><div class="campo-value campo-mono">${v.curp ? esc(v.curp) : (v.persona_curp ? `${esc(v.persona_curp)} <span style="color:var(--text-3);font-weight:400;font-family:inherit">(del perfil)</span>` : "—")}</div></div>
             <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${esc(v.casa_destino || "—")}</div></div>
             <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? esc(v.placa) : t("no_placa")}</div></div>
             <div><div class="campo-label">${t("autorizado_por")}</div><div class="campo-value">${autorizadorLabel(v)}</div></div>
             ${v.telefono ? `<div><div class="campo-label">Teléfono</div><div class="campo-value" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span class="campo-mono">${esc(v.telefono)}</span>
-              <a href="tel:${esc(v.telefono)}" class="btn-ghost" style="padding:2px 10px;font-size:12px;text-decoration:none">Llamar</a>
-              <a href="https://wa.me/${esc(v.telefono.replace(/\D/g, ""))}" target="_blank" rel="noopener" class="btn-ghost" style="padding:2px 10px;font-size:12px;text-decoration:none">WhatsApp</a>
+              <a href="tel:${esc(v.telefono)}" class="btn-contact">Llamar</a>
+              <a href="https://wa.me/${esc(v.telefono.replace(/\D/g, ""))}" target="_blank" rel="noopener" class="btn-contact">WhatsApp</a>
             </div></div>` : ""}
             ${calidadIneField(v)}
           </div>

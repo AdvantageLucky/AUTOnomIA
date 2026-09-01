@@ -41,6 +41,7 @@ const (
 	AutorizadorResidente = "RESIDENTE"
 	AutorizadorAgente    = "AGENTE"  // auto-pass o auto-revisión del análisis de patrones
 	AutorizadorSistema   = "SISTEMA" // escaló por vencer el tiempo de espera, sin que nadie respondiera
+	AutorizadorPropio    = "PROPIO"  // residente entrando con su propio PIN/rostro -- se autoriza a sí mismo
 )
 
 type Visita struct {

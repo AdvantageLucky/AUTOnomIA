@@ -128,15 +128,17 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 	}
 
 	v := &visitas.Visita{
-		TenantID:      tenantID,
-		Titular:       mejor.Nombre + " " + mejor.ApellidoPaterno,
-		TipoVisitante: visitas.TipoResidente,
-		TipoDocumento: visitas.DocumentoPIN,
-		CasaDestino:   mejor.CasaDestino,
-		Estado:        visitas.EstadoAprobado,
-		KioskoID:      uint(kioskoID),
-		PersonaID:     &mejor.PersonaID,
-		ClientID:      clientIDPtr,
+		TenantID:            tenantID,
+		Titular:             mejor.Nombre + " " + mejor.ApellidoPaterno,
+		TipoVisitante:       visitas.TipoResidente,
+		TipoDocumento:       visitas.DocumentoPIN,
+		CasaDestino:         mejor.CasaDestino,
+		Estado:              visitas.EstadoAprobado,
+		KioskoID:            uint(kioskoID),
+		PersonaID:           &mejor.PersonaID,
+		ClientID:            clientIDPtr,
+		AutorizadoPorTipo:   visitas.AutorizadorPropio,
+		AutorizadoPorNombre: "Acceso propio (PIN)",
 	}
 	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})
@@ -204,15 +206,17 @@ func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
 	}
 
 	v := &visitas.Visita{
-		TenantID:      tenantID,
-		Titular:       mejor.Nombre + " " + mejor.ApellidoPaterno,
-		TipoVisitante: visitas.TipoResidente,
-		TipoDocumento: visitas.DocumentoRostro,
-		CasaDestino:   mejor.CasaDestino,
-		Estado:        visitas.EstadoAprobado,
-		KioskoID:      uint(kioskoID),
-		ClientID:      visitas.ClientIDPtr(req.ClientID),
-		PersonaID:     &mejor.PersonaID,
+		TenantID:            tenantID,
+		Titular:             mejor.Nombre + " " + mejor.ApellidoPaterno,
+		TipoVisitante:       visitas.TipoResidente,
+		TipoDocumento:       visitas.DocumentoRostro,
+		CasaDestino:         mejor.CasaDestino,
+		Estado:              visitas.EstadoAprobado,
+		KioskoID:            uint(kioskoID),
+		ClientID:            visitas.ClientIDPtr(req.ClientID),
+		PersonaID:           &mejor.PersonaID,
+		AutorizadoPorTipo:   visitas.AutorizadorPropio,
+		AutorizadoPorNombre: "Acceso propio (reconocimiento facial)",
 	}
 	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})

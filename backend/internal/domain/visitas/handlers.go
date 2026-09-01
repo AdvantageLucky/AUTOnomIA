@@ -429,6 +429,7 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 			item.Estadisticas = stats
 		}
 		item.Telefono = repoCtx.TelefonoVerificadoDePersona(*v.PersonaID)
+		item.PersonaCurp = repoCtx.CurpDePersona(*v.PersonaID)
 	}
 	c.JSON(http.StatusOK, item)
 }
