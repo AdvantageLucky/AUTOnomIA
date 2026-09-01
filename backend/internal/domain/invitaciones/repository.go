@@ -46,6 +46,40 @@ func (r *Repository) FindByPersonaCreadora(personaID uint) ([]Invitacion, error)
 	return list, err
 }
 
+// ContactoFrecuente es una persona a la que ya se invitó antes -- ver
+// FindContactosFrecuentes.
+type ContactoFrecuente struct {
+	PersonaID uint   `json:"persona_id"`
+	Nombre    string `json:"nombre"`
+	Telefono  string `json:"telefono"`
+	Titular   string `json:"titular"`
+	DestinoID uint   `json:"destino_id"`
+}
+
+// FindContactosFrecuentes lista, una vez por persona, a quien ya se invitó
+// antes desde esta cuenta -- así "invitar de nuevo" no obliga a volver a
+// teclear teléfono y nombre cada vez. Se deriva del historial de
+// invitaciones (sin tabla nueva): un DISTINCT ON por persona_invitada_id
+// con los datos de su invitación más reciente, ordenado por esa misma
+// recencia.
+func (r *Repository) FindContactosFrecuentes(personaCreadoraID uint, limite int) ([]ContactoFrecuente, error) {
+	var list []ContactoFrecuente
+	err := r.db.Raw(`
+		SELECT * FROM (
+			SELECT DISTINCT ON (i.persona_invitada_id)
+				i.persona_invitada_id AS persona_id, p.nombre, p.telefono,
+				i.titular, i.destino_id, i.created_at
+			FROM invitaciones i
+			JOIN personas p ON p.id = i.persona_invitada_id
+			WHERE i.persona_creadora_id = ? AND i.deleted_at IS NULL
+			ORDER BY i.persona_invitada_id, i.created_at DESC
+		) recientes
+		ORDER BY recientes.created_at DESC
+		LIMIT ?
+	`, personaCreadoraID, limite).Scan(&list).Error
+	return list, err
+}
+
 // RevocarByIDAndPersonaCreadora hace soft-delete comprobando que la
 // invitación pertenece a la Persona que la creó.
 func (r *Repository) RevocarByIDAndPersonaCreadora(id, personaID uint) error {
