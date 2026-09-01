@@ -316,6 +316,13 @@ func evidenciaEsperadaDe(cfg *kiosko.KioskoConfig, v Visita) EvidenciaEsperada {
 	if cfg == nil {
 		return EvidenciaEsperada{}
 	}
+	// Un RESIDENTE entra por PIN o match facial contra su enrolamiento, nunca
+	// por el flujo de visitante -- sin este caso, caía en la rama de abajo y
+	// heredaba FotoRostroVisitante/FotoIneVisitante del kiosko, penalizando
+	// al residente por no traer una INE que su acceso nunca captura ni pide.
+	if v.TipoVisitante == TipoResidente {
+		return EvidenciaEsperada{}
+	}
 	if v.TipoVisitante == TipoConInvitacion {
 		return EvidenciaEsperada{
 			Rostro:    cfg.FotoRostroInvitado,
