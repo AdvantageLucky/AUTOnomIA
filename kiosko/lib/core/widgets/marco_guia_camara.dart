@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/checkpoint_sweep.dart';
 
 /// Overlay de cámara con un recorte guía (óvalo o círculo, según
 /// [ancho]/[alto]) — extraído de `scanner_rostro_widget.dart` para
@@ -13,7 +14,18 @@ class MarcoGuiaCamara extends StatelessWidget {
   final double alto;
   final Color? colorBorde;
 
-  const MarcoGuiaCamara({super.key, required this.ancho, required this.alto, this.colorBorde});
+  /// Barrido de luz dentro del óvalo mientras se busca el rostro -- se
+  /// apaga solo (el llamador ya deja de pasarlo) en cuanto detecta, para no
+  /// competir con el feedback de "detectado".
+  final bool mostrarBarrido;
+
+  const MarcoGuiaCamara({
+    super.key,
+    required this.ancho,
+    required this.alto,
+    this.colorBorde,
+    this.mostrarBarrido = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +36,14 @@ class MarcoGuiaCamara extends StatelessWidget {
             painter: _OverlayOpacoPainter(ancho, alto, context.kBg),
           ),
         ),
+        if (mostrarBarrido)
+          Center(
+            child: SizedBox(
+              width: ancho,
+              height: alto,
+              child: ClipOval(child: CheckpointSweep()),
+            ),
+          ),
         Center(
           child: SizedBox(
             width: ancho,

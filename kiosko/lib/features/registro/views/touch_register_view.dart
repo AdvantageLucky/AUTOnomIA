@@ -3,6 +3,7 @@ import 'package:kigo_kiosco/core/services/asistente_controller.dart';
 import 'package:kigo_kiosco/core/services/evidencia_calidad_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/hazard_stripe.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
@@ -533,31 +534,32 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   }
 
   Widget _buildBotonCargando() {
-    return Container(
-      width: double.infinity,
-      height: 76,
-      decoration: BoxDecoration(
-        color: KigoDesign.brand.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-          ),
-          SizedBox(width: 14),
-          Text(
-            'Procesando captura...',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: double.infinity,
+        height: 76,
+        color: KigoDesign.bgDark,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: HazardStripeBar(height: 10, borderRadius: BorderRadius.zero),
             ),
-          ),
-        ],
+            const Text(
+              'Procesando captura...',
+              style: TextStyle(
+                fontFamily: 'Unbounded',
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
