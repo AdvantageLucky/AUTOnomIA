@@ -9,6 +9,7 @@ import 'package:kigo_kiosco/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/services/relay_servicio.dart';
 
 class ResidentWelcomeView extends StatefulWidget {
   final ResidentWelcomeViewModel viewModel;
@@ -23,12 +24,14 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
   Timer? _timerRegreso;
   final TextToSpeakServicio _tts = TextToSpeakServicio();
   final LedServicio _led = LedServicio();
+  final RelayServicio _relay = RelayServicio();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _led.mostrarAprobado();
+      _relay.abrir();
       final config = context.read<KioskoConfigNotifier>().config;
       final segs = config.tiempoExitoSeg > 0 ? config.tiempoExitoSeg : 4;
       _timerRegreso = Timer(Duration(seconds: segs), () {

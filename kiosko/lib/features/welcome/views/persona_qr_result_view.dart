@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/services/relay_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
@@ -31,6 +32,7 @@ class PersonaQrResultView extends StatefulWidget {
 class _PersonaQrResultViewState extends State<PersonaQrResultView> {
   Timer? _autoTimer;
   final _led = LedServicio();
+  final _relay = RelayServicio();
   final _tts = TextToSpeakServicio();
   bool _ledDisparado = false;
 
@@ -57,6 +59,7 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
           widget.viewModel.estado == PersonaQrResultEstado.invitado;
       if (aprobado) {
         _led.mostrarAprobado();
+        _relay.abrir();
         final nombre = widget.viewModel.nombre;
         if (nombre != null && nombre.isNotEmpty) {
           _tts.speak('¡Bienvenido, $nombre! Acceso autorizado.');
