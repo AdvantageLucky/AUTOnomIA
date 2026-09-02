@@ -70,8 +70,6 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                 ],
 
                 const Spacer(),
-
-                _buildFooter(),
               ],
             ),
           ),
@@ -525,15 +523,4 @@ class _ResidentPinViewState extends State<ResidentPinView> {
     );
   }
 
-  Widget _buildFooter() {
-    return Text(
-      AppLocalizations.t(context, 'footer_text'),
-      style: TextStyle(
-        color: context.kTextTertiary,
-        fontSize: 14,
-        letterSpacing: 2,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
 }

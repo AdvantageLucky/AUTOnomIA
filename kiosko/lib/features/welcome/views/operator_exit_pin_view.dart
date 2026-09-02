@@ -67,8 +67,6 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
             _buildKeypad(),
 
             const Spacer(),
-
-            _buildFooter(),
           ],
         ),
       ),
@@ -294,15 +292,4 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
     );
   }
 
-  Widget _buildFooter() {
-    return Text(
-      AppLocalizations.t(context, 'footer_text'),
-      style: TextStyle(
-        color: context.kTextTertiary,
-        fontSize: 14,
-        letterSpacing: 2,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
 }

@@ -405,10 +405,6 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 28, top: 12),
-                  child: _buildFooter(),
-                ),
               ],
             ),
           ),
@@ -637,16 +633,4 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     );
   }
 
-  Widget _buildFooter() {
-    return Text(
-      AppLocalizations.t(context, 'footer_text'),
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: context.kTextTertiary,
-        fontSize: 14,
-        letterSpacing: 2,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
 }

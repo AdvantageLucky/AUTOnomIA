@@ -89,7 +89,6 @@ class _QrResultViewState extends State<QrResultView> {
                 const Spacer(),
                 _buildContent(),
                 const Spacer(),
-                _buildFooter(),
               ],
             ),
           ),
@@ -204,10 +203,4 @@ class _QrResultViewState extends State<QrResultView> {
     );
   }
 
-  Widget _buildFooter() {
-    return Text(
-      AppLocalizations.t(context, 'footer_text'),
-      style: TextStyle(color: context.kTextTertiary, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.w500),
-    );
-  }
 }

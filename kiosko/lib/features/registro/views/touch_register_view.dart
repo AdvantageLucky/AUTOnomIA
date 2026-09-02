@@ -425,12 +425,6 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                     ),
                   ),
                 ),
-
-                // Leyenda fija hasta abajo de la pantalla, separada del borde.
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 28, top: 12),
-                  child: _buildFooter(),
-                ),
               ],
             ),
           ),
@@ -663,16 +657,4 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     );
   }
 
-  Widget _buildFooter() {
-    return Text(
-      AppLocalizations.t(context, 'footer_text'),
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: context.kTextTertiary,
-        fontSize: 14,
-        letterSpacing: 2,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
 }
