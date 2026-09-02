@@ -19,6 +19,7 @@ WORKDIR /app
 COPY --from=builder /out/server ./server
 COPY migrations ./migrations
 COPY web/admin ./web/admin
+COPY web/miniapp ./web/miniapp
 RUN mkdir -p ./web/uploads/visitantes ./web/uploads/caras
 
 EXPOSE 8080
