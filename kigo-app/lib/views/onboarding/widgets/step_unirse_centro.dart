@@ -15,12 +15,18 @@ class StepUnirseCentro extends StatefulWidget {
 }
 
 /// Selección progresiva de destino, igual que el picker del kiosko: código
-/// del centro → calle → tipo (si la calle tiene más de uno) → número →
-/// confirmar. Antes era un campo de texto libre para "casa/destino" —
-/// nadie sabía el formato exacto que usó el admin, así que casi nunca
-/// coincidía. El último paso ya no pide PIN: lo genera el backend y la
-/// persona lo consulta después en "Mi QR".
-enum _Paso { codigo, calle, tipo, numero, confirmar }
+/// del centro → datos del centro (confirmar que es el correcto) → calle →
+/// tipo (si la calle tiene más de uno) → número → confirmar. Antes era un
+/// campo de texto libre para "casa/destino" — nadie sabía el formato exacto
+/// que usó el admin, así que casi nunca coincidía. El último paso ya no
+/// pide PIN: lo genera el backend y la persona lo consulta después en "Mi
+/// QR".
+///
+/// El paso `centro` existe para que la persona vea a qué centro se está
+/// uniendo (nombre, dirección) ANTES de comprometerse a elegir una casa --
+/// tecleó un código a ciegas, y sin esto no había forma de confirmar que
+/// era el correcto hasta ya estar eligiendo calle/número.
+enum _Paso { codigo, centro, calle, tipo, numero, confirmar }
 
 /// Traduce el tipo de destino a una etiqueta legible -- mismo mapeo que
 /// `tipoDisplay()` en backend/internal/domain/destinos/dtos.go. Antes solo
@@ -54,6 +60,9 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
   _Paso _paso = _Paso.codigo;
   bool _cargandoDestinos = false;
   List<Map<String, dynamic>> _destinos = [];
+  String? _centroNombre;
+  String? _centroDescripcion;
+  String? _centroDireccion;
   String? _calleSeleccionada;
   String? _tipoSeleccionado;
   String? _casaSeleccionada;
@@ -101,10 +110,14 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
         });
         return;
       }
+      final centro = Map<String, dynamic>.from(data['centro'] ?? {});
       setState(() {
         _destinos = destinos;
+        _centroNombre = centro['nombre'] as String?;
+        _centroDescripcion = centro['descripcion'] as String?;
+        _centroDireccion = centro['direccion'] as String?;
         _cargandoDestinos = false;
-        _paso = _Paso.calle;
+        _paso = _Paso.centro;
       });
     } on ApiException catch (e) {
       setState(() {
@@ -117,6 +130,13 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
         _cargandoDestinos = false;
       });
     }
+  }
+
+  /// El botón "Unirme" del paso `centro` NO manda todavía la solicitud al
+  /// backend -- eso sigue pasando hasta `_confirmar()`, cuando ya se eligió
+  /// la casa. Aquí solo confirma la intención de continuar con ESTE centro.
+  void _continuarConEsteCentro() {
+    setState(() => _paso = _Paso.calle);
   }
 
   void _elegirCalle(String calle) {
@@ -152,8 +172,10 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
       switch (_paso) {
         case _Paso.codigo:
           break;
-        case _Paso.calle:
+        case _Paso.centro:
           _paso = _Paso.codigo;
+        case _Paso.calle:
+          _paso = _Paso.centro;
         case _Paso.tipo:
           _paso = _Paso.calle;
           _calleSeleccionada = null;
@@ -212,6 +234,8 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
     switch (_paso) {
       case _Paso.codigo:
         return 'Únete a tu centro';
+      case _Paso.centro:
+        return _centroNombre ?? 'Tu centro';
       case _Paso.calle:
         return '¿En qué calle vives?';
       case _Paso.tipo:
@@ -227,6 +251,8 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
     switch (_paso) {
       case _Paso.codigo:
         return 'Pide el código a tu administrador si no lo tienes.';
+      case _Paso.centro:
+        return '¿Es este tu centro?';
       case _Paso.calle:
         return 'Elige la calle de tu casa o edificio.';
       case _Paso.tipo:
@@ -246,6 +272,40 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
             KigoTextField(controller: _codigoCtrl, label: 'Código del centro'),
             const SizedBox(height: 20),
             KigoPrimaryButton(label: 'Buscar', loading: _cargandoDestinos, onPressed: _buscarCentro),
+          ],
+        );
+      case _Paso.centro:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if ((_centroDescripcion ?? '').isNotEmpty || (_centroDireccion ?? '').isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.textDimmed.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if ((_centroDescripcion ?? '').isNotEmpty) ...[
+                      Text(_centroDescripcion!),
+                      if ((_centroDireccion ?? '').isNotEmpty) const SizedBox(height: 10),
+                    ],
+                    if ((_centroDireccion ?? '').isNotEmpty)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 18, color: AppTheme.textDimmed),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text(_centroDireccion!)),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 20),
+            KigoPrimaryButton(label: 'Unirme', onPressed: _continuarConEsteCentro),
           ],
         );
       case _Paso.calle:

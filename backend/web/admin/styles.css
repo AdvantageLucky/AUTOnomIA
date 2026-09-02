@@ -137,15 +137,8 @@ input, select, textarea {
 .brand-mark {
   width: 36px;
   height: 36px;
-  background: var(--brand);
-  color: #fff;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
-  font-size: 17px;
+  object-fit: cover;
   flex-shrink: 0;
 }
 

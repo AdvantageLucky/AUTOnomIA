@@ -212,7 +212,17 @@ func (h *Handler) ListarDestinosPorCodigo(c *gin.Context) {
 			"tipo": string(d.Tipo), "numero": d.Numero,
 		})
 	}
-	c.JSON(http.StatusOK, gin.H{"destinos": items})
+	// Info del centro para la pantalla de confirmación previa a elegir casa
+	// -- que la persona vea a qué centro se está uniendo (nombre, dirección)
+	// antes de comprometerse, no solo después de ya haber elegido su casa.
+	c.JSON(http.StatusOK, gin.H{
+		"centro": gin.H{
+			"nombre":      t.Nombre,
+			"descripcion": t.Descripcion,
+			"direccion":   t.Direccion,
+		},
+		"destinos": items,
+	})
 }
 
 // SolicitarOTP genera y "manda" (ver OtpSender) un código de verificación
