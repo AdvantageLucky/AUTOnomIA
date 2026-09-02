@@ -77,7 +77,13 @@ class MotivoView extends StatelessWidget {
             child: Padding(
               // El último chip de la lista queda detrás del
               // micrófono/vigilante si se llega a scrollear hasta el fondo.
-              padding: EdgeInsets.only(left: 42, right: 42, bottom: 40 + KigoDesign.clearanceBotonesFlotantes),
+              // top: 28 porque la mascota (BotonAsistenteFlotante, topDelBorde:
+              // 0) mide KigoDesign.ladoAsistente (76) y este AppBar mide solo
+              // kToolbarHeight (56) -- sin este padding el StepIndicator
+              // arrancaba 20px dentro de la mascota (confirmado con
+              // tester.getRect en un widget test: StepIndicator.top=56 vs
+              // mascota.bottom=76, con solape horizontal real en x).
+              padding: EdgeInsets.only(left: 42, right: 42, top: 28, bottom: 40 + KigoDesign.clearanceBotonesFlotantes),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
