@@ -34,27 +34,30 @@ type KioskoResponse struct {
 
 // KioskoConfigRequest DTO para actualizar la config de un kiosko
 type KioskoConfigRequest struct {
-	ColorKiosko            *string   `json:"color_kiosko"`
-	IdiomaKiosko           *string   `json:"idioma_kiosko"`
-	FotoPlacaVisitante     *bool     `json:"foto_placa_visitante"`
-	FotoRostroVisitante    *bool     `json:"foto_rostro_visitante"`
-	FotoIneVisitante       *bool     `json:"foto_ine_visitante"`
-	PasosSinInvitacion     *[]string `json:"pasos_sin_invitacion"`
-	FotoPlacaInvitado      *bool     `json:"foto_placa_invitado"`
-	FotoRostroInvitado     *bool     `json:"foto_rostro_invitado"`
-	IneObligatorioInvitado *bool     `json:"foto_ine_invitado"`
-	TiempoEsperaSeg        *int      `json:"tiempo_espera_seg"`
-	HorarioInicio          *string   `json:"horario_inicio"`
-	HorarioFin             *string   `json:"horario_fin"`
-	MensajeBienvenida      *string   `json:"mensaje_bienvenida"`
-	AutoPassHabilitado     *bool     `json:"auto_pass_habilitado"`
-	UmbralFacialPct        *int      `json:"umbral_facial_pct"`
-	UmbralAutopassPct      *int      `json:"umbral_autopass_pct"`
-	UmbralSimilitudCara    *float64  `json:"umbral_similitud_cara"`
+	ColorKiosko                *string   `json:"color_kiosko"`
+	IdiomaKiosko               *string   `json:"idioma_kiosko"`
+	FotoPlacaVisitante         *bool     `json:"foto_placa_visitante"`
+	FotoRostroVisitante        *bool     `json:"foto_rostro_visitante"`
+	FotoIneVisitante           *bool     `json:"foto_ine_visitante"`
+	PasosSinInvitacion         *[]string `json:"pasos_sin_invitacion"`
+	MotivoObligatorioVisitante *bool     `json:"motivo_obligatorio_visitante"`
+	FotoPlacaInvitado          *bool     `json:"foto_placa_invitado"`
+	FotoRostroInvitado         *bool     `json:"foto_rostro_invitado"`
+	IneObligatorioInvitado     *bool     `json:"foto_ine_invitado"`
+	TiempoEsperaSeg            *int      `json:"tiempo_espera_seg"`
+	HorarioInicio              *string   `json:"horario_inicio"`
+	HorarioFin                 *string   `json:"horario_fin"`
+	MensajeBienvenida          *string   `json:"mensaje_bienvenida"`
+	AutoPassHabilitado         *bool     `json:"auto_pass_habilitado"`
+	UmbralFacialPct            *int      `json:"umbral_facial_pct"`
+	UmbralAutopassPct          *int      `json:"umbral_autopass_pct"`
+	UmbralSimilitudCara        *float64  `json:"umbral_similitud_cara"`
 
 	TiempoExitoSeg *int `json:"tiempo_exito_seg"`
 
 	TelefonoContacto *string `json:"telefono_contacto"`
+
+	MostrarScoreIaKiosko *bool `json:"mostrar_score_ia_kiosko"`
 }
 
 // KioskoConfigResponse DTO de respuesta de la config del kiosko
@@ -63,31 +66,34 @@ type KioskoConfigRequest struct {
 // kiosko solo consume este DTO (GET /config/mia y el stream SSE) y necesita el
 // tipo para decidir que flujo montar: peatonal o vehicular (ver ADR-0022)
 type KioskoConfigResponse struct {
-	KioskoID               uint       `json:"kiosko_id"`
-	Tipo                   TipoKiosko `json:"tipo"`
-	ColorKiosko            string     `json:"color_kiosko"`
-	IdiomaKiosko           string     `json:"idioma_kiosko"`
-	FotoPlacaVisitante     bool       `json:"foto_placa_visitante"`
-	FotoRostroVisitante    bool       `json:"foto_rostro_visitante"`
-	FotoIneVisitante       bool       `json:"foto_ine_visitante"`
-	PasosSinInvitacion     []string   `json:"pasos_sin_invitacion"`
-	FotoPlacaInvitado      bool       `json:"foto_placa_invitado"`
-	FotoRostroInvitado     bool       `json:"foto_rostro_invitado"`
-	IneObligatorioInvitado bool       `json:"foto_ine_invitado"`
-	TiempoEsperaSeg        int        `json:"tiempo_espera_seg"`
-	HorarioInicio          string     `json:"horario_inicio"`
-	HorarioFin             string     `json:"horario_fin"`
-	MensajeBienvenida      string     `json:"mensaje_bienvenida"`
-	AutoPassHabilitado     bool       `json:"auto_pass_habilitado"`
-	UmbralFacialPct        int        `json:"umbral_facial_pct"`
-	UmbralAutopassPct      int        `json:"umbral_autopass_pct"`
-	UmbralSimilitudCara    float64    `json:"umbral_similitud_cara"`
+	KioskoID                   uint       `json:"kiosko_id"`
+	Tipo                       TipoKiosko `json:"tipo"`
+	ColorKiosko                string     `json:"color_kiosko"`
+	IdiomaKiosko               string     `json:"idioma_kiosko"`
+	FotoPlacaVisitante         bool       `json:"foto_placa_visitante"`
+	FotoRostroVisitante        bool       `json:"foto_rostro_visitante"`
+	FotoIneVisitante           bool       `json:"foto_ine_visitante"`
+	PasosSinInvitacion         []string   `json:"pasos_sin_invitacion"`
+	MotivoObligatorioVisitante bool       `json:"motivo_obligatorio_visitante"`
+	FotoPlacaInvitado          bool       `json:"foto_placa_invitado"`
+	FotoRostroInvitado         bool       `json:"foto_rostro_invitado"`
+	IneObligatorioInvitado     bool       `json:"foto_ine_invitado"`
+	TiempoEsperaSeg            int        `json:"tiempo_espera_seg"`
+	HorarioInicio              string     `json:"horario_inicio"`
+	HorarioFin                 string     `json:"horario_fin"`
+	MensajeBienvenida          string     `json:"mensaje_bienvenida"`
+	AutoPassHabilitado         bool       `json:"auto_pass_habilitado"`
+	UmbralFacialPct            int        `json:"umbral_facial_pct"`
+	UmbralAutopassPct          int        `json:"umbral_autopass_pct"`
+	UmbralSimilitudCara        float64    `json:"umbral_similitud_cara"`
 
 	TiempoExitoSeg int `json:"tiempo_exito_seg"`
 
 	// Ver KioskoConfig.TelefonoContacto -- vacío oculta el botón "hablar con
 	// el administrador" en la app del kiosko.
 	TelefonoContacto string `json:"telefono_contacto"`
+
+	MostrarScoreIaKiosko bool `json:"mostrar_score_ia_kiosko"`
 }
 
 // helper func para convertir un Kiosko (DB Model) a DTO Reponse
@@ -124,10 +130,11 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 		IdiomaKiosko: cfg.IdiomaKiosko,
 
 		// SinInvitacion
-		FotoPlacaVisitante:  cfg.FotoPlacaVisitante,
-		FotoRostroVisitante: cfg.FotoRostroVisitante,
-		FotoIneVisitante:    cfg.FotoIneVisitante,
-		PasosSinInvitacion:  pasos,
+		FotoPlacaVisitante:         cfg.FotoPlacaVisitante,
+		FotoRostroVisitante:        cfg.FotoRostroVisitante,
+		FotoIneVisitante:           cfg.FotoIneVisitante,
+		PasosSinInvitacion:         pasos,
+		MotivoObligatorioVisitante: cfg.MotivoObligatorioVisitante,
 
 		// ConInvitacion
 		FotoPlacaInvitado:      cfg.FotoPlacaInvitado,
@@ -146,5 +153,7 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 		TiempoExitoSeg: cfg.TiempoExitoSeg,
 
 		TelefonoContacto: cfg.TelefonoContacto,
+
+		MostrarScoreIaKiosko: cfg.MostrarScoreIaKiosko,
 	}
 }

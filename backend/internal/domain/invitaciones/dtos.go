@@ -40,6 +40,7 @@ type CreateInvitacionRequest struct {
 	Tipo      TipoInvitacion `json:"tipo"       binding:"required,oneof=PERSONAL GRUPAL"`
 	Titular   string         `json:"titular"    binding:"required"`
 	DestinoID uint           `json:"destino_id" binding:"required"`
+	Motivo    string         `json:"motivo"`
 	MaxUsos   *int           `json:"max_usos"`
 	ExpiresAt *time.Time     `json:"expires_at"`
 }
@@ -52,6 +53,7 @@ type InvitacionResponse struct {
 	Tipo       TipoInvitacion `json:"tipo"`
 	Titular    string         `json:"titular"`
 	DestinoID  uint           `json:"destino_id"`
+	Motivo     string         `json:"motivo,omitempty"`
 	ConteoUsos int            `json:"conteo_usos"`
 	MaxUsos    *int           `json:"max_usos"`
 	ExpiresAt  *time.Time     `json:"expires_at"`
@@ -112,6 +114,7 @@ func toInvitacionResponse(inv *Invitacion, incluirToken bool) InvitacionResponse
 		Tipo:       inv.Tipo,
 		Titular:    inv.Titular,
 		DestinoID:  inv.DestinoID,
+		Motivo:     inv.Motivo,
 		ConteoUsos: inv.ConteoUsos,
 		MaxUsos:    inv.MaxUsos,
 		ExpiresAt:  inv.ExpiresAt,

@@ -84,6 +84,7 @@ type CrearInvitacionPersonaRequest struct {
 	NombreInvitado              string                      `json:"nombre_invitado"`
 	Tipo                        invitaciones.TipoInvitacion `json:"tipo"             binding:"required,oneof=PERSONAL GRUPAL"`
 	DestinoID                   uint                        `json:"destino_id"       binding:"required"`
+	Motivo                      string                      `json:"motivo"`
 	PermiteReconocimientoFacial bool                        `json:"permite_reconocimiento_facial"`
 	MaxUsos                     *int                        `json:"max_usos"`
 	ExpiresAt                   *time.Time                  `json:"expires_at"`

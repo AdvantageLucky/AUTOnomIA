@@ -295,6 +295,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         builder: (_) => CasaDestinoView(
           currentStep: viewModel.indicatorStep,
           totalSteps: viewModel.indicatorTotalSteps,
+          motivoHabilitado: viewModel.config.motivoObligatorioVisitante,
         ),
       ),
     );

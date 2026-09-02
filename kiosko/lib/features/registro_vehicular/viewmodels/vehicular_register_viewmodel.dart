@@ -39,6 +39,12 @@ class VehicularRegisterViewModel extends ChangeNotifier {
   /// invitado si la config del kiosko lo pide.
   late final bool requierePlaca;
 
+  /// Si CasaDestinoView debe preguntar el motivo -- solo aplica a quien no
+  /// trae invitación, pero como esta pantalla nunca se muestra a un
+  /// invitado (ver `!invitado` en `habilitados` abajo), no hace falta
+  /// distinguir aquí.
+  late final bool motivoHabilitado;
+
   /// [tokenInvitacion] llega cuando el visitante ya escaneó su QR: cambia qué
   /// capturas se piden y con qué endpoint se registra la visita. [titular] y
   /// [casaDestino] vienen de la invitación validada, así que a un invitado no se
@@ -59,6 +65,7 @@ class VehicularRegisterViewModel extends ChangeNotifier {
     // la casa destino. Antes su lista estaba escrita a mano (INE y luego
     // ROSTRO) y el orden configurado no lo tocaba.
     requierePlaca = !invitado || config.fotoPlacaInvitado;
+    motivoHabilitado = config.motivoObligatorioVisitante;
 
     pasos = construirPasosOrdenados(
       orden: config.pasosSinInvitacion,

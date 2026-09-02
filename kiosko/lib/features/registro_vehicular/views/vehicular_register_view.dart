@@ -142,6 +142,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         builder: (_) => CasaDestinoView(
           currentStep: viewModel.indicatorStep,
           totalSteps: viewModel.indicatorTotalSteps,
+          motivoHabilitado: viewModel.motivoHabilitado,
         ),
       ),
     );

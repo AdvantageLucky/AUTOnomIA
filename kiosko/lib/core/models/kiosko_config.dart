@@ -39,6 +39,13 @@ class KioskoConfig {
   /// Número del vigilante/admin para el botón "hablar con el administrador".
   /// Vacío = el botón no aparece (nada configurado).
   final String telefonoContacto;
+  /// Si se pregunta el motivo de la visita a quien llega sin invitación. Un
+  /// invitado no lo ve nunca -- quien lo invitó ya lo capturó al crear la
+  /// invitación.
+  final bool motivoObligatorioVisitante;
+  /// Si el visitante ve el sello "Verificado por IA" y el vigilante puede
+  /// abrir el detalle completo tras su PIN.
+  final bool mostrarScoreIaKiosko;
 
   const KioskoConfig({
     this.tipo = TipoKiosko.peatonal,
@@ -59,6 +66,8 @@ class KioskoConfig {
     this.colorTema = KioskoColorTema.oscuro,
     this.idioma = 'es',
     this.telefonoContacto = '',
+    this.motivoObligatorioVisitante = false,
+    this.mostrarScoreIaKiosko = true,
   });
 
   factory KioskoConfig.fromJson(Map<String, dynamic> json) {
@@ -95,6 +104,8 @@ class KioskoConfig {
       colorTema: colorStr == 'claro' ? KioskoColorTema.claro : KioskoColorTema.oscuro,
       idioma: json['idioma_kiosko'] as String? ?? 'es',
       telefonoContacto: json['telefono_contacto'] as String? ?? '',
+      motivoObligatorioVisitante: json['motivo_obligatorio_visitante'] as bool? ?? false,
+      mostrarScoreIaKiosko: json['mostrar_score_ia_kiosko'] as bool? ?? true,
     );
   }
 
@@ -117,6 +128,8 @@ class KioskoConfig {
         colorTema: KioskoColorTema.oscuro,
         idioma: 'es',
         telefonoContacto: '',
+        motivoObligatorioVisitante: false,
+        mostrarScoreIaKiosko: true,
       );
 
   /// Copia con un teléfono de contacto distinto -- usado por
@@ -141,5 +154,7 @@ class KioskoConfig {
         colorTema: colorTema,
         idioma: idioma,
         telefonoContacto: telefono,
+        motivoObligatorioVisitante: motivoObligatorioVisitante,
+        mostrarScoreIaKiosko: mostrarScoreIaKiosko,
       );
 }
