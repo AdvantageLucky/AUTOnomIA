@@ -226,9 +226,38 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 			fmt.Sprintf("Llega a las %s, fuera de su franja habitual.", v.CreatedAt.In(zonaMX).Format("15:04")),
 			-12, FactorNegativo)
 	}
-	if sc.CambioModalidad {
-		add("cambio_modalidad", "Cambio de modalidad",
-			"Solia entrar con invitacion QR y esta vez llego sin ella.", -10, FactorNegativo)
+	// Cambio de modalidad: no es "cambió de tipo" en general (un residente
+	// puede entrar un día por PIN y otro por rostro, ninguno de los dos es
+	// una bajada) -- es específicamente que esta misma identidad ya
+	// demostró estar vinculada a un residente o a una invitación válida, y
+	// ahora decide entrar como visitante anónimo, el camino con menos
+	// verificación de todos. historial ya viene unido por CURP + rostro
+	// (ver Repository.HistorialDeVisitante), así que esto detecta al mismo
+	// rostro que antes entró como residente aunque esta vez no traiga CURP
+	// que lo ligue por ese lado.
+	if v.TipoVisitante == TipoSinInvitacion {
+		var huboResidente, huboInvitado bool
+		for _, h := range historial {
+			switch h.TipoVisitante {
+			case TipoResidente:
+				huboResidente = true
+			case TipoConInvitacion:
+				huboInvitado = true
+			}
+		}
+		if huboResidente || huboInvitado {
+			sc.CambioModalidad = true
+			detalle := "Esta misma identidad ya entró antes "
+			switch {
+			case huboResidente && huboInvitado:
+				detalle += "como residente y también con invitación QR, y esta vez llegó como visitante sin invitación."
+			case huboResidente:
+				detalle += "como residente (PIN o reconocimiento facial), y esta vez llegó como visitante sin invitación."
+			default:
+				detalle += "con una invitación QR válida, y esta vez llegó como visitante sin invitación."
+			}
+			add("cambio_modalidad", "Cambio de modalidad", detalle, -10, FactorNegativo)
+		}
 	}
 
 	sc.Factores = factores

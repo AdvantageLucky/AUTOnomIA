@@ -193,10 +193,10 @@ func construirPrompt(s ScoreContexto, v Visita) string {
 	secciones = append(secciones, bloque("Evidencia que falta", faltantes, "No falta evidencia."))
 
 	return fmt.Sprintf(`### Instrucción
-Escribe para el guardia de caseta un análisis de esta entrada, en español, en 4 a 6 oraciones repartidas en dos párrafos.
+Escribe para el guardia de caseta un análisis de esta entrada, en español, en dos párrafos.
 
 Párrafo 1 — qué pasó: quién llegó, a dónde va, cómo se identificó y qué dice su historial.
-Párrafo 2 — qué mirar: si hay puntos en contra o evidencia faltante, explícalos y di por qué importan. Si no hay ninguno, dilo en una frase.
+Párrafo 2 — qué mirar: si hay puntos en contra o evidencia faltante, explícalos y di por qué importan. Si no hay ninguno, dilo en una sola frase corta -- no la alargues buscando algo que decir.
 
 Reglas:
 - Usa solo los datos de abajo. No inventes nada, ni cifras ni antecedentes.
@@ -204,6 +204,21 @@ Reglas:
 - Menciona el score una sola vez y en palabras ("confianza alta", "confianza baja"), no repitas el número.
 - No copies la lista tal cual: explícala con tus palabras y conecta los puntos entre sí.
 - No repitas ninguna frase. Di cada cosa una sola vez y termina.
+- Extensión variable, no fija: si no hay nada en "En contra" ni en "Evidencia
+  que falta", el análisis puede ser tan corto como 2-3 oraciones en total.
+  Alargarlo inventando matices donde no los hay no es un análisis más
+  completo, es ruido. Reserva las oraciones largas para cuando de verdad
+  hay algo que explicar.
+- Cómo se identificó (rostro, PIN, QR) es un DATO, no una conclusión: si el
+  Tipo ya es RESIDENTE o INVITADO, que haya sido reconocido por su rostro/PIN/QR
+  es simplemente cómo funciona ese flujo, no algo que "sugiere" nada sobre su
+  legitimidad -- no lo presentes como un hallazgo ni saques una conclusión de
+  ahí ("esto sugiere que es residente legítimo" no tiene sentido cuando el
+  Tipo ya dice RESIDENTE). Descríbelo en una frase neutra y sigue adelante.
+- No conviertas la ausencia de historial en un argumento a favor ni en
+  contra por sí sola ("no hay antecedentes, lo cual podría ser buena señal"
+  es una moneda al aire, no un análisis) -- menciónala como dato, sin
+  sacarle una conclusión que no tienes con qué sostener.
 - Escribes SOBRE ESTA ENTRADA, no sobre el residencial. No juzgues ni comentes
   al residencial, a su administración, a sus guardias, a sus procedimientos ni
   a sus autoridades. Nada de frases como "falta coordinación" o "el control es

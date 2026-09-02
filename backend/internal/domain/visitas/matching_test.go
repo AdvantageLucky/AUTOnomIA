@@ -100,8 +100,15 @@ func TestHistorialDeVisitante_SinIdentificadorNoTraeNada(t *testing.T) {
 	}
 }
 
-// El CURP manda sobre el rostro: si hay documento, es el identificador fuerte.
-func TestHistorialDeVisitante_PrefiereCurpSobreRostro(t *testing.T) {
+// CURP y rostro se UNEN, no "el primero que aplique gana": un residente
+// entra por PIN/rostro sin CURP capturada nunca, y un visitante sin
+// invitación sí trae CURP de su INE -- si el rostro coincide, ambas
+// entradas deben quedar ligadas aunque solo una traiga CURP, porque es
+// justo esa unión la que permite detectar "esta misma persona ya entró
+// antes por otro camino" (ver CambioModalidad en score.go). Antes de este
+// cambio, el CURP excluía por completo la búsqueda por rostro y ese cruce
+// de identidad era invisible para el análisis.
+func TestHistorialDeVisitante_UneCurpYRostro(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 
@@ -110,22 +117,37 @@ func TestHistorialDeVisitante_PrefiereCurpSobreRostro(t *testing.T) {
 	repoCtx := repo.WithContext(ctx)
 
 	cara := residente.FloatArray([]float64{1, 0, 0, 0})
+	// Entrada previa de la misma persona, sin CURP (p.ej. residente por
+	// reconocimiento facial, que nunca captura INE).
 	db.Create(&Visita{
-		TenantID: tenantID, Titular: "Ana", Curp: "GARJ900101HMCRNA01",
+		TenantID: tenantID, Titular: "Ana", TipoVisitante: TipoResidente,
 		CasaDestino: "CASA 1", KioskoID: 1, Estado: EstadoAprobado, EmbeddingRostro: cara,
 	})
+	// Entrada de otra persona con la misma CURP (mismo caso de prueba
+	// reutilizado, o coincidencia de datos) pero rostro distinto.
+	otraCara := residente.FloatArray([]float64{0, 1, 0, 0})
 	db.Create(&Visita{
-		TenantID: tenantID, Titular: "Otra", CasaDestino: "CASA 9", KioskoID: 1,
-		Estado: EstadoAprobado, EmbeddingRostro: cara,
+		TenantID: tenantID, Titular: "Homónimo", Curp: "GARJ900101HMCRNA01",
+		CasaDestino: "CASA 9", KioskoID: 1, Estado: EstadoAprobado, EmbeddingRostro: otraCara,
 	})
 
-	nueva := Visita{TenantID: tenantID, Curp: "GARJ900101HMCRNA01", EmbeddingRostro: cara}
+	nueva := Visita{
+		TenantID: tenantID, TipoVisitante: TipoSinInvitacion,
+		Curp: "GARJ900101HMCRNA01", EmbeddingRostro: cara,
+	}
 	historial, err := repoCtx.HistorialDeVisitante(nueva, 85, fuentesTodas)
 	if err != nil {
 		t.Fatalf("no esperaba error: %v", err)
 	}
-	if len(historial) != 1 || historial[0].Titular != "Ana" {
-		t.Errorf("con CURP debe agrupar por CURP, no por rostro: %+v", historial)
+	if len(historial) != 2 {
+		t.Fatalf("esperaba las 2 entradas (una por CURP, una por rostro), got %d: %+v", len(historial), historial)
+	}
+	titulares := map[string]bool{}
+	for _, v := range historial {
+		titulares[v.Titular] = true
+	}
+	if !titulares["Ana"] || !titulares["Homónimo"] {
+		t.Errorf("esperaba a Ana (por rostro) y Homónimo (por CURP), got %+v", historial)
 	}
 }
 

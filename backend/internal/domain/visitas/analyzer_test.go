@@ -138,6 +138,38 @@ func TestAnalizarVisita_HorarioInusual(t *testing.T) {
 	}
 }
 
+// Caso reportado: una persona que antes entró como residente (PIN o rostro)
+// entra esta vez como visitante anónimo sin invitación -- debe marcarse
+// como cambio de modalidad, no pasar desapercibido.
+func TestAnalizarVisita_CambioModalidad_ResidenteAVisitante(t *testing.T) {
+	historial := []Visita{
+		{TipoVisitante: TipoResidente, Estado: EstadoAprobado},
+	}
+	nueva := Visita{TipoVisitante: TipoSinInvitacion, Curp: "GARJ900101HMCRNA01"}
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
+
+	if !sc.CambioModalidad {
+		t.Error("entrar como visitante tras haber entrado como residente debe marcar CambioModalidad")
+	}
+	if sc.Bloqueantes() != true {
+		t.Error("CambioModalidad debe ser bloqueante para el autopase")
+	}
+}
+
+// Un residente que entra por rostro un día y por PIN otro no es un cambio de
+// modalidad -- ambos son el mismo nivel de verificación (residente propio).
+func TestAnalizarVisita_SinCambioModalidad_ResidenteRostroYPin(t *testing.T) {
+	historial := []Visita{
+		{TipoVisitante: TipoResidente, TipoDocumento: DocumentoRostro, Estado: EstadoAprobado},
+	}
+	nueva := Visita{TipoVisitante: TipoResidente, TipoDocumento: DocumentoPIN}
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
+
+	if sc.CambioModalidad {
+		t.Error("residente por PIN tras haber entrado por rostro no es un cambio de modalidad")
+	}
+}
+
 func TestAnalizarVisita_HorarioInusual_MedianocheWrap(t *testing.T) {
 	// Visitas habituales a las 23:50
 	noche := time.Date(2026, 1, 1, 23, 50, 0, 0, time.UTC)

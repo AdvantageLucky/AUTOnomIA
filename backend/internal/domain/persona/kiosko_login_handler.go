@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/domain/visitas"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
@@ -207,16 +208,23 @@ func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
 	}
 
 	v := &visitas.Visita{
-		TenantID:            tenantID,
-		Titular:             mejor.Nombre + " " + mejor.ApellidoPaterno,
-		TipoVisitante:       visitas.TipoResidente,
-		TipoDocumento:       visitas.DocumentoRostro,
-		CasaDestino:         mejor.CasaDestino,
-		DestinoID:           mejor.DestinoID,
-		Estado:              visitas.EstadoAprobado,
-		KioskoID:            uint(kioskoID),
-		ClientID:            visitas.ClientIDPtr(req.ClientID),
-		PersonaID:           &mejor.PersonaID,
+		TenantID:      tenantID,
+		Titular:       mejor.Nombre + " " + mejor.ApellidoPaterno,
+		TipoVisitante: visitas.TipoResidente,
+		TipoDocumento: visitas.DocumentoRostro,
+		CasaDestino:   mejor.CasaDestino,
+		DestinoID:     mejor.DestinoID,
+		Estado:        visitas.EstadoAprobado,
+		KioskoID:      uint(kioskoID),
+		ClientID:      visitas.ClientIDPtr(req.ClientID),
+		PersonaID:     &mejor.PersonaID,
+		// Sin esto, HistorialPorRostro no podía cruzar esta entrada con
+		// una visita posterior de la misma persona por otro camino (p.ej.
+		// entra caminando sin invitación) -- el análisis de IA de esa otra
+		// entrada nunca veía que el mismo rostro ya había entrado antes
+		// como residente, porque esta fila se quedaba sin huella facial
+		// pese a que el reconocimiento sí la calculó.
+		EmbeddingRostro:     residente.FloatArray(req.Embedding),
 		AutorizadoPorTipo:   visitas.AutorizadorPropio,
 		AutorizadoPorNombre: "Acceso propio (reconocimiento facial)",
 	}

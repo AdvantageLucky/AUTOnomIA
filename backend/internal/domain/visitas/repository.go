@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -373,10 +374,20 @@ func (r *Repository) HistorialPorRostro(embedding []float64, umbralPct int) ([]V
 	return coincidencias, nil
 }
 
-// HistorialDeVisitante agrupa por CURP cuando la hay, si no por placa, y si
-// tampoco hay, por parecido de rostro -- de las fuentes que fuentes deje
-// prendidas (ver ScoreIaFuentes). Si el admin apagó todas, no hay con qué
-// ligar la visita y se trata como primera vez, que es la opción segura.
+// HistorialDeVisitante liga esta visita con sus antecedentes por CURP y/o
+// por parecido de rostro (identidad de la misma persona), y si ninguna de
+// las dos aplica, por placa (identidad del mismo vehículo) -- de las
+// fuentes que fuentes deje prendidas (ver ScoreIaFuentes). Si el admin
+// apagó todas, no hay con qué ligar la visita y se trata como primera vez,
+// que es la opción segura.
+//
+// CURP y rostro se UNEN (no "la primera que aplique gana"): un residente
+// entra por PIN/rostro sin CURP nunca capturada, y un visitante sin
+// invitación sí trae CURP de su INE -- si solo se buscara por CURP,
+// jamás se encontraría que ambas entradas son la misma persona aunque el
+// rostro coincida. Sin esta unión, "entró antes como residente y ahora
+// entra como visitante anónimo" era invisible para el análisis por mucho
+// que el mismo rostro ya estuviera registrado (ver CambioModalidad).
 //
 // Nunca consulta con un identificador vacío: un `WHERE curp = ”` traeria todas
 // las visitas sin INE del tenant y el análisis heredaría el historial de
@@ -384,14 +395,44 @@ func (r *Repository) HistorialPorRostro(embedding []float64, umbralPct int) ([]V
 // aprobaciones que nadie se ganó. El match por rostro respeta lo mismo: sin
 // embedding no busca nada, en vez de traer el tenant entero.
 func (r *Repository) HistorialDeVisitante(v Visita, umbralFacialPct int, fuentes ScoreIaFuentes) ([]Visita, error) {
+	porIdentidad := map[uint]Visita{}
+
 	if fuentes.Documento && v.Curp != "" {
-		return r.HistorialPorCURP(v.Curp)
+		lista, err := r.HistorialPorCURP(v.Curp)
+		if err != nil {
+			return nil, err
+		}
+		for _, vh := range lista {
+			porIdentidad[vh.ID] = vh
+		}
 	}
+
+	if fuentes.Rostro && len(v.EmbeddingRostro) > 0 {
+		lista, err := r.HistorialPorRostro(v.EmbeddingRostro, umbralFacialPct)
+		if err != nil {
+			return nil, err
+		}
+		for _, vh := range lista {
+			porIdentidad[vh.ID] = vh
+		}
+	}
+
+	if len(porIdentidad) > 0 {
+		historial := make([]Visita, 0, len(porIdentidad))
+		for _, vh := range porIdentidad {
+			historial = append(historial, vh)
+		}
+		sort.Slice(historial, func(i, j int) bool {
+			return historial[i].CreatedAt.After(historial[j].CreatedAt)
+		})
+		return historial, nil
+	}
+
+	// Ninguna de las dos señales de identidad aplicó -- si el acceso es
+	// vehicular y trae placa, esa es la única liga posible que queda
+	// (identidad del vehículo, no de la persona).
 	if fuentes.Placa && v.Placa != "" {
 		return r.HistorialPorPlaca(v.Placa)
-	}
-	if fuentes.Rostro {
-		return r.HistorialPorRostro(v.EmbeddingRostro, umbralFacialPct)
 	}
 	return nil, nil
 }
