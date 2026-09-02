@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
@@ -79,18 +80,29 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: PantallaAdaptable(
-        child: Column(
-          children: [
-            const KigoWordmark(),
-            const Spacer(),
-            _buildContent(),
-            const Spacer(),
-            _buildFooter(),
-          ],
+    return Stack(
+      children: [
+        Scaffold(
+          body: PantallaAdaptable(
+            child: Column(
+              children: [
+                const KigoWordmark(),
+                const Spacer(),
+                _buildContent(),
+                const Spacer(),
+                _buildFooter(),
+              ],
+            ),
+          ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          // Coincide con el padding por default de PantallaAdaptable (34/24).
+          topDelBorde: 24,
+          rightDelBorde: 34,
+          onRespuestaLibre: (_) {},
+          onCampoExtraido: (_) {},
+        ),
+      ],
     );
   }
 
