@@ -17,6 +17,15 @@ func (f *fakeSender) Send(_ context.Context, deviceToken, _, _ string) error {
 	return nil
 }
 
+type fakeMailer struct {
+	enviados []string
+}
+
+func (f *fakeMailer) Enviar(_ context.Context, destino, _, _ string) error {
+	f.enviados = append(f.enviados, destino)
+	return nil
+}
+
 func TestPushNotificador_NotificarNuevaVisita(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewRepository(db)
@@ -31,7 +40,8 @@ func TestPushNotificador_NotificarNuevaVisita(t *testing.T) {
 	db.Create(&residente.Membresia{PersonaID: pSinToken.ID, TenantID: 1, CasaDestino: "Casa 1", Status: "activo"})
 
 	sender := &fakeSender{}
-	notificador := NewPushNotificador(repo, sender)
+	mailer := &fakeMailer{}
+	notificador := NewPushNotificador(repo, sender, mailer)
 
 	err := notificador.NotificarNuevaVisita(context.Background(), 1, "Casa 1", visitas.Visita{Titular: "Juan"})
 	if err != nil {
@@ -39,5 +49,33 @@ func TestPushNotificador_NotificarNuevaVisita(t *testing.T) {
 	}
 	if len(sender.enviados) != 1 || sender.enviados[0] != token {
 		t.Errorf("esperaba mandar solo a %q, got %+v", token, sender.enviados)
+	}
+	if len(mailer.enviados) != 0 {
+		t.Errorf("no esperaba avisar al admin si sí hubo push, got %+v", mailer.enviados)
+	}
+}
+
+func TestPushNotificador_AvisaAlAdminSiNadieRecibeElPush(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	db.Exec(`CREATE TABLE admins (id INTEGER PRIMARY KEY, tenant_id INTEGER, rol TEXT, correo TEXT)`)
+	db.Exec(`INSERT INTO admins (id, tenant_id, rol, correo) VALUES (1, 1, 'admin', 'admin@test.com')`)
+	db.Exec(`INSERT INTO admins (id, tenant_id, rol, correo) VALUES (2, 1, 'vigilante', 'vigilante@test.com')`)
+
+	sender := &fakeSender{}
+	mailer := &fakeMailer{}
+	notificador := NewPushNotificador(repo, sender, mailer)
+
+	// Sin ninguna Membresia para "Casa 1" -- nadie recibe el push.
+	err := notificador.NotificarNuevaVisita(context.Background(), 1, "Casa 1", visitas.Visita{Titular: "Juan"})
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(sender.enviados) != 0 {
+		t.Errorf("no esperaba push, got %+v", sender.enviados)
+	}
+	if len(mailer.enviados) != 1 || mailer.enviados[0] != "admin@test.com" {
+		t.Errorf("esperaba avisar solo al admin, got %+v", mailer.enviados)
 	}
 }

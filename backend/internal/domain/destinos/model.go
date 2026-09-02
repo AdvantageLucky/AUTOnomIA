@@ -21,6 +21,15 @@ type Destino struct {
 	Numero   string      `gorm:"not null"`
 	Titular  string      `gorm:"not null"`
 	KioskoID *uint       `gorm:"index"`
+
+	// ContactoNombre/ContactoTelefono: directorio de contacto que el admin
+	// teclea a mano para este destino -- NO es un dato verificado (no pasó
+	// por OTP, a diferencia de Persona.Telefono) y nunca debe usarse para
+	// notificar automáticamente ni fusionarse con Persona. Es solo un dato
+	// de referencia para que el admin/vigilante sepa con quién comunicarse
+	// cuando nadie está enrolado como residente en ese destino.
+	ContactoNombre   string `gorm:"column:contacto_nombre"`
+	ContactoTelefono string `gorm:"column:contacto_telefono"`
 }
 
 func (Destino) TableName() string { return "destinos" }

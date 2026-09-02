@@ -125,6 +125,27 @@ func (r *Repository) FindByID(id uint) (*Destino, error) {
 	return &d, nil
 }
 
+// UpdateContacto guarda el directorio de contacto sin verificar de un
+// destino, escopeado por tenant.
+func (r *Repository) UpdateContacto(id, tenantID uint, nombre, telefono string) error {
+	if tenantID == 0 {
+		return ErrTenantNoResuelto
+	}
+	result := r.db.Model(&Destino{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"contacto_nombre":   nombre,
+			"contacto_telefono": telefono,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (r *Repository) Delete(id, tenantID uint) error {
 	if tenantID == 0 {
 		return ErrTenantNoResuelto

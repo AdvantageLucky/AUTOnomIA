@@ -45,6 +45,18 @@ func (r *Repository) FindActivasPorCasaDestino(tenantID uint, casaDestino string
 	return list, err
 }
 
+// CorreosAdminsDeTenant consulta la tabla admins directamente (sin importar
+// el paquete admin, mismo motivo que otras consultas cross-dominio del
+// proyecto: evitar un ciclo de imports) para avisarles cuando una visita
+// llega a un destino sin ningún residente al que notificar.
+func (r *Repository) CorreosAdminsDeTenant(tenantID uint) ([]string, error) {
+	var correos []string
+	err := r.db.Table("admins").
+		Where("tenant_id = ? AND rol = ?", tenantID, "admin").
+		Pluck("correo", &correos).Error
+	return correos, err
+}
+
 func (r *Repository) FindByID(id uint) (*Persona, error) {
 	var p Persona
 	if err := r.db.First(&p, id).Error; err != nil {

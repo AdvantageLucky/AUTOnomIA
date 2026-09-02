@@ -14,6 +14,19 @@ type DestinoResponse struct {
 	// ListarDestinosPorAcceso es la que usa el kiosko, que no necesita ni
 	// debe conocer ese número.
 	ResidentesActivos int `json:"residentes_activos,omitempty"`
+	// ContactoNombre/ContactoTelefono: directorio sin verificar que tecleó
+	// el admin -- ver comentario en el modelo Destino. Solo va en la vista
+	// admin, igual que ResidentesActivos.
+	ContactoNombre   string `json:"contacto_nombre,omitempty"`
+	ContactoTelefono string `json:"contacto_telefono,omitempty"`
+}
+
+// DestinoContactoRequest edita solo el directorio de contacto sin verificar
+// de un destino ya existente -- separado de DestinoAdminRequest porque no
+// toca calle/tipo/numero/titular.
+type DestinoContactoRequest struct {
+	ContactoNombre   string `json:"contacto_nombre"`
+	ContactoTelefono string `json:"contacto_telefono"`
 }
 
 // DestinoKioskoResponse mantenido por compatibilidad con la app kiosko
@@ -62,13 +75,15 @@ func (r DestinoLoteRequest) items() []DestinoLoteItem {
 
 func toDestinoResponse(d Destino) DestinoResponse {
 	return DestinoResponse{
-		ID:        d.ID,
-		Nombre:    d.Nombre,
-		Calle:     d.Calle,
-		Tipo:      string(d.Tipo),
-		Numero:    d.Numero,
-		Titular:   d.Titular,
-		CreatedAt: d.CreatedAt,
+		ID:               d.ID,
+		Nombre:           d.Nombre,
+		Calle:            d.Calle,
+		Tipo:             string(d.Tipo),
+		Numero:           d.Numero,
+		Titular:          d.Titular,
+		CreatedAt:        d.CreatedAt,
+		ContactoNombre:   d.ContactoNombre,
+		ContactoTelefono: d.ContactoTelefono,
 	}
 }
 

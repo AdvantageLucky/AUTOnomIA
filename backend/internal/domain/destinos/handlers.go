@@ -55,7 +55,12 @@ func (h *Handler) ListarDestinosPorAcceso(c *gin.Context) {
 
 	items := make([]DestinoResponse, 0, len(list))
 	for _, d := range list {
-		items = append(items, toDestinoResponse(d))
+		item := toDestinoResponse(d)
+		// El directorio de contacto es solo para uso del admin/vigilante
+		// desde el dashboard -- el kiosko no lo necesita.
+		item.ContactoNombre = ""
+		item.ContactoTelefono = ""
+		items = append(items, item)
 	}
 	c.JSON(http.StatusOK, items)
 }
@@ -175,6 +180,43 @@ func (h *Handler) CrearDestinosLote(c *gin.Context) {
 		items[i] = toDestinoResponse(d)
 	}
 	c.JSON(http.StatusCreated, gin.H{"destinos": items})
+}
+
+// EditarContacto — admin: guarda el directorio de contacto sin verificar de
+// un destino (nombre/teléfono que el admin tecleó a mano, no una Persona
+// verificada por OTP).
+func (h *Handler) EditarContacto(c *gin.Context) {
+	tenantID, ok := tenantFromCtx(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tenant no resuelto"})
+		return
+	}
+
+	destinoIDStr := c.Param("id")
+	destinoID, err := strconv.ParseUint(destinoIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de destino invalido"})
+		return
+	}
+
+	var req DestinoContactoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	if err := repoCtx.UpdateContacto(uint(destinoID), tenantID, req.ContactoNombre, req.ContactoTelefono); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	d, err := repoCtx.FindByID(uint(destinoID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, toDestinoResponse(*d))
 }
 
 // EliminarDestino — admin: elimina un destino del tenant

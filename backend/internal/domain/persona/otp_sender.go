@@ -39,9 +39,41 @@ type EmailOtpSender struct {
 func (s EmailOtpSender) Enviar(_ context.Context, destino, codigo string) error {
 	asunto := "Tu código de Kigo"
 	cuerpo := fmt.Sprintf("Tu código de verificación es: %s\n\nExpira en unos minutos. Si tú no lo pediste, ignora este correo.", codigo)
-	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s", s.User, destino, asunto, cuerpo)
+	return smtpSend(s.Host, s.Port, s.User, s.Password, destino, asunto, cuerpo)
+}
 
-	auth := smtp.PlainAuth("", s.User, s.Password, s.Host)
-	addr := fmt.Sprintf("%s:%s", s.Host, s.Port)
-	return smtp.SendMail(addr, auth, s.User, []string{destino}, []byte(msg))
+// EmailSender manda un correo con asunto y cuerpo libres — a diferencia de
+// OtpSender, que solo sabe mandar códigos. Se usa para alertas al admin
+// (p. ej. una visita sin residente al que avisar).
+type EmailSender interface {
+	Enviar(ctx context.Context, destino, asunto, cuerpo string) error
+}
+
+// LogEmailSender es el EmailSender falso que solo loguea — mismo rol que
+// LogOtpSender mientras no haya SMTP configurado.
+type LogEmailSender struct{}
+
+func (LogEmailSender) Enviar(_ context.Context, destino, asunto, cuerpo string) error {
+	log.Printf("[email-fake] a %s: %s — %s", destino, asunto, cuerpo)
+	return nil
+}
+
+// SMTPEmailSender manda el correo de verdad, reusando las mismas credenciales
+// SMTP que EmailOtpSender.
+type SMTPEmailSender struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+}
+
+func (s SMTPEmailSender) Enviar(_ context.Context, destino, asunto, cuerpo string) error {
+	return smtpSend(s.Host, s.Port, s.User, s.Password, destino, asunto, cuerpo)
+}
+
+func smtpSend(host, port, user, password, destino, asunto, cuerpo string) error {
+	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s", user, destino, asunto, cuerpo)
+	auth := smtp.PlainAuth("", user, password, host)
+	addr := fmt.Sprintf("%s:%s", host, port)
+	return smtp.SendMail(addr, auth, user, []string{destino}, []byte(msg))
 }

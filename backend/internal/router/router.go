@@ -199,11 +199,26 @@ func emailOtpSender(cfg *configs.Config) persona.OtpSender {
 	}
 }
 
+// adminEmailSender decide entre correo real por SMTP y el falso que solo
+// loguea — mismo criterio que emailOtpSender. Se usa para avisarle al admin
+// cuando una visita llega a un destino sin ningún residente al que notificar.
+func adminEmailSender(cfg *configs.Config) persona.EmailSender {
+	if cfg.SMTPUser == "" || cfg.SMTPPassword == "" {
+		return persona.LogEmailSender{}
+	}
+	return persona.SMTPEmailSender{
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		User:     cfg.SMTPUser,
+		Password: cfg.SMTPPassword,
+	}
+}
+
 // registerVisitaRoutes registra las rutas de visitas: registro desde el kiosko (sesion) y
 // consulta del admin (JWT).
 func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config, hub *sse.Hub) {
 	visitaRepo := visitas.NewRepository(db)
-	notificador := persona.NewPushNotificador(persona.NewRepository(db), pushSender(cfg))
+	notificador := persona.NewPushNotificador(persona.NewRepository(db), pushSender(cfg), adminEmailSender(cfg))
 	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub, notificador)
 	sesionRepo := auth.NewSesionRepository(db)
 
@@ -256,6 +271,7 @@ func registerDestinosRoutes(rg *gin.RouterGroup, db *gorm.DB, jwtSecret string) 
 		a.GET("/", destinoHandler.ListarDestinos)
 		a.POST("/", destinoHandler.CrearDestino)
 		a.POST("/lote", destinoHandler.CrearDestinosLote)
+		a.PATCH("/:id/contacto", destinoHandler.EditarContacto)
 		a.DELETE("/:id", destinoHandler.EliminarDestino)
 	}
 }

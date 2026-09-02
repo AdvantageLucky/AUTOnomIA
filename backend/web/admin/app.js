@@ -3337,6 +3337,9 @@
             const n = d.residentes_activos || 0;
             return `
             <div id="dest-row-${d.id}" class="dest-card" data-dest-nombre="${esc(d.nombre)}" style="position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s,transform .15s">
+              <button type="button" class="btn-ghost" style="position:absolute;top:8px;right:34px;color:${d.contacto_telefono ? 'var(--brand)' : 'var(--text-3)'};padding:4px;display:flex" data-contacto-dest="${d.id}" data-contacto-nombre="${esc(d.contacto_nombre || '')}" data-contacto-telefono="${esc(d.contacto_telefono || '')}" title="${d.contacto_telefono ? 'Contacto: ' + esc(d.contacto_telefono) + ' (sin verificar)' : 'Agregar contacto de referencia'}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </button>
               <button type="button" class="btn-ghost" style="position:absolute;top:8px;right:8px;color:var(--text-3);padding:4px;display:flex" data-del-dest="${d.id}" title="Eliminar destino">
                 <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
               </button>
@@ -3357,7 +3360,7 @@
       card.addEventListener('mouseenter', () => { card.style.borderColor = 'var(--brand)'; });
       card.addEventListener('mouseleave', () => { card.style.borderColor = 'var(--border)'; });
       card.addEventListener('click', (e) => {
-        if (e.target.closest('[data-del-dest]')) return;
+        if (e.target.closest('[data-del-dest]') || e.target.closest('[data-contacto-dest]')) return;
         verResidentesDeDestino(card.dataset.destNombre);
       });
     });
@@ -3365,7 +3368,45 @@
     rowsEl.querySelectorAll('[data-del-dest]').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); deleteDestino(+btn.dataset.delDest); });
     });
+
+    rowsEl.querySelectorAll('[data-contacto-dest]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        abrirModalContactoDestino(+btn.dataset.contactoDest, btn.dataset.contactoNombre, btn.dataset.contactoTelefono);
+      });
+    });
   }
+
+  let contactoDestinoIdActual = null;
+
+  function abrirModalContactoDestino(id, nombre, telefono) {
+    contactoDestinoIdActual = id;
+    document.getElementById('cd-nombre').value = nombre || '';
+    document.getElementById('cd-telefono').value = telefono || '';
+    document.getElementById('modal-contacto-destino').hidden = false;
+  }
+
+  document.getElementById('cd-cancel')?.addEventListener('click', () => {
+    document.getElementById('modal-contacto-destino').hidden = true;
+  });
+
+  document.getElementById('contacto-destino-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!contactoDestinoIdActual) return;
+    const res = await api(`/destinos/${contactoDestinoIdActual}/contacto`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        contacto_nombre: document.getElementById('cd-nombre').value.trim(),
+        contacto_telefono: document.getElementById('cd-telefono').value.trim(),
+      }),
+    });
+    if (!res || !res.ok) {
+      mostrarToast('No se pudo guardar el contacto', 'err');
+      return;
+    }
+    document.getElementById('modal-contacto-destino').hidden = true;
+    await loadDestinos();
+  });
 
   async function deleteDestino(id) {
     const ok = await confirmarAccion({
