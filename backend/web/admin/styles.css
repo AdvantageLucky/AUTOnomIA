@@ -2858,6 +2858,20 @@ textarea { resize: vertical; }
   .res-date-col {
     display: none;
   }
+
+  /* La lista de visitas tenía 5 columnas fijas (2fr 80px 1fr 90px 70px)
+     sin ningún ajuste para mobile -- en una pantalla angosta el texto se
+     apretaba y desbordaba. Se reduce a nombre + los dos badges, y se
+     ocultan kiosko y fecha (ya visibles al entrar al detalle). */
+  .vis-row-grid--list {
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .vis-row-grid--list > div:nth-child(3),
+  .vis-row-grid--list > div:nth-child(5) {
+    display: none;
+  }
 }
 
 .res-avatar {

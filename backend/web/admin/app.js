@@ -1579,9 +1579,15 @@
     const acceso = state.accesosById.get(v.kiosko_id);
     const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
     const tvLabel = tipoVisLabel(v.tipo_visitante);
-    const tieneIA = !!(v.resumen_ia || v.estadisticas);
+    // Antes incluía v.estadisticas, pero ese campo lo llena
+    // EstadisticasPorPersona para CUALQUIER visita con persona_id (incluye
+    // el auto-checkin de residente por PIN/rostro, que nunca pasa por el
+    // analizador) -- terminaba marcando casi todas las filas con IA sin
+    // haberla tenido. Solo resumen_ia/score_ia vienen del analizador real.
+    const tieneIA = !!(v.resumen_ia || v.score_ia);
+    const iconoIA = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity:.55;vertical-align:-1px"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z"/></svg>`;
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
-      <div><div class="row-name">${esc(v.titular)}${tieneIA ? ' <span title="Con análisis IA" style="opacity:.6">*</span>' : ''}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
+      <div><div class="row-name">${esc(v.titular)}${tieneIA ? ` <span title="Con análisis IA">${iconoIA}</span>` : ''}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
@@ -3311,13 +3317,17 @@
     // vistazo en la vista de tarjetas sin tener que leer la etiqueta.
     const iconoEdificio = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="7" x2="9" y2="7.01"/><line x1="15" y1="7" x2="15" y2="7.01"/><line x1="9" y1="12" x2="9" y2="12.01"/><line x1="15" y1="12" x2="15" y2="12.01"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`;
     const iconoCasa = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+    // Calle: dos líneas de carril (una punteada al centro) en vez de una
+    // casa -- el encabezado de grupo agrupa varios destinos de tipos
+    // distintos, así que un ícono de casa era engañoso ahí.
+    const iconoCalle = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="2" x2="4" y2="22"/><line x1="18" y1="2" x2="20" y2="22"/><line x1="12" y1="2" x2="11.4" y2="7" stroke-dasharray="2.5 2.5"/><line x1="11" y1="12" x2="10.4" y2="17" stroke-dasharray="2.5 2.5"/></svg>`;
     const esEdificioLike = tipo => ['edificio', 'departamento', 'oficina', 'bodega', 'local'].includes((tipo || '').toLowerCase());
 
     rowsEl.innerHTML = [...porCalle.entries()].map(([calle, destinos]) => `
       <div style="margin-bottom:24px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="font-size:13px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;display:flex;align-items:center;gap:8px">
-            ${iconoCasa}
+            ${iconoCalle}
             ${esc(calle)}
           </div>
           <span class="badge badge--neutral" style="font-size:11.5px">${destinos.length} ${destinos.length === 1 ? 'destino' : 'destinos'}</span>
