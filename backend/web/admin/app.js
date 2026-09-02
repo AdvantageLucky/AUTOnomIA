@@ -466,6 +466,16 @@
     es.onmessage = e => {
       try {
         const v = JSON.parse(e.data);
+        // El Hub es global (no filtra por tenant) -- todo mensaje trae
+        // tenant_id (visitas y asistencia_urgente por igual) y se descarta
+        // aquí si no es el del admin conectado. Antes solo se filtraba el
+        // evento de asistencia urgente; una visita de OTRO fraccionamiento
+        // sí llegaba a este dashboard (nombre, foto, resumen de IA incluidos).
+        if (String(v.tenant_id) !== String(state.tenantId)) return;
+        if (v.tipo === "asistencia_urgente") {
+          mostrarToast("🆘 Asistencia urgente solicitada en el kiosko", "urgente");
+          return;
+        }
         const nombre = v.titular || "Nuevo visitante";
         if (v.estado === "REVISION") {
           mostrarToast(`Alerta: Requiere revisión manual: ${nombre}`, "revision");

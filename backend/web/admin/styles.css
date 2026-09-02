@@ -2698,6 +2698,7 @@ textarea { resize: vertical; }
 .toast { animation: toast-in .2s ease; }
 @keyframes toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 .toast--revision { border-color: var(--amber) !important; box-shadow: 0 4px 16px rgba(0,0,0,.18), 0 0 0 1px rgba(255,197,66,0.3) !important; }
+.toast--urgente { border-color: var(--red) !important; box-shadow: 0 4px 16px rgba(0,0,0,.18), 0 0 0 1px rgba(255,77,106,0.35) !important; font-weight: 700; }
 
 /* ── Vigilante live-feed mode ───────────── */
 .sol-vigilante-mode .sol-card {

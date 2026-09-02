@@ -51,6 +51,7 @@ type VisitaRequest struct {
 // VisitaResponse DTO de respuesta completo para una visita
 type VisitaResponse struct {
 	ID                  uint                 `json:"id"`
+	TenantID            uint                 `json:"tenant_id"`
 	Titular             string               `json:"titular"`
 	TipoDocumento       TipoDocumento        `json:"tipo_documento"`
 	TipoVisitante       TipoVisitante        `json:"tipo_visitante"`
@@ -133,6 +134,7 @@ func ToVisitaResponse(v Visita) VisitaResponse {
 func toVisitaResponse(v Visita) VisitaResponse {
 	resp := VisitaResponse{
 		ID:                  v.ID,
+		TenantID:            v.TenantID,
 		Titular:             v.Titular,
 		TipoDocumento:       v.TipoDocumento,
 		TipoVisitante:       v.TipoVisitante,

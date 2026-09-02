@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -43,6 +44,7 @@ type Handler struct {
 	kigoVerify     KigoVerifyConfig
 	kigoVerifyRepo *KigoVerifyRepository
 	pushSender     residente.PushSender
+	adminMailer    EmailSender
 }
 
 func NewHandler(
@@ -61,6 +63,7 @@ func NewHandler(
 	kigoVerify KigoVerifyConfig,
 	kigoVerifyRepo *KigoVerifyRepository,
 	pushSender residente.PushSender,
+	adminMailer EmailSender,
 ) *Handler {
 	seed, err := hex.DecodeString(qrEd25519PrivateKeySeed)
 	if err != nil || len(seed) != ed25519.SeedSize {
@@ -85,6 +88,7 @@ func NewHandler(
 		kigoVerifyRepo: kigoVerifyRepo,
 		llmURL:         llmURL,
 		pushSender:     pushSender,
+		adminMailer:    adminMailer,
 	}
 }
 
@@ -418,6 +422,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		go h.avisarAdminNuevaMembresia(existente.TenantID, personaID, existente.CasaDestino)
 		c.JSON(http.StatusOK, MembresiaResponse{
 			ID:          existente.ID,
 			TenantID:    existente.TenantID,
@@ -451,6 +456,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		return
 	}
 
+	go h.avisarAdminNuevaMembresia(m.TenantID, personaID, m.CasaDestino)
 	c.JSON(http.StatusCreated, MembresiaResponse{
 		ID:          m.ID,
 		TenantID:    m.TenantID,
@@ -458,6 +464,36 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		Status:      m.Status,
 		Pin:         m.PinCodigo,
 	})
+}
+
+// avisarAdminNuevaMembresia manda un correo a los admins del tenant cuando
+// una Persona pide unirse — hoy la única forma de enterarse era entrar al
+// dashboard, nadie recibía push ni correo por una solicitud de membresía.
+func (h *Handler) avisarAdminNuevaMembresia(tenantID, personaID uint, casaDestino string) {
+	if h.adminMailer == nil {
+		return
+	}
+	correos, err := h.repo.CorreosAdminsDeTenant(tenantID)
+	if err != nil {
+		log.Printf("avisarAdminNuevaMembresia: error buscando admins del tenant %d: %v", tenantID, err)
+		return
+	}
+	nombre := fmt.Sprintf("Persona #%d", personaID)
+	if p, err := h.repo.FindByID(personaID); err == nil && strings.TrimSpace(p.Nombre) != "" {
+		nombre = strings.TrimSpace(p.Nombre + " " + p.ApellidoPaterno)
+	}
+	asunto := "Nueva solicitud de membresía"
+	cuerpo := fmt.Sprintf("%s pidió unirse a %q. Revisa y aprueba o rechaza la solicitud en el dashboard.", nombre, casaDestino)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	for _, correo := range correos {
+		if correo == "" {
+			continue
+		}
+		if err := h.adminMailer.Enviar(ctx, correo, asunto, cuerpo); err != nil {
+			log.Printf("avisarAdminNuevaMembresia: error mandando correo a %s: %v", correo, err)
+		}
+	}
 }
 
 // generarPinParaTenant reúne los PIN ya ocupados en el centro (los

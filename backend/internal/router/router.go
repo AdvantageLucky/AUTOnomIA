@@ -218,8 +218,10 @@ func adminEmailSender(cfg *configs.Config) persona.EmailSender {
 // consulta del admin (JWT).
 func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config, hub *sse.Hub) {
 	visitaRepo := visitas.NewRepository(db)
-	notificador := persona.NewPushNotificador(persona.NewRepository(db), pushSender(cfg), adminEmailSender(cfg))
+	personaRepo := persona.NewRepository(db)
+	notificador := persona.NewPushNotificador(personaRepo, pushSender(cfg), adminEmailSender(cfg))
 	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub, notificador)
+	asistenciaHandler := persona.NewAsistenciaUrgenteHandler(personaRepo, adminEmailSender(cfg), hub)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: solo registra visitas
@@ -229,6 +231,13 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 		v.POST("/", visitaHandler.RegisterVisita)
 		v.GET("/recurrencia", visitaHandler.ConsultarRecurrencia)
 		v.GET("/:visitaId", visitaHandler.GetVisitaEstado)
+	}
+
+	// kiosko: pide ayuda humana urgente -- avisa al admin por SSE y correo
+	ay := rg.Group("/kioskos/:id/asistencia-urgente")
+	ay.Use(auth.RequireKiosko(sesionRepo))
+	{
+		ay.POST("/", asistenciaHandler.Solicitar)
 	}
 
 	// dashboard admin: lectura paginada, detalle, historial y reportes
@@ -414,6 +423,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		persona.KigoVerifyConfig{APIKey: cfg.KigoVerifyAPIKey, BaseURL: cfg.KigoVerifyBaseURL, PublicURL: cfg.PublicURL, RedirectURL: cfg.KigoVerifyRedirectURL},
 		kigoVerifyRepo,
 		pushSender(cfg),
+		adminEmailSender(cfg),
 	)
 
 	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)

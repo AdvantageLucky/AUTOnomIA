@@ -280,6 +280,28 @@ class KioskoServicio {
     } catch (_) {}
   }
 
+  /// El visitante tocó "llamar al vigilante" -- avisa al backend para que
+  /// mande la alerta al dashboard (SSE) y a los admins del tenant (correo).
+  /// Falla en silencio igual que ping(): el botón ya le mostró el teléfono
+  /// al visitante para que llame directo, este aviso es un canal adicional,
+  /// no el único, así que un error de red aquí no debe interrumpir nada.
+  Future<void> solicitarAsistenciaUrgente() async {
+    try {
+      await _ensureLogin();
+      final response = await http.post(
+        Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistencia-urgente/'),
+        headers: {'Authorization': 'Bearer $_sessionToken'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 401 && await _reLogin()) {
+        await http.post(
+          Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistencia-urgente/'),
+          headers: {'Authorization': 'Bearer $_sessionToken'},
+        ).timeout(const Duration(seconds: 8));
+      }
+    } catch (_) {}
+  }
+
   /// [onRevocado] se llama si la sesión del kiosko fue revocada (ej. el admin lo
   /// eliminó desde el dashboard) y no se pudo re-autenticar: el dispositivo
   /// debe volver a la pantalla de activación.

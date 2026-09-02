@@ -30,6 +30,9 @@ func TestPushNotificador_NotificarNuevaVisita(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 
+	db.Exec(`CREATE TABLE admins (id INTEGER PRIMARY KEY, tenant_id INTEGER, rol TEXT, correo TEXT)`)
+	db.Exec(`INSERT INTO admins (id, tenant_id, rol, correo) VALUES (1, 1, 'admin', 'admin@test.com')`)
+
 	token := "token-abc"
 	p := &Persona{Telefono: "+525512345678", DeviceToken: &token}
 	repo.Create(p)
@@ -50,8 +53,10 @@ func TestPushNotificador_NotificarNuevaVisita(t *testing.T) {
 	if len(sender.enviados) != 1 || sender.enviados[0] != token {
 		t.Errorf("esperaba mandar solo a %q, got %+v", token, sender.enviados)
 	}
-	if len(mailer.enviados) != 0 {
-		t.Errorf("no esperaba avisar al admin si sí hubo push, got %+v", mailer.enviados)
+	// Todo tipo de solicitud avisa al admin por correo, aunque sí hubo push --
+	// el admin quiere enterarse de cada visita sin depender del dashboard.
+	if len(mailer.enviados) != 1 || mailer.enviados[0] != "admin@test.com" {
+		t.Errorf("esperaba avisar al admin también cuando sí hubo push, got %+v", mailer.enviados)
 	}
 }
 
