@@ -53,6 +53,12 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   String? _ultimaCasaCoincidente;
   int _coincidenciasConsecutivas = 0;
 
+  /// Se enciende apenas se confirma la racha de 2 coincidencias -- da la
+  /// misma pausa visual (aro verde + check) que ya tiene el registro de
+  /// visitante antes de navegar, en vez de saltar a la siguiente pantalla
+  /// sin ningún feedback de "ya te reconocí".
+  bool _coincidenciaConfirmada = false;
+
   @override
   void initState() {
     super.initState();
@@ -245,16 +251,23 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
       _bucleVerificacionActivo = false;
       _timerVerificacion?.cancel();
       _led.apagar();
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ResidentWelcomeView(
-            viewModel: ResidentWelcomeViewModel(
-              nombre: nombre ?? AppLocalizations.t(context, 'residente_label'),
-              casaDestino: casaDestino ?? '',
+      setState(() => _coincidenciaConfirmada = true);
+
+      // Misma pausa breve que el registro de visitante (scanner_rostro_widget)
+      // para que el aro verde + check se alcance a ver antes de navegar.
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ResidentWelcomeView(
+              viewModel: ResidentWelcomeViewModel(
+                nombre: nombre ?? AppLocalizations.t(context, 'residente_label'),
+                casaDestino: casaDestino ?? '',
+              ),
             ),
           ),
-        ),
-      );
+        );
+      });
     }
   }
 
@@ -394,13 +407,21 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   }
 
   Widget _buildAreaFacial() {
-    // Responsivo en vez de un tamaño fijo en px (320): en pantallas más
-    // cortas que el panel de referencia (800x1280) el círculo fijo hacía
-    // que el contenido de toda la columna no cupiera sin scroll. Se acota
-    // por el lado más corto entre ancho y alto disponible para que nunca
-    // domine ninguno de los dos ejes.
+    // Responsivo en vez de un tamaño fijo en px: en pantallas más cortas que
+    // el panel de referencia (800x1280) un marco fijo hacía que el
+    // contenido de toda la columna no cupiera sin scroll. Mismo óvalo
+    // (relación 1:1.25) que usa scanner_rostro_widget.dart en el registro
+    // de visitante -- antes este círculo (ancho == alto) era la única
+    // diferencia visual entre los dos flujos de reconocimiento facial.
     final size = MediaQuery.sizeOf(context);
-    final circuloD = math.min(size.width * 0.6, size.height * 0.32);
+    double ovalH = math.min(size.width * 0.5, size.height * 0.34);
+    double ovalW = ovalH / 1.25;
+    final anchoMax = size.width * 0.55;
+    if (ovalW > anchoMax) {
+      ovalW = anchoMax;
+      ovalH = ovalW * 1.25;
+    }
+    final colorGuia = _coincidenciaConfirmada ? const Color(0xFF2DCFA8) : KigoDesign.brand;
 
     return Column(
       children: [
@@ -417,31 +438,84 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         const SizedBox(height: 40),
 
         // Marco del área de cara: vista en vivo de la cámara frontal, con el
-        // mismo tratamiento de óvalo/círculo guía que usa la captura de
-        // rostro del registro de visitante (MarcoGuiaCamara) -- aquí
-        // ancho == alto, así que el "óvalo" sale círculo.
+        // mismo tratamiento de óvalo guía que usa la captura de rostro del
+        // registro de visitante (MarcoGuiaCamara) -- el aro cambia a verde
+        // en cuanto se confirma la coincidencia, igual que allá.
         SizedBox(
-          width: circuloD,
-          height: circuloD,
+          width: ovalW,
+          height: ovalH,
           child: Stack(
             fit: StackFit.expand,
             children: [
               ClipOval(child: _buildContenidoCamara()),
-              MarcoGuiaCamara(ancho: circuloD, alto: circuloD, mostrarBarrido: _bucleVerificacionActivo),
+              MarcoGuiaCamara(
+                ancho: ovalW,
+                alto: ovalH,
+                colorBorde: colorGuia,
+                mostrarBarrido: _bucleVerificacionActivo && !_coincidenciaConfirmada,
+              ),
             ],
           ),
         ),
 
         const SizedBox(height: 20),
-        Text(
-          _textoEstadoCamara(),
-          style: TextStyle(
-            color: context.kTextTertiary,
-            fontSize: 13,
-            letterSpacing: 1.5,
-          ),
-        ),
+        _buildEstadoCamara(),
       ],
+    );
+  }
+
+  /// Indicador de que el reconocimiento se está tomando de forma automática
+  /// -- antes solo había un texto estático, sin ninguna señal de actividad
+  /// en tiempo real (spinner mientras busca, check al confirmar), a
+  /// diferencia del registro de visitante que sí lo tenía.
+  Widget _buildEstadoCamara() {
+    if (_coincidenciaConfirmada) {
+      return _pillEstado(
+        icono: const Icon(Icons.check_circle, color: Colors.white, size: 18),
+        texto: AppLocalizations.t(context, 'rostro_detectado_capturando'),
+        confirmado: true,
+      );
+    }
+    if (_cameraController?.value.isInitialized == true) {
+      return _pillEstado(
+        icono: const SizedBox(
+          width: 13,
+          height: 13,
+          child: CircularProgressIndicator(strokeWidth: 2, color: KigoDesign.brand),
+        ),
+        texto: AppLocalizations.t(context, 'detectando_rostro_automaticamente'),
+        confirmado: false,
+      );
+    }
+    return Text(
+      _textoEstadoCamara(),
+      style: TextStyle(color: context.kTextTertiary, fontSize: 13, letterSpacing: 1.5),
+    );
+  }
+
+  Widget _pillEstado({required Widget icono, required String texto, required bool confirmado}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: confirmado ? const Color(0xFF2DCFA8).withValues(alpha: 0.92) : Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: confirmado ? const Color(0xFF2DCFA8) : Colors.white24, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icono,
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              texto,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: confirmado ? FontWeight.bold : FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

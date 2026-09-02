@@ -274,9 +274,12 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildBotonVigilante(telefonoContacto, offline),
-                const SizedBox(width: 14),
+                // Vigilante al final (más cerca de la esquina inferior
+                // derecha real) -- es el botón de emergencia/ayuda, le
+                // corresponde el lugar más a la mano, no el micrófono.
                 _buildBotonMicrofono(offline, telefonoContacto),
+                const SizedBox(width: 14),
+                _buildBotonVigilante(telefonoContacto, offline),
               ],
             ),
           ),

@@ -279,7 +279,7 @@
 					<button class="nav-btn" data-nav="solicitudes"><span data-i18n="nav_solicitudes">Solicitudes</span><span class="nav-badge" id="nav-badge-solicitudes" hidden>0</span></button>
 					<button class="nav-btn" data-nav="visitas"><span data-i18n="nav_entradas">Entradas</span><span class="nav-badge" id="nav-badge-alertas-ia" hidden>0</span></button>
 					<button class="nav-btn" data-nav="residentes"><span data-i18n="nav_residentes">Residentes</span><span class="nav-badge" id="tab-badge-res-sol" hidden>0</span></button>
-					<button class="nav-btn" data-nav="kioskos" data-i18n="nav_kioskos">Kioskos</button>
+					<button class="nav-btn" data-nav="kioskos"><span data-i18n="nav_kioskos">Kioskos</span><span class="nav-badge nav-badge--danger" id="nav-badge-kioskos-offline" hidden>0</span></button>
 					<button class="nav-btn" data-nav="instalacion" data-i18n="nav_instalacion">Centro</button>
 				</nav>
 
@@ -1116,7 +1116,10 @@
 					<span data-i18n="nav_residentes">Residentes</span>
 				</button>
 				<button class="mobile-nav-btn" data-nav="kioskos">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+					<div class="mobile-nav-icon-wrap">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+						<span class="nav-badge mob-badge nav-badge--danger" id="nav-badge-kioskos-offline-mob" hidden>0</span>
+					</div>
 					<span data-i18n="nav_kioskos">Kioskos</span>
 				</button>
 				<button class="mobile-nav-btn" data-nav="instalacion">

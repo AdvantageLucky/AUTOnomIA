@@ -1038,6 +1038,7 @@
     loadSolicitudes();
     loadAlertasIABadge();
     loadResidentesPendientesBadge();
+    loadKioskosOfflineBadge();
     if (state.rol !== 'vigilante' && !state.tenant?.nombre) {
       showOnboarding();
     } else {
@@ -2042,6 +2043,29 @@
     }
   }
 
+  // Cuántos kioskos están desconectados ahora mismo -- mismo criterio que
+  // el punto por kiosko en la lista (estadoConexionKiosko), pero resumido
+  // en un numerito en el tab "Kioskos" para que se note sin tener que
+  // entrar a la lista y leer cada tarjeta.
+  async function loadKioskosOfflineBadge(listaYaCargada) {
+    let list = listaYaCargada;
+    if (!list) {
+      const res = await api("/kioskos/");
+      if (!res || !res.ok) return;
+      try {
+        const d = await res.json();
+        list = Array.isArray(d) ? d : (d.kioskos || []);
+      } catch (e) { console.error(e); return; }
+    }
+    const offline = list.filter(a => estadoConexionKiosko(a.ultimo_ping).clase !== 'online').length;
+    const text = offline > 99 ? "99+" : String(offline);
+    const hidden = offline <= 0;
+    const badge = document.getElementById("nav-badge-kioskos-offline");
+    if (badge) { badge.textContent = text; badge.hidden = hidden; }
+    const badgeMob = document.getElementById("nav-badge-kioskos-offline-mob");
+    if (badgeMob) { badgeMob.textContent = text; badgeMob.hidden = hidden; }
+  }
+
   async function loadSolicitudes() {
     const [resPend, resRev] = await Promise.all([
       api("/visitas/?estado=PENDIENTE&page_size=50"),
@@ -2255,6 +2279,7 @@
     const data = await res.json();
     const list = Array.isArray(data) ? data : (data.kioskos || []);
     list.forEach(a => state.accesosById.set(a.id, a));
+    loadKioskosOfflineBadge(list);
 
     if (list.length === 0) {
       if (emptyEl) emptyEl.hidden = false;
