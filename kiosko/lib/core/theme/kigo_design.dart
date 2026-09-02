@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Tema que el dashboard tiene configurado para este kiosko, en una variable
 /// suelta además de en el `ThemeData`.
@@ -60,7 +59,32 @@ abstract final class KigoDesign {
 
   /// Fuente monoespaciada para datos "literales" (placa, CURP) — mismo
   /// tratamiento que ya usa el dashboard admin (JetBrains Mono).
-  static TextStyle mono(TextStyle base) => GoogleFonts.jetBrainsMono(textStyle: base);
+  static TextStyle mono(TextStyle base) => base.copyWith(fontFamily: 'JetBrains Mono');
+
+  /// Unbounded para titulares/números grandes: trazo grueso y geométrico
+  /// tipo señalética, no la típica display de dashboard. Manrope para el
+  /// resto del cuerpo — legible a distancia táctil, sin ser Inter.
+  static TextTheme _construirTextTheme(TextTheme base, Color bodyColor, Color displayColor) {
+    return base
+        .copyWith(
+          displayLarge: base.displayLarge?.copyWith(fontFamily: 'Unbounded'),
+          displayMedium: base.displayMedium?.copyWith(fontFamily: 'Unbounded'),
+          displaySmall: base.displaySmall?.copyWith(fontFamily: 'Unbounded'),
+          headlineLarge: base.headlineLarge?.copyWith(fontFamily: 'Unbounded'),
+          headlineMedium: base.headlineMedium?.copyWith(fontFamily: 'Unbounded'),
+          headlineSmall: base.headlineSmall?.copyWith(fontFamily: 'Unbounded'),
+          titleLarge: base.titleLarge?.copyWith(fontFamily: 'Unbounded'),
+          titleMedium: base.titleMedium?.copyWith(fontFamily: 'Manrope'),
+          titleSmall: base.titleSmall?.copyWith(fontFamily: 'Manrope'),
+          bodyLarge: base.bodyLarge?.copyWith(fontFamily: 'Manrope'),
+          bodyMedium: base.bodyMedium?.copyWith(fontFamily: 'Manrope'),
+          bodySmall: base.bodySmall?.copyWith(fontFamily: 'Manrope'),
+          labelLarge: base.labelLarge?.copyWith(fontFamily: 'Manrope'),
+          labelMedium: base.labelMedium?.copyWith(fontFamily: 'Manrope'),
+          labelSmall: base.labelSmall?.copyWith(fontFamily: 'Manrope'),
+        )
+        .apply(bodyColor: bodyColor, displayColor: displayColor);
+  }
 
   // ── Themes ─────────────────────────────────────────────────────────────────
   static ThemeData get darkTheme => ThemeData(
@@ -80,10 +104,7 @@ abstract final class KigoDesign {
           onSurfaceVariant: textSecondary,
           error: error,
         ),
-        textTheme: GoogleFonts.spaceGroteskTextTheme(ThemeData.dark().textTheme).apply(
-          bodyColor: textPrimary,
-          displayColor: textPrimary,
-        ),
+        textTheme: _construirTextTheme(ThemeData.dark().textTheme, textPrimary, textPrimary),
         appBarTheme: const AppBarTheme(
           backgroundColor: bgDark,
           elevation: 0,
@@ -103,7 +124,7 @@ abstract final class KigoDesign {
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 50),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
-            textStyle: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700, fontSize: 16),
+            textStyle: const TextStyle(fontFamily: 'Unbounded', fontWeight: FontWeight.w600, fontSize: 15),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -139,10 +160,7 @@ abstract final class KigoDesign {
           onSurfaceVariant: textSecondaryLight,
           error: error,
         ),
-        textTheme: GoogleFonts.spaceGroteskTextTheme(ThemeData.light().textTheme).apply(
-          bodyColor: textDark,
-          displayColor: textDark,
-        ),
+        textTheme: _construirTextTheme(ThemeData.light().textTheme, textDark, textDark),
         appBarTheme: const AppBarTheme(
           backgroundColor: surfaceLight,
           elevation: 0,
@@ -162,7 +180,7 @@ abstract final class KigoDesign {
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 50),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
-            textStyle: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700, fontSize: 16),
+            textStyle: const TextStyle(fontFamily: 'Unbounded', fontWeight: FontWeight.w600, fontSize: 15),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
