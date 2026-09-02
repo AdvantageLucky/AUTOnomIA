@@ -503,18 +503,18 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         color: KigoDesign.brand.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 24,
             height: 24,
             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Text(
-            'Procesando captura...',
-            style: TextStyle(
+            AppLocalizations.t(context, 'procesando_captura'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w700,

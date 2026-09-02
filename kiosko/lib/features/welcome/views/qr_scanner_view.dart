@@ -436,7 +436,7 @@ class _QrScannerViewState extends State<QrScannerView>
                         Icon(Icons.info_outline_rounded, color: context.kTextSecondary, size: 48),
                         const SizedBox(height: 12),
                         Text(
-                          'No se pudo iniciar la cámara',
+                          AppLocalizations.t(context, 'no_se_pudo_activar_camara'),
                           style: TextStyle(color: context.kTextSecondary, fontSize: 16),
                         ),
                       ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Hoja de ayuda: llamar al administrador y, si se pasa [onFaq], ver
 /// preguntas frecuentes. Funciona sin internet en el kiosko -- el que llama
@@ -53,14 +54,14 @@ class _MenuAyudaSheet extends StatelessWidget {
             if (hayTelefono)
               ListTile(
                 leading: const Icon(Icons.call_rounded, color: KigoDesign.brand),
-                title: Text('Llamar al administrador', style: TextStyle(color: context.kTextPrimary)),
+                title: Text(AppLocalizations.t(context, 'menu_ayuda_llamar_admin'), style: TextStyle(color: context.kTextPrimary)),
                 subtitle: Text(telefonoContacto, style: TextStyle(color: context.kTextSecondary)),
                 onTap: () => _llamar(context),
               ),
             if (onFaq != null)
               ListTile(
                 leading: const Icon(Icons.help_outline_rounded, color: KigoDesign.brand),
-                title: Text('Preguntas frecuentes', style: TextStyle(color: context.kTextPrimary)),
+                title: Text(AppLocalizations.t(context, 'menu_ayuda_preguntas_frecuentes'), style: TextStyle(color: context.kTextPrimary)),
                 onTap: () {
                   Navigator.pop(context);
                   onFaq!();
@@ -70,7 +71,7 @@ class _MenuAyudaSheet extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(
-                  'No hay opciones de ayuda configuradas para este kiosko',
+                  AppLocalizations.t(context, 'menu_ayuda_sin_opciones'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: context.kTextSecondary),
                 ),

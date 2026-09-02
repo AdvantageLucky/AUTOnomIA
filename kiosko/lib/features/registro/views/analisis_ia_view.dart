@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/models/score_ia_model.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Detalle completo del análisis de IA de una visita -- SOLO detrás del PIN
 /// de operador (ver pin_operador_sheet.dart). A diferencia del sello que ve
@@ -18,9 +19,9 @@ class AnalisisIaView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, etiqueta) = switch (score.nivelConfianza) {
-      'alta' => (const Color(0xFF4CAF50), 'Confianza alta'),
-      'media' => (KigoDesign.brand, 'Confianza media'),
-      _ => (const Color(0xFFE53935), 'Confianza baja'),
+      'alta' => (const Color(0xFF4CAF50), AppLocalizations.t(context, 'confianza_alta')),
+      'media' => (KigoDesign.brand, AppLocalizations.t(context, 'confianza_media')),
+      _ => (const Color(0xFFE53935), AppLocalizations.t(context, 'confianza_baja')),
     };
 
     return Scaffold(
@@ -32,7 +33,7 @@ class AnalisisIaView extends StatelessWidget {
           icon: Icon(Icons.arrow_back, color: context.kTextPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Análisis de IA', style: TextStyle(color: context.kTextPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+        title: Text(AppLocalizations.t(context, 'analisis_ia_titulo'), style: TextStyle(color: context.kTextPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
       ),
       body: SafeArea(
         child: ListView(
@@ -53,7 +54,7 @@ class AnalisisIaView extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Análisis automático -- el asistente de IA no está disponible ahora mismo. El score sí es confiable, es puramente numérico.',
+                        AppLocalizations.t(context, 'analisis_ia_sin_llm'),
                         style: TextStyle(color: context.kTextSecondary, fontSize: 13),
                       ),
                     ),
@@ -88,7 +89,7 @@ class AnalisisIaView extends StatelessWidget {
             ],
             if (score.recomendaciones.isNotEmpty) ...[
               const SizedBox(height: 24),
-              Text('Recomendaciones', style: TextStyle(color: context.kTextSecondary, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+              Text(AppLocalizations.t(context, 'analisis_ia_recomendaciones'), style: TextStyle(color: context.kTextSecondary, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
               const SizedBox(height: 8),
               ...score.recomendaciones.map((r) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -103,7 +104,7 @@ class AnalisisIaView extends StatelessWidget {
             ],
             if (score.factores.isNotEmpty) ...[
               const SizedBox(height: 24),
-              Text('Factores', style: TextStyle(color: context.kTextSecondary, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+              Text(AppLocalizations.t(context, 'analisis_ia_factores'), style: TextStyle(color: context.kTextSecondary, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
               const SizedBox(height: 8),
               ...score.factores.map(_buildFactor),
             ],

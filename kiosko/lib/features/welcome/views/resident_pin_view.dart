@@ -400,7 +400,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Varios residentes comparten este PIN. Selecciona tu casa:',
+                  AppLocalizations.t(context, 'pin_compartido_seleccionar_casa'),
                   style: TextStyle(
                     color: context.kTextPrimary,
                     fontSize: 15,
@@ -496,7 +496,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
           TextButton(
             onPressed: vm.isCargando ? null : () => vm.cancelarSeleccion(),
             child: Text(
-              'Cancelar',
+              AppLocalizations.t(context, 'cancelar_button'),
               style: TextStyle(
                 color: context.kTextSecondary,
                 fontWeight: FontWeight.w600,

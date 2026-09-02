@@ -175,13 +175,13 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                     children: [
                       OutlinedButton(
                         onPressed: () => setState(() => _destinoSugeridoPorVoz = null),
-                        child: const Text('No, elegir manualmente'),
+                        child: Text(AppLocalizations.t(context, 'no_elegir_manualmente')),
                       ),
                       const SizedBox(width: 16),
                       ElevatedButton(
                         onPressed: () => Navigator.pop(context, _destinoSugeridoPorVoz),
                         style: ElevatedButton.styleFrom(backgroundColor: KigoDesign.brand),
-                        child: const Text('Sí, confirmar', style: TextStyle(color: Colors.white)),
+                        child: Text(AppLocalizations.t(context, 'si_confirmar'), style: const TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),

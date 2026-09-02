@@ -114,6 +114,18 @@ class AppLocalizations {
       'aceptar_button': 'Aceptar',
       'residente_label': 'Residente',
 
+      // Asistencia urgente (hoja de ayuda del asistente)
+      'asistencia_urgente_title': 'Asistencia urgente',
+      'asistencia_urgente_offline_texto': 'Sin conexión: llama directamente, el administrador no recibirá el aviso automático.',
+      'asistencia_urgente_ya_avisado': 'Ya se avisó al administrador de este centro. Un miembro del equipo te atenderá en breve.',
+      'asistencia_urgente_se_notificara': 'Se notificará al administrador de este centro en su panel y por correo.',
+      'asistencia_urgente_entendido': 'Entendido',
+      'asistencia_urgente_solicitar': 'Solicitar asistencia',
+      'asistencia_urgente_sin_telefono': 'No hay teléfono de contacto configurado para este centro',
+      'asistencia_urgente_escanea_qr': 'Escanéalo con tu celular para llamar',
+
+      'reintentar': 'Reintentar',
+
       // Acceso de residente por PIN
       'ingresa_tu_numero': 'Ingresa tu número',
       'confirmar_button_caps': 'CONFIRMAR',
@@ -122,6 +134,7 @@ class AppLocalizations {
       'verificando_invitacion': 'Verificando invitación...',
       'acceso_concedido': '¡Acceso concedido!',
       'invitado_label': 'INVITADO',
+      'invitado_frecuente_badge': 'INVITADO CON ACCESO RECURRENTE',
       'puedes_ingresar_evento_bienvenido': 'Puedes ingresar al evento.\nBienvenido.',
       'acceso_denegado': 'Acceso denegado',
       'invitacion_no_valida': 'La invitación no es válida',
@@ -181,6 +194,27 @@ class AppLocalizations {
       'corrige_caracter_no_coincide': 'Si algún carácter no coincide, corrígelo con el teclado.',
       'no_detectamos_placa_escribela': 'No pudimos detectar tu placa automáticamente. Escríbela aquí.',
       'cancelar_button': 'Cancelar',
+      'pin_compartido_seleccionar_casa': 'Varios residentes comparten este PIN. Selecciona tu casa:',
+
+      // Sondas de ayuda/emergencia y análisis de IA
+      'pin_operador_title': 'PIN de operador',
+      'pin_incorrecto_texto': 'PIN incorrecto',
+      'menu_ayuda_llamar_admin': 'Llamar al administrador',
+      'menu_ayuda_preguntas_frecuentes': 'Preguntas frecuentes',
+      'menu_ayuda_sin_opciones': 'No hay opciones de ayuda configuradas para este kiosko',
+      'faq_offline_title': 'Sin conexión — preguntas frecuentes',
+      'faq_offline_hint': 'Toca una pregunta para ver la respuesta',
+      'no_elegir_manualmente': 'No, elegir manualmente',
+      'si_confirmar': 'Sí, confirmar',
+      'analisis_ia_titulo': 'Análisis de IA',
+      'analisis_ia_recomendaciones': 'Recomendaciones',
+      'analisis_ia_factores': 'Factores',
+      'analisis_ia_sin_llm': 'Análisis automático -- el asistente de IA no está disponible ahora mismo. El score sí es confiable, es puramente numérico.',
+      'confianza_alta': 'Confianza alta',
+      'confianza_media': 'Confianza media',
+      'confianza_baja': 'Confianza baja',
+      'analisis_automatico_corto': 'Análisis automático (asistente de IA no disponible)',
+      'procesando_captura': 'Procesando captura...',
 
       // Selección progresiva de destino (calle/tipo/número)
       'no_se_pudo_cargar_casas': 'No se pudo cargar la lista de casas. Verifica la conexión.',
@@ -316,6 +350,17 @@ class AppLocalizations {
           'with your PIN.',
       'aceptar_button': 'Accept',
       'residente_label': 'Resident',
+      'reintentar': 'Retry',
+
+      // Asistencia urgente (hoja de ayuda del asistente)
+      'asistencia_urgente_title': 'Urgent assistance',
+      'asistencia_urgente_offline_texto': 'No connection: call directly, the administrator will not receive the automatic alert.',
+      'asistencia_urgente_ya_avisado': "The administrator of this center has been notified. A team member will assist you shortly.",
+      'asistencia_urgente_se_notificara': "The administrator of this center will be notified on their dashboard and by email.",
+      'asistencia_urgente_entendido': 'Got it',
+      'asistencia_urgente_solicitar': 'Request assistance',
+      'asistencia_urgente_sin_telefono': 'No contact phone number configured for this center',
+      'asistencia_urgente_escanea_qr': 'Scan it with your phone to call',
 
       // Acceso de residente por PIN
       'ingresa_tu_numero': 'Enter your number',
@@ -325,6 +370,7 @@ class AppLocalizations {
       'verificando_invitacion': 'Verifying invitation...',
       'acceso_concedido': 'Access granted!',
       'invitado_label': 'GUEST',
+      'invitado_frecuente_badge': 'GUEST WITH RECURRING ACCESS',
       'puedes_ingresar_evento_bienvenido': 'You may enter the event.\nWelcome.',
       'acceso_denegado': 'Access denied',
       'invitacion_no_valida': 'The invitation is not valid',
@@ -381,6 +427,27 @@ class AppLocalizations {
       'corrige_caracter_no_coincide': "If a character doesn't match, correct it with the keyboard.",
       'no_detectamos_placa_escribela': "We couldn't detect your plate automatically. Type it here.",
       'cancelar_button': 'Cancel',
+      'pin_compartido_seleccionar_casa': 'Several residents share this PIN. Select your house:',
+
+      // Sondas de ayuda/emergencia y análisis de IA
+      'pin_operador_title': 'Operator PIN',
+      'pin_incorrecto_texto': 'Incorrect PIN',
+      'menu_ayuda_llamar_admin': 'Call the administrator',
+      'menu_ayuda_preguntas_frecuentes': 'Frequently asked questions',
+      'menu_ayuda_sin_opciones': 'No help options are configured for this kiosk',
+      'faq_offline_title': 'Offline — frequently asked questions',
+      'faq_offline_hint': 'Tap a question to see the answer',
+      'no_elegir_manualmente': 'No, choose manually',
+      'si_confirmar': 'Yes, confirm',
+      'analisis_ia_titulo': 'AI analysis',
+      'analisis_ia_recomendaciones': 'Recommendations',
+      'analisis_ia_factores': 'Factors',
+      'analisis_ia_sin_llm': "Automatic analysis -- the AI assistant isn't available right now. The score is still reliable, it's purely numeric.",
+      'confianza_alta': 'High confidence',
+      'confianza_media': 'Medium confidence',
+      'confianza_baja': 'Low confidence',
+      'analisis_automatico_corto': 'Automatic analysis (AI assistant unavailable)',
+      'procesando_captura': 'Processing capture...',
 
       // Selección progresiva de destino (calle/tipo/número)
       'no_se_pudo_cargar_casas': 'Could not load the list of houses. Check your connection.',
