@@ -1,12 +1,17 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import '../../../../services/camera_permission_servicio.dart';
+import '../../../../services/face_detector_servicio.dart';
 import '../../../../services/kigo_verify_servicio.dart';
 import '../../../../services/reconocimiento_facial_servicio.dart';
 import '../../../../theme/app_theme.dart';
 import 'kigo_verify_webview_view.dart';
+import 'marco_guia_camara.dart';
+import 'permiso_camara_widget.dart';
 
 /// Tercer y último paso del wizard de identidad: captura el rostro y
 /// calcula su embedding on-device (MobileFaceNet, mismo modelo del
@@ -22,10 +27,25 @@ class StepEscanearRostro extends StatefulWidget {
 class _StepEscanearRostroState extends State<StepEscanearRostro> {
   CameraController? _controller;
   final _servicio = ReconocimientoFacialServicio();
+  final _detector = FaceDetectorServicio();
   final _kigoVerify = KigoVerifyServicio();
   bool _procesando = false;
   bool _verificandoConKigo = false;
   String? _error;
+  ResultadoPermisoCamara? _permiso;
+
+  // Auto-detección: sondeo periódico con ML Kit (liviano); el embedding
+  // (pesado, corre TFLite) solo se calcula una vez, sobre la foto ya
+  // confirmada -- ver docstring de FaceDetectorServicio.
+  Timer? _timerAutoScan;
+  bool _sondeando = false;
+  bool _rostroDetectado = false;
+  bool _capturaFinalizada = false;
+
+  /// Mismo margen que el kiosko: la primera detección puede ser mientras el
+  /// usuario todavía se acomoda frente a la cámara.
+  static const _deteccionesRequeridas = 2;
+  int _deteccionesConsecutivas = 0;
 
   /// Tras 5 intentos fallidos de Kigo Verify en este paso, se oculta la
   /// opción y se fuerza el camino manual con la cámara propia.
@@ -36,7 +56,16 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
   @override
   void initState() {
     super.initState();
-    _initCamera();
+    _pedirPermisoEIniciar();
+  }
+
+  Future<void> _pedirPermisoEIniciar() async {
+    final resultado = await solicitarPermisoCamara();
+    if (!mounted) return;
+    setState(() => _permiso = resultado);
+    if (resultado == ResultadoPermisoCamara.concedido) {
+      _initCamera();
+    }
   }
 
   Future<void> _initCamera() async {
@@ -54,13 +83,93 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       await _controller!.initialize();
       await _controller!.setFlashMode(FlashMode.off);
       if (mounted) setState(() {});
+      _iniciarAutoDeteccion();
     } catch (e) {
       if (mounted) setState(() => _error = 'No se pudo iniciar la cámara');
     }
   }
 
+  void _iniciarAutoDeteccion() {
+    _timerAutoScan?.cancel();
+    _timerAutoScan = Timer.periodic(const Duration(milliseconds: 700), (_) {
+      _intentarAutoCaptura();
+    });
+  }
+
+  Future<void> _intentarAutoCaptura() async {
+    if (_sondeando || _capturaFinalizada || _procesando || _verificandoConKigo) return;
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized || controller.value.isTakingPicture) {
+      return;
+    }
+
+    _sondeando = true;
+    XFile? foto;
+    try {
+      foto = await controller.takePicture();
+      final esValido = await _detector.tieneRostroValido(foto.path);
+
+      if (!mounted) {
+        try { File(foto.path).deleteSync(); } catch (_) {}
+        return;
+      }
+
+      if (esValido && !_capturaFinalizada) {
+        _deteccionesConsecutivas++;
+        if (_deteccionesConsecutivas < _deteccionesRequeridas) {
+          try { File(foto.path).deleteSync(); } catch (_) {}
+          return;
+        }
+        await _confirmarCaptura(foto.path);
+        return;
+      } else {
+        _deteccionesConsecutivas = 0;
+        try { File(foto.path).deleteSync(); } catch (_) {}
+      }
+    } catch (e) {
+      // Falla transitoria (cámara ocupada): el siguiente tick reintenta.
+    } finally {
+      _sondeando = false;
+    }
+  }
+
+  Future<void> _confirmarCaptura(String pathFoto) async {
+    _timerAutoScan?.cancel();
+    setState(() {
+      _rostroDetectado = true;
+      _capturaFinalizada = true;
+      _procesando = true;
+    });
+
+    // Breve pausa para que el usuario reciba la retroalimentación visual del
+    // "detectado" antes de que la pantalla cambie.
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    final embedding = await _servicio.calcularEmbedding(pathFoto);
+    if (!mounted) return;
+
+    if (embedding == null) {
+      // El sondeo (ML Kit) dio válido pero el recorte final falló -- reintenta.
+      setState(() {
+        _error = 'No detectamos tu rostro con claridad, intenta de nuevo';
+        _rostroDetectado = false;
+        _capturaFinalizada = false;
+        _procesando = false;
+        _deteccionesConsecutivas = 0;
+      });
+      _iniciarAutoDeteccion();
+      return;
+    }
+
+    widget.onCapturado(pathFoto, embedding);
+  }
+
+  // Botón manual: toma la foto y la corre directo por el embedding, sin
+  // esperar al sondeo automático.
   Future<void> _capturar() async {
-    if (_controller == null || !_controller!.value.isInitialized || _procesando) return;
+    if (_controller == null || !_controller!.value.isInitialized || _procesando || _capturaFinalizada) return;
+    _timerAutoScan?.cancel();
     setState(() {
       _procesando = true;
       _error = null;
@@ -70,11 +179,13 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       final embedding = await _servicio.calcularEmbedding(foto.path);
       if (embedding == null) {
         setState(() => _error = 'No detectamos tu rostro con claridad, intenta de nuevo');
+        _iniciarAutoDeteccion();
         return;
       }
       widget.onCapturado(foto.path, embedding);
     } catch (_) {
       setState(() => _error = 'No se pudo capturar la foto, intenta de nuevo');
+      _iniciarAutoDeteccion();
     } finally {
       if (mounted) setState(() => _procesando = false);
     }
@@ -82,6 +193,7 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
 
   Future<void> _verificarConKigo() async {
     if (_procesando || _verificandoConKigo) return;
+    _timerAutoScan?.cancel();
     setState(() {
       _verificandoConKigo = true;
       _error = null;
@@ -110,7 +222,10 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
     } catch (_) {
       if (mounted) _registrarIntentoKigoFallido('No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
     } finally {
-      if (mounted) setState(() => _verificandoConKigo = false);
+      if (mounted) {
+        setState(() => _verificandoConKigo = false);
+        if (!_capturaFinalizada) _iniciarAutoDeteccion();
+      }
     }
   }
 
@@ -156,6 +271,8 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
 
   @override
   void dispose() {
+    _timerAutoScan?.cancel();
+    _detector.dispose();
     _controller?.dispose();
     _servicio.dispose();
     super.dispose();
@@ -163,6 +280,15 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
 
   @override
   Widget build(BuildContext context) {
+    if (_permiso == ResultadoPermisoCamara.denegado || _permiso == ResultadoPermisoCamara.denegadoPermanente) {
+      return Center(
+        child: PermisoCamaraDenegado(
+          permanente: _permiso == ResultadoPermisoCamara.denegadoPermanente,
+          onReintentar: _pedirPermisoEIniciar,
+        ),
+      );
+    }
+
     if (_controller == null || !_controller!.value.isInitialized) {
       return Center(
         child: _error != null
@@ -174,40 +300,75 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       );
     }
 
+    final ancho = MediaQuery.of(context).size.width * 0.72;
+    final alto = ancho * 1.25;
+    final colorGuia = _rostroDetectado ? AppTheme.success : AppTheme.primaryOrange;
+
     return Stack(
       children: [
         Positioned.fill(child: CameraPreview(_controller!)),
-        Center(
-          child: Builder(
-            builder: (context) {
-              final ancho = MediaQuery.of(context).size.width * 0.6;
-              final alto = ancho * 1.35; // óvalo de cara, no círculo
-              // Un Border.all() sobre BorderRadius elíptico al 50% deja
-              // costuras visibles donde se encuentran los arcos de las 4
-              // esquinas — se dibuja el óvalo real con CustomPaint en vez
-              // de simularlo con border-radius.
-              return SizedBox(
-                width: ancho,
-                height: alto,
-                child: CustomPaint(painter: _OvaloGuiaPainter()),
-              );
-            },
+        Positioned.fill(
+          child: MarcoGuiaCamara(
+            ancho: ancho,
+            alto: alto,
+            colorBorde: colorGuia,
+            mostrarBarrido: !_rostroDetectado,
           ),
         ),
-        const Positioned(
+        Positioned(
           top: 24,
-          left: 0,
-          right: 0,
+          left: 16,
+          right: 16,
           child: Center(
-            child: Text(
-              'Encuadra tu rostro dentro del círculo',
-              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: _rostroDetectado
+                    ? AppTheme.success.withValues(alpha: 0.92)
+                    : Colors.black.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: _rostroDetectado ? AppTheme.success : Colors.white24,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_rostroDetectado) ...[
+                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'Rostro detectado, capturando…',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryOrange),
+                    ),
+                    const SizedBox(width: 10),
+                    const Flexible(
+                      child: Text(
+                        'Encuadra tu rostro dentro del óvalo, detectando…',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
         if (_error != null)
           Positioned(
-            top: 60,
+            top: 70,
             left: 24,
             right: 24,
             child: Text(
@@ -225,21 +386,21 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
             children: [
               Center(
                 child: FloatingActionButton(
-                  backgroundColor: AppTheme.primaryOrange,
-                  onPressed: (_procesando || _verificandoConKigo) ? null : _capturar,
+                  backgroundColor: _rostroDetectado ? AppTheme.success : AppTheme.primaryOrange,
+                  onPressed: (_procesando || _verificandoConKigo || _capturaFinalizada) ? null : _capturar,
                   child: _procesando
                       ? const SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
                         )
-                      : const Icon(Icons.camera_alt, color: Colors.white),
+                      : Icon(_rostroDetectado ? Icons.check : Icons.camera_alt, color: Colors.white),
                 ),
               ),
               if (_kigoDisponible) ...[
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: (_procesando || _verificandoConKigo) ? null : _verificarConKigo,
+                  onPressed: (_procesando || _verificandoConKigo || _capturaFinalizada) ? null : _verificarConKigo,
                   child: _verificandoConKigo
                       ? const SizedBox(
                           width: 16,
@@ -255,19 +416,4 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       ],
     );
   }
-}
-
-class _OvaloGuiaPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppTheme.primaryOrange
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    final rect = Offset.zero & size;
-    canvas.drawOval(rect.deflate(1.5), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
