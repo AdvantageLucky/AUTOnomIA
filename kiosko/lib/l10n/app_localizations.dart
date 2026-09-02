@@ -88,6 +88,8 @@ class AppLocalizations {
       'en_revision_manual_title': 'En revisión manual',
       'en_revision_manual_subtitle': 'Un vigilante revisará tu acceso en breve',
       'acceso_aprobado': '¡Acceso aprobado!',
+      'bienvenido_al_centro_generico': 'Bienvenido al centro habitacional.',
+      'sugerencia_descargar_app': 'Descarga la app AUTOnomIA para tu próxima visita: entra con QR o rostro, sin volver a registrarte.',
       'acceso_no_autorizado': 'Acceso denegado',
       'visitante_label': 'Visitante',
       'hora_solicitud_label': 'Hora de solicitud',
@@ -119,6 +121,7 @@ class AppLocalizations {
       // Resultado de escaneo QR (invitación)
       'verificando_invitacion': 'Verificando invitación...',
       'acceso_concedido': '¡Acceso concedido!',
+      'invitado_label': 'INVITADO',
       'puedes_ingresar_evento_bienvenido': 'Puedes ingresar al evento.\nBienvenido.',
       'acceso_denegado': 'Acceso denegado',
       'invitacion_no_valida': 'La invitación no es válida',
@@ -288,6 +291,8 @@ class AppLocalizations {
       'en_revision_manual_title': 'Under manual review',
       'en_revision_manual_subtitle': 'A guard will review your access shortly',
       'acceso_aprobado': 'Access approved!',
+      'bienvenido_al_centro_generico': 'Welcome to the residential complex.',
+      'sugerencia_descargar_app': 'Download the AUTOnomIA app for your next visit: enter with QR or face, no need to register again.',
       'acceso_no_autorizado': 'Access denied',
       'visitante_label': 'Visitor',
       'hora_solicitud_label': 'Request time',
@@ -319,6 +324,7 @@ class AppLocalizations {
       // Resultado de escaneo QR (invitación)
       'verificando_invitacion': 'Verifying invitation...',
       'acceso_concedido': 'Access granted!',
+      'invitado_label': 'GUEST',
       'puedes_ingresar_evento_bienvenido': 'You may enter the event.\nWelcome.',
       'acceso_denegado': 'Access denied',
       'invitacion_no_valida': 'The invitation is not valid',

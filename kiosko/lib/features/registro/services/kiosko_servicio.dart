@@ -879,6 +879,7 @@ class KioskoServicio {
     return {
       'nombre': nombreCompleto,
       'casa_destino': match['casa_destino'],
+      'es_invitado_frecuente': match['es_invitado_frecuente'] ?? false,
     };
   }
 
@@ -949,6 +950,7 @@ class KioskoServicio {
     return {
       'nombre': nombreCompleto,
       'casa_destino': match['casa_destino'],
+      'es_invitado_frecuente': match['es_invitado_frecuente'] ?? false,
     };
   }
 

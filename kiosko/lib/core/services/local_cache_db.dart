@@ -8,7 +8,11 @@ import 'package:sqflite/sqflite.dart';
 /// solo el SyncWorker la drena registro por registro.
 class LocalCacheDb {
   static const _dbName = 'kiosko_cache.db';
-  static const _dbVersion = 2;
+  // v3: agrega residentes.es_invitado_frecuente -- distingue a alguien con
+  // acceso recurrente prestado por un residente (invitado frecuente) de un
+  // residente real, para que el kiosko pueda saludarlos distinto incluso
+  // sin conexión.
+  static const _dbVersion = 3;
 
   final String? _pathOverride;
   Database? _db;
@@ -36,7 +40,8 @@ class LocalCacheDb {
             id INTEGER PRIMARY KEY,
             persona_id INTEGER,
             nombre TEXT, apellido_paterno TEXT, casa_destino TEXT,
-            pin_hash TEXT, embedding TEXT
+            pin_hash TEXT, embedding TEXT,
+            es_invitado_frecuente INTEGER DEFAULT 0
           )
         ''');
         await db.execute('''
@@ -75,7 +80,8 @@ class LocalCacheDb {
             id INTEGER PRIMARY KEY,
             persona_id INTEGER,
             nombre TEXT, apellido_paterno TEXT, casa_destino TEXT,
-            pin_hash TEXT, embedding TEXT
+            pin_hash TEXT, embedding TEXT,
+            es_invitado_frecuente INTEGER DEFAULT 0
           )
         ''');
         await db.execute('''
@@ -90,6 +96,7 @@ class LocalCacheDb {
       },
     );
   }
+
 
   Future<String> _rutaProduccion() async {
     final dir = await getDatabasesPath();
@@ -151,6 +158,8 @@ class LocalCacheDb {
       } else {
         copia['embedding'] = <double>[];
       }
+      // SQLite no tiene booleano nativo -- vuelve como int (0/1).
+      copia['es_invitado_frecuente'] = copia['es_invitado_frecuente'] == 1;
       return copia;
     }).toList();
   }

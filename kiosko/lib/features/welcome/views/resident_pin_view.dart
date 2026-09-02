@@ -335,6 +335,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                           viewModel: ResidentWelcomeViewModel(
                             nombre: vm.nombreResidente ?? AppLocalizations.t(context, 'residente_label'),
                             casaDestino: vm.casaDestino ?? '',
+                            esInvitadoFrecuente: vm.esInvitadoFrecuente,
                           ),
                         ),
                       ),
@@ -430,6 +431,7 @@ class _ResidentPinViewState extends State<ResidentPinView> {
                                 viewModel: ResidentWelcomeViewModel(
                                   nombre: vm.nombreResidente ?? AppLocalizations.t(context, 'residente_label'),
                                   casaDestino: vm.casaDestino ?? '',
+                                  esInvitadoFrecuente: vm.esInvitadoFrecuente,
                                 ),
                               ),
                             ),

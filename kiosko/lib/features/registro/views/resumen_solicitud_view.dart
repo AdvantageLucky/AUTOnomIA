@@ -514,6 +514,12 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     }
 
     final aprobado = _estado == 'APROBADO';
+    // El visitante sin invitación no tiene cuenta en el sistema -- esta es
+    // la única pantalla donde tiene sentido invitarlo a bajar la app para
+    // su próxima visita (registrarse una vez, entrar con QR/rostro después).
+    final mensajeBienvenida = aprobado
+        ? context.read<KioskoConfigNotifier>().config.mensajeBienvenida.trim()
+        : '';
     return Column(
       children: [
         Icon(
@@ -533,6 +539,22 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
           ),
           textAlign: TextAlign.center,
         ),
+        if (aprobado) ...[
+          const SizedBox(height: 8),
+          Text(
+            mensajeBienvenida.isNotEmpty
+                ? mensajeBienvenida
+                : AppLocalizations.t(context, 'bienvenido_al_centro_generico'),
+            style: TextStyle(color: context.kTextSecondary, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            AppLocalizations.t(context, 'sugerencia_descargar_app'),
+            style: TextStyle(color: context.kTextTertiary, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ],
     );
   }

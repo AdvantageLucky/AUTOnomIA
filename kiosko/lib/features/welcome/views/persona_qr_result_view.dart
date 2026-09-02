@@ -61,10 +61,12 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
         _led.mostrarAprobado();
         _relay.abrir();
         final nombre = widget.viewModel.nombre;
+        final esInvitado = widget.viewModel.estado == PersonaQrResultEstado.invitado;
+        final sufijo = esInvitado ? 'Acceso de invitado autorizado.' : 'Acceso autorizado.';
         if (nombre != null && nombre.isNotEmpty) {
-          _tts.speak('¡Bienvenido, $nombre! Acceso autorizado.');
+          _tts.speak('¡Bienvenido, $nombre! $sufijo');
         } else {
-          _tts.speak('Acceso autorizado. ¡Bienvenido!');
+          _tts.speak('$sufijo ¡Bienvenido!');
         }
       } else {
         _led.mostrarRechazado();
@@ -121,6 +123,7 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
         return _buildExitoso(
           titulo: AppLocalizations.t(context, 'acceso_concedido'),
           subtitulo: AppLocalizations.t(context, 'puedes_ingresar_evento_bienvenido'),
+          esInvitado: true,
         );
       case PersonaQrResultEstado.desconocido:
         return _buildError(
@@ -148,7 +151,7 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
     );
   }
 
-  Widget _buildExitoso({required String titulo, required String? subtitulo}) {
+  Widget _buildExitoso({required String titulo, required String? subtitulo, bool esInvitado = false}) {
     final h = MediaQuery.sizeOf(context).height;
     final iconSize = (h * 0.14).clamp(70.0, 110.0);
     final gap = (h * 0.04).clamp(10.0, 36.0);
@@ -157,6 +160,20 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
         VerdictRing(color: KigoDesign.success, icon: Icons.check_rounded, size: iconSize),
         SizedBox(height: gap),
         Text(titulo, style: TextStyle(color: context.kTextPrimary, fontSize: (h * 0.048).clamp(22.0, 38.0), fontWeight: FontWeight.w800)),
+        if (esInvitado) ...[
+          SizedBox(height: gap * 0.3),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: KigoDesign.brand.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              AppLocalizations.t(context, 'invitado_label'),
+              style: TextStyle(color: KigoDesign.brand, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1),
+            ),
+          ),
+        ],
         SizedBox(height: gap * 0.4),
         if (widget.viewModel.nombre != null)
           Text(
