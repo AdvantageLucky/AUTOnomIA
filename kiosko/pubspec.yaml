@@ -85,6 +85,7 @@ flutter:
 
   assets:
     - assets/models/mobilefacenet.tflite
+    - assets/icon/marca_autonomia.jpg
 
   # Empaquetadas como asset local (no via google_fonts en runtime): el F10
   # depende del wifi del venue, y ese fetch puede fallar en silencio y caer a

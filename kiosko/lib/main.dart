@@ -12,6 +12,7 @@ import 'package:kigo_kiosco/core/routing/observador_rutas.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/services/local_cache_db.dart';
 import 'package:kigo_kiosco/core/services/sync_worker.dart';
+import 'package:kigo_kiosco/core/widgets/marca_badge.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_error.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/activacion/views/activacion_view.dart';
@@ -293,21 +294,13 @@ class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
 
   @override
-  @override
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'K',
-              style: TextStyle(
-                color: KigoDesign.brand,
-                fontSize: 72,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            MarcaBadge(lado: 120),
             SizedBox(height: 32),
             CircularProgressIndicator(
               color: KigoDesign.brand,

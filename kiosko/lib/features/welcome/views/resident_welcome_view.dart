@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/marca_badge.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
@@ -77,24 +78,7 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: KigoDesign.brand,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Center(
-            child: Text(
-              'K',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 23,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
+        const MarcaBadge(lado: 48),
         const SizedBox(width: 14),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

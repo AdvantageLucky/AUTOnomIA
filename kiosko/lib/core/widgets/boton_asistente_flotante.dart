@@ -24,18 +24,19 @@ enum _EstadoAsistente { inactivo, escuchando, procesando, hablando }
 const double _ladoBotonAccion = 64;
 
 /// Posiciona la mascota (arriba a la derecha, alineada con el header propio
-/// de cada pantalla) y los dos botones de acción -- micrófono y vigilante
-/// (abajo a la derecha, siempre accesibles) -- como hijo directo de un
-/// `Stack` que cubra la pantalla.
+/// de cada pantalla), el botón de vigilante (abajo a la IZQUIERDA) y el de
+/// micrófono (abajo a la DERECHA) -- como hijo directo de un `Stack` que
+/// cubra la pantalla.
 ///
 /// Antes un solo botón (la mascota) hacía de todo: mantener presionado para
 /// hablar, tocar para llamar al administrador. Eso obligaba a tapar la
 /// mascota con el dedo para usar cualquiera de las dos funciones, y
 /// escondía "llamar al vigilante" detrás de un tap que nadie adivinaba. Se
 /// dividió: la mascota ahora es solo el indicador visual del asistente
-/// (habla -- narra las respuestas), y dos botones nuevos, abajo a la
-/// derecha, concentran la interacción real: el micrófono para hablar y el
-/// de ayuda para llamar al vigilante o ver las preguntas frecuentes.
+/// (habla -- narra las respuestas), y dos botones nuevos concentran la
+/// interacción real: el micrófono para hablar y el de ayuda para llamar al
+/// vigilante. Van en esquinas opuestas (no en un mismo cluster) para que
+/// ninguno tape al otro ni compita por el mismo pulgar.
 ///
 /// [topDelBorde] es el offset vertical (respecto al borde superior de
 /// pantalla, sin contar el safe area, que se suma aparte) del header de esa
@@ -43,25 +44,24 @@ const double _ladoBotonAccion = 64;
 /// cada una define su propio padding/estructura de header. Pásalo igual al
 /// padding/inset real que usa esa pantalla para su fila de arriba.
 ///
-/// [rightDelBorde] es el equivalente horizontal para ambos grupos (mascota
-/// arriba, botones abajo) -- antes estaba fijo en 12, lo que dejaba el
-/// ícono 16-22px más cerca del borde físico de lo que le correspondía en
-/// pantallas con más padding horizontal.
+/// [rightDelBorde] posiciona la mascota (arriba) y el micrófono (abajo).
+/// [leftDelBorde] posiciona el botón de vigilante (abajo a la izquierda).
 ///
 /// [bottomDelBorde] es el offset vertical de los botones de acción respecto
 /// al borde inferior (sin contar el safe area). Si el contenido propio de la
 /// pantalla ya ocupa esa esquina, hay que subirlo -- ver comentario en cada
 /// pantalla que lo necesitó.
 ///
-/// [mostrarEtiqueta] pone "Asistente IA" DEBAJO de la mascota (no al lado):
-/// como la mascota ya no compite por espacio con nada más a su derecha, no
-/// hay razón para apretarla a un costado.
+/// [mostrarEtiqueta] pone "Asistente IA" ARRIBA de la mascota (no debajo):
+/// abajo es donde vive el contenido propio de cada pantalla, y ahí se
+/// reportó que la etiqueta se solapaba con otros componentes.
 class BotonAsistenteFlotante extends StatefulWidget {
   final String? tipoCampo;
   final void Function(String respuesta) onRespuestaLibre;
   final void Function(CampoExtraido) onCampoExtraido;
   final double topDelBorde;
   final double rightDelBorde;
+  final double leftDelBorde;
   final double bottomDelBorde;
   final AsistenteController? controlador;
   final bool mostrarEtiqueta;
@@ -73,6 +73,7 @@ class BotonAsistenteFlotante extends StatefulWidget {
     required this.onCampoExtraido,
     required this.topDelBorde,
     this.rightDelBorde = 12,
+    this.leftDelBorde = 20,
     this.bottomDelBorde = 20,
     this.controlador,
     this.mostrarEtiqueta = false,
@@ -249,39 +250,38 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
         children: [
           // Mascota + etiqueta: solo indica estado (inactiva/escuchando/
           // procesando/hablando), no responde a toques -- la interacción
-          // real vive en los dos botones de abajo.
+          // real vive en los dos botones de abajo. La etiqueta va ARRIBA de
+          // la mascota (no debajo): abajo es donde vive el contenido propio
+          // de cada pantalla, y ahí se reportó solapamiento. FittedBox
+          // evita que "Asistente IA" desborde en pantallas angostas.
           Positioned(
             top: widget.topDelBorde + safe.top,
             right: widget.rightDelBorde,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _buildMascotaConHalo(),
                 if (widget.mostrarEtiqueta) ...[
+                  const FittedBox(fit: BoxFit.scaleDown, child: EtiquetaAsistente()),
                   const SizedBox(height: 6),
-                  const EtiquetaAsistente(),
                 ],
+                _buildMascotaConHalo(),
               ],
             ),
           ),
 
-          // Micrófono (hablar) + vigilante (ayuda) -- siempre abajo a la
-          // derecha, para que estén al alcance del pulgar sin taparse entre
-          // sí ni con la mascota.
+          // Vigilante (ayuda/emergencia) abajo a la IZQUIERDA, micrófono
+          // (hablar) abajo a la DERECHA -- esquinas opuestas, no un cluster:
+          // así ninguno tapa al otro y cada uno queda solo, fácil de ubicar
+          // de un vistazo.
+          Positioned(
+            bottom: widget.bottomDelBorde + safe.bottom,
+            left: widget.leftDelBorde,
+            child: _buildBotonVigilante(telefonoContacto, offline),
+          ),
           Positioned(
             bottom: widget.bottomDelBorde + safe.bottom,
             right: widget.rightDelBorde,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Vigilante al final (más cerca de la esquina inferior
-                // derecha real) -- es el botón de emergencia/ayuda, le
-                // corresponde el lugar más a la mano, no el micrófono.
-                _buildBotonMicrofono(offline, telefonoContacto),
-                const SizedBox(width: 14),
-                _buildBotonVigilante(telefonoContacto, offline),
-              ],
-            ),
+            child: _buildBotonMicrofono(offline, telefonoContacto),
           ),
         ],
       ),

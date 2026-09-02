@@ -554,19 +554,19 @@ class _QrScannerViewState extends State<QrScannerView>
               color: widget.viewModel.isScanned
                   ? KigoDesign.success
                   : context.kTextPrimary,
-              fontSize: 34,
+              fontSize: 48,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Text(
           AppLocalizations.t(context, 'codigo_personal_o_invitacion'),
           textAlign: TextAlign.center,
           style: TextStyle(
             color: context.kTextSecondary,
-            fontSize: 20,
+            fontSize: 26,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -590,7 +590,7 @@ class _QrScannerViewState extends State<QrScannerView>
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 26),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
         decoration: BoxDecoration(
           color: _botonPresionado ? KigoDesign.brandHover : KigoDesign.brand,
           borderRadius: BorderRadius.circular(22),
@@ -610,7 +610,7 @@ class _QrScannerViewState extends State<QrScannerView>
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 24,
+            fontSize: 32,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
           ),

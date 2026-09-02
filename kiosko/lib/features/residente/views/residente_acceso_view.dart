@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/marca_badge.dart';
 import 'package:kigo_kiosco/core/widgets/marco_guia_camara.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
@@ -357,24 +358,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           ),
         ),
         const Spacer(),
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: KigoDesign.brand,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Center(
-            child: Text(
-              'K',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 23,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
+        const MarcaBadge(lado: 48),
         const SizedBox(width: 14),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,12 +394,15 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     // el panel de referencia (800x1280) un marco fijo hacía que el
     // contenido de toda la columna no cupiera sin scroll. Mismo óvalo
     // (relación 1:1.25) que usa scanner_rostro_widget.dart en el registro
-    // de visitante -- antes este círculo (ancho == alto) era la única
-    // diferencia visual entre los dos flujos de reconocimiento facial.
+    // de visitante, y del mismo tamaño (no solo la misma proporción) -- el
+    // primer intento lo dejó chico a propósito para caber junto al bloque
+    // de PIN de abajo, pero eso lo hacía casi irreconocible como el mismo
+    // reconocimiento facial. El PIN ahora es un botón compacto (ver
+    // _buildPinFallback) para liberar ese espacio.
     final size = MediaQuery.sizeOf(context);
-    double ovalH = math.min(size.width * 0.5, size.height * 0.34);
+    double ovalH = math.min(size.width * 0.85, size.height * 0.5);
     double ovalW = ovalH / 1.25;
-    final anchoMax = size.width * 0.55;
+    final anchoMax = size.width - 68; // 34 de padding horizontal a cada lado (ver PantallaAdaptable)
     if (ovalW > anchoMax) {
       ovalW = anchoMax;
       ovalH = ovalW * 1.25;
@@ -559,47 +546,41 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     return AppLocalizations.t(context, 'activando_camara');
   }
 
+  /// Antes era un bloque con texto "o bien" + botón -- se comprime a un solo
+  /// botón compacto para liberar el espacio vertical que ahora usa el óvalo
+  /// (mucho más grande, ver _buildAreaFacial).
   Widget _buildPinFallback() {
-    return Column(
-      children: [
-        Text(
-          AppLocalizations.t(context, 'o_bien'),
-          style: TextStyle(color: context.kTextTertiary, fontSize: 15),
-        ),
-        const SizedBox(height: 12),
-        Presionable(
-          onTap: _irAlPin,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: KigoDesign.brand.withValues(alpha: 0.5),
-                width: 1.5,
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.dialpad_rounded,
-                  color: KigoDesign.brand,
-                  size: 22,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  AppLocalizations.t(context, 'acceder_por_pin'),
-                  style: const TextStyle(
-                    color: KigoDesign.brand,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+    return Presionable(
+      onTap: _irAlPin,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: KigoDesign.brand.withValues(alpha: 0.5),
+            width: 1.5,
           ),
+          borderRadius: BorderRadius.circular(14),
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.dialpad_rounded,
+              color: KigoDesign.brand,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.t(context, 'acceder_por_pin'),
+              style: const TextStyle(
+                color: KigoDesign.brand,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

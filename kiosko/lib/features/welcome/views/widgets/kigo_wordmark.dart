@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/marca_badge.dart';
 
 /// Marca mínima de esquina — reemplaza el lockup grande "Kigo / SELF
 /// CHECK-IN" repetido en cada pantalla del flujo QR. El veredicto de cada
@@ -34,24 +35,7 @@ class KigoWordmark extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: lado,
-            height: lado,
-            decoration: BoxDecoration(
-              color: KigoDesign.brand,
-              borderRadius: BorderRadius.circular(7 * escala),
-            ),
-            child: Center(
-              child: Text(
-                'K',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14 * escala,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
+          MarcaBadge(lado: lado),
           SizedBox(width: 8 * escala),
           Text(
             'AUTOnomIA',
