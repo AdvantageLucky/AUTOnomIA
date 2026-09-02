@@ -58,7 +58,10 @@ class _QrResultViewState extends State<QrResultView> {
       if (widget.viewModel.estado == QrResultEstado.exitoso) {
         _led.mostrarAprobado();
         _relay.abrir();
-        _tts.speak('Acceso autorizado. ¡Bienvenido!');
+        final titular = widget.viewModel.titular;
+        _tts.speak(titular != null && titular.isNotEmpty
+            ? '¡Bienvenido, $titular! Acceso de invitado autorizado.'
+            : '¡Bienvenido, invitado! Acceso autorizado.');
       } else {
         _led.mostrarRechazado();
         _tts.speak('Invitación no válida o expirada.');
@@ -141,6 +144,18 @@ class _QrResultViewState extends State<QrResultView> {
         VerdictRing(color: KigoDesign.success, icon: Icons.check_rounded, size: iconSize),
         SizedBox(height: gap),
         Text(AppLocalizations.t(context, 'acceso_concedido'), style: TextStyle(color: context.kTextPrimary, fontSize: (h * 0.048).clamp(22.0, 38.0), fontWeight: FontWeight.w800)),
+        SizedBox(height: gap * 0.3),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: KigoDesign.brand.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            AppLocalizations.t(context, 'invitado_label'),
+            style: TextStyle(color: KigoDesign.brand, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1),
+          ),
+        ),
         SizedBox(height: gap * 0.4),
         if (widget.viewModel.titular != null)
           Text(

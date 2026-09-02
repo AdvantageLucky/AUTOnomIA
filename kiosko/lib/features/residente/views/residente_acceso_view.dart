@@ -249,6 +249,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     final resultado = await KioskoServicio().verificarRostroResidente(embedding);
     final nombre = resultado['nombre'] as String?;
     final casaDestino = resultado['casa_destino'] as String?;
+    final esInvitadoFrecuente = resultado['es_invitado_frecuente'] == true;
 
     if (!mounted) return;
     _bucleVerificacionActivo = false;
@@ -266,6 +267,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
             viewModel: ResidentWelcomeViewModel(
               nombre: nombre ?? AppLocalizations.t(context, 'residente_label'),
               casaDestino: casaDestino ?? '',
+              esInvitadoFrecuente: esInvitadoFrecuente,
             ),
           ),
         ),

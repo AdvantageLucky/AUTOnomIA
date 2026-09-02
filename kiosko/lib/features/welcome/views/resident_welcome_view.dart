@@ -40,7 +40,10 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       });
-      _tts.speak('¡Bienvenido, ${widget.viewModel.nombre}! Acceso autorizado.');
+      final saludo = widget.viewModel.esInvitadoFrecuente
+          ? '¡Bienvenido, ${widget.viewModel.nombre}! Acceso de invitado autorizado.'
+          : '¡Bienvenido, ${widget.viewModel.nombre}! Acceso autorizado.';
+      _tts.speak(saludo);
     });
   }
 
@@ -121,8 +124,8 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
               width: 2,
             ),
           ),
-          child: const Icon(
-            Icons.home_rounded,
+          child: Icon(
+            viewModel.esInvitadoFrecuente ? Icons.badge_outlined : Icons.home_rounded,
             color: KigoDesign.brand,
             size: 52,
           ),
@@ -138,6 +141,26 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
             fontWeight: FontWeight.w800,
           ),
         ),
+
+        if (viewModel.esInvitadoFrecuente) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: KigoDesign.brand.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'INVITADO CON ACCESO RECURRENTE',
+              style: TextStyle(
+                color: KigoDesign.brand,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        ],
 
         const SizedBox(height: 12),
 

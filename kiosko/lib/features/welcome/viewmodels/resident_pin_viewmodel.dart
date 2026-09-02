@@ -9,6 +9,7 @@ class ResidentPinViewModel extends ChangeNotifier {
   String? _errorMsg;
   String? _nombreResidente;
   String? _casaDestino;
+  bool _esInvitadoFrecuente = false;
   List<Map<String, dynamic>>? _candidatos;
 
   String get pin => _pin;
@@ -16,6 +17,7 @@ class ResidentPinViewModel extends ChangeNotifier {
   String? get errorMsg => _errorMsg;
   String? get nombreResidente => _nombreResidente;
   String? get casaDestino => _casaDestino;
+  bool get esInvitadoFrecuente => _esInvitadoFrecuente;
   List<Map<String, dynamic>>? get candidatos => _candidatos;
   bool get tieneColisionPin => _candidatos != null && _candidatos!.isNotEmpty;
 
@@ -76,6 +78,7 @@ class ResidentPinViewModel extends ChangeNotifier {
       _candidatos = null;
       _nombreResidente = data['nombre'] as String?;
       _casaDestino = data['casa_destino'] as String?;
+      _esInvitadoFrecuente = data['es_invitado_frecuente'] == true;
       _estado = PinEstado.ingresando;
       notifyListeners();
       return true;
