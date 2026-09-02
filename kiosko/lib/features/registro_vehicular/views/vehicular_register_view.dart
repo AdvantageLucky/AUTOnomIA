@@ -136,7 +136,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
 
   Future<void> _pasoCasaDestino() async {
     if (!mounted) return;
-    final String? casa = await Navigator.push<String>(
+    final resultado = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
         builder: (_) => CasaDestinoView(
@@ -148,11 +148,13 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
 
     // Si el visitante da "atrás" aquí, se cancela toda la solicitud: no hay un
     // punto intermedio al que reanudar.
-    if (casa == null) {
+    final casa = resultado?['destino'];
+    if (casa == null || casa.isEmpty) {
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
     viewModel.registrationData.casaDestino = casa;
+    viewModel.registrationData.motivo = resultado?['motivo'];
     await _avanzar();
   }
 

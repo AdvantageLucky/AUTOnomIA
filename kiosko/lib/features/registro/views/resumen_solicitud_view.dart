@@ -141,6 +141,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         curp: data.curp ?? '',
         casaDestino:
             data.casaDestino ?? AppLocalizations.t(context, 'no_especificado'),
+        motivo: data.motivo ?? '',
         placa: data.placa ?? '',
         pathFotoIne: data.pathFotoIne,
         pathFotoRostro: data.pathFotoRostro,
@@ -546,6 +547,12 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
               Icons.directions_car_outlined,
               AppLocalizations.t(context, 'placa_label'),
               data.placa!,
+            ),
+          if (data.motivo != null && data.motivo!.isNotEmpty)
+            _buildDato(
+              Icons.info_outline_rounded,
+              'Motivo',
+              data.motivo!,
             ),
         ],
       ),

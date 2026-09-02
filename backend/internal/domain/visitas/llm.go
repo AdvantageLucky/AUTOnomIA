@@ -152,6 +152,9 @@ func construirPrompt(s ScoreContexto, v Visita) string {
 	if casa := strings.TrimSpace(v.CasaDestino); casa != "" {
 		datos = append(datos, "Va a: "+casa)
 	}
+	if motivo := strings.TrimSpace(v.Motivo); motivo != "" {
+		datos = append(datos, "Motivo: "+motivo)
+	}
 	if placa := strings.TrimSpace(v.Placa); placa != "" {
 		datos = append(datos, "Placa: "+placa)
 	} else {

@@ -362,6 +362,7 @@ class KioskoServicio {
     double? nitidezIneScore,
     String? calidadIne,
     List<double>? embeddingRostro,
+    String? motivo,
   }) async {
     final connectivity = _connectivity;
     final cache = _cache;
@@ -376,6 +377,7 @@ class KioskoServicio {
         pathFotoRostro: pathFotoRostro,
         pathFotoPlaca: pathFotoPlaca,
         embeddingRostro: embeddingRostro,
+        motivo: motivo,
       );
     }
 
@@ -395,6 +397,7 @@ class KioskoServicio {
         nitidezIneScore: nitidezIneScore,
         calidadIne: calidadIne,
         embeddingRostro: embeddingRostro,
+        motivo: motivo,
       );
     } catch (e) {
       // La red parecía disponible pero la llamada falló a medio camino — si
@@ -412,6 +415,7 @@ class KioskoServicio {
           pathFotoRostro: pathFotoRostro,
           pathFotoPlaca: pathFotoPlaca,
           embeddingRostro: embeddingRostro,
+          motivo: motivo,
         );
       }
       rethrow;
@@ -428,6 +432,7 @@ class KioskoServicio {
     String? pathFotoRostro,
     String? pathFotoPlaca,
     List<double>? embeddingRostro,
+    String? motivo,
   }) async {
     final clientId = _uuid.v4();
     await cache.encolarVisita(
@@ -437,6 +442,7 @@ class KioskoServicio {
         'titular': titular,
         'curp': curp,
         'casa_destino': casaDestino,
+        'motivo': motivo ?? '',
         'placa': placa,
         // Va en el payload y no en fotoPaths: es un vector, no un archivo.
         // Sin esto, una visita encolada offline perdia el identificador al
@@ -1059,6 +1065,7 @@ class KioskoServicio {
     String? pathFotoPlaca,
     required String clientId,
     List<double>? embeddingRostro,
+    String? motivo,
   }) async {
     await _ensureLogin();
     return _enviarRegistro(
@@ -1073,6 +1080,7 @@ class KioskoServicio {
       reintento: false,
       clientId: clientId,
       embeddingRostro: embeddingRostro,
+      motivo: motivo,
     );
   }
 
@@ -1187,6 +1195,7 @@ class KioskoServicio {
     double? nitidezIneScore,
     String? calidadIne,
     List<double>? embeddingRostro,
+    String? motivo,
   }) async {
     final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/visitas/');
     // Sin INE capturada, lo que respalda la visita es la placa: en un acceso
@@ -1199,6 +1208,7 @@ class KioskoServicio {
       ..fields['tipo_documento'] = tipoDocumento
       ..fields['curp'] = curp
       ..fields['casa_destino'] = casaDestino
+      ..fields['motivo'] = motivo ?? ''
       ..fields['placa'] = placa
       ..fields['client_id'] = clientId ?? '';
 
