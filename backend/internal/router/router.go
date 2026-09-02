@@ -374,6 +374,7 @@ func invitacionLandingHTML(titulo, subtitulo, token, releaseURL string) string {
 	return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kigo</title>
+<link rel="icon" type="image/png" href="/admin/favicon.png">
 <style>
 body{font-family:system-ui,sans-serif;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box}
 .card{max-width:360px;text-align:center}

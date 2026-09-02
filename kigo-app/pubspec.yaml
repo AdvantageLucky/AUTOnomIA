@@ -1,5 +1,5 @@
 name: kigo_user
-description: "A new Flutter project for Kigo User application."
+description: "AUTOnomIA — app de residentes para el control de acceso de Kigo."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -38,6 +38,19 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.3
+
+# Ícono de app: la marca AUTOnomIA (fondo naranja de marca + isotipo blanco),
+# usada tal cual como imagen fuente -- ya es cuadrada (1024x1024) y a pantalla
+# completa, sin recorte adaptativo (no hay versión con fondo transparente).
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon_autonomia.jpg"
+  min_sdk_android: 21
+  macos:
+    generate: true
+    image_path: "assets/icon/icon_autonomia.jpg"
 
 flutter:
   uses-material-design: true
