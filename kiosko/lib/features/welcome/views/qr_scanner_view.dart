@@ -26,17 +26,26 @@ import 'package:kigo_kiosco/features/welcome/views/widgets/kigo_wordmark.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Lado del recuadro de escaneo como fracción del ancho.
-const double _fraccionRecuadro = 0.66;
+///
+/// Antes 0.66: el recuadro (centrado verticalmente) se comía tanto alto que
+/// a la franja de abajo ("Apunta al código QR" + botón "No tengo la app")
+/// le quedaba una banda angosta -- medido con un RenderParagraph de esa
+/// franja contra su rect ya escalado, el FittedBox que la envuelve la
+/// reducía a ~40% de su tamaño real. Bajarlo a 0.5 (siguen siendo ~400px de
+/// lado en el panel de 800x1280, de sobra para leer un QR a un brazo de
+/// distancia) le devuelve a esa franja el espacio que necesita para
+/// renderizarse a tamaño completo.
+const double _fraccionRecuadro = 0.5;
 
 /// Lado del recuadro para un lienzo dado. Lo comparten el painter y el
 /// layout: el texto se coloca respecto al recuadro real, así nunca vuelve a
 /// montarse encima de él.
 ///
 /// El tope contra el alto es para no quedarnos sin las dos franjas de
-/// contenido: en un lienzo apaisado 0.66 del ancho no cabe siquiera en la
+/// contenido: en un lienzo apaisado 0.5 del ancho no cabe siquiera en la
 /// pantalla, y arriba y abajo sobraba espacio negativo.
 double _ladoRecuadro(Size lienzo) =>
-    math.min(lienzo.width * _fraccionRecuadro, lienzo.height * 0.45);
+    math.min(lienzo.width * _fraccionRecuadro, lienzo.height * 0.38);
 
 /// Pantalla de entrada del kiosko: escanea sola, sin toque previo. Detecta
 /// tanto el QR personal de la app Kigo como el token de invitación de
@@ -357,7 +366,14 @@ class _QrScannerViewState extends State<QrScannerView>
     final pantalla = MediaQuery.sizeOf(context);
     final safe = MediaQuery.paddingOf(context);
     final lado = _ladoRecuadro(pantalla);
-    final topRecuadro = ((pantalla.height - lado) / 2).clamp(
+    // No centrado: a la franja de abajo (texto + botón "no tengo la app")
+    // le hace falta más alto que a la de arriba (solo la marca), así que el
+    // recuadro se sube un poco en vez de repartir el sobrante a la mitad.
+    // El piso de 100 es lo que la marca (KigoWordmark, fija, no Expanded)
+    // necesita para no desbordar en un lienzo apaisado bajito -- por debajo
+    // de eso el Column de la franja de arriba revienta (RenderFlex
+    // overflow), confirmado con qr_scanner_layout_test en Size(784, 361).
+    final topRecuadro = math.max((pantalla.height - lado) * 0.32, 100.0).clamp(
       0.0,
       pantalla.height,
     );
@@ -507,9 +523,9 @@ class _QrScannerViewState extends State<QrScannerView>
               // qr_scanner_layout_test.dart).
               padding: EdgeInsets.fromLTRB(
                 24,
-                32,
+                12,
                 24,
-                safe.bottom + 28 + math.min(KigoDesign.clearanceBotonesFlotantes, (pantalla.height - bottomRecuadro) * 0.3),
+                safe.bottom + 16 + math.min(KigoDesign.clearanceBotonesFlotantes, (pantalla.height - bottomRecuadro) * 0.3),
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -560,7 +576,7 @@ class _QrScannerViewState extends State<QrScannerView>
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 8),
         Text(
           AppLocalizations.t(context, 'codigo_personal_o_invitacion'),
           textAlign: TextAlign.center,
@@ -570,7 +586,7 @@ class _QrScannerViewState extends State<QrScannerView>
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 20),
         _buildBotonSinCodigo(),
       ],
     );

@@ -74,8 +74,9 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
-      final lado = math.min(size.width * 0.66, size.height * 0.45);
-      final fondoRecuadro = (size.height - lado) / 2 + lado;
+      final lado = math.min(size.width * 0.5, size.height * 0.38);
+      final topRecuadro = math.max((size.height - lado) * 0.32, 100.0);
+      final fondoRecuadro = topRecuadro + lado;
 
       final marca = tester.getRect(find.text('AUTOnomIA'));
       final mensaje = tester.getRect(find.text(mensajeCorto));
@@ -84,7 +85,7 @@ void main() {
           tester.getRect(find.text('No tengo la app AUTOnomIA o código QR'));
 
       // Nada del contenido invade el recuadro.
-      expect(mensaje.bottom, lessThanOrEqualTo((size.height - lado) / 2));
+      expect(mensaje.bottom, lessThanOrEqualTo(topRecuadro));
       expect(hint.top, greaterThanOrEqualTo(fondoRecuadro));
 
       // Y el orden vertical es el esperado.
@@ -110,10 +111,11 @@ void main() {
       expect(parrafo.size.height, greaterThan(unRenglon));
 
       // Sigue sin invadir el recuadro.
-      final lado = math.min(size.width * 0.66, size.height * 0.45);
+      final lado = math.min(size.width * 0.5, size.height * 0.38);
+      final topRecuadro = math.max((size.height - lado) * 0.32, 100.0);
       expect(
         tester.getRect(find.text(mensajeLargo)).bottom,
-        lessThanOrEqualTo((size.height - lado) / 2),
+        lessThanOrEqualTo(topRecuadro),
       );
     });
   }
