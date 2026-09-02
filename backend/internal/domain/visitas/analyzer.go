@@ -31,9 +31,10 @@ type ScoreContexto struct {
 }
 
 // ScoreIA es el subconjunto serializable de ScoreContexto que se persiste y
-// expone al dashboard — sin CambioModalidad (nunca se calcula, siempre
-// false, exponerlo mentiría "sin cambios") ni ResumenTexto (va en su propia
-// columna resumen_ia, no duplicado dentro del score).
+// expone al dashboard — sin CambioModalidad como campo suelto (ya viaja
+// dentro de Factores, como el factor "cambio_modalidad" cuando aplica; ver
+// evaluarEntrada) ni ResumenTexto (va en su propia columna resumen_ia, no
+// duplicado dentro del score).
 type ScoreIA struct {
 	ConfianzaPct      int           `json:"confianza_pct"`
 	NivelConfianza    string        `json:"nivel_confianza"`
