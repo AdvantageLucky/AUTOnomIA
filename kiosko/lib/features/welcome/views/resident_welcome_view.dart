@@ -67,8 +67,6 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
             _buildWelcomeContent(),
 
             const Spacer(),
-
-            _buildFooter(),
           ],
         ),
       ),
@@ -186,15 +184,4 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
     );
   }
 
-  Widget _buildFooter() {
-    return Text(
-      AppLocalizations.t(context, 'footer_text'),
-      style: TextStyle(
-        color: context.kTextTertiary,
-        fontSize: 14,
-        letterSpacing: 2,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
 }

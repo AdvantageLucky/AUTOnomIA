@@ -244,7 +244,7 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
         kigoTemaClaroActivo = esClaro;
 
         return MaterialApp(
-          title: 'Kigo',
+          title: 'AUTOnomIA',
           debugShowCheckedModeBanner: false,
           locale: locale,
           supportedLocales: const [Locale('es'), Locale('en')],

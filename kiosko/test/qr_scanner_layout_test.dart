@@ -77,11 +77,11 @@ void main() {
       final lado = math.min(size.width * 0.66, size.height * 0.45);
       final fondoRecuadro = (size.height - lado) / 2 + lado;
 
-      final marca = tester.getRect(find.text('Kigo'));
+      final marca = tester.getRect(find.text('AUTOnomIA'));
       final mensaje = tester.getRect(find.text(mensajeCorto));
       final hint = tester.getRect(find.text('Apunta al código QR'));
       final boton =
-          tester.getRect(find.text('No tengo la app Kigo o código QR'));
+          tester.getRect(find.text('No tengo la app AUTOnomIA o código QR'));
 
       // Nada del contenido invade el recuadro.
       expect(mensaje.bottom, lessThanOrEqualTo((size.height - lado) / 2));

@@ -321,7 +321,6 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
                 const SizedBox(height: 40),
                 _buildPinFallback(),
                 const Spacer(),
-                _buildFooter(),
               ],
             ),
           ),
@@ -604,17 +603,6 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     );
   }
 
-  Widget _buildFooter() {
-    return Text(
-      AppLocalizations.t(context, 'footer_text'),
-      style: TextStyle(
-        color: context.kTextTertiary,
-        fontSize: 14,
-        letterSpacing: 2,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
 }
 
 /// Diálogo de consentimiento específico para reconocimiento facial en el kiosko.

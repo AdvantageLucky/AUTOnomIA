@@ -24,15 +24,14 @@ class AppLocalizations {
   static final Map<String, Map<String, String>> _localizedValues = {
     'es': {
       // Registro táctil (peatonal + vehicular, mensajes de voz)
-      'welcome_message': 'Hola, soy Kigo. Te ayudaré con tu registro. Comencemos.',
+      'welcome_message': 'Hola, soy AUTOnomIA. Te ayudaré con tu registro. Comencemos.',
       'listening_message': 'Te escucho, puedes hablar ahora.',
       'asistente_presentacion_message': 'Hola, soy tu asistente. Mantén presionado el micrófono de abajo si tienes dudas.',
       'asistente_etiqueta': 'Asistente IA',
       'ine_invalid_message': 'No reconocimos el documento. Acércalo a la cámara y vuelve a intentar.',
       'face_not_detected_message': 'No detectamos tu rostro. Asegúrate de tener buena luz y vuelve a intentar.',
       'registration_complete_message': 'Registro completado exitosamente.',
-      'kigo_label': 'Kigo',
-      'footer_text': 'POWERED BY KIGO · FEPRO 2026',
+      'kigo_label': 'AUTOnomIA',
       'retry_button_text': 'Reintentar',
       'back_button_text': 'Regresar',
       'continue_button_text': 'Confirmar',
@@ -59,7 +58,7 @@ class AppLocalizations {
       'photo_evidence_subtitle': 'Coloca tu rostro frente a la cámara',
       'voice_instruction_ine': 'Muestra tu identificación frente a la cámara sin moverla.',
       'voice_instruction_face': 'Mira de frente a la cámara para tomar tu fotografía.',
-      'welcome_vehicular_message': 'Hola, soy Kigo. Registra tu acceso sin bajar del vehículo. Comencemos.',
+      'welcome_vehicular_message': 'Hola, soy AUTOnomIA. Registra tu acceso sin bajar del vehículo. Comencemos.',
       'capturar_ine_button': 'Capturar INE',
       'reconocimiento_facial_button': 'Reconocimiento Facial',
 
@@ -208,7 +207,7 @@ class AppLocalizations {
       'codigo_detectado': 'Código detectado',
       'apunta_al_codigo_qr': 'Apunta al código QR',
       'codigo_personal_o_invitacion': 'Tu código personal o el de tu invitación',
-      'no_tengo_app_o_qr': 'No tengo la app Kigo o código QR',
+      'no_tengo_app_o_qr': 'No tengo la app AUTOnomIA o código QR',
 
       // Captura de rostro con óvalo guía
       'apunta_a_tu_rostro': 'Apunta a tu rostro',
@@ -225,15 +224,14 @@ class AppLocalizations {
       'usar_teclado_button': 'Usar teclado en su lugar',
     },
     'en': {
-      'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
+      'welcome_message': "Hi, I'm AUTOnomIA. I'll help you register. Let's start.",
       'listening_message': "I'm listening, you can speak now.",
       'asistente_presentacion_message': "Hi, I'm your assistant. Hold the microphone button below if you have questions.",
       'asistente_etiqueta': 'AI Assistant',
       'ine_invalid_message': "We didn't recognize the document. Bring it closer to the camera and try again.",
       'face_not_detected_message': "We didn't detect your face. Make sure you have good lighting and try again.",
       'registration_complete_message': 'Registration completed successfully.',
-      'kigo_label': 'Kigo',
-      'footer_text': 'POWERED BY KIGO · FEPRO 2026',
+      'kigo_label': 'AUTOnomIA',
       'retry_button_text': 'Retry',
       'back_button_text': 'Back',
       'continue_button_text': 'Confirm',
@@ -260,7 +258,7 @@ class AppLocalizations {
       'photo_evidence_subtitle': 'Position your face in front of the camera',
       'voice_instruction_ine': 'Show your ID to the camera without moving it.',
       'voice_instruction_face': 'Look straight at the camera to take your photo.',
-      'welcome_vehicular_message': "Hi, I'm Kigo. Register your entry without leaving your vehicle. Let's start.",
+      'welcome_vehicular_message': "Hi, I'm AUTOnomIA. Register your entry without leaving your vehicle. Let's start.",
       'capturar_ine_button': 'Capture ID',
       'reconocimiento_facial_button': 'Face Recognition',
 
@@ -405,7 +403,7 @@ class AppLocalizations {
       'codigo_detectado': 'Code detected',
       'apunta_al_codigo_qr': 'Point at the QR code',
       'codigo_personal_o_invitacion': 'Your personal code or your invitation code',
-      'no_tengo_app_o_qr': "I don't have the Kigo app or a QR code",
+      'no_tengo_app_o_qr': "I don't have the AUTOnomIA app or a QR code",
 
       // Captura de rostro con óvalo guía
       'apunta_a_tu_rostro': 'Point at your face',
