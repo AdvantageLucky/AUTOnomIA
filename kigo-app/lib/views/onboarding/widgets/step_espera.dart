@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/hazard_stripe.dart';
@@ -25,28 +26,27 @@ class _StepEsperaState extends State<StepEspera> {
     try {
       await auth.refrescarMembresia();
       if (!mounted) return;
-
       if (auth.membresiaEstado == MembresiaEstado.activa || auth.membresiasActivas.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Tu solicitud ha sido aprobada!'),
+          SnackBar(
+            content: Text(AppLocalizations.t(context, 'solicitud_aprobada')),
             backgroundColor: Colors.green,
           ),
         );
         Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (r) => false);
       } else if (auth.membresiaEstado == MembresiaEstado.rechazada) {
-        setState(() => _error = 'Tu solicitud fue rechazada por la administración.');
+        setState(() => _error = AppLocalizations.t(context, 'solicitud_rechazada'));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tu solicitud sigue en revisión por la administración.'),
+          SnackBar(
+            content: Text(AppLocalizations.t(context, 'solicitud_en_revision')),
           ),
         );
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = 'No se pudo conectar al servidor');
+      if (mounted) setState(() => _error = AppLocalizations.t(context, 'no_se_pudo_conectar'));
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -60,8 +60,8 @@ class _StepEsperaState extends State<StepEspera> {
     final centro = pendiente?.centroNombre ?? '';
     final casa = pendiente?.casaDestino ?? '';
     final texto = centro.isNotEmpty
-        ? 'Tu solicitud en $centro ($casa) está pendiente de aprobación.'
-        : 'Tu solicitud está pendiente de aprobación por el administrador.';
+        ? '${AppLocalizations.t(context, 'solicitud_pendiente_en')} $centro ($casa)${AppLocalizations.t(context, 'solicitud_pendiente_sufijo')}'
+        : AppLocalizations.t(context, 'solicitud_pendiente_generico');
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -88,14 +88,14 @@ class _StepEsperaState extends State<StepEspera> {
                     height: 6,
                     child: HazardStripeBar(height: 6),
                   )
-                : const Text('Actualizar'),
+                : Text(AppLocalizations.t(context, 'actualizar_btn')),
           ),
           const SizedBox(height: 8),
           TextButton(
             onPressed: () {
               Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (r) => false);
             },
-            child: const Text('Continuar al inicio'),
+            child: Text(AppLocalizations.t(context, 'continuar_al_inicio')),
           ),
           TextButton(
             onPressed: () async {
@@ -104,7 +104,7 @@ class _StepEsperaState extends State<StepEspera> {
                 Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (r) => false);
               }
             },
-            child: const Text('Cerrar sesión'),
+            child: Text(AppLocalizations.t(context, 'logout_tooltip')),
           ),
         ],
       ),

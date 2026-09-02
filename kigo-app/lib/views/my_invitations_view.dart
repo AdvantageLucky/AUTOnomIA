@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/invitation_viewmodel.dart';
 import '../widgets/kigo_list_row.dart';
@@ -22,7 +23,7 @@ class _MyInvitationsViewState extends State<MyInvitationsView> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo revocar la invitación')),
+        SnackBar(content: Text(AppLocalizations.t(context, 'revoke_invitation_error'))),
       );
     }
   }
@@ -46,7 +47,7 @@ class _MyInvitationsViewState extends State<MyInvitationsView> {
       return const Center(child: CircularProgressIndicator());
     }
     if (vm.invitaciones.isEmpty) {
-      return const Center(child: Text('No has creado ninguna invitación'));
+      return Center(child: Text(AppLocalizations.t(context, 'no_created_invitations')));
     }
     return ListView.separated(
       padding: const EdgeInsets.all(24),
@@ -58,7 +59,9 @@ class _MyInvitationsViewState extends State<MyInvitationsView> {
           icon: inv.vigente ? Icons.check_circle_outline : Icons.block,
           iconColor: inv.vigente ? AppTheme.success : AppTheme.textDimmed,
           title: inv.titular,
-          subtitle: inv.vigente ? 'Vigente' : 'Ya no está disponible',
+          subtitle: inv.vigente
+              ? AppLocalizations.t(context, 'inv_vigente')
+              : AppLocalizations.t(context, 'inv_no_disponible'),
           trailing: inv.vigente
               ? IconButton(
                   icon: const Icon(Icons.close),

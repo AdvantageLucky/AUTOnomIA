@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../models/ine_ocr_model.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/kigo_primary_button.dart';
@@ -55,7 +56,7 @@ class _StepConfirmarDatosState extends State<StepConfirmarDatos> {
     final nombre = _nombreCtrl.text.trim();
     final apellidoPaterno = _apellidoPaternoCtrl.text.trim();
     if (nombre.isEmpty || apellidoPaterno.isEmpty) {
-      setState(() => _errorLocal = 'Nombre y apellido paterno son requeridos');
+      setState(() => _errorLocal = AppLocalizations.t(context, 'nombre_apellido_requeridos'));
       return;
     }
     setState(() => _errorLocal = null);
@@ -78,28 +79,28 @@ class _StepConfirmarDatosState extends State<StepConfirmarDatos> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Confirma tus datos', style: Theme.of(context).textTheme.headlineSmall),
+          Text(AppLocalizations.t(context, 'confirmar_datos_title'), style: Theme.of(context).textTheme.headlineSmall),
           if (nombreDetectado != null) ...[
             const SizedBox(height: 6),
             Text(
-              'Detectamos: $nombreDetectado',
+              '${AppLocalizations.t(context, 'detectamos_prefix')}$nombreDetectado',
               style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13),
             ),
           ],
           const SizedBox(height: 20),
-          KigoTextField(controller: _nombreCtrl, label: 'Nombre'),
+          KigoTextField(controller: _nombreCtrl, label: AppLocalizations.t(context, 'field_nombre')),
           const SizedBox(height: 12),
-          KigoTextField(controller: _apellidoPaternoCtrl, label: 'Apellido paterno'),
+          KigoTextField(controller: _apellidoPaternoCtrl, label: AppLocalizations.t(context, 'field_apellido_paterno')),
           const SizedBox(height: 12),
-          KigoTextField(controller: _apellidoMaternoCtrl, label: 'Apellido materno (opcional)'),
+          KigoTextField(controller: _apellidoMaternoCtrl, label: AppLocalizations.t(context, 'field_apellido_materno')),
           const SizedBox(height: 12),
-          KigoTextField(controller: _curpCtrl, label: 'CURP'),
+          KigoTextField(controller: _curpCtrl, label: AppLocalizations.t(context, 'field_curp')),
           if (_errorLocal case final mensaje?) ...[
             const SizedBox(height: 8),
             Text(mensaje, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
           ],
           const SizedBox(height: 20),
-          KigoPrimaryButton(label: 'Continuar', onPressed: _continuar),
+          KigoPrimaryButton(label: AppLocalizations.t(context, 'continue_btn'), onPressed: _continuar),
         ],
       ),
     );

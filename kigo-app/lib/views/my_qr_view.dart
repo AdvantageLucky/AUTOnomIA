@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/hazard_stripe.dart';
@@ -42,7 +43,7 @@ class _MyQrViewState extends State<MyQrView> {
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = 'No se pudo conectar al servidor');
+      if (mounted) setState(() => _error = AppLocalizations.t(context, 'no_se_pudo_conectar'));
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -90,7 +91,7 @@ class _MyQrViewState extends State<MyQrView> {
               else if (_error != null)
                 _buildErrorState(context)
               else
-                _buildQrCard(context, pin, isDark, auth.nombre.isNotEmpty ? auth.nombre : 'Residente', membresia),
+                _buildQrCard(context, pin, isDark, auth.nombre.isNotEmpty ? auth.nombre : AppLocalizations.t(context, 'residente_fallback'), membresia),
 
               const SizedBox(height: 20),
 
@@ -102,7 +103,7 @@ class _MyQrViewState extends State<MyQrView> {
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
-                      'Muestra este código o usa tu PIN en el kiosko de acceso.',
+                      AppLocalizations.t(context, 'muestra_codigo_o_pin'),
                       style: TextStyle(
                         color: isDark ? AppTheme.textGrey : AppTheme.textDimmed,
                         fontSize: 12,
@@ -125,7 +126,7 @@ class _MyQrViewState extends State<MyQrView> {
     dynamic membresia,
     bool isDark,
   ) {
-    final nombre = auth.nombre.isNotEmpty ? auth.nombre : 'Residente';
+    final nombre = auth.nombre.isNotEmpty ? auth.nombre : AppLocalizations.t(context, 'residente_fallback');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -173,7 +174,7 @@ class _MyQrViewState extends State<MyQrView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hola, $nombre',
+                  '${AppLocalizations.t(context, 'saludo_hola')}$nombre',
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
                 ),
                 const SizedBox(height: 2),
@@ -237,12 +238,13 @@ class _MyQrViewState extends State<MyQrView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '$count visita${count > 1 ? 's' : ''} esperando autorización',
+                    '$count ${AppLocalizations.t(context, count > 1 ? 'visitas_plural' : 'visita_singular')}'
+                    ' ${AppLocalizations.t(context, 'esperando_autorizacion')}',
                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                   ),
-                  const Text(
-                    'Toca para revisar y autorizar',
-                    style: TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                  Text(
+                    AppLocalizations.t(context, 'toca_revisar_autorizar'),
+                    style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
                   ),
                 ],
               ),
@@ -270,7 +272,7 @@ class _MyQrViewState extends State<MyQrView> {
           ElevatedButton.icon(
             onPressed: _cargar,
             icon: const Icon(Icons.refresh),
-            label: const Text('Reintentar'),
+            label: Text(AppLocalizations.t(context, 'retry')),
           ),
         ],
       ),
@@ -325,7 +327,9 @@ class _MyQrViewState extends State<MyQrView> {
   }
 
   Widget _buildBadgeHeader(String nombre, dynamic membresia, bool isDark) {
-    final subtitulo = membresia != null ? '${membresia.centroNombre} · ${membresia.casaDestino}' : 'Credencial de acceso';
+    final subtitulo = membresia != null
+        ? '${membresia.centroNombre} · ${membresia.casaDestino}'
+        : AppLocalizations.t(context, 'credencial_de_acceso');
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 18, 44, 22),
@@ -333,9 +337,9 @@ class _MyQrViewState extends State<MyQrView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'KIGO · ID DE ACCESO',
-            style: TextStyle(
+          Text(
+            AppLocalizations.t(context, 'kigo_id_acceso_label'),
+            style: const TextStyle(
               fontFamily: 'Unbounded',
               color: AppTheme.primaryOrange,
               fontSize: 11,
@@ -426,7 +430,7 @@ class _MyQrViewState extends State<MyQrView> {
               const Icon(Icons.dialpad_rounded, color: AppTheme.primaryOrange, size: 20),
               const SizedBox(width: 10),
               Text(
-                'PIN de acceso:',
+                AppLocalizations.t(context, 'pin_de_acceso'),
                 style: TextStyle(
                   color: isDark ? AppTheme.textGrey : AppTheme.textDimmed,
                   fontSize: 13,
@@ -450,15 +454,15 @@ class _MyQrViewState extends State<MyQrView> {
               IconButton(
                 icon: const Icon(Icons.copy_rounded, size: 18),
                 color: AppTheme.primaryOrange,
-                tooltip: 'Copiar PIN',
+                tooltip: AppLocalizations.t(context, 'copiar_pin_tooltip'),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: pin));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('PIN copiado al portapapeles'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: Text(AppLocalizations.t(context, 'pin_copiado')),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 },

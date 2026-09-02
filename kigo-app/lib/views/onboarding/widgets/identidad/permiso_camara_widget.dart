@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_theme.dart';
 
 /// Pantalla de error cuando falta el permiso de cámara -- reemplaza el
@@ -26,15 +27,17 @@ class PermisoCamaraDenegado extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             permanente
-                ? 'AUTOnomIA necesita permiso de cámara para continuar. Actívalo en los ajustes del sistema.'
-                : 'Necesitamos acceso a tu cámara para este paso.',
+                ? AppLocalizations.t(context, 'camara_permiso_ajustes')
+                : AppLocalizations.t(context, 'camara_permiso_necesitamos'),
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppTheme.textWhite, fontSize: 15),
           ),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: permanente ? openAppSettings : onReintentar,
-            child: Text(permanente ? 'Abrir ajustes' : 'Dar permiso'),
+            child: Text(permanente
+                ? AppLocalizations.t(context, 'camara_permiso_abrir_ajustes')
+                : AppLocalizations.t(context, 'camara_permiso_dar_permiso')),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/ine_ocr_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
@@ -65,7 +66,7 @@ class _StepIdentidadState extends State<StepIdentidad> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorEnvio = auth.error ?? 'No se pudo completar tu identidad';
+        _errorEnvio = auth.error ?? AppLocalizations.t(context, 'no_se_pudo_completar_identidad');
         _subPaso = _SubPaso.confirmar;
       });
     } finally {

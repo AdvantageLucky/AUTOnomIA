@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../models/score_ia_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/visita_foto.dart';
@@ -52,32 +53,35 @@ class VisitaDetalleView extends StatelessWidget {
   final String? estado;
   final String? autorizadoPorNombre;
 
-  static const _etiquetaTipo = {
-    'VISITANTE': 'Visitante sin invitación',
-    'INVITADO': 'Invitado',
-    'RESIDENTE': 'Residente',
+  static const _clavesTipo = {
+    'VISITANTE': 'tipo_visitante_sin_invitacion',
+    'INVITADO': 'tipo_invitado',
+    'RESIDENTE': 'tipo_residente',
   };
 
   @override
   Widget build(BuildContext context) {
+    final etiquetaTipo = _clavesTipo[tipoVisitante] != null
+        ? AppLocalizations.t(context, _clavesTipo[tipoVisitante]!)
+        : tipoVisitante;
     final fotos = <(String, String)>[
       // Antes 'Rostro' se incluía siempre, sin filtrar por .isNotEmpty como
       // las otras dos -- una visita sin captura de rostro (p. ej. acceso
       // solo vehicular) mostraba una miniatura rota en vez de omitirse.
-      if (fotoRostroUrl.isNotEmpty) ('Rostro', fotoRostroUrl),
-      if (fotoDocumentoUrl.isNotEmpty) ('Identificación', fotoDocumentoUrl),
-      if (fotoPlacaUrl.isNotEmpty) ('Placa', fotoPlacaUrl),
+      if (fotoRostroUrl.isNotEmpty) (AppLocalizations.t(context, 'foto_rostro'), fotoRostroUrl),
+      if (fotoDocumentoUrl.isNotEmpty) (AppLocalizations.t(context, 'foto_identificacion'), fotoDocumentoUrl),
+      if (fotoPlacaUrl.isNotEmpty) (AppLocalizations.t(context, 'foto_placa'), fotoPlacaUrl),
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle de la visita')),
+      appBar: AppBar(title: Text(AppLocalizations.t(context, 'detalle_visita_title'))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(titular, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
           Text(
-            '${_etiquetaTipo[tipoVisitante] ?? tipoVisitante} · $casaDestino',
+            '$etiquetaTipo · $casaDestino',
             style: const TextStyle(color: AppTheme.textDimmed, fontSize: 14),
           ),
           const SizedBox(height: 4),
@@ -87,7 +91,10 @@ class VisitaDetalleView extends StatelessWidget {
           ),
           if (placa.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text('Placa: $placa', style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13)),
+            Text(
+              '${AppLocalizations.t(context, 'plate_label')}: $placa',
+              style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13),
+            ),
           ],
           if (curp.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -105,7 +112,7 @@ class VisitaDetalleView extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => launchUrl(Uri(scheme: 'tel', path: telefono)),
                     icon: const Icon(Icons.call_outlined, size: 18),
-                    label: const Text('Llamar'),
+                    label: Text(AppLocalizations.t(context, 'llamar_btn')),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -175,12 +182,14 @@ class _ChipEstado extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, texto) = switch (estado) {
-      'APROBADO' => (AppTheme.success, 'Aprobada'),
-      'RECHAZADO' => (AppTheme.error, 'Rechazada'),
-      'REVISION' => (AppTheme.primaryOrange, 'En revisión'),
+      'APROBADO' => (AppTheme.success, AppLocalizations.t(context, 'estado_aprobada')),
+      'RECHAZADO' => (AppTheme.error, AppLocalizations.t(context, 'estado_rechazada')),
+      'REVISION' => (AppTheme.primaryOrange, AppLocalizations.t(context, 'estado_en_revision')),
       _ => (AppTheme.textDimmed, estado),
     };
-    final sufijo = (autorizadoPorNombre?.isNotEmpty ?? false) ? ' por $autorizadoPorNombre' : '';
+    final sufijo = (autorizadoPorNombre?.isNotEmpty ?? false)
+        ? ' ${AppLocalizations.t(context, 'por_prefix_minuscula')} $autorizadoPorNombre'
+        : '';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -203,9 +212,9 @@ class _ScoreConfianza extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, etiqueta) = switch (score.nivelConfianza) {
-      'alta' => (AppTheme.success, 'Confianza alta'),
-      'media' => (AppTheme.primaryOrange, 'Confianza media'),
-      _ => (AppTheme.error, 'Confianza baja'),
+      'alta' => (AppTheme.success, AppLocalizations.t(context, 'confianza_alta')),
+      'media' => (AppTheme.primaryOrange, AppLocalizations.t(context, 'confianza_media')),
+      _ => (AppTheme.error, AppLocalizations.t(context, 'confianza_baja')),
     };
 
     return Column(
@@ -235,9 +244,9 @@ class _ScoreConfianza extends StatelessWidget {
         ),
         if (!score.generadoPorIA) ...[
           const SizedBox(height: 10),
-          const Text(
-            'Análisis automático (asistente de IA no disponible)',
-            style: TextStyle(color: AppTheme.textDimmed, fontSize: 12),
+          Text(
+            AppLocalizations.t(context, 'analisis_automatico_sin_ia'),
+            style: const TextStyle(color: AppTheme.textDimmed, fontSize: 12),
           ),
         ],
         if (score.factores.isNotEmpty) ...[
