@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../theme/hazard_stripe.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 
 class StepEspera extends StatefulWidget {
@@ -83,9 +84,9 @@ class _StepEsperaState extends State<StepEspera> {
             onPressed: _cargando ? null : _actualizar,
             child: _cargando
                 ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    width: 40,
+                    height: 6,
+                    child: HazardStripeBar(height: 6),
                   )
                 : const Text('Actualizar'),
           ),
