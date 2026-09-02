@@ -1,5 +1,5 @@
 name: kigo_kiosco
-description: "A new Flutter project."
+description: "Kigo Checkpoint — kiosko de control de acceso de AUTOnomIA."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -63,6 +63,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   sqflite_common_ffi: ^2.3.4
+  flutter_launcher_icons: ^0.14.3
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -129,3 +130,16 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Ícono de la app: la mascota sonriendo (estado inactivo). icon_legacy trae el
+# fondo horneado (launchers pre-adaptive, Android < 8); icon_foreground es la
+# capa transparente del ícono adaptativo, con margen para la máscara del
+# sistema. Regenerar con `dart run flutter_launcher_icons` tras cambiar
+# cualquiera de los dos PNG.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon_legacy.png"
+  adaptive_icon_background: "#09090D"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  min_sdk_android: 21
