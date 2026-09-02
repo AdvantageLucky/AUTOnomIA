@@ -3304,12 +3304,19 @@
     const items = await res.json();
     if (!items.length) { emptyEl.hidden = false; return; }
 
-    // Agrupadas por calle
+    destinosCache = new Map(items.map(d => [d.id, d]));
+
+    // Agrupadas por calle y, dentro de cada calle, por tipo -- una calle
+    // real mezcla casas, deptos, locales, etc., y verlos todos revueltos
+    // hacía más lento encontrar uno en calles grandes.
     const porCalle = new Map();
     for (const d of items) {
       const calle = d.calle || 'Sin calle';
-      if (!porCalle.has(calle)) porCalle.set(calle, []);
-      porCalle.get(calle).push(d);
+      if (!porCalle.has(calle)) porCalle.set(calle, new Map());
+      const porTipo = porCalle.get(calle);
+      const tipo = d.tipo || 'casa';
+      if (!porTipo.has(tipo)) porTipo.set(tipo, []);
+      porTipo.get(tipo).push(d);
     }
 
     // Ícono por tipo -- edificio/departamento/oficina/bodega comparten la
@@ -3317,74 +3324,131 @@
     // vistazo en la vista de tarjetas sin tener que leer la etiqueta.
     const iconoEdificio = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="7" x2="9" y2="7.01"/><line x1="15" y1="7" x2="15" y2="7.01"/><line x1="9" y1="12" x2="9" y2="12.01"/><line x1="15" y1="12" x2="15" y2="12.01"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`;
     const iconoCasa = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
-    // Calle: dos líneas de carril (una punteada al centro) en vez de una
-    // casa -- el encabezado de grupo agrupa varios destinos de tipos
-    // distintos, así que un ícono de casa era engañoso ahí.
-    const iconoCalle = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="2" x2="4" y2="22"/><line x1="18" y1="2" x2="20" y2="22"/><line x1="12" y1="2" x2="11.4" y2="7" stroke-dasharray="2.5 2.5"/><line x1="11" y1="12" x2="10.4" y2="17" stroke-dasharray="2.5 2.5"/></svg>`;
+    // Calle: vista de arriba de una vialidad (dos guarniciones + línea
+    // central punteada) en vez de las líneas en perspectiva de antes, que
+    // a 16px se veían como un garabato sin forma clara.
+    const iconoCalle = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="22" y2="17"/><line x1="4" y1="12" x2="8" y2="12"/><line x1="12" y1="12" x2="16" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>`;
     const esEdificioLike = tipo => ['edificio', 'departamento', 'oficina', 'bodega', 'local'].includes((tipo || '').toLowerCase());
 
-    rowsEl.innerHTML = [...porCalle.entries()].map(([calle, destinos]) => `
+    rowsEl.innerHTML = [...porCalle.entries()].map(([calle, porTipo]) => {
+      const totalCalle = [...porTipo.values()].reduce((acc, arr) => acc + arr.length, 0);
+      return `
       <div style="margin-bottom:24px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="font-size:13px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;display:flex;align-items:center;gap:8px">
             ${iconoCalle}
             ${esc(calle)}
           </div>
-          <span class="badge badge--neutral" style="font-size:11.5px">${destinos.length} ${destinos.length === 1 ? 'destino' : 'destinos'}</span>
+          <span class="badge badge--neutral" style="font-size:11.5px">${totalCalle} ${totalCalle === 1 ? 'destino' : 'destinos'}</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
-          ${destinos.map(d => {
-            const n = d.residentes_activos || 0;
-            return `
-            <div id="dest-row-${d.id}" class="dest-card" data-dest-nombre="${esc(d.nombre)}" style="position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s,transform .15s">
-              <button type="button" class="btn-ghost" style="position:absolute;top:8px;right:34px;color:${d.contacto_telefono ? 'var(--brand)' : 'var(--text-3)'};padding:4px;display:flex" data-contacto-dest="${d.id}" data-contacto-nombre="${esc(d.contacto_nombre || '')}" data-contacto-telefono="${esc(d.contacto_telefono || '')}" title="${d.contacto_telefono ? 'Contacto: ' + esc(d.contacto_telefono) + ' (sin verificar)' : 'Agregar contacto de referencia'}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              </button>
-              <button type="button" class="btn-ghost" style="position:absolute;top:8px;right:8px;color:var(--text-3);padding:4px;display:flex" data-del-dest="${d.id}" title="Eliminar destino">
-                <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
-              </button>
-              <div style="color:var(--text-3);margin-bottom:8px">${esEdificioLike(d.tipo) ? iconoEdificio : iconoCasa}</div>
-              <div style="font-size:14px;font-weight:700;color:var(--text)">${formatTipoDestino(d.tipo)} ${esc(d.numero || '')}</div>
-              ${d.titular ? `<div style="font-size:11.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.titular)}</div>` : ''}
-              <div style="display:flex;align-items:center;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-                <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" style="color:${n > 0 ? 'var(--brand)' : 'var(--text-3)'}"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>
-                <span style="font-size:13px;font-weight:700;color:${n > 0 ? 'var(--text)' : 'var(--text-3)'}">${n}</span>
-                <span style="font-size:11.5px;color:var(--text-3)">residente${n !== 1 ? 's' : ''}</span>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>`).join('');
+        ${[...porTipo.entries()].map(([tipo, destinos]) => `
+          <div style="margin-bottom:14px">
+            ${porTipo.size > 1 ? `<div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">${formatTipoDestino(tipo)}${destinos.length > 1 ? 's' : ''} · ${destinos.length}</div>` : ''}
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+              ${destinos.map(d => {
+                const n = d.residentes_activos || 0;
+                return `
+                <div id="dest-row-${d.id}" class="dest-card" data-dest-id="${d.id}" style="position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s,transform .15s">
+                  <button type="button" class="btn-ghost" style="position:absolute;top:8px;right:8px;color:var(--text-3);padding:4px;display:flex" data-del-dest="${d.id}" title="Eliminar destino">
+                    <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
+                  </button>
+                  <div style="color:var(--text-3);margin-bottom:8px">${esEdificioLike(d.tipo) ? iconoEdificio : iconoCasa}</div>
+                  <div style="font-size:14px;font-weight:700;color:var(--text)">${formatTipoDestino(d.tipo)} ${esc(d.numero || '')}</div>
+                  ${d.titular ? `<div style="font-size:11.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.titular)}</div>` : ''}
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+                    <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" style="color:${n > 0 ? 'var(--brand)' : 'var(--text-3)'}"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>
+                    <span style="font-size:13px;font-weight:700;color:${n > 0 ? 'var(--text)' : 'var(--text-3)'}">${n}</span>
+                    <span style="font-size:11.5px;color:var(--text-3)">residente${n !== 1 ? 's' : ''}</span>
+                    ${d.contacto_telefono ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3);margin-left:auto" title="Tiene contacto de referencia"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>` : ''}
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }).join('');
 
     rowsEl.querySelectorAll('.dest-card').forEach(card => {
       card.addEventListener('mouseenter', () => { card.style.borderColor = 'var(--brand)'; });
       card.addEventListener('mouseleave', () => { card.style.borderColor = 'var(--border)'; });
       card.addEventListener('click', (e) => {
-        if (e.target.closest('[data-del-dest]') || e.target.closest('[data-contacto-dest]')) return;
-        verResidentesDeDestino(card.dataset.destNombre);
+        if (e.target.closest('[data-del-dest]')) return;
+        abrirDetalleDestino(+card.dataset.destId);
       });
     });
 
     rowsEl.querySelectorAll('[data-del-dest]').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); deleteDestino(+btn.dataset.delDest); });
     });
-
-    rowsEl.querySelectorAll('[data-contacto-dest]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        abrirModalContactoDestino(+btn.dataset.contactoDest, btn.dataset.contactoNombre, btn.dataset.contactoTelefono);
-      });
-    });
   }
 
+  // -- Detalle de destino -----------------------------------------------
+  // Antes, picarle a una tarjeta te mandaba directo a Residentes filtrado.
+  // Eso no dejaba lugar para ver/editar el contacto de referencia ni los
+  // teléfonos ya verificados de esa casa sin salir de la vista de Destinos
+  // -- este modal es la parada intermedia con ambas cosas, y desde ahí sí
+  // se puede navegar a Residentes si se quiere el listado completo.
+  let destinosCache = new Map();
   let contactoDestinoIdActual = null;
 
-  function abrirModalContactoDestino(id, nombre, telefono) {
-    contactoDestinoIdActual = id;
-    document.getElementById('cd-nombre').value = nombre || '';
-    document.getElementById('cd-telefono').value = telefono || '';
-    document.getElementById('modal-contacto-destino').hidden = false;
+  async function abrirDetalleDestino(id) {
+    const d = destinosCache.get(id);
+    if (!d) return;
+
+    document.getElementById('dd-titulo').textContent = `${formatTipoDestino(d.tipo)} ${d.numero || ''} · ${d.calle || ''}`.trim();
+    document.getElementById('dd-titular').textContent = d.titular ? `Titular: ${d.titular}` : '';
+    document.getElementById('modal-destino-detalle').dataset.destId = id;
+    document.getElementById('modal-destino-detalle').dataset.destNombre = d.nombre;
+    renderContactoEnDetalle(d);
+
+    const residentesEl = document.getElementById('dd-residentes-rows');
+    residentesEl.innerHTML = `<div style="font-size:12.5px;color:var(--text-3)">Cargando...</div>`;
+    document.getElementById('modal-destino-detalle').hidden = false;
+
+    const res = await api('/membresias/');
+    if (!res || !res.ok) { residentesEl.innerHTML = `<div style="font-size:12.5px;color:var(--text-3)">No se pudo cargar</div>`; return; }
+    const data = await res.json();
+    const todos = Array.isArray(data) ? data : (data.membresias || []);
+    const deEsteDestino = todos.filter(m => m.casa_destino === d.nombre);
+
+    residentesEl.innerHTML = deEsteDestino.length
+      ? deEsteDestino.map(m => {
+          const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''}`.trim() || 'Sin nombre';
+          return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span style="color:var(--text)">${esc(nombreCompleto)}</span>
+            <span class="mono-value" style="color:var(--text-2);font-size:12.5px">${esc(m.telefono || '—')}</span>
+          </div>`;
+        }).join('')
+      : `<div style="font-size:12.5px;color:var(--text-3)">Nadie enrolado con teléfono verificado en este destino.</div>`;
   }
+
+  function renderContactoEnDetalle(d) {
+    const el = document.getElementById('dd-contacto-valor');
+    el.innerHTML = d.contacto_telefono || d.contacto_nombre
+      ? `${d.contacto_nombre ? esc(d.contacto_nombre) + ' · ' : ''}${esc(d.contacto_telefono || '')}`
+      : `<span style="color:var(--text-3)">Sin contacto capturado</span>`;
+  }
+
+  document.getElementById('dd-cerrar')?.addEventListener('click', () => {
+    document.getElementById('modal-destino-detalle').hidden = true;
+  });
+
+  document.getElementById('dd-ver-residentes')?.addEventListener('click', () => {
+    const nombre = document.getElementById('modal-destino-detalle').dataset.destNombre;
+    document.getElementById('modal-destino-detalle').hidden = true;
+    verResidentesDeDestino(nombre);
+  });
+
+  document.getElementById('dd-editar-contacto')?.addEventListener('click', () => {
+    const id = +document.getElementById('modal-destino-detalle').dataset.destId;
+    const d = destinosCache.get(id);
+    if (!d) return;
+    contactoDestinoIdActual = id;
+    document.getElementById('cd-nombre').value = d.contacto_nombre || '';
+    document.getElementById('cd-telefono').value = d.contacto_telefono || '';
+    document.getElementById('modal-contacto-destino').hidden = false;
+  });
 
   document.getElementById('cd-cancel')?.addEventListener('click', () => {
     document.getElementById('modal-contacto-destino').hidden = true;
@@ -3404,8 +3468,13 @@
       mostrarToast('No se pudo guardar el contacto', 'err');
       return;
     }
+    const actualizado = await res.json();
+    destinosCache.set(actualizado.id, actualizado);
     document.getElementById('modal-contacto-destino').hidden = true;
-    await loadDestinos();
+    renderContactoEnDetalle(actualizado);
+    // Refleja el ícono de "tiene contacto" en la tarjeta sin recargar todo.
+    const card = document.getElementById(`dest-row-${actualizado.id}`);
+    if (card) loadDestinos();
   });
 
   async function deleteDestino(id) {
