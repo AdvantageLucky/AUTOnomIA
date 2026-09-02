@@ -1084,7 +1084,7 @@ textarea { resize: vertical; }
 
 /* 5 columnas para la lista de visitas */
 .vis-row-grid--list {
-  grid-template-columns: 2fr 80px 1fr 90px 70px;
+  grid-template-columns: 2fr 80px 1fr 90px 92px;
 }
 
 .row-name {

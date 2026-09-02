@@ -514,6 +514,11 @@
     return `${d.getDate()} ${meses[d.getMonth()]}`;
   }
 
+  function fmtTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString(lang === "en" ? "en-US" : "es-MX", { hour: "2-digit", minute: "2-digit" });
+  }
+
   function fmtElapsed(iso) {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
@@ -1602,7 +1607,7 @@
       <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
-      <div class="row-date">${fmtDateShort(v.created_at)}</div>
+      <div class="row-date">${fmtDateShort(v.created_at)}<div class="row-sub">${fmtTime(v.created_at)}</div></div>
     </div>`;
   }
 
@@ -4184,6 +4189,7 @@
 
       return `
         <div class="res-row" data-res-pending-id="${m.id}" style="cursor:pointer">
+          <div style="width:18px"></div>
           ${avatarHtml}
           <div class="res-info-main">
             <div class="res-name">${esc(nombreCompleto)}</div>
