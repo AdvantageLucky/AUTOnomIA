@@ -87,6 +87,9 @@ class _PersonaQrResultViewState extends State<PersonaQrResultView> {
       children: [
         Scaffold(
           body: PantallaAdaptable(
+            // Ver qr_result_view.dart: el footer queda detrás del
+            // micrófono/vigilante sin esta reserva extra abajo.
+            padding: const EdgeInsets.fromLTRB(34, 24, 34, 24 + KigoDesign.clearanceBotonesFlotantes),
             child: Column(
               children: [
                 const KigoWordmark(),

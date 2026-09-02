@@ -406,6 +406,26 @@ class _QrScannerViewState extends State<QrScannerView>
                     final value = barcode?.rawValue;
                     if (value != null) _onQrDetected(value);
                   },
+                  // A veces la cámara no arranca (permiso revocado a medio
+                  // uso, lente ocupada por otra vista que no soltó a
+                  // tiempo) y sin esto el kiosko se quedaba con un cuadro
+                  // negro sin ninguna pista de qué pasó -- el visitante no
+                  // tiene forma de saber si es normal o está roto.
+                  errorBuilder: (context, error, child) => Container(
+                    color: context.kBg,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.info_outline_rounded, color: context.kTextSecondary, size: 48),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No se pudo iniciar la cámara',
+                          style: TextStyle(color: context.kTextSecondary, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -477,7 +497,20 @@ class _QrScannerViewState extends State<QrScannerView>
             right: 0,
             bottom: 0,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(24, 32, 24, safe.bottom + 28),
+              // El CTA "no tengo la app o código QR" es de ancho completo:
+              // sin la reserva extra queda tapado por el micrófono/vigilante
+              // de BotonAsistenteFlotante (confirmado por screenshot). Se
+              // acota a una fracción de la franja disponible -- en un
+              // apaisado bajito (784x361) la franja mide ~100px, y la
+              // reserva completa (110) dejaba al FittedBox con alto
+              // negativo (RenderParagraph con NaN, ver
+              // qr_scanner_layout_test.dart).
+              padding: EdgeInsets.fromLTRB(
+                24,
+                32,
+                24,
+                safe.bottom + 28 + math.min(KigoDesign.clearanceBotonesFlotantes, (pantalla.height - bottomRecuadro) * 0.3),
+              ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: SizedBox(

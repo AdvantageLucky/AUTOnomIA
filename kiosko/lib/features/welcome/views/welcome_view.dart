@@ -111,7 +111,10 @@ class _WelcomeViewState extends State<WelcomeView>
             onTapUp: (_) => _cancelarConteoSalidaOperador(),
             onTapCancel: _cancelarConteoSalidaOperador,
             child: PantallaAdaptable(
-              padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+              // El footer, empujado al fondo por el segundo Spacer, quedaba
+              // pegado (a veces detrás) del micrófono/vigilante de
+              // BotonAsistenteFlotante -- confirmado por screenshot.
+              padding: const EdgeInsets.fromLTRB(34, 48, 34, 48 + KigoDesign.clearanceBotonesFlotantes),
               child: Column(
                 children: [
                   _buildHeader(context),

@@ -51,6 +51,13 @@ abstract final class KigoDesign {
   // antes) queda tapado por la yema del dedo y no se ve si respondio.
   static const ladoAsistente = 76.0;
 
+  /// Espacio que hay que reservar abajo a la derecha para no quedar debajo
+  /// de los botones de micrófono/vigilante de `BotonAsistenteFlotante`
+  /// (64 de lado + 20 de offset del borde + margen). Cualquier pantalla con
+  /// contenido de ancho completo o anclado abajo debe sumarlo a su padding
+  /// inferior -- confirmado por screenshot que sin esto el CTA queda tapado.
+  static const clearanceBotonesFlotantes = 110.0;
+
   // ── Radius ─────────────────────────────────────────────────────────────────
   static const radius   = 10.0;
   static const radiusSm = 6.0;

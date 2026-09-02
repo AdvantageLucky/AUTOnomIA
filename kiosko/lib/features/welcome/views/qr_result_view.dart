@@ -79,6 +79,10 @@ class _QrResultViewState extends State<QrResultView> {
       children: [
         Scaffold(
           body: PantallaAdaptable(
+            // El footer, empujado al fondo por el segundo Spacer, quedaba
+            // detrás del micrófono/vigilante sin esta reserva extra abajo
+            // (ver welcome_view.dart, mismo problema).
+            padding: const EdgeInsets.fromLTRB(34, 24, 34, 24 + KigoDesign.clearanceBotonesFlotantes),
             child: Column(
               children: [
                 const KigoWordmark(),

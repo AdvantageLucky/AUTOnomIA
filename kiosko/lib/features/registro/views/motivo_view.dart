@@ -75,7 +75,9 @@ class MotivoView extends StatelessWidget {
           body: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.only(left: 42, right: 42, bottom: 40),
+              // El último chip de la lista queda detrás del
+              // micrófono/vigilante si se llega a scrollear hasta el fondo.
+              padding: EdgeInsets.only(left: 42, right: 42, bottom: 40 + KigoDesign.clearanceBotonesFlotantes),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
