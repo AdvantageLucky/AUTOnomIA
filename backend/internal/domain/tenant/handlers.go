@@ -72,6 +72,7 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 		fields["direccion"] = req.Direccion
 	}
 	fields["descripcion"] = req.Descripcion
+	fields["telefono_contacto"] = req.TelefonoContacto
 
 	// El código se genera solo una vez, a partir del nombre — el admin nunca
 	// lo escribe. Una vez asignado queda fijo, aunque el nombre cambie después.
@@ -112,12 +113,13 @@ func toResponse(t *CentroHabitacional) TenantResponse {
 		codigo = *t.Codigo
 	}
 	return TenantResponse{
-		ID:          t.ID,
-		Nombre:      t.Nombre,
-		Direccion:   t.Direccion,
-		Codigo:      codigo,
-		Descripcion: t.Descripcion,
-		CreatedAt:   t.CreatedAt,
+		ID:               t.ID,
+		Nombre:           t.Nombre,
+		Direccion:        t.Direccion,
+		Codigo:           codigo,
+		Descripcion:      t.Descripcion,
+		TelefonoContacto: t.TelefonoContacto,
+		CreatedAt:        t.CreatedAt,
 	}
 }
 

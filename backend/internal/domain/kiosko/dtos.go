@@ -55,8 +55,6 @@ type KioskoConfigRequest struct {
 
 	TiempoExitoSeg *int `json:"tiempo_exito_seg"`
 
-	TelefonoContacto *string `json:"telefono_contacto"`
-
 	MostrarScoreIaKiosko *bool `json:"mostrar_score_ia_kiosko"`
 
 	UsarPlacaEnScoreIA     *bool `json:"usar_placa_en_score_ia"`
@@ -93,8 +91,11 @@ type KioskoConfigResponse struct {
 
 	TiempoExitoSeg int `json:"tiempo_exito_seg"`
 
-	// Ver KioskoConfig.TelefonoContacto -- vacío oculta el botón "hablar con
-	// el administrador" en la app del kiosko.
+	// Viene del centro habitacional (CentroHabitacional.TelefonoContacto),
+	// no de KioskoConfig -- un solo número por centro, no uno por kiosko.
+	// toKioskoConfigResponse no lo llena; lo completa el handler que sí
+	// tiene el tenant_id (ver GetConfigDesdeKiosko). Vacío oculta el botón
+	// "hablar con el administrador" en la app del kiosko.
 	TelefonoContacto string `json:"telefono_contacto"`
 
 	MostrarScoreIaKiosko bool `json:"mostrar_score_ia_kiosko"`
@@ -160,7 +161,8 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 
 		TiempoExitoSeg: cfg.TiempoExitoSeg,
 
-		TelefonoContacto: cfg.TelefonoContacto,
+		// TelefonoContacto: lo completa el llamador (ver comentario en el
+		// campo de KioskoConfigResponse).
 
 		MostrarScoreIaKiosko: cfg.MostrarScoreIaKiosko,
 

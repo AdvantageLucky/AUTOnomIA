@@ -42,6 +42,19 @@ func (r *Repository) Create(a *Kiosko) error {
 	return r.db.Create(a).Error
 }
 
+// TelefonoContactoDeTenant lee el teléfono de contacto del centro
+// habitacional (CentroHabitacional.TelefonoContacto) -- consulta cruda en
+// vez de importar el paquete tenant, mismo motivo que otras consultas
+// cross-dominio del proyecto: evitar un ciclo de imports.
+func (r *Repository) TelefonoContactoDeTenant(tenantID uint) string {
+	var telefono string
+	_ = r.db.Table("centros_habitacionales").
+		Select("telefono_contacto").
+		Where("id = ?", tenantID).
+		Scan(&telefono).Error
+	return telefono
+}
+
 // FindByID encuentra un Kiosko por su id asegurando pertenecer al tenant activo
 func (r *Repository) FindByID(id uint) (*Kiosko, error) {
 	var a Kiosko

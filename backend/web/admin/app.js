@@ -2467,7 +2467,6 @@
       foto_rostro_visitante: document.getElementById('nk-cfg-rostro').checked,
       auto_pass_habilitado:  document.getElementById('nk-cfg-autopass').checked,
       mensaje_bienvenida:    document.getElementById('nk-cfg-mensaje').value.trim(),
-      telefono_contacto:     document.getElementById('nk-cfg-telefono-contacto').value.trim(),
     };
     const res = await api(`/kioskos/${nkNuevoKioskoId}/config`, {
       method: 'PATCH', body: JSON.stringify(payload),
@@ -2795,7 +2794,6 @@
     document.getElementById("cfg-color").value        = cfg.color_kiosko       || "oscuro";
     document.getElementById("cfg-idioma").value       = cfg.idioma_kiosko      || "es";
     document.getElementById("cfg-mensaje").value      = cfg.mensaje_bienvenida || "";
-    document.getElementById("cfg-telefono-contacto").value = cfg.telefono_contacto || "";
     document.getElementById("cfg-ine-invitado").checked     = !!cfg.foto_ine_invitado;
     document.getElementById("cfg-rostro-invitado").checked  = !!cfg.foto_rostro_invitado;
     document.getElementById("cfg-placa-invitado").checked   = esPeatonal ? false : !!cfg.foto_placa_invitado;
@@ -2941,7 +2939,6 @@
       color_kiosko:             document.getElementById("cfg-color").value,
       idioma_kiosko:            document.getElementById("cfg-idioma").value,
       mensaje_bienvenida:       document.getElementById("cfg-mensaje").value,
-      telefono_contacto:        document.getElementById("cfg-telefono-contacto").value.trim(),
       foto_rostro_visitante:    fotoRostro,
       foto_placa_visitante:     esPeatonal ? false : fotoPlaca,
       foto_ine_visitante:       fotoIne,
@@ -3683,6 +3680,7 @@
     set('inst-nombre',     d.nombre);
     set('inst-direccion',  d.direccion);
     set('inst-descripcion', d.descripcion);
+    set('inst-telefono-contacto', d.telefono_contacto);
     const codigoEl = document.getElementById('inst-codigo');
     if (codigoEl) codigoEl.textContent = d.codigo || '—';
   }
@@ -3694,6 +3692,7 @@
       nombre:      document.getElementById('inst-nombre')?.value.trim(),
       direccion:   document.getElementById('inst-direccion')?.value.trim(),
       descripcion: document.getElementById('inst-descripcion')?.value.trim(),
+      telefono_contacto: document.getElementById('inst-telefono-contacto')?.value.trim(),
     };
     const res = await api(`/tenants/${tenantId}`, {
       method: 'PATCH',

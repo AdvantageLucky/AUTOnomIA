@@ -723,14 +723,6 @@
 										</div>
 										<input id="cfg-mensaje" type="text" placeholder="Bienvenido al centro habitacional" style="width:100%">
 									</div>
-
-									<div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-										<div>
-											<div class="toggle-label">Teléfono de contacto</div>
-											<div class="toggle-sub">Número del vigilante/admin para el botón "Llamar al administrador" del kiosko -- funciona aunque el kiosko no tenga internet</div>
-										</div>
-										<input id="cfg-telefono-contacto" type="tel" placeholder="2221234567" style="width:100%">
-									</div>
 								</div>
 							</div>
 
@@ -1007,6 +999,11 @@
 										<label>Descripción</label>
 										<textarea id="inst-descripcion" rows="3" placeholder="Descripción breve del centro…"></textarea>
 									</div>
+									<div class="form-group">
+										<label>Teléfono de contacto</label>
+										<div class="toggle-sub" style="margin-bottom:6px">Número del vigilante/admin para el botón "Llamar al administrador" de todos los kioskos de este centro -- funciona aunque el kiosko no tenga internet</div>
+										<input id="inst-telefono-contacto" type="tel" placeholder="2221234567">
+									</div>
 									<div id="inst-config-error" class="form-error" hidden></div>
 									<div id="inst-config-ok" class="form-success" hidden>Configuración guardada.</div>
 									<div class="form-actions">
@@ -1232,10 +1229,6 @@
 						<div style="margin-top:4px">
 							<label style="font-size:13px;color:var(--text-2);display:block;margin-bottom:6px">Mensaje de bienvenida <span style="color:var(--text-3)">(opcional)</span></label>
 							<input id="nk-cfg-mensaje" type="text" placeholder="Bienvenido a Residencial Las Palmas" style="width:100%;box-sizing:border-box">
-						</div>
-						<div style="margin-top:12px">
-							<label style="font-size:13px;color:var(--text-2);display:block;margin-bottom:6px">Teléfono de contacto <span style="color:var(--text-3)">(opcional -- botón "Llamar al administrador" del kiosko)</span></label>
-							<input id="nk-cfg-telefono-contacto" type="tel" placeholder="2221234567" style="width:100%;box-sizing:border-box">
 						</div>
 					</div>
 					<div id="nk-cfg-error" class="form-error" style="margin-top:12px" hidden></div>

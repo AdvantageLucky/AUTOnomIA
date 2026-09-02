@@ -249,7 +249,9 @@ func (h *Handler) PatchKiosko(c *gin.Context) {
 		}
 	}
 
-	if data, err := json.Marshal(toKioskoConfigResponse(cfg, a.Tipo)); err == nil {
+	resp := toKioskoConfigResponse(cfg, a.Tipo)
+	resp.TelefonoContacto = repoCtx.TelefonoContactoDeTenant(a.TenantID)
+	if data, err := json.Marshal(resp); err == nil {
 		h.cfgHubs.get(cfg.KioskoID).Broadcast(data)
 	}
 }
@@ -324,7 +326,9 @@ func (h *Handler) GetConfig(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg, kiosko.Tipo))
+	resp := toKioskoConfigResponse(cfg, kiosko.Tipo)
+	resp.TelefonoContacto = repoCtx.TelefonoContactoDeTenant(kiosko.TenantID)
+	c.JSON(http.StatusOK, resp)
 }
 
 // GetConfigDesdeKiosko devuelve la config del kiosko autenticado por su propia sesión
@@ -346,7 +350,9 @@ func (h *Handler) GetConfigDesdeKiosko(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toKioskoConfigResponse(cfg, kiosko.Tipo))
+	resp := toKioskoConfigResponse(cfg, kiosko.Tipo)
+	resp.TelefonoContacto = repoCtx.TelefonoContactoDeTenant(kiosko.TenantID)
+	c.JSON(http.StatusOK, resp)
 }
 
 // PatchConfig actualiza los campos indicados de la config del kiosko (PATCH parcial)
@@ -469,9 +475,6 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.TiempoExitoSeg != nil {
 		cfg.TiempoExitoSeg = *req.TiempoExitoSeg
 	}
-	if req.TelefonoContacto != nil {
-		cfg.TelefonoContacto = *req.TelefonoContacto
-	}
 	if req.MostrarScoreIaKiosko != nil {
 		cfg.MostrarScoreIaKiosko = *req.MostrarScoreIaKiosko
 	}
@@ -491,6 +494,7 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	}
 
 	resp := toKioskoConfigResponse(cfg, kiosko.Tipo)
+	resp.TelefonoContacto = repoCtx.TelefonoContactoDeTenant(kiosko.TenantID)
 	c.JSON(http.StatusOK, resp)
 
 	if data, err := json.Marshal(resp); err == nil {
