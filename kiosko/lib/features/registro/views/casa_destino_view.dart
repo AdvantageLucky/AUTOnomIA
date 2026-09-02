@@ -210,7 +210,12 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
             child: Padding(
               // La última tarjeta de la lista queda detrás del
               // micrófono/vigilante si se llega a scrollear hasta el fondo.
-              padding: EdgeInsets.only(left: 42, right: 42, bottom: 40 + KigoDesign.clearanceBotonesFlotantes),
+              // top: 28 -- mismo motivo que motivo_view.dart: la mascota
+              // (topDelBorde: 0, alto 76) desborda 20px por debajo de este
+              // AppBar (kToolbarHeight=56) y solapaba el StepIndicator,
+              // confirmado con tester.getRect en motivo_view (misma
+              // estructura AppBar+Stack exacta que esta pantalla).
+              padding: EdgeInsets.only(left: 42, right: 42, top: 28, bottom: 40 + KigoDesign.clearanceBotonesFlotantes),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

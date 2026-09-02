@@ -394,7 +394,13 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
                             ),
                           ),
 
-                          const SizedBox(height: 16),
+                          // height: 52 (no 16) -- misma estructura que
+                          // VehicularRegisterView: BotonAsistenteFlotante usa
+                          // topDelBorde: 32 + mostrarEtiqueta: true (~98px de
+                          // alto), y con 16 el StepIndicator arrancaba dentro
+                          // de la mascota (confirmado con tester.getRect en
+                          // la pantalla gemela).
+                          const SizedBox(height: 52),
 
                           StepIndicator(
                             currentStep: viewModel.indicatorStep,

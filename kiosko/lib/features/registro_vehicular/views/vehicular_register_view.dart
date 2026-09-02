@@ -381,7 +381,14 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          // height: 52 (no 16) -- BotonAsistenteFlotante acá
+                          // usa topDelBorde: 32 + mostrarEtiqueta: true
+                          // (mascota + "Asistente IA" arriba, ~98px de alto),
+                          // así que llega hasta y≈130. Con 16 el
+                          // StepIndicator arrancaba en y=102 -- confirmado
+                          // con tester.getRect: solape real de 76x28px contra
+                          // el borde izquierdo de la mascota.
+                          const SizedBox(height: 52),
                           StepIndicator(
                             currentStep: viewModel.indicatorStep,
                             totalSteps: viewModel.indicatorTotalSteps,

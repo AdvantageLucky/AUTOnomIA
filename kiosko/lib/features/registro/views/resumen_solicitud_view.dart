@@ -342,10 +342,20 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
                 // El sello de confianza (último elemento cuando hay score)
                 // queda detrás del micrófono/vigilante si se scrollea hasta
                 // el fondo, sin esta reserva extra.
+                //
+                // top: 150 -- BotonAsistenteFlotante en esta pantalla usa
+                // topDelBorde: 40 CON mostrarEtiqueta: true (mascota + label
+                // "Asistente IA" arriba, ~98px de alto total), así que el
+                // conjunto ocupa hasta y≈138. Con top: 40 el StepIndicator
+                // arrancaba en el mismo y que la mascota -- confirmado con
+                // tester.getRect: StepIndicator=(42,40,758,84) vs mascota
+                // x=[682,758], solape real de 76x44px. topDelBorde se deja
+                // igual (40) porque ahí es donde debe verse la mascota; es el
+                // contenido el que necesita bajar para no meterse debajo.
                 padding: EdgeInsets.only(
                   left: 42,
                   right: 42,
-                  top: 40,
+                  top: 150,
                   bottom: 40 + KigoDesign.clearanceBotonesFlotantes,
                 ),
                 child: Column(

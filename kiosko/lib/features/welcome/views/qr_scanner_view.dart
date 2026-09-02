@@ -514,7 +514,7 @@ class _QrScannerViewState extends State<QrScannerView>
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: SizedBox(
-                  width: pantalla.width - 48,
+                  width: pantalla.width - 32,
                   child: _buildBottomHint(),
                 ),
               ),
@@ -590,7 +590,7 @@ class _QrScannerViewState extends State<QrScannerView>
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 44),
         decoration: BoxDecoration(
           color: _botonPresionado ? KigoDesign.brandHover : KigoDesign.brand,
           borderRadius: BorderRadius.circular(22),
@@ -610,7 +610,7 @@ class _QrScannerViewState extends State<QrScannerView>
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 32,
+            fontSize: 38,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
           ),
