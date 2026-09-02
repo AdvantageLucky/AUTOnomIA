@@ -1,4 +1,5 @@
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:flutter/material.dart';
@@ -41,34 +42,45 @@ class _ResidentPinViewState extends State<ResidentPinView> {
   @override
   Widget build(BuildContext context) {
     final vm = widget.viewModel;
-    return Scaffold(
-      backgroundColor: context.kBg,
-      body: PantallaAdaptable(
-        padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
-        child: Column(
-          children: [
-            _buildHeader(context),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: context.kBg,
+          body: PantallaAdaptable(
+            padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+            child: Column(
+              children: [
+                _buildHeader(context),
 
-            const Spacer(),
+                const Spacer(),
 
-            _buildDisplay(),
+                _buildDisplay(),
 
-            const SizedBox(height: 36),
+                const SizedBox(height: 36),
 
-            if (vm.tieneColisionPin)
-              _buildSeleccionCandidato()
-            else ...[
-              _buildKeypad(),
-              const SizedBox(height: 28),
-              _buildConfirmar(),
-            ],
+                if (vm.tieneColisionPin)
+                  _buildSeleccionCandidato()
+                else ...[
+                  _buildKeypad(),
+                  const SizedBox(height: 28),
+                  _buildConfirmar(),
+                ],
 
-            const Spacer(),
+                const Spacer(),
 
-            _buildFooter(),
-          ],
+                _buildFooter(),
+              ],
+            ),
+          ),
         ),
-      ),
+        BotonAsistenteFlotante(
+          // Coincide con el padding de PantallaAdaptable en esta pantalla (34/48).
+          topDelBorde: 48,
+          rightDelBorde: 34,
+          onRespuestaLibre: (_) {},
+          onCampoExtraido: (_) {}, // esta pantalla no llena campos por voz
+        ),
+      ],
     );
   }
 

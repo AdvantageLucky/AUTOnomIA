@@ -5,6 +5,7 @@ import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/services/asistente_controller.dart';
 import 'package:kigo_kiosco/core/services/asistente_servicio.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
+import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/faq_offline_sheet.dart';
 import 'package:kigo_kiosco/core/widgets/mascota_asistente.dart';
@@ -43,8 +44,18 @@ class BotonAsistente extends StatefulWidget {
 class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStateMixin {
   final AsistenteServicio _asistente = AsistenteServicio();
   final TextToSpeakServicio _tts = TextToSpeakServicio();
+  final LedServicio _led = LedServicio();
   _EstadoAsistente _estado = _EstadoAsistente.inactivo;
   bool _micDisponible = true;
+
+  // Ambar en el LED mientras no hay internet -- señal ambiental que un
+  // vigilante nota de reojo sin que un visitante entienda qué significa.
+  // Este widget vive en (casi) toda pantalla, así que es el punto natural
+  // para reaccionar a la conectividad sin duplicar la suscripción en cada
+  // vista. `addListener` (no context.watch en build) para no reprender el
+  // canal nativo en cada rebuild, solo en transiciones reales.
+  ConnectivityService? _connectivity;
+  bool? _ultimoOffline;
 
   /// El dedo tapa el boton mientras lo mantiene presionado, asi que el
   /// unico feedback util es el que se nota en el borde: encoge un poco y
@@ -67,6 +78,23 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
       if (mounted) setState(() => _micDisponible = ok);
     });
     widget.controlador?.addListener(_onControladorDecir);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _connectivity = context.read<ConnectivityService>();
+      _connectivity!.addListener(_onConnectivityChanged);
+      _onConnectivityChanged();
+    });
+  }
+
+  void _onConnectivityChanged() {
+    final offline = _connectivity?.isOffline ?? false;
+    if (_ultimoOffline == offline) return;
+    _ultimoOffline = offline;
+    if (offline) {
+      _led.mostrarOffline();
+    } else {
+      _led.apagar();
+    }
   }
 
   @override
@@ -81,6 +109,7 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
   @override
   void dispose() {
     widget.controlador?.removeListener(_onControladorDecir);
+    _connectivity?.removeListener(_onConnectivityChanged);
     _asistente.dispose();
     _pulseCtrl.dispose();
     _rotCtrl.dispose();

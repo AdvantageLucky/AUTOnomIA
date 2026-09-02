@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 /// - Rojo: Rechazado / Error / PIN incorrecto
 /// - Blanco: Iluminación de apoyo durante escaneo de QR, rostro o documento
 /// - Azul: Procesando / Espera
+/// - Ámbar: sin conexión a internet (no hay canal ámbar en el hardware --
+///   el lado nativo lo logra prendiendo rojo+verde a la vez)
 ///
 /// Silencioso ante cualquier falla — el hardware puede no tener el LED
 /// (otro modelo, emulador) y eso nunca debe tronar la pantalla.
@@ -19,6 +21,8 @@ class LedServicio {
   Future<void> encenderIluminacion() => _setColor('blanco');
 
   Future<void> encenderAzul() => _setColor('azul');
+
+  Future<void> mostrarOffline() => _setColor('amarillo');
 
   Future<void> apagar() async {
     try {

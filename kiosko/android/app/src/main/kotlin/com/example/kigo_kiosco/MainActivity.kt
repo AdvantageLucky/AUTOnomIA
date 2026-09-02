@@ -48,28 +48,31 @@ class MainActivity : FlutterActivity() {
                 try {
                     when (call.method) {
                         "setColor" -> {
-                            val tipo = when (call.argument<String>("color")) {
-                                "rojo" -> 0
-                                "verde" -> 1
-                                "azul" -> 2
-                                "blanco" -> 3
+                            // Cada canal (0=R, 1=G, 2=B, 3=W) es un slider independiente
+                            // y aditivo, no un selector de color exclusivo -- verificado
+                            // contra F10SDK/demo/.../LedActivity.java. Sin apagar primero,
+                            // un canal que quedó encendido de un color anterior (ej.
+                            // blanco=W durante el escaneo) se mezcla con el nuevo y el LED
+                            // muestra un color que nadie pidió; closeAllControl() (tipo 4)
+                            // es la única forma de resetearlos todos.
+                            //
+                            // "amarillo" no es un canal del hardware -- no hay ámbar
+                            // dedicado en un LED RGBW. Se logra prendiendo rojo+verde a
+                            // la vez, apoyándose en que los canales son aditivos.
+                            val canales = when (call.argument<String>("color")) {
+                                "rojo" -> listOf(0)
+                                "verde" -> listOf(1)
+                                "azul" -> listOf(2)
+                                "blanco" -> listOf(3)
+                                "amarillo" -> listOf(0, 1)
                                 else -> null
                             }
-                            if (tipo == null) {
-                                result.error("ARGUMENTO_INVALIDO", "color debe ser 'rojo', 'verde', 'azul' o 'blanco'", null)
+                            if (canales == null) {
+                                result.error("ARGUMENTO_INVALIDO", "color debe ser 'rojo', 'verde', 'azul', 'blanco' o 'amarillo'", null)
                             } else {
                                 val brillo = call.argument<Int>("brillo") ?: 255
-                                // controlLedBright(tipo, brillo) prende UN canal (R/G/B/W)
-                                // de forma independiente y aditiva -- no es un selector de
-                                // color exclusivo. Sin apagar primero, un canal que quedó
-                                // encendido de un color anterior (ej. blanco=W durante el
-                                // escaneo) se mezcla con el nuevo (ej. verde=G) y el LED
-                                // muestra un color que nadie pidió (verificado contra
-                                // F10SDK/demo/.../LedActivity.java: cada canal es un slider
-                                // independiente, closeAllControl() es la única forma de
-                                // resetearlos todos).
                                 PosUtil.controlLedBright(4, 1)
-                                PosUtil.controlLedBright(tipo, brillo)
+                                for (canal in canales) PosUtil.controlLedBright(canal, brillo)
                                 result.success(null)
                             }
                         }
