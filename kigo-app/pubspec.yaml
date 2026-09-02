@@ -15,7 +15,6 @@ dependencies:
   intl: ^0.20.2
   provider: ^6.1.2
   uuid: ^4.3.3
-  google_fonts: ^6.2.1
   shared_preferences: ^2.2.2
   http: ^1.2.1
   http_parser: ^4.1.2
@@ -44,3 +43,16 @@ flutter:
   uses-material-design: true
   assets:
     - assets/models/mobilefacenet.tflite
+
+  # Empaquetadas como asset local (no via google_fonts en runtime) para que
+  # nunca dependan de la red del teléfono del residente.
+  fonts:
+    - family: Unbounded
+      fonts:
+        - asset: assets/fonts/Unbounded-Variable.ttf
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-Variable.ttf
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Variable.ttf

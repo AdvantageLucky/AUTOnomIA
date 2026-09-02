@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:kigo_user/l10n/app_localizations.dart';
 import 'package:kigo_user/theme/app_theme.dart';
 
 void main() {
-  // google_fonts intenta descargar fuentes por red en tests — lo desactivamos.
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
-
   group('AppLocalizations', () {
     test('traduce claves en español', () {
       final l = AppLocalizations(const Locale('es'));
@@ -37,8 +33,6 @@ void main() {
   });
 
   group('AppTheme tokens', () {
-    // Verificamos los tokens directamente sin construir ThemeData,
-    // porque ThemeData con google_fonts dispara carga de fuente por red en tests.
     test('brand color es el token unificado del sistema Kigo', () {
       expect(AppTheme.primaryOrange, const Color(0xFFFF542F));
     });

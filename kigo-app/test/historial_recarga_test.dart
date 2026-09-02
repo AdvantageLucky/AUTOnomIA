@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kigo_user/models/membresia_model.dart';
@@ -82,7 +81,6 @@ ThemeData _tema() => ThemeData(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues({});
-  GoogleFonts.config.allowRuntimeFetching = false;
 
   testWidgets('vuelve a pedir el historial cada vez que se entra a la pestaña de Solicitudes',
       (tester) async {

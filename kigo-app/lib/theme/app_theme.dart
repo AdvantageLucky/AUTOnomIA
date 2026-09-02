@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Tokens de diseño — alineados con el sistema de diseño Kigo (mismo que dashboard).
 class AppTheme {
@@ -42,7 +41,31 @@ class AppTheme {
   /// tratamiento que ya usa el dashboard admin (JetBrains Mono) para que un
   /// residente vea su PIN con el mismo lenguaje visual que un admin ve una
   /// placa o un CURP.
-  static TextStyle mono(TextStyle base) => GoogleFonts.jetBrainsMono(textStyle: base);
+  static TextStyle mono(TextStyle base) => base.copyWith(fontFamily: 'JetBrains Mono');
+
+  /// Unbounded para titulares (trazo grueso, tipo señalética) y Manrope para
+  /// el resto del cuerpo — mismo criterio que el kiosko (`KigoDesign`).
+  static TextTheme _construirTextTheme(TextTheme base, Color color) {
+    return base
+        .copyWith(
+          displayLarge: base.displayLarge?.copyWith(fontFamily: 'Unbounded'),
+          displayMedium: base.displayMedium?.copyWith(fontFamily: 'Unbounded'),
+          displaySmall: base.displaySmall?.copyWith(fontFamily: 'Unbounded'),
+          headlineLarge: base.headlineLarge?.copyWith(fontFamily: 'Unbounded'),
+          headlineMedium: base.headlineMedium?.copyWith(fontFamily: 'Unbounded'),
+          headlineSmall: base.headlineSmall?.copyWith(fontFamily: 'Unbounded'),
+          titleLarge: base.titleLarge?.copyWith(fontFamily: 'Unbounded'),
+          titleMedium: base.titleMedium?.copyWith(fontFamily: 'Manrope'),
+          titleSmall: base.titleSmall?.copyWith(fontFamily: 'Manrope'),
+          bodyLarge: base.bodyLarge?.copyWith(fontFamily: 'Manrope'),
+          bodyMedium: base.bodyMedium?.copyWith(fontFamily: 'Manrope'),
+          bodySmall: base.bodySmall?.copyWith(fontFamily: 'Manrope'),
+          labelLarge: base.labelLarge?.copyWith(fontFamily: 'Manrope'),
+          labelMedium: base.labelMedium?.copyWith(fontFamily: 'Manrope'),
+          labelSmall: base.labelSmall?.copyWith(fontFamily: 'Manrope'),
+        )
+        .apply(bodyColor: color, displayColor: color);
+  }
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -59,19 +82,17 @@ class AppTheme {
         onSurfaceVariant: Color(0xFF8A8BA8),
         error: error,
       ),
-      textTheme: GoogleFonts.spaceGroteskTextTheme(ThemeData.light().textTheme).apply(
-        bodyColor: textDark,
-        displayColor: textDark,
-      ),
-      appBarTheme: AppBarTheme(
+      textTheme: _construirTextTheme(ThemeData.light().textTheme, textDark),
+      appBarTheme: const AppBarTheme(
         backgroundColor: surfaceLight,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: textDark),
-        titleTextStyle: GoogleFonts.spaceGrotesk(
+        iconTheme: IconThemeData(color: textDark),
+        titleTextStyle: TextStyle(
+          fontFamily: 'Unbounded',
           color: textDark,
-          fontSize: 17,
-          fontWeight: FontWeight.w700,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -80,7 +101,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
-          textStyle: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700, fontSize: 16),
+          textStyle: const TextStyle(fontFamily: 'Unbounded', fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
       cardTheme: CardThemeData(
@@ -131,19 +152,17 @@ class AppTheme {
         onSurfaceVariant: textGrey,
         error: error,
       ),
-      textTheme: GoogleFonts.spaceGroteskTextTheme(ThemeData.dark().textTheme).apply(
-        bodyColor: textWhite,
-        displayColor: textWhite,
-      ),
-      appBarTheme: AppBarTheme(
+      textTheme: _construirTextTheme(ThemeData.dark().textTheme, textWhite),
+      appBarTheme: const AppBarTheme(
         backgroundColor: backgroundBlack,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: textWhite),
-        titleTextStyle: GoogleFonts.spaceGrotesk(
+        iconTheme: IconThemeData(color: textWhite),
+        titleTextStyle: TextStyle(
+          fontFamily: 'Unbounded',
           color: textWhite,
-          fontSize: 17,
-          fontWeight: FontWeight.w700,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -152,7 +171,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
-          textStyle: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700, fontSize: 16),
+          textStyle: const TextStyle(fontFamily: 'Unbounded', fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
       cardTheme: CardThemeData(
