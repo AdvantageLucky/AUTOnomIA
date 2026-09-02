@@ -1251,6 +1251,35 @@
 			</div>
 		</div>
 
+		<!-- Detalle de un destino: parada intermedia al picarle a una tarjeta
+		     en la vista de Destinos -- muestra el contacto de referencia y los
+		     residentes ya verificados de esa casa, con salida a Residentes
+		     para el listado completo/revocar. -->
+		<div id="modal-destino-detalle" class="modal-overlay" hidden>
+			<div class="modal-box">
+				<div class="modal-title" id="dd-titulo">Destino</div>
+				<div class="modal-sub" id="dd-titular"></div>
+
+				<div style="margin-top:16px;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px">
+					<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+						<div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em">Contacto de referencia (sin verificar)</div>
+						<button type="button" class="btn-ghost" id="dd-editar-contacto" style="font-size:12px;padding:2px 6px">Editar</button>
+					</div>
+					<div id="dd-contacto-valor" style="font-size:13.5px;color:var(--text)"></div>
+				</div>
+
+				<div style="margin-top:16px">
+					<div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Residentes con teléfono verificado</div>
+					<div id="dd-residentes-rows"></div>
+				</div>
+
+				<div class="modal-actions">
+					<button type="button" class="btn-cancel" id="dd-cerrar">Cerrar</button>
+					<button type="button" class="btn-primary" id="dd-ver-residentes">Ver en Residentes</button>
+				</div>
+			</div>
+		</div>
+
 		<!-- Directorio de contacto sin verificar de un destino: nombre/teléfono
 		     que el admin teclea a mano para saber con quién comunicarse cuando
 		     nadie está enrolado ahí. No es una Persona verificada por OTP. -->
