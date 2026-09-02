@@ -14,6 +14,7 @@ import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/residente/services/reconocimiento_facial_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
@@ -43,16 +44,23 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
 
   final _led = LedServicio();
   final _reconocimientoServicio = ReconocimientoFacialServicio();
+
+  /// Chequeo liviano (solo ML Kit, sin TFLite ni red) para el sondeo de cada
+  /// tick -- el mismo que usa el registro de visitante. Antes cada tick del
+  /// sondeo corría el embedding completo (TFLite) Y una ida y vuelta al
+  /// backend, y encima se exigían 2 coincidencias CONFIRMADAS POR EL BACKEND
+  /// seguidas -- eso pagaba el costo caro (cámara + ML Kit accurate + TFLite
+  /// + red, potencialmente 10s de timeout por intento) dos veces por cada
+  /// acceso, de ahí el reporte de "tarda demasiado y ni funciona". Ahora el
+  /// costo caro se paga una sola vez, cuando ya hay un frame estable.
+  final _detectorLigero = FaceDetectorServicio();
+  static const _deteccionesRequeridas = 2;
+  int _deteccionesConsecutivas = 0;
+
   Timer? _timerVerificacion;
   bool _verificandoRostro = false;
   // Controla el bucle de reintentos -- ver _programarSiguienteIntento.
   bool _bucleVerificacionActivo = false;
-
-  // Exigimos 2 coincidencias seguidas contra el mismo residente antes de dar
-  // el acceso por bueno (mitigación básica de falsos positivos/spoofing).
-  String? _ultimoNombreCoincidente;
-  String? _ultimaCasaCoincidente;
-  int _coincidenciasConsecutivas = 0;
 
   /// Se enciende apenas se confirma la racha de 2 coincidencias -- da la
   /// misma pausa visual (aro verde + check) que ya tiene el registro de
@@ -186,8 +194,9 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     });
   }
 
-  // Toma una foto silenciosa, valida que haya un rostro, calcula su huella
-  // localmente y la manda a comparar contra los residentes del edificio.
+  // Sondeo de cada tick: solo el chequeo liviano (ML Kit, sin TFLite ni red).
+  // El embedding + la verificación contra el backend se pagan una sola vez,
+  // en _confirmarYVerificar, cuando ya hubo 2 frames consecutivos válidos.
   Future<void> _intentarVerificarRostro() async {
     if (_verificandoRostro) return;
     final controller = _cameraController;
@@ -201,28 +210,20 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     XFile? foto;
     try {
       foto = await controller.takePicture();
+      final esValido = await _detectorLigero.tieneRostroValido(foto.path);
 
-      // Una sola pasada de ML Kit por foto: calcularEmbedding ya detecta el
-      // rostro y descarta los que vienen demasiado pequeños.
-      final embedding = await _reconocimientoServicio.calcularEmbedding(
-        foto.path,
-      );
-      if (embedding == null) {
-        _coincidenciasConsecutivas = 0;
+      if (!esValido) {
+        _deteccionesConsecutivas = 0;
         return;
       }
 
-      final resultado = await KioskoServicio().verificarRostroResidente(
-        embedding,
-      );
-      _registrarCoincidencia(
-        resultado['nombre'] as String?,
-        resultado['casa_destino'] as String?,
-      );
+      _deteccionesConsecutivas++;
+      if (_deteccionesConsecutivas < _deteccionesRequeridas) return;
+      _deteccionesConsecutivas = 0;
+
+      await _confirmarYVerificar(foto.path);
     } catch (e) {
-      // Sin match, sin red, etc. — seguimos intentando en el siguiente tick;
-      // el acceso por PIN sigue disponible como respaldo en todo momento.
-      _coincidenciasConsecutivas = 0;
+      _deteccionesConsecutivas = 0;
     } finally {
       _verificandoRostro = false;
       final rutaFoto = foto?.path;
@@ -238,38 +239,38 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     }
   }
 
-  void _registrarCoincidencia(String? nombre, String? casaDestino) {
-    if (nombre == _ultimoNombreCoincidente &&
-        casaDestino == _ultimaCasaCoincidente) {
-      _coincidenciasConsecutivas++;
-    } else {
-      _ultimoNombreCoincidente = nombre;
-      _ultimaCasaCoincidente = casaDestino;
-      _coincidenciasConsecutivas = 1;
-    }
+  // Frame estable confirmado (2 detecciones seguidas del chequeo liviano) --
+  // ahora sí vale la pena pagar el costo real: embedding local (TFLite) +
+  // una sola ida y vuelta al backend para comparar contra los residentes.
+  Future<void> _confirmarYVerificar(String pathFoto) async {
+    final embedding = await _reconocimientoServicio.calcularEmbedding(pathFoto);
+    if (embedding == null) return;
 
-    if (_coincidenciasConsecutivas >= 2 && mounted) {
-      _bucleVerificacionActivo = false;
-      _timerVerificacion?.cancel();
-      _led.apagar();
-      setState(() => _coincidenciaConfirmada = true);
+    final resultado = await KioskoServicio().verificarRostroResidente(embedding);
+    final nombre = resultado['nombre'] as String?;
+    final casaDestino = resultado['casa_destino'] as String?;
 
-      // Misma pausa breve que el registro de visitante (scanner_rostro_widget)
-      // para que el aro verde + check se alcance a ver antes de navegar.
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ResidentWelcomeView(
-              viewModel: ResidentWelcomeViewModel(
-                nombre: nombre ?? AppLocalizations.t(context, 'residente_label'),
-                casaDestino: casaDestino ?? '',
-              ),
+    if (!mounted) return;
+    _bucleVerificacionActivo = false;
+    _timerVerificacion?.cancel();
+    _led.apagar();
+    setState(() => _coincidenciaConfirmada = true);
+
+    // Misma pausa breve que el registro de visitante (scanner_rostro_widget)
+    // para que el aro verde + check se alcance a ver antes de navegar.
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ResidentWelcomeView(
+            viewModel: ResidentWelcomeViewModel(
+              nombre: nombre ?? AppLocalizations.t(context, 'residente_label'),
+              casaDestino: casaDestino ?? '',
             ),
           ),
-        );
-      });
-    }
+        ),
+      );
+    });
   }
 
   @override
@@ -279,6 +280,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     _timerVerificacion?.cancel();
     _led.apagar();
     unawaited(_reconocimientoServicio.dispose());
+    _detectorLigero.dispose();
     _cameraController?.dispose();
     super.dispose();
   }
