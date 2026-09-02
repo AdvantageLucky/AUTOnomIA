@@ -24,6 +24,11 @@ type ResidenteSnapshot struct {
 	CasaDestino     string    `json:"casa_destino"`
 	PinHash         string    `json:"pin_hash"`
 	Embedding       []float64 `json:"embedding"`
+	// EsInvitadoFrecuente distingue a alguien con acceso recurrente
+	// prestado por un residente (Membresia.Rol=invitado_frecuente) de un
+	// residente real -- sin esto, el kiosko offline lo saludaba
+	// exactamente igual que a un residente.
+	EsInvitadoFrecuente bool `json:"es_invitado_frecuente"`
 }
 
 // InvitacionSnapshot trae el token: es la clave que el kiosko usa para

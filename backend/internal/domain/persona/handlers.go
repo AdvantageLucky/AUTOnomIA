@@ -534,7 +534,14 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 	}
 
 	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, req.TenantID)
-	if err != nil || m.Status != residente.ResidenteStatusActivo {
+	if err != nil || m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		// Un invitado frecuente (Rol=RolInvitadoFrecuente) tiene acceso
+		// recurrente a la casa que se lo dio, pero eso no lo vuelve
+		// residente -- sin este chequeo de Rol, cualquiera al que un
+		// residente le dio acceso frecuente podía a su vez invitar a
+		// otros o darles acceso frecuente propio (ver también
+		// CrearInvitadoFrecuente), una cadena de permisos que el
+		// residente original nunca autorizó.
 		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía activa en ese centro"})
 		return
 	}
@@ -671,7 +678,10 @@ func (h *Handler) CrearInvitadoFrecuente(c *gin.Context) {
 	}
 
 	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, req.TenantID)
-	if err != nil || m.Status != residente.ResidenteStatusActivo {
+	if err != nil || m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		// Solo un residente real puede dar acceso frecuente -- un invitado
+		// frecuente no puede a su vez dar de alta a otro (misma razón que
+		// CrearInvitacion, ver comentario ahí).
 		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía activa en ese centro"})
 		return
 	}

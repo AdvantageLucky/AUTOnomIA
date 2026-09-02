@@ -128,6 +128,15 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 		}
 	}
 
+	esInvitadoFrecuente := mejor.Rol == residente.RolInvitadoFrecuente
+	autorizadoPorNombre := "Acceso propio (PIN)"
+	if esInvitadoFrecuente {
+		// Distingue en la bitácora del admin a alguien con acceso
+		// recurrente prestado por un residente de un residente real --
+		// antes ambos se veían idénticos ("Acceso propio (PIN)").
+		autorizadoPorNombre = "Acceso propio invitado frecuente (PIN)"
+	}
+
 	v := &visitas.Visita{
 		TenantID:            tenantID,
 		Titular:             mejor.Nombre + " " + mejor.ApellidoPaterno,
@@ -140,7 +149,7 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 		PersonaID:           &mejor.PersonaID,
 		ClientID:            clientIDPtr,
 		AutorizadoPorTipo:   visitas.AutorizadorPropio,
-		AutorizadoPorNombre: "Acceso propio (PIN)",
+		AutorizadoPorNombre: autorizadoPorNombre,
 	}
 	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})
@@ -148,8 +157,9 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"nombre":       mejor.Nombre + " " + mejor.ApellidoPaterno,
-		"casa_destino": mejor.CasaDestino,
+		"nombre":                mejor.Nombre + " " + mejor.ApellidoPaterno,
+		"casa_destino":          mejor.CasaDestino,
+		"es_invitado_frecuente": esInvitadoFrecuente,
 	})
 
 	go visitas.AnalizarYGuardarInformativo(h.visitaRepo, tenantID, *v, h.llmURL)
@@ -207,6 +217,12 @@ func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
 		return
 	}
 
+	esInvitadoFrecuente := mejor.Rol == residente.RolInvitadoFrecuente
+	autorizadoPorNombre := "Acceso propio (reconocimiento facial)"
+	if esInvitadoFrecuente {
+		autorizadoPorNombre = "Acceso propio invitado frecuente (reconocimiento facial)"
+	}
+
 	v := &visitas.Visita{
 		TenantID:      tenantID,
 		Titular:       mejor.Nombre + " " + mejor.ApellidoPaterno,
@@ -226,7 +242,7 @@ func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
 		// pese a que el reconocimiento sí la calculó.
 		EmbeddingRostro:     residente.FloatArray(req.Embedding),
 		AutorizadoPorTipo:   visitas.AutorizadorPropio,
-		AutorizadoPorNombre: "Acceso propio (reconocimiento facial)",
+		AutorizadoPorNombre: autorizadoPorNombre,
 	}
 	if err := h.db.WithContext(c.Request.Context()).Create(v).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error registrando visita"})
@@ -234,8 +250,9 @@ func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"nombre":       mejor.Nombre + " " + mejor.ApellidoPaterno,
-		"casa_destino": mejor.CasaDestino,
+		"nombre":                mejor.Nombre + " " + mejor.ApellidoPaterno,
+		"casa_destino":          mejor.CasaDestino,
+		"es_invitado_frecuente": esInvitadoFrecuente,
 	})
 
 	go visitas.AnalizarYGuardarInformativo(h.visitaRepo, tenantID, *v, h.llmURL)

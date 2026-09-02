@@ -96,8 +96,14 @@ func (r *MembresiaRepository) RevocarInvitadoFrecuente(id, tenantID uint, casaDe
 // solo nombre y rol, nunca teléfono/CURP/foto. La restricción de privacidad
 // vive en la query (Select explícito), no en un filtro posterior sobre un
 // struct más amplio.
+//
+// Rol viaja explícitamente: sin él, un invitado frecuente (alguien a quien
+// UN residente le dio acceso recurrente a SU casa, ver RolInvitadoFrecuente)
+// se veía en esta lista exactamente igual que un compañero de vivienda real,
+// sin ninguna forma de distinguirlos.
 type CompaneroCasa struct {
 	NombreCompleto string `json:"nombre_completo"`
+	Rol            string `json:"rol"`
 }
 
 // FindCompanerosCasa lista los demás miembros activos de la misma casa,
@@ -107,7 +113,7 @@ type CompaneroCasa struct {
 func (r *MembresiaRepository) FindCompanerosCasa(tenantID uint, casaDestino string, excluirPersonaID uint) ([]CompaneroCasa, error) {
 	list := make([]CompaneroCasa, 0)
 	err := r.db.Table("membresias").
-		Select("TRIM(COALESCE(personas.nombre, '') || ' ' || COALESCE(personas.apellido_paterno, '') || ' ' || COALESCE(personas.apellido_materno, '')) as nombre_completo").
+		Select("TRIM(COALESCE(personas.nombre, '') || ' ' || COALESCE(personas.apellido_paterno, '') || ' ' || COALESCE(personas.apellido_materno, '')) as nombre_completo, membresias.rol as rol").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND UPPER(TRIM(membresias.casa_destino)) = UPPER(TRIM(?)) AND membresias.status = ? AND membresias.persona_id != ? AND membresias.deleted_at IS NULL",
 			tenantID, casaDestino, ResidenteStatusActivo, excluirPersonaID).
@@ -169,7 +175,13 @@ type MembresiaActivaConPersona struct {
 	TienePin        bool      `json:"tiene_pin" gorm:"column:tiene_pin"`
 	CasaDestino     string    `json:"casa_destino" gorm:"column:casa_destino"`
 	Status          string    `json:"status"`
-	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at"`
+	// Rol distingue un residente real de un invitado frecuente
+	// (RolInvitadoFrecuente) -- antes no viajaba aquí y el dashboard no
+	// tenía forma de saber cuáles de las membresías activas eran en
+	// realidad invitados con acceso recurrente que un residente dio de
+	// alta él mismo, sin pasar por la aprobación del admin.
+	Rol       string    `json:"rol"`
+	CreatedAt time.Time `json:"created_at" gorm:"column:created_at"`
 	// Datos del Destino resuelto (join opcional -- nil/"" en membresías
 	// viejas cuyo casa_destino no matcheó ningún Destino real, ver
 	// migración 000064). La UI agrupa/ordena por estos cuando existen y
@@ -187,7 +199,7 @@ func (r *MembresiaRepository) FindActivasPorTenant(tenantID uint) ([]MembresiaAc
 			"personas.curp as curp, personas.telefono as telefono, personas.foto_cara_url as foto_cara_url, personas.foto_ine_url as foto_ine_url, "+
 			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
 			"(membresias.pin != '') as tiene_pin, "+
-			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.created_at as created_at, "+
+			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.rol as rol, membresias.created_at as created_at, "+
 			"membresias.destino_id as destino_id, destinos.calle as destino_calle, destinos.tipo as destino_tipo").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Joins("LEFT JOIN destinos ON destinos.id = membresias.destino_id").

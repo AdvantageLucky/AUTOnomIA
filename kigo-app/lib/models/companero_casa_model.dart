@@ -4,11 +4,19 @@
 class CompaneroCasa {
   final String nombreCompleto;
 
-  CompaneroCasa({required this.nombreCompleto});
+  /// 'residente' o 'invitado_frecuente' -- alguien con acceso recurrente
+  /// prestado por un residente, no un residente real. Sin esto se veía en
+  /// esta lista exactamente igual que un compañero de vivienda real.
+  final String rol;
+
+  CompaneroCasa({required this.nombreCompleto, this.rol = 'residente'});
+
+  bool get esInvitadoFrecuente => rol == 'invitado_frecuente';
 
   factory CompaneroCasa.fromJson(Map<String, dynamic> json) {
     return CompaneroCasa(
       nombreCompleto: json['nombre_completo'] as String? ?? '',
+      rol: json['rol'] as String? ?? 'residente',
     );
   }
 }

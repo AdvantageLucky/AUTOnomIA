@@ -7,6 +7,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/destinos"
 	"kigo-autonomia-backend/internal/domain/invitaciones"
 	"kigo-autonomia-backend/internal/domain/persona"
+	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"github.com/gin-gonic/gin"
@@ -79,6 +80,7 @@ func (h *Handler) GetSnapshot(c *gin.Context) {
 		resp.Residentes = append(resp.Residentes, ResidenteSnapshot{
 			ID: r.MembresiaID, PersonaID: r.PersonaID, Nombre: r.Nombre, ApellidoPaterno: r.ApellidoPaterno,
 			CasaDestino: r.CasaDestino, PinHash: r.PinHash, Embedding: emb,
+			EsInvitadoFrecuente: r.Rol == residente.RolInvitadoFrecuente,
 		})
 	}
 	for _, inv := range invitacionesList {

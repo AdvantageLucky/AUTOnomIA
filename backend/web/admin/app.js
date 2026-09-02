@@ -3729,9 +3729,12 @@
     return document.getElementById('resa-agrupar')?.value || 'destino';
   }
 
+  const ROL_MEMBRESIA_LABEL = { residente: 'Residentes', invitado_frecuente: 'Invitados frecuentes' };
+
   function residentesClaveGrupo(m, criterio) {
     if (criterio === 'calle') return m.destino_calle || 'Sin calle registrada';
     if (criterio === 'tipo') return TIPO_DESTINO_LABEL[m.destino_tipo] || 'Sin tipo';
+    if (criterio === 'rol') return ROL_MEMBRESIA_LABEL[m.rol] || ROL_MEMBRESIA_LABEL.residente;
     if (criterio === 'ninguno') return null;
     return m.casa_destino || 'Sin destino';
   }
@@ -3791,13 +3794,20 @@
     const contacto = m.telefono ? `${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : 'Residente activo');
     const fechaAlta = m.created_at ? fmtDateShort(m.created_at) : '—';
     const checked = residentesSeleccion.has(m.id) ? 'checked' : '';
+    // Un invitado frecuente (Rol=invitado_frecuente) lo da de alta un
+    // residente por su cuenta, sin pasar por la aprobación del admin --
+    // sin este badge, se veía en esta lista exactamente igual que un
+    // residente real dado de alta y aprobado por el propio centro.
+    const badgeInvitadoFrecuente = m.rol === 'invitado_frecuente'
+      ? `<span class="badge badge--revision" style="font-size:10px;padding:2px 8px;margin-left:6px;vertical-align:1px">Invitado frecuente</span>`
+      : '';
 
     return `
       <div class="res-row" data-res-id="${m.id}">
         <input type="checkbox" class="res-check" data-check-id="${m.id}" ${checked} style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
         ${avatarHtml}
         <div class="res-info-main">
-          <div class="res-name">${esc(nombreCompleto)}</div>
+          <div class="res-name">${esc(nombreCompleto)}${badgeInvitadoFrecuente}</div>
           <div class="res-sub">${contacto}</div>
         </div>
         <div class="res-dest-col">
