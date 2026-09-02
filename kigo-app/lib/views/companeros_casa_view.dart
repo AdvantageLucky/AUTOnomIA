@@ -217,11 +217,21 @@ class _FilaCompanero extends StatelessWidget {
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    const Icon(Icons.verified_rounded, size: 13, color: AppTheme.success),
+                    Icon(
+                      companero.esInvitadoFrecuente ? Icons.badge_outlined : Icons.verified_rounded,
+                      size: 13,
+                      color: companero.esInvitadoFrecuente ? AppTheme.amber : AppTheme.success,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      AppLocalizations.t(context, 'residente_aprobado'),
-                      style: const TextStyle(fontSize: 12, color: AppTheme.success, fontWeight: FontWeight.w600),
+                      companero.esInvitadoFrecuente
+                          ? AppLocalizations.t(context, 'invitado_frecuente_label')
+                          : AppLocalizations.t(context, 'residente_aprobado'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: companero.esInvitadoFrecuente ? AppTheme.amber : AppTheme.success,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
