@@ -533,8 +533,8 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               bottom: 0,
               child: HazardStripeBar(height: 10, borderRadius: BorderRadius.zero),
             ),
-            const Text(
-              'Procesando captura...',
+            Text(
+              AppLocalizations.t(context, 'procesando_captura'),
               style: TextStyle(
                 fontFamily: 'Unbounded',
                 color: Colors.white,

@@ -672,7 +672,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             if (!score.generadoPorIA) ...[
               const SizedBox(height: 6),
               Text(
-                'Análisis automático (asistente de IA no disponible)',
+                AppLocalizations.t(context, 'analisis_automatico_corto'),
                 style: TextStyle(color: context.kTextSecondary, fontSize: 12),
               ),
             ],

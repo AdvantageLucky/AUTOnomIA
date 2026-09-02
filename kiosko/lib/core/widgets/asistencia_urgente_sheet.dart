@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Hoja de asistencia urgente.
 ///
@@ -92,7 +93,7 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Asistencia urgente',
+                    AppLocalizations.t(context, 'asistencia_urgente_title'),
                     style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -116,12 +117,12 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
 
   String _textoEstado() {
     if (widget.offline) {
-      return 'Sin conexión: llama directamente, el administrador no recibirá el aviso automático.';
+      return AppLocalizations.t(context, 'asistencia_urgente_offline_texto');
     }
     if (_solicitada) {
-      return 'Ya se avisó al administrador de este centro. Un miembro del equipo te atenderá en breve.';
+      return AppLocalizations.t(context, 'asistencia_urgente_ya_avisado');
     }
-    return 'Se notificará al administrador de este centro en su panel y por correo.';
+    return AppLocalizations.t(context, 'asistencia_urgente_se_notificara');
   }
 
   Widget _buildSolicitarOnline() {
@@ -129,7 +130,7 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
       return TextButton(
         onPressed: () => Navigator.of(context).pop(),
         child: Text(
-          'Entendido',
+          AppLocalizations.t(context, 'asistencia_urgente_entendido'),
           style: TextStyle(color: context.kTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
         ),
       );
@@ -154,9 +155,9 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
               else ...[
                 const Icon(Icons.campaign_rounded, color: Colors.white, size: 24),
                 const SizedBox(width: 10),
-                const Text(
-                  'Solicitar asistencia',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                Text(
+                  AppLocalizations.t(context, 'asistencia_urgente_solicitar'),
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
                 ),
               ],
             ],
@@ -171,7 +172,7 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Text(
-          'No hay teléfono de contacto configurado para este centro',
+          AppLocalizations.t(context, 'asistencia_urgente_sin_telefono'),
           textAlign: TextAlign.center,
           style: TextStyle(color: context.kTextSecondary),
         ),
@@ -195,7 +196,7 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Escanéalo con tu celular para llamar',
+          AppLocalizations.t(context, 'asistencia_urgente_escanea_qr'),
           textAlign: TextAlign.center,
           style: TextStyle(color: context.kTextTertiary, fontSize: 12),
         ),

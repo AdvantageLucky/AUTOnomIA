@@ -151,7 +151,7 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'INVITADO CON ACCESO RECURRENTE',
+              AppLocalizations.t(context, 'invitado_frecuente_badge'),
               style: TextStyle(
                 color: KigoDesign.brand,
                 fontSize: 13,

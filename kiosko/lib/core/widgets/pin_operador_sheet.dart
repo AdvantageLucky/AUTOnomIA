@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/operator_exit_viewmodel.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Hoja compacta para validar el PIN de operador sin salir del modo kiosko
 /// -- a diferencia de OperatorExitPinView (pantalla completa, dispara
@@ -59,7 +60,7 @@ class _PinOperadorSheetState extends State<_PinOperadorSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'PIN de operador',
+                    AppLocalizations.t(context, 'pin_operador_title'),
                     style: TextStyle(color: context.kTextPrimary, fontSize: 17, fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -91,7 +92,7 @@ class _PinOperadorSheetState extends State<_PinOperadorSheet> {
             ),
             if (_vm.pinIncorrecto) ...[
               const SizedBox(height: 10),
-              const Text('PIN incorrecto', style: TextStyle(color: KigoDesign.brand, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(AppLocalizations.t(context, 'pin_incorrecto_texto'), style: const TextStyle(color: KigoDesign.brand, fontSize: 13, fontWeight: FontWeight.w600)),
             ],
             const SizedBox(height: 20),
             ...List.generate(3, (row) {

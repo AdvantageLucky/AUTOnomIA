@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/asistente_faq_offline.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
+import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Hoja modal con las preguntas frecuentes fijas — se abre en vez de
 /// escuchar cuando el kiosko está sin conexión (sin LLM no hay forma de
@@ -40,13 +41,13 @@ class _FaqOfflineSheetState extends State<_FaqOfflineSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Sin conexión — preguntas frecuentes',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            Text(
+              AppLocalizations.t(context, 'faq_offline_title'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 4),
             Text(
-              'Toca una pregunta para ver la respuesta',
+              AppLocalizations.t(context, 'faq_offline_hint'),
               style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodySmall?.color),
             ),
             const SizedBox(height: 16),
