@@ -1,6 +1,7 @@
 package persona
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/subtle"
 	"encoding/hex"
@@ -902,6 +903,38 @@ func (h *Handler) VerificarQR(c *gin.Context) {
 
 	if visitaCreada != nil {
 		go visitas.AnalizarYGuardarInformativo(h.visitaRepo, tenantID, *visitaCreada, h.llmURL)
+		// El check-in por QR/rostro de un invitado se auto-aprueba -- a
+		// diferencia de un walk-in (visitas.Notificador, que solo avisa
+		// cuando el anfitrión SÍ tiene que decidir algo), aquí nadie tuvo
+		// que autorizar nada, así que sin esto el residente no se entera
+		// de que su visita ya entró.
+		go h.notificarEntradaAutorizada(tenantID, visitaCreada.CasaDestino, visitaCreada.Titular)
+	}
+}
+
+// notificarEntradaAutorizada avisa a los residentes activos de una casa que
+// su visita ya entró (check-in por QR o reconocimiento facial, ambos
+// auto-aprobados) -- informativo, no requiere ninguna acción de su parte.
+func (h *Handler) notificarEntradaAutorizada(tenantID uint, casaDestino, titular string) {
+	if h.pushSender == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	personas, err := h.repo.FindActivasPorCasaDestino(tenantID, casaDestino)
+	if err != nil {
+		log.Printf("notificarEntradaAutorizada: %v", err)
+		return
+	}
+	cuerpo := titular + " ya entró. ¡Prepárate!"
+	for _, p := range personas {
+		if p.DeviceToken == nil || *p.DeviceToken == "" {
+			continue
+		}
+		if err := h.pushSender.Send(ctx, *p.DeviceToken, "Tu visita llegó", cuerpo); err != nil {
+			log.Printf("notificarEntradaAutorizada: error mandando a persona %d: %v", p.ID, err)
+		}
 	}
 }
 
