@@ -139,6 +139,37 @@ No. bcrypt (hash adaptativo con salt). Igual las contraseñas de admin y la clav
 
 ---
 
+## ¿Por qué no solo reconocimiento facial, sin QR? (kigo-app ya toma fotos)
+
+Pregunta esperable: si residentes e invitados casi siempre traen kigo-app, y esa app ya les
+tomó una foto (perfil, Kigo Verify), ¿por qué no matchear esa foto y quitar el QR por completo?
+
+**Ya lo hacemos — para quien ya está enrolado.** Un residente, o un "invitado frecuente"
+(`Membresia.Rol = RolInvitadoFrecuente`, `PermiteReconocimientoFacial = true`), en su
+*segunda* visita en adelante **no vuelve a mostrar QR**: el kiosko lo reconoce por rostro 1:N
+directo (`residente_acceso_view.dart`, mismo bucle para ambos roles — "no hay reconocimiento de
+segunda clase para un invitado frecuente", dice el comentario en
+`persona/handlers.go:CrearInvitadoFrecuente`). El QR no es un paso permanente.
+
+**Lo que el QR sí sigue resolviendo, y por qué no se puede saltar:**
+
+1. **El emparejamiento de la primera vez.** `Handler.VerificarQR` (`persona/handlers.go:813`) es
+   el único punto donde una identidad firmada criptográficamente (el QR, Ed25519 sobre
+   `persona_id`) se empareja con un rostro **capturado ahí mismo, por la cámara del kiosko**, con
+   la luz y el ángulo reales de esa puerta — "enrolamiento oportunista", dice el código. Sin ese
+   emparejamiento, un vector facial no tiene ninguna prueba de a quién pertenece.
+2. **Una selfie de perfil no es una selfie de acceso.** La foto que kigo-app toma (perfil, KYC de
+   Kigo Verify) se autorizó para OTRO fin. Reusarla en silencio para matching biométrico continuo
+   de acceso mezcla dos consentimientos distintos — pisa el principio de **finalidad** de la
+   LFPDPPP (dato biométrico usado para un fin distinto al autorizado).
+3. **No todo el que necesita entrar quiere o puede estar enrolado.** Un proveedor, un repartidor,
+   una visita de una sola vez — obligarlos a instalar la app y enrolar su cara ANTES de poder
+   cruzar la puerta mata el caso "invito a alguien en 10 segundos", que es el corazón de este
+   segmento. El QR (o INE+rostro para quien ni teléfono registrado tiene) cubre a quien el
+   reconocimiento facial puro no puede atender: no hay nada contra qué reconocerlos todavía.
+
+---
+
 ## Activación del kiosko (RFC 8628)
 
 **¿Qué es eso del código de 8 letras?**
