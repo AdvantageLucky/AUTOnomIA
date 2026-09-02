@@ -71,12 +71,30 @@ func Setup(db *gorm.DB, cfg *configs.Config) *gin.Engine {
 		c.String(200, "window.__GOOGLE_CLIENT_ID__ = %q;", cfg.GoogleClientID)
 	})
 
+	// Mismo motivo que /admin-config.js: un GET explícito fuera del prefijo
+	// estático de /miniapp, para no chocar con el wildcard *filepath.
+	r.GET("/miniapp-config.js", func(c *gin.Context) {
+		c.Header("Content-Type", "application/javascript")
+		c.String(200, "window.__API_BASE__ = %q;\nwindow.__KIGO_APP_RELEASE_URL__ = %q;",
+			cfg.PublicURL+"/api/v1", cfg.KigoAppReleaseURL)
+	})
+
 	adminAssets := r.Group("/admin")
 	adminAssets.Use(func(c *gin.Context) {
 		c.Header("Cache-Control", "no-store")
 		c.Next()
 	})
 	adminAssets.Static("/", "./web/admin")
+
+	// Mini-app del marketplace de Kigo Parkimovil -- webview embebido, sin
+	// bundler propio (misma convención que /admin). No necesita un dominio
+	// aparte: se registra en el panel de Kigo con esta misma URL pública.
+	miniappAssets := r.Group("/miniapp")
+	miniappAssets.Use(func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store")
+		c.Next()
+	})
+	miniappAssets.Static("/", "./web/miniapp")
 
 	r.Static("/uploads/visitantes", cfg.UploadsDir)
 	r.Static("/uploads/caras", cfg.UploadsDir+"/caras")
@@ -430,6 +448,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 	rg.POST("/personas/registro/solicitar-otp", personaHandler.SolicitarOTP)
 	rg.POST("/personas/registro/verificar-otp", personaHandler.VerificarOTP)
 	rg.POST("/webhooks/kigo-verify", personaHandler.WebhookKigoVerify)
+	rg.GET("/miniapp/estado", personaHandler.EstadoKigoMiniApp)
 
 	p := rg.Group("/personas/me")
 	p.Use(auth.RequirePersona(cfg.JWTSecret))

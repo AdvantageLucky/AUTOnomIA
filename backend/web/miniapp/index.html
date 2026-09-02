@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>AUTOnomIA</title>
+  <link rel="icon" type="image/png" href="./favicon.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main id="app" class="pantalla pantalla--cargando">
+    <img class="marca" src="./marca_autonomia.jpg" alt="AUTOnomIA" />
+    <p id="mensaje" class="mensaje">Conectando con Kigo…</p>
+    <div id="spinner" class="spinner" aria-hidden="true"></div>
+    <button id="boton-accion" class="boton" hidden></button>
+  </main>
+
+  <script src="/miniapp-config.js"></script>
+  <script>
+    // El Playground real de Kigo vive en un repo privado de ellos -- no es
+    // algo al que un desarrollador externo de mini-app tenga acceso, pese a
+    // lo que dice su propio README. Este mock local es nuestro reemplazo
+    // para poder probar esta página en un navegador normal: agrega
+    // "?mock=1" a la URL (nunca se carga en producción salvo que alguien
+    // ponga ese query param a propósito).
+    if (new URLSearchParams(location.search).get("mock") === "1") {
+      document.write('<script src="./mock-bridge.js"><\/script>');
+    } else {
+      document.write('<script src="./vendor/kigo-sdk.umd.js"><\/script>');
+    }
+  </script>
+  <script src="./app.js"></script>
+</body>
+</html>
