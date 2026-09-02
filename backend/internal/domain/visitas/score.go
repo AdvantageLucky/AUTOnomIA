@@ -56,6 +56,36 @@ type EvidenciaEsperada struct {
 	Placa     bool
 }
 
+// ScoreIaFuentes dice qué evidencia, ya capturada, cuenta para ligar esta
+// visita con su historial (identidad para recurrencia/anomalías) y para los
+// factores de comparación entre visitas. No es lo mismo que EvidenciaEsperada:
+// esa dice qué se PIDIÓ capturar, esta dice qué SE USA en el análisis una vez
+// capturado.
+//
+// Los 3 prendidos es el comportamiento de siempre. El admin apaga uno cuando
+// el dato de prueba no es único por persona durante una demo (mismo vehículo,
+// mismo rostro o CURP de prueba reutilizado entre varios actores) y el
+// análisis lo leería como "el mismo visitante recurrente" sin serlo.
+type ScoreIaFuentes struct {
+	Documento bool
+	Placa     bool
+	Rostro    bool
+}
+
+// scoreIaFuentesDe traduce la config del kiosko a ScoreIaFuentes. Sin config
+// a la mano (análisis fuera de un kiosko concreto), los 3 quedan prendidos:
+// es el comportamiento de siempre.
+func scoreIaFuentesDe(cfg *kiosko.KioskoConfig) ScoreIaFuentes {
+	if cfg == nil {
+		return ScoreIaFuentes{Documento: true, Placa: true, Rostro: true}
+	}
+	return ScoreIaFuentes{
+		Documento: cfg.UsarDocumentoEnScoreIA,
+		Placa:     cfg.UsarPlacaEnScoreIA,
+		Rostro:    cfg.UsarRostroEnScoreIA,
+	}
+}
+
 // FactorScore es un aspecto evaluado de la entrada con su peso en el score.
 type FactorScore struct {
 	Clave    string     `json:"clave"`
@@ -70,7 +100,7 @@ type FactorScore struct {
 //
 // historial ya viene sin la visita actual y ordenado de mas reciente a mas
 // antiguo (ver AnalizarVisita).
-func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada EvidenciaEsperada) {
+func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada EvidenciaEsperada, fuentes ScoreIaFuentes) {
 	var factores []FactorScore
 	suma := scoreBase
 
@@ -174,14 +204,20 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 	}
 
 	// ── Vehiculo ─────────────────────────────────────────────────────────────
-	switch {
-	case sc.AnomaliaMatricula:
-		add("placa_distinta", "Placa distinta a la habitual",
-			fmt.Sprintf("Llega con %s, que no coincide con la placa de sus visitas anteriores.", v.Placa),
-			-22, FactorNegativo)
-	case v.Placa != "" && sc.VecesVisitado > 0:
-		add("placa_coincide", "Placa coincide con la habitual",
-			fmt.Sprintf("%s es la misma de sus entradas anteriores.", v.Placa), 8, FactorPositivo)
+	// Si el admin apagó la placa como fuente del score (demo con un mismo
+	// vehículo de prueba en varias personas, por ejemplo), esto no se evalúa:
+	// sc.AnomaliaMatricula ya viene en false porque AnalizarVisita tampoco la
+	// calculó.
+	if fuentes.Placa {
+		switch {
+		case sc.AnomaliaMatricula:
+			add("placa_distinta", "Placa distinta a la habitual",
+				fmt.Sprintf("Llega con %s, que no coincide con la placa de sus visitas anteriores.", v.Placa),
+				-22, FactorNegativo)
+		case v.Placa != "" && sc.VecesVisitado > 0:
+			add("placa_coincide", "Placa coincide con la habitual",
+				fmt.Sprintf("%s es la misma de sus entradas anteriores.", v.Placa), 8, FactorPositivo)
+		}
 	}
 
 	// ── Contexto ─────────────────────────────────────────────────────────────

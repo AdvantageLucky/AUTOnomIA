@@ -9,9 +9,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// fuentesTodas es el comportamiento de siempre (las 3 fuentes prendidas) --
+// lo que usan todos los tests que no están probando específicamente el
+// apagado de una fuente.
+var fuentesTodas = ScoreIaFuentes{Documento: true, Placa: true, Rostro: true}
+
 func TestAnalizarVisita_PrimeraVisita(t *testing.T) {
 	nueva := Visita{Titular: "García Juan", Curp: "GARJ900101HMCRNA01"}
-	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if sc.VecesVisitado != 0 {
 		t.Errorf("esperaba 0 visitas previas, got %d", sc.VecesVisitado)
@@ -27,7 +32,7 @@ func TestAnalizarVisita_AltaConfianza(t *testing.T) {
 		historial[i] = Visita{Estado: EstadoAprobado, Placa: "ABC123"}
 	}
 	nueva := Visita{Placa: "ABC123", Curp: "GARJ900101HMCRNA01"}
-	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if !sc.Confiable {
 		t.Error("6 aprobaciones seguidas con placa y CURP validas deben dar confianza alta")
@@ -40,16 +45,37 @@ func TestAnalizarVisita_AnomaliaMatricula(t *testing.T) {
 		{Placa: "ABC123", Estado: EstadoAprobado},
 	}
 	nueva := Visita{Placa: "XYZ999", Curp: "GARJ900101HMCRNA01"}
-	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if !sc.AnomaliaMatricula {
 		t.Error("placa diferente debe marcar AnomaliaMatricula")
 	}
 }
 
+// Con la placa apagada como fuente del score (demo con un vehículo de prueba
+// compartido entre varios actores, por ejemplo), la misma entrada de arriba
+// no debe marcar nada.
+func TestAnalizarVisita_PlacaApagada_NoMarcaAnomalia(t *testing.T) {
+	historial := []Visita{
+		{Placa: "ABC123", Estado: EstadoAprobado},
+		{Placa: "ABC123", Estado: EstadoAprobado},
+	}
+	nueva := Visita{Placa: "XYZ999", Curp: "GARJ900101HMCRNA01"}
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, ScoreIaFuentes{Documento: true, Rostro: true})
+
+	if sc.AnomaliaMatricula {
+		t.Error("con Placa: false en ScoreIaFuentes no debe marcar AnomaliaMatricula")
+	}
+	for _, f := range sc.Factores {
+		if f.Clave == "placa_distinta" || f.Clave == "placa_coincide" {
+			t.Errorf("con Placa: false no debe aparecer el factor %q", f.Clave)
+		}
+	}
+}
+
 func TestAnalizarVisita_OCRSospechoso_CURPInvalida(t *testing.T) {
 	nueva := Visita{Titular: "García Juan", Curp: "INVALIDA"}
-	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if !sc.OCRSospechoso {
 		t.Error("CURP inválida debe marcar OCRSospechoso")
@@ -60,7 +86,7 @@ func TestAnalizarVisita_OCRSospechoso_CURPInvalida(t *testing.T) {
 // anomalía. Tratarlo como OCR sospechoso dejaría a esos kioskos sin autopass.
 func TestAnalizarVisita_SinCURP_NoEsOCRSospechoso(t *testing.T) {
 	nueva := Visita{Placa: "ABC123D", TipoDocumento: DocumentoPlaca}
-	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(nil, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if sc.OCRSospechoso {
 		t.Error("una visita sin CURP no debe marcar OCRSospechoso")
@@ -75,7 +101,7 @@ func TestAnalizarVisita_SinCURP_NoComparaMatricula(t *testing.T) {
 		{Placa: "ABC123D", Estado: EstadoAprobado},
 	}
 	nueva := Visita{Placa: "ABC123D"}
-	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if sc.AnomaliaMatricula {
 		t.Error("historial agrupado por placa no debe marcar AnomaliaMatricula")
@@ -89,7 +115,7 @@ func TestAnalizarVisita_SinCURP_AlcanzaConfianza(t *testing.T) {
 		historial[i] = Visita{Estado: EstadoAprobado, Placa: "ABC123D"}
 	}
 	nueva := Visita{Placa: "ABC123D", TipoDocumento: DocumentoPlaca}
-	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if !sc.Confiable {
 		t.Error("6 aprobaciones consecutivas de la misma placa deben marcar confiable")
@@ -105,7 +131,7 @@ func TestAnalizarVisita_HorarioInusual(t *testing.T) {
 	}
 	noche := time.Date(2026, 1, 2, 23, 0, 0, 0, time.UTC)
 	nueva := Visita{Curp: "GARJ900101HMCRNA01", Model: gorm.Model{CreatedAt: noche}}
-	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if !sc.HorarioInusual {
 		t.Error("llegada nocturna cuando historial es diurno debe marcar HorarioInusual")
@@ -123,7 +149,7 @@ func TestAnalizarVisita_HorarioInusual_MedianocheWrap(t *testing.T) {
 	// Llegada a las 00:10 (20 minutos después, cruzando medianoche)
 	madrugada := time.Date(2026, 1, 2, 0, 10, 0, 0, time.UTC)
 	nueva := Visita{Curp: "GARJ900101HMCRNA01", Model: gorm.Model{CreatedAt: madrugada}}
-	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{})
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
 
 	if sc.HorarioInusual {
 		t.Error("llegada a las 00:10 cuando historial es 23:50 no debe marcar HorarioInusual (cruce de medianoche)")

@@ -91,6 +91,18 @@ type KioskoConfig struct {
 	// vigilante en el kiosko (ver AnalisisIaView). Prendido por default --
 	// un admin que no lo quiera lo apaga desde el dashboard.
 	MostrarScoreIaKiosko bool `gorm:"column:mostrar_score_ia_kiosko;not null;default:true"`
+
+	// Qué evidencia cuenta para ligar una visita con su historial (identidad
+	// para recurrencia/anomalías) y para los factores de comparación entre
+	// visitas -- no es lo mismo que FotoRostro*/FotoIne*/FotoPlaca* (esas
+	// deciden si se PIDE capturarla). Los 3 prendidos por default; el admin
+	// apaga uno cuando el dato de prueba no es único por persona durante una
+	// demo (mismo vehículo, mismo rostro o CURP de prueba reutilizado entre
+	// varios actores) y el análisis lo leería como "el mismo visitante
+	// recurrente" sin serlo.
+	UsarPlacaEnScoreIA     bool `gorm:"column:usar_placa_en_score_ia;not null;default:true"`
+	UsarDocumentoEnScoreIA bool `gorm:"column:usar_documento_en_score_ia;not null;default:true"`
+	UsarRostroEnScoreIA    bool `gorm:"column:usar_rostro_en_score_ia;not null;default:true"`
 }
 
 func (Kiosko) TableName() string       { return "kioskos" }

@@ -203,14 +203,19 @@ func (sc ScoreContexto) AScoreIA() ScoreIA {
 // configurable y pasó a ser uno de los factores del score (rachaLimpiaMinima).
 // Lo que el admin configura ahora es el porcentaje de confianza que exige para
 // autopase, que es la misma decisión expresada en algo que se entiende.
-func AnalizarVisita(historial []Visita, nueva Visita, esperada EvidenciaEsperada) ScoreContexto {
+//
+// fuentes dice qué evidencia cuenta para el análisis (ver ScoreIaFuentes) --
+// historial ya viene resuelto según esas mismas fuentes (ver
+// Repository.HistorialDeVisitante), así que aquí solo hace falta acotar la
+// comparación de placa, que es el único factor con un cálculo propio.
+func AnalizarVisita(historial []Visita, nueva Visita, esperada EvidenciaEsperada, fuentes ScoreIaFuentes) ScoreContexto {
 	sc := ScoreContexto{
 		VecesVisitado: len(historial),
 		OCRSospechoso: validarOCR(nueva.Curp),
 	}
 
 	if len(historial) == 0 {
-		evaluarEntrada(&sc, nueva, historial, esperada)
+		evaluarEntrada(&sc, nueva, historial, esperada, fuentes)
 		return sc
 	}
 
@@ -219,7 +224,7 @@ func AnalizarVisita(historial []Visita, nueva Visita, esperada EvidenciaEsperada
 
 	// Si la visita no trae CURP, el historial vino agrupado por placa y todas las
 	// matrículas son la misma por construcción: comparar no diría nada (ADR-0024).
-	if nueva.Placa != "" && nueva.Curp != "" {
+	if fuentes.Placa && nueva.Placa != "" && nueva.Curp != "" {
 		sc.AnomaliaMatricula = placaDiferente(historial, nueva.Placa)
 	}
 
@@ -232,7 +237,7 @@ func AnalizarVisita(historial []Visita, nueva Visita, esperada EvidenciaEsperada
 
 	sc.HorarioInusual = horarioInusual(historial, nueva.CreatedAt)
 
-	evaluarEntrada(&sc, nueva, historial, esperada)
+	evaluarEntrada(&sc, nueva, historial, esperada, fuentes)
 
 	// Confiable se conserva porque el dashboard ya pintaba una insignia con
 	// él, pero ahora deriva del score en vez de un contador suelto.

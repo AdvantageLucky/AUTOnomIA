@@ -2767,6 +2767,9 @@
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
     document.getElementById("cfg-score-ia-kiosko").checked  = cfg.mostrar_score_ia_kiosko !== false;
+    document.getElementById("cfg-score-ia-placa").checked     = cfg.usar_placa_en_score_ia !== false;
+    document.getElementById("cfg-score-ia-documento").checked = cfg.usar_documento_en_score_ia !== false;
+    document.getElementById("cfg-score-ia-rostro").checked    = cfg.usar_rostro_en_score_ia !== false;
 
     const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
     if (rowPlacaInv) rowPlacaInv.style.opacity = esPeatonal ? "0.35" : "1";
@@ -2920,6 +2923,9 @@
       horario_fin:              document.getElementById("cfg-horario-fin").value,
       motivo_obligatorio_visitante: motivoObligatorio,
       mostrar_score_ia_kiosko:      document.getElementById("cfg-score-ia-kiosko").checked,
+      usar_placa_en_score_ia:       document.getElementById("cfg-score-ia-placa").checked,
+      usar_documento_en_score_ia:   document.getElementById("cfg-score-ia-documento").checked,
+      usar_rostro_en_score_ia:      document.getElementById("cfg-score-ia-rostro").checked,
     };
 
     const res = await api(`/kioskos/${cfgAccesoId}/config`, {
