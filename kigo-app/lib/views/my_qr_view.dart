@@ -303,7 +303,7 @@ class _MyQrViewState extends State<MyQrView> {
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildBadgeHeader(nombre, membresia),
+                _buildBadgeHeader(nombre, membresia, isDark),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
                   child: Column(children: [_buildQrContenido(pin, isDark)]),
@@ -324,12 +324,12 @@ class _MyQrViewState extends State<MyQrView> {
     );
   }
 
-  Widget _buildBadgeHeader(String nombre, dynamic membresia) {
+  Widget _buildBadgeHeader(String nombre, dynamic membresia, bool isDark) {
     final subtitulo = membresia != null ? '${membresia.centroNombre} · ${membresia.casaDestino}' : 'Credencial de acceso';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 18, 44, 22),
-      decoration: const BoxDecoration(color: AppTheme.backgroundBlack),
+      decoration: BoxDecoration(color: isDark ? AppTheme.backgroundBlack : AppTheme.surface2Light),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -346,13 +346,18 @@ class _MyQrViewState extends State<MyQrView> {
           const SizedBox(height: 6),
           Text(
             nombre,
-            style: const TextStyle(fontFamily: 'Unbounded', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontFamily: 'Unbounded',
+              color: isDark ? Colors.white : AppTheme.textDark,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(
             subtitulo,
-            style: const TextStyle(color: AppTheme.textGrey, fontSize: 12),
+            style: TextStyle(color: isDark ? AppTheme.textGrey : AppTheme.textDimmed, fontSize: 12),
             overflow: TextOverflow.ellipsis,
           ),
         ],
