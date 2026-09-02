@@ -7,11 +7,13 @@ import 'package:kigo_kiosco/core/services/asistente_servicio.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
+import 'package:kigo_kiosco/core/widgets/asistencia_urgente_sheet.dart';
 import 'package:kigo_kiosco/core/widgets/etiqueta_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/faq_offline_sheet.dart';
 import 'package:kigo_kiosco/core/widgets/mascota_asistente.dart';
 import 'package:kigo_kiosco/core/widgets/menu_ayuda_sheet.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
+import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 
 enum _EstadoAsistente { inactivo, escuchando, procesando, hablando }
@@ -82,6 +84,7 @@ class BotonAsistenteFlotante extends StatefulWidget {
 
 class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with TickerProviderStateMixin {
   final AsistenteServicio _asistente = AsistenteServicio();
+  final KioskoServicio _kiosko = KioskoServicio();
   final TextToSpeakServicio _tts = TextToSpeakServicio();
   final LedServicio _led = LedServicio();
   _EstadoAsistente _estado = _EstadoAsistente.inactivo;
@@ -271,7 +274,7 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildBotonVigilante(telefonoContacto),
+                _buildBotonVigilante(telefonoContacto, offline),
                 const SizedBox(width: 14),
                 _buildBotonMicrofono(offline, telefonoContacto),
               ],
@@ -341,14 +344,15 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
     );
   }
 
-  Widget _buildBotonVigilante(String telefonoContacto) {
+  Widget _buildBotonVigilante(String telefonoContacto, bool offline) {
     return Tooltip(
-      message: 'Ayuda: llamar al vigilante o ver preguntas frecuentes',
+      message: 'Ayuda: llamar al vigilante',
       child: Presionable(
-        onTap: () => mostrarMenuAyuda(
+        onTap: () => mostrarAsistenciaUrgente(
           context,
           telefonoContacto: telefonoContacto,
-          onFaq: () => mostrarFaqOffline(context),
+          offline: offline,
+          onSolicitar: () => _kiosko.solicitarAsistenciaUrgente(),
         ),
         child: Container(
           width: _ladoBotonAccion,

@@ -44,16 +44,14 @@ func (n *PushNotificador) NotificarNuevaVisita(
 		}
 	}
 
-	// Nadie recibió el push (ningún residente enlazado al destino, o
-	// ninguno con la app instalada) — sin este respaldo, la solicitud
-	// queda esperando en el dashboard sin que nadie se entere fuera de él.
-	if len(destinatarios) == 0 {
-		n.avisarAdmin(ctx, tenantID, casaDestino, v)
-	}
+	// Todo tipo de solicitud avisa al admin por correo, no solo cuando nadie
+	// recibió el push -- el admin quiere enterarse de cada visita nueva sin
+	// depender de tener el dashboard abierto (spec pedida 2026-09-02).
+	n.avisarAdmin(ctx, tenantID, casaDestino, v, len(destinatarios) == 0)
 	return nil
 }
 
-func (n *PushNotificador) avisarAdmin(ctx context.Context, tenantID uint, casaDestino string, v visitas.Visita) {
+func (n *PushNotificador) avisarAdmin(ctx context.Context, tenantID uint, casaDestino string, v visitas.Visita, sinResidente bool) {
 	if n.mailer == nil {
 		return
 	}
@@ -62,11 +60,15 @@ func (n *PushNotificador) avisarAdmin(ctx context.Context, tenantID uint, casaDe
 		log.Printf("PushNotificador: error buscando admins del tenant %d: %v", tenantID, err)
 		return
 	}
-	asunto := "Visita sin residente al que avisar"
-	cuerpo := fmt.Sprintf(
-		"%s llegó a %q y no hay ningún residente enlazado a ese destino (o ninguno con la app instalada) para avisarle.\nRevisa la solicitud en el dashboard.",
-		v.Titular, casaDestino,
-	)
+	asunto := "Nueva solicitud de acceso"
+	cuerpo := fmt.Sprintf("%s llegó a %q y espera autorización.\nRevisa la solicitud en el dashboard.", v.Titular, casaDestino)
+	if sinResidente {
+		asunto = "Visita sin residente al que avisar"
+		cuerpo = fmt.Sprintf(
+			"%s llegó a %q y no hay ningún residente enlazado a ese destino (o ninguno con la app instalada) para avisarle.\nRevisa la solicitud en el dashboard.",
+			v.Titular, casaDestino,
+		)
+	}
 	for _, correo := range correos {
 		if correo == "" {
 			continue

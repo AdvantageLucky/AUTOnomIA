@@ -35,7 +35,7 @@ func TestIniciarKigoVerify(t *testing.T) {
 	defer srv.Close()
 
 	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, "", "",
-		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL, PublicURL: "https://autonomia.example"}, kigoRepo, nil)
+		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL, PublicURL: "https://autonomia.example"}, kigoRepo, nil, nil)
 
 	router := gin.New()
 	router.POST("/personas/me/kigo-verify/iniciar", func(c *gin.Context) {
@@ -85,7 +85,7 @@ func TestConsultarEstadoKigoVerify_Completado(t *testing.T) {
 		Status: "COMPLETED", FotoRostroURL: "https://x/foto.jpg", ExpiresAt: time.Now().Add(time.Hour),
 	})
 
-	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, kigoRepo, nil)
+	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, kigoRepo, nil, nil)
 
 	router := gin.New()
 	router.GET("/personas/me/kigo-verify/estado", func(c *gin.Context) {
@@ -127,7 +127,7 @@ func TestConsultarEstadoKigoVerify_ExpiradoSinWebhook(t *testing.T) {
 		Status: "PENDING", ExpiresAt: time.Now().Add(-time.Hour), // ya expiro
 	})
 
-	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, kigoRepo, nil)
+	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, kigoRepo, nil, nil)
 
 	router := gin.New()
 	router.GET("/personas/me/kigo-verify/estado", func(c *gin.Context) {
@@ -176,7 +176,7 @@ func TestConsultarEstadoKigoVerify_PendienteConsultaAKigo(t *testing.T) {
 	defer srv.Close()
 
 	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, "", "",
-		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL}, kigoRepo, nil)
+		KigoVerifyConfig{APIKey: "k", BaseURL: srv.URL}, kigoRepo, nil, nil)
 
 	router := gin.New()
 	router.GET("/personas/me/kigo-verify/estado", func(c *gin.Context) {
@@ -221,7 +221,7 @@ func TestWebhookKigoVerify_FirmaValida(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, tmpDir, "",
-		KigoVerifyConfig{APIKey: "k", BaseURL: kigoSrv.URL}, kigoRepo, nil)
+		KigoVerifyConfig{APIKey: "k", BaseURL: kigoSrv.URL}, kigoRepo, nil, nil)
 
 	router := gin.New()
 	router.POST("/webhooks/kigo-verify", h.WebhookKigoVerify)
@@ -259,7 +259,7 @@ func TestWebhookKigoVerify_FirmaInvalida(t *testing.T) {
 		Status: "PENDING", ExpiresAt: time.Now().Add(time.Hour),
 	})
 
-	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, t.TempDir(), "", KigoVerifyConfig{}, kigoRepo, nil)
+	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, nil, nil, nil, nil, nil, t.TempDir(), "", KigoVerifyConfig{}, kigoRepo, nil, nil)
 
 	router := gin.New()
 	router.POST("/webhooks/kigo-verify", h.WebhookKigoVerify)
