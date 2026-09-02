@@ -15,6 +15,13 @@ class MainActivity : FlutterActivity() {
     // todos los canales. No requiere inicialización previa.
     private val ledChannel = "com.example.kigo_kiosco/led"
 
+    // Relay eléctrico del F10 (mismo manual, sección Relay) -- controla la
+    // chapa/pluma física de acceso. PosUtil.setRelayPower(1) abre,
+    // setRelayPower(0) cierra; devuelve 0 si tuvo éxito. Hasta ahora nadie
+    // llamaba a esto: una visita aprobada solo cambiaba de color en
+    // pantalla, la puerta la abría un humano.
+    private val relayChannel = "com.example.kigo_kiosco/relay"
+
     // Se re-arma en cada resume (pantalla encendida, vuelta de segundo plano, etc.)
     // para que el pineo se auto-repare si el sistema lo soltó.
     override fun onResume() {
@@ -87,6 +94,31 @@ class MainActivity : FlutterActivity() {
                     // otro modelo Telpo) — un fallo aquí no debe tronar la
                     // pantalla de resultado, solo no prender la luz.
                     result.error("LED_ERROR", e.message, null)
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, relayChannel)
+            .setMethodCallHandler { call, result ->
+                try {
+                    when (call.method) {
+                        "abrir" -> {
+                            val segundos = call.argument<Int>("segundos") ?: 4
+                            PosUtil.setRelayPower(1)
+                            // El cierre se agenda del lado nativo (no bloquea este
+                            // handler) para que la puerta se cierre sola aunque la
+                            // pantalla de resultado ya se haya ido -- el siguiente
+                            // visitante no debe encontrarla abierta.
+                            android.os.Handler(mainLooper).postDelayed({
+                                PosUtil.setRelayPower(0)
+                            }, segundos * 1000L)
+                            result.success(null)
+                        }
+                        else -> result.notImplemented()
+                    }
+                } catch (e: Exception) {
+                    // Mismo criterio que el LED: el kiosko puede no tener el
+                    // relay cableado todavía, eso no debe tronar la pantalla.
+                    result.error("RELAY_ERROR", e.message, null)
                 }
             }
     }

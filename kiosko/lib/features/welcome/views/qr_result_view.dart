@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/services/relay_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
@@ -31,6 +32,7 @@ class QrResultView extends StatefulWidget {
 class _QrResultViewState extends State<QrResultView> {
   Timer? _autoTimer;
   final _led = LedServicio();
+  final _relay = RelayServicio();
   final _tts = TextToSpeakServicio();
   bool _ledDisparado = false;
 
@@ -55,6 +57,7 @@ class _QrResultViewState extends State<QrResultView> {
       _ledDisparado = true;
       if (widget.viewModel.estado == QrResultEstado.exitoso) {
         _led.mostrarAprobado();
+        _relay.abrir();
         _tts.speak('Acceso autorizado. ¡Bienvenido!');
       } else {
         _led.mostrarRechazado();

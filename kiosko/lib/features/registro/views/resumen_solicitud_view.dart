@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/models/score_ia_model.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/services/relay_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/pin_operador_sheet.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
@@ -51,16 +52,19 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   ScoreIaModel? _scoreIa;
   String? _resumenIa;
   final _led = LedServicio();
+  final _relay = RelayServicio();
   bool _ledDisparado = false;
 
   /// LED verde/rojo según el resultado — solo para los dos estados finales
   /// reales; "en revisión" no es ni aprobado ni rechazado, no prende nada.
-  /// Se dispara una sola vez por pantalla.
+  /// Se dispara una sola vez por pantalla. El relay solo abre en aprobado,
+  /// nunca en rechazado ni en revisión.
   void _dispararLedSiCorresponde() {
     if (_ledDisparado) return;
     if (_estado == 'APROBADO') {
       _ledDisparado = true;
       _led.mostrarAprobado();
+      _relay.abrir();
     } else if (_estado == 'RECHAZADO') {
       _ledDisparado = true;
       _led.mostrarRechazado();
