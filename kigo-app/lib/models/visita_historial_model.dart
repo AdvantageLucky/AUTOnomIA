@@ -15,6 +15,7 @@ class VisitaHistorialModel {
   final String placa;
   final String tipoVisitante;
   final String telefono;
+  final String curp;
   final ScoreIaModel? scoreIa;
 
   /// PENDIENTE · APROBADO · RECHAZADO · REVISION, tal cual lo guarda el backend.
@@ -36,6 +37,7 @@ class VisitaHistorialModel {
     this.placa = '',
     this.tipoVisitante = '',
     this.telefono = '',
+    this.curp = '',
     this.scoreIa,
     required this.estado,
     required this.createdAt,
@@ -53,6 +55,7 @@ class VisitaHistorialModel {
       placa: json['placa'] as String? ?? '',
       tipoVisitante: json['tipo_visitante'] as String? ?? '',
       telefono: json['telefono'] as String? ?? '',
+      curp: json['curp'] as String? ?? '',
       scoreIa: json['score_ia'] != null
           ? ScoreIaModel.fromJson(json['score_ia'] as Map<String, dynamic>)
           : null,

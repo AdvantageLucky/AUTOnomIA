@@ -22,6 +22,7 @@ class VisitaDetalleView extends StatelessWidget {
     required this.scoreIa,
     required this.createdAt,
     this.telefono = '',
+    this.curp = '',
     this.estado,
     this.autorizadoPorNombre,
   });
@@ -36,6 +37,10 @@ class VisitaDetalleView extends StatelessWidget {
 
   /// Solo viene si el visitante ya es una cuenta verificada de Kigo.
   final String telefono;
+
+  /// CURP capturada en esta entrada -- vacía si el flujo no pidió
+  /// documento (p. ej. acceso vehicular).
+  final String curp;
 
   /// Null si el backend no pudo calcularlo (p. ej. visita muy vieja, antes
   /// de que existiera el análisis).
@@ -56,7 +61,10 @@ class VisitaDetalleView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fotos = <(String, String)>[
-      ('Rostro', fotoRostroUrl),
+      // Antes 'Rostro' se incluía siempre, sin filtrar por .isNotEmpty como
+      // las otras dos -- una visita sin captura de rostro (p. ej. acceso
+      // solo vehicular) mostraba una miniatura rota en vez de omitirse.
+      if (fotoRostroUrl.isNotEmpty) ('Rostro', fotoRostroUrl),
       if (fotoDocumentoUrl.isNotEmpty) ('Identificación', fotoDocumentoUrl),
       if (fotoPlacaUrl.isNotEmpty) ('Placa', fotoPlacaUrl),
     ];
@@ -80,6 +88,10 @@ class VisitaDetalleView extends StatelessWidget {
           if (placa.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text('Placa: $placa', style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13)),
+          ],
+          if (curp.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text('CURP: $curp', style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13)),
           ],
           if (estado != null) ...[
             const SizedBox(height: 10),
@@ -109,6 +121,7 @@ class VisitaDetalleView extends StatelessWidget {
               ],
             ),
           ],
+          if (fotos.isNotEmpty) ...[
           const SizedBox(height: 20),
           SizedBox(
             height: 140,
@@ -133,6 +146,7 @@ class VisitaDetalleView extends StatelessWidget {
               },
             ),
           ),
+          ],
           if (scoreIa != null) ...[
             const SizedBox(height: 24),
             _ScoreConfianza(score: scoreIa!),

@@ -352,6 +352,7 @@ class _HistorialCard extends StatelessWidget {
             placa: visita.placa,
             tipoVisitante: visita.tipoVisitante,
             telefono: visita.telefono,
+            curp: visita.curp,
             scoreIa: visita.scoreIa,
             createdAt: visita.createdAt,
             estado: visita.estado,

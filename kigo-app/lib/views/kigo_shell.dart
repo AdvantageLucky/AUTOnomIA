@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../main.dart';
 import '../services/deep_link_servicio.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -21,7 +22,7 @@ class KigoShell extends StatefulWidget {
   State<KigoShell> createState() => _KigoShellState();
 }
 
-class _KigoShellState extends State<KigoShell> {
+class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
   int _index = 0;
   int _invitarTabInicial = 0;
   int? _tenantIdAnterior;
@@ -33,6 +34,8 @@ class _KigoShellState extends State<KigoShell> {
     _auth = context.read<AuthViewModel>();
     _tenantIdAnterior = _auth.centroActivo?.tenantId;
     _auth.addListener(_onAuthChanged);
+    WidgetsBinding.instance.addObserver(this);
+    MyApp.notificationTick.addListener(_refrescarPendientes);
 
     // Carga inicial de datos
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -56,7 +59,26 @@ class _KigoShellState extends State<KigoShell> {
   @override
   void dispose() {
     _auth.removeListener(_onAuthChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    MyApp.notificationTick.removeListener(_refrescarPendientes);
     super.dispose();
+  }
+
+  // El badge de "Solicitudes" solo se recargaba al tocar esa pestaña --
+  // si la solicitud se resolvía por otro medio (otro residente de la
+  // casa, el kiosko, o vencimiento) mientras la app seguía abierta en
+  // "Mi QR" o en background, el número quedaba desactualizado hasta que
+  // alguien tocara la pestaña a mano. Se refresca también al volver del
+  // background y al recibir una notificación push.
+  void _refrescarPendientes() {
+    final tenantId = _auth.centroActivo?.tenantId;
+    if (tenantId == null) return;
+    context.read<PendingVisitsViewModel>().cargar(tenantId);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refrescarPendientes();
   }
 
   void _onAuthChanged() {
@@ -198,13 +220,13 @@ class _KigoShellState extends State<KigoShell> {
             NavigationDestination(
               icon: Badge(
                 isLabelVisible: pendientesCount > 0,
-                label: Text('$pendientesCount'),
+                label: Text('+$pendientesCount'),
                 backgroundColor: AppTheme.primaryOrange,
                 child: const Icon(Icons.mark_chat_unread_outlined),
               ),
               selectedIcon: Badge(
                 isLabelVisible: pendientesCount > 0,
-                label: Text('$pendientesCount'),
+                label: Text('+$pendientesCount'),
                 backgroundColor: AppTheme.primaryOrange,
                 child: const Icon(Icons.mark_chat_unread_rounded, color: AppTheme.primaryOrange),
               ),

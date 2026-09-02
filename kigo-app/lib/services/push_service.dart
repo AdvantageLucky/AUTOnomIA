@@ -23,6 +23,10 @@ class PushService {
         MyApp.scaffoldMessengerKey.currentState
             ?.showSnackBar(SnackBar(content: Text(texto)));
       }
+      // Una notificación casi siempre significa que algo relacionado a
+      // solicitudes/invitaciones cambió del lado del servidor -- dispara un
+      // refresh en vez de esperar a que la persona toque la pestaña.
+      MyApp.notificationTick.value++;
     });
   }
 
