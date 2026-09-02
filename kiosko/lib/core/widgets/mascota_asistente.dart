@@ -72,14 +72,17 @@ class _MascotaPainter extends CustomPainter {
     // brazos ni piernas, igual que la referencia.
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: p(30, 55), width: 16 * s, height: 5 * s),
+        Rect.fromCenter(center: p(30, 52), width: 16 * s, height: 5 * s),
         Radius.circular(2.5 * s),
       ),
       pedestalPaint,
     );
+    // El cuello sube hasta traslaparse con la cabeza (que además puede
+    // rebotar unos px mientras escucha) -- sin este traslape se abría un
+    // hueco feo entre la cabeza y el pedestal.
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: p(30, 49), width: 7 * s, height: 8 * s),
+        Rect.fromCenter(center: p(30, 44), width: 7 * s, height: 12 * s),
         Radius.circular(2 * s),
       ),
       pedestalPaint,
