@@ -657,7 +657,8 @@
 									<button type="button" class="tab-btn active" data-cfg-tab="cfg-tab-general">General y Pantalla</button>
 									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-sin-invitacion">Sin Invitación</button>
 									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-con-invitacion">Pase QR (Invitación)</button>
-									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-hardware">Hardware y Tiempos</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-hardware">Tiempos</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-ia">Análisis de IA</button>
 								</div>
 							</div>
 
@@ -818,76 +819,6 @@
 								</div>
 
 								<div class="config-section">
-									<div class="config-section-title">Hardware y Dispositivos</div>
-
-									<div class="toggle-row">
-										<div>
-											<div class="toggle-label">Aprobación automática por IA (AutoPass)</div>
-											<div class="toggle-sub">Aprobar accesos recurrentes seguros sin intervención manual</div>
-										</div>
-										<label class="toggle-switch">
-											<input type="checkbox" id="cfg-autopass">
-											<span class="toggle-slider"></span>
-										</label>
-									</div>
-
-									<div class="toggle-row">
-										<div>
-											<div class="toggle-label">Confianza mínima para aprobar sola (%)</div>
-											<div class="toggle-sub">Cada entrada recibe un score de confianza de 0 a 100 según su historial, la evidencia capturada y las anomalías detectadas. Con AutoPass encendido, se aprueba sola a partir de este porcentaje. Más alto = más estricto. Recomendado 80.</div>
-										</div>
-										<input type="number" id="cfg-umbral-autopass" min="50" max="100" class="search-select" style="width:80px;text-align:right">
-									</div>
-
-									<div class="toggle-row">
-										<div>
-											<div class="toggle-label">Exigencia del reconocimiento facial (%)</div>
-											<div class="toggle-sub">Qué tanto se debe parecer la cara para que el kiosko dé por buena la identidad. Más alto = más estricto, más rechazos legítimos. Recomendado 85.</div>
-										</div>
-										<input type="number" id="cfg-umbral-facial" min="50" max="99" class="search-select" style="width:80px;text-align:right">
-									</div>
-
-									<div class="toggle-row">
-										<div>
-											<div class="toggle-label">Mostrar análisis de IA en el kiosko</div>
-											<div class="toggle-sub">El visitante ve un sello "Verificado por IA" con el nivel de confianza; el vigilante puede tocarlo, meter su PIN de operador y ver el detalle completo (factores, recomendaciones)</div>
-										</div>
-										<label class="toggle-switch">
-											<input type="checkbox" id="cfg-score-ia-kiosko">
-											<span class="toggle-slider"></span>
-										</label>
-									</div>
-
-									<div class="toggle-row">
-										<div>
-											<div class="toggle-label">Qué cuenta para el análisis de IA</div>
-											<div class="toggle-sub">Qué evidencia se usa para ligar una visita con su historial (recurrencia, anomalías) y para el score -- no si se pide capturarla, eso está arriba. Apaga una si el dato de prueba se repite entre personas distintas (mismo vehículo, mismo rostro o INE de prueba en una demo) y el análisis lo leería como "el mismo visitante recurrente" sin serlo.</div>
-										</div>
-									</div>
-									<div class="toggle-row" style="padding-top:0">
-										<div class="toggle-label" style="font-size:13px">Placa</div>
-										<label class="toggle-switch">
-											<input type="checkbox" id="cfg-score-ia-placa">
-											<span class="toggle-slider"></span>
-										</label>
-									</div>
-									<div class="toggle-row" style="padding-top:0">
-										<div class="toggle-label" style="font-size:13px">Documento (CURP/INE)</div>
-										<label class="toggle-switch">
-											<input type="checkbox" id="cfg-score-ia-documento">
-											<span class="toggle-slider"></span>
-										</label>
-									</div>
-									<div class="toggle-row" style="padding-top:0">
-										<div class="toggle-label" style="font-size:13px">Rostro</div>
-										<label class="toggle-switch">
-											<input type="checkbox" id="cfg-score-ia-rostro">
-											<span class="toggle-slider"></span>
-										</label>
-									</div>
-								</div>
-
-								<div class="config-section">
 									<div class="config-section-title">Horario de Operación</div>
 
 									<div class="toggle-row">
@@ -904,6 +835,83 @@
 											<div class="toggle-sub">Kiosko activo hasta esta hora</div>
 										</div>
 										<input type="time" id="cfg-horario-fin" class="search-select">
+									</div>
+								</div>
+							</div>
+
+							<!-- TAB 5: ANÁLISIS DE IA -->
+							<div id="cfg-tab-ia" class="cfg-tab-pane" hidden>
+								<div class="config-section">
+									<div class="config-section-title">Score de Confianza y AutoPass</div>
+									<div class="config-section-sub">Cada entrada recibe un score de confianza de 0 a 100 según su historial, la evidencia capturada y las anomalías detectadas.</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Aprobación automática por IA (AutoPass)</div>
+											<div class="toggle-sub">Aprobar accesos recurrentes seguros sin intervención manual</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-autopass">
+											<span class="toggle-slider"></span>
+										</label>
+									</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Confianza mínima para aprobar sola (%)</div>
+											<div class="toggle-sub">Con AutoPass encendido, se aprueba sola a partir de este porcentaje. Más alto = más estricto. Recomendado 80.</div>
+										</div>
+										<input type="number" id="cfg-umbral-autopass" min="50" max="100" class="search-select" style="width:80px;text-align:right">
+									</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Exigencia del reconocimiento facial (%)</div>
+											<div class="toggle-sub">Qué tanto se debe parecer la cara para que el kiosko dé por buena la identidad. Más alto = más estricto, más rechazos legítimos. Recomendado 85.</div>
+										</div>
+										<input type="number" id="cfg-umbral-facial" min="50" max="99" class="search-select" style="width:80px;text-align:right">
+									</div>
+								</div>
+
+								<div class="config-section">
+									<div class="config-section-title">Visibilidad en el kiosko</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Mostrar análisis de IA en el kiosko</div>
+											<div class="toggle-sub">El visitante ve un sello "Verificado por IA" con el nivel de confianza; el vigilante puede tocarlo, meter su PIN de operador y ver el detalle completo (factores, recomendaciones)</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-score-ia-kiosko">
+											<span class="toggle-slider"></span>
+										</label>
+									</div>
+								</div>
+
+								<div class="config-section">
+									<div class="config-section-title">Qué cuenta para el análisis</div>
+									<div class="config-section-sub">Qué evidencia se usa para ligar una visita con su historial (recurrencia, anomalías) y para el score -- no si se pide capturarla, eso está en las otras pestañas. Apaga una si el dato de prueba se repite entre personas distintas (mismo vehículo, mismo rostro o INE de prueba en una demo) y el análisis lo leería como "el mismo visitante recurrente" sin serlo.</div>
+
+									<div class="toggle-row">
+										<div class="toggle-label">Placa</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-score-ia-placa">
+											<span class="toggle-slider"></span>
+										</label>
+									</div>
+									<div class="toggle-row">
+										<div class="toggle-label">Documento (CURP/INE)</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-score-ia-documento">
+											<span class="toggle-slider"></span>
+										</label>
+									</div>
+									<div class="toggle-row">
+										<div class="toggle-label">Rostro</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-score-ia-rostro">
+											<span class="toggle-slider"></span>
+										</label>
 									</div>
 								</div>
 							</div>
