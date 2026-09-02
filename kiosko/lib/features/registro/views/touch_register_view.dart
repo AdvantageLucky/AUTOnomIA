@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/features/registro/models/paso_registro.dart';
 import 'package:kigo_kiosco/features/registro/viewmodels/touch_register_viewmodel.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
+import 'package:kigo_kiosco/features/registro/views/motivo_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_rostro_widget.dart';
@@ -279,6 +280,8 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     switch (viewModel.pasoActual) {
       case PasoRegistro.destino:
         await _pasoCasaDestino();
+      case PasoRegistro.motivo:
+        await _pasoMotivo();
       // El flujo peatonal no lee placas; el viewmodel ya no arma ese paso.
       case PasoRegistro.placa:
       case PasoRegistro.ine:
@@ -289,25 +292,41 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
 
   Future<void> _pasoCasaDestino() async {
     if (!mounted) return;
-    final resultado = await Navigator.push<Map<String, String>>(
+    final String? casa = await Navigator.push<String>(
       context,
       MaterialPageRoute(
         builder: (_) => CasaDestinoView(
           currentStep: viewModel.indicatorStep,
           totalSteps: viewModel.indicatorTotalSteps,
-          motivoHabilitado: viewModel.config.motivoObligatorioVisitante,
         ),
       ),
     );
     // Si da "atras" aqui se cancela toda la solicitud: no hay un punto
     // intermedio al que reanudar.
-    final casa = resultado?['destino'];
-    if (casa == null || casa.isEmpty) {
+    if (casa == null) {
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
     viewModel.registrationData.casaDestino = casa;
-    viewModel.registrationData.motivo = resultado?['motivo'];
+    await _avanzar();
+  }
+
+  Future<void> _pasoMotivo() async {
+    if (!mounted) return;
+    final String? motivo = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MotivoView(
+          currentStep: viewModel.indicatorStep,
+          totalSteps: viewModel.indicatorTotalSteps,
+        ),
+      ),
+    );
+    if (motivo == null) {
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+    viewModel.registrationData.motivo = motivo;
     await _avanzar();
   }
 

@@ -2576,6 +2576,13 @@
       desc: "Escaneo de credencial con OCR (opcional según hardware)",
       defaultChecked: false,
     },
+    MOTIVO: {
+      id: "MOTIVO",
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+      title: "Motivo de la visita",
+      desc: "Chips de un toque (Paquete, Servicio, Visita, Proveedor, Otro). Un invitado con pase QR no lo ve -- ya lo capturó quien lo invitó.",
+      defaultChecked: false,
+    },
   };
 
   function renderPipeline(cfg, esPeatonal) {
@@ -2587,13 +2594,14 @@
       ? cfg.pasos_sin_invitacion
       : (esPeatonal ? ["ROSTRO", "DESTINO"] : ["PLACA", "ROSTRO", "DESTINO"]);
 
-    const orderedIds = [...new Set([...rawPasos, "ROSTRO", "DESTINO", "PLACA", "INE"])];
+    const orderedIds = [...new Set([...rawPasos, "ROSTRO", "DESTINO", "PLACA", "INE", "MOTIVO"])];
 
     const checkedMap = {
       ROSTRO: cfg.foto_rostro_visitante !== undefined ? !!cfg.foto_rostro_visitante : true,
       DESTINO: true,
       PLACA: esPeatonal ? false : (cfg.foto_placa_visitante !== undefined ? !!cfg.foto_placa_visitante : true),
       INE: !!cfg.foto_ine_visitante,
+      MOTIVO: !!cfg.motivo_obligatorio_visitante,
     };
 
     orderedIds.forEach((stepId) => {
@@ -2758,7 +2766,6 @@
     document.getElementById("cfg-umbral-autopass").value = cfg.umbral_autopass_pct ?? 80;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
-    document.getElementById("cfg-motivo-visitante").checked = !!cfg.motivo_obligatorio_visitante;
     document.getElementById("cfg-score-ia-kiosko").checked  = cfg.mostrar_score_ia_kiosko !== false;
 
     const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
@@ -2820,6 +2827,7 @@
       foto_rostro_visitante: activeSteps.includes("ROSTRO"),
       foto_placa_visitante: esPeatonal ? false : activeSteps.includes("PLACA"),
       foto_ine_visitante: activeSteps.includes("INE"),
+      motivo_obligatorio_visitante: activeSteps.includes("MOTIVO"),
     }, esPeatonal);
   });
 
@@ -2865,7 +2873,7 @@
     const esPeatonal = tipoVal === "PEATONAL";
     const listEl = document.getElementById("cfg-pipeline-list");
     const activeSteps = [];
-    let fotoRostro = false, fotoPlaca = false, fotoIne = false;
+    let fotoRostro = false, fotoPlaca = false, fotoIne = false, motivoObligatorio = false;
 
     if (listEl) {
       listEl.querySelectorAll(".pipeline-item").forEach((item) => {
@@ -2877,6 +2885,7 @@
           if (stepId === "ROSTRO") fotoRostro = true;
           if (stepId === "PLACA") fotoPlaca = true;
           if (stepId === "INE") fotoIne = true;
+          if (stepId === "MOTIVO") motivoObligatorio = true;
         }
       });
     }
@@ -2909,7 +2918,7 @@
                                   parseInt(document.getElementById("cfg-umbral-autopass").value) || 80)),
       horario_inicio:           document.getElementById("cfg-horario-inicio").value,
       horario_fin:              document.getElementById("cfg-horario-fin").value,
-      motivo_obligatorio_visitante: document.getElementById("cfg-motivo-visitante").checked,
+      motivo_obligatorio_visitante: motivoObligatorio,
       mostrar_score_ia_kiosko:      document.getElementById("cfg-score-ia-kiosko").checked,
     };
 

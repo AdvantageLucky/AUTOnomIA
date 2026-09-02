@@ -44,6 +44,7 @@ class TouchRegisterViewModel extends ChangeNotifier {
         // que DESTINO no depende de un toggle. Lo que sí depende del
         // dashboard es en qué momento se le pregunta.
         PasoRegistro.destino,
+        if (this.config.motivoObligatorioVisitante) PasoRegistro.motivo,
       },
       // PLACA no entra aquí: este es el flujo peatonal y no hay lector de
       // placas que ejecutar. Si el dashboard lo trae en la lista se ignora
@@ -91,6 +92,14 @@ class TouchRegisterViewModel extends ChangeNotifier {
           subtitle: '',
           description: 'Confirma la placa del vehículo.',
           icon: Icons.directions_car_outlined,
+          buttonTextKey: 'continue_button_text',
+        );
+      case PasoRegistro.motivo:
+        return TouchStepModel(
+          title: '¿Cuál es el motivo de tu visita?',
+          subtitle: '',
+          description: 'Elige la opción que mejor describa tu visita.',
+          icon: Icons.info_outline,
           buttonTextKey: 'continue_button_text',
         );
     }
