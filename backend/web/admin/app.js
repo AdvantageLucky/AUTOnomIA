@@ -1585,9 +1585,9 @@
     // analizador) -- terminaba marcando casi todas las filas con IA sin
     // haberla tenido. Solo resumen_ia/score_ia vienen del analizador real.
     const tieneIA = !!(v.resumen_ia || v.score_ia);
-    const iconoIA = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity:.55;vertical-align:-1px"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z"/></svg>`;
+    const badgeIA = tieneIA ? '<span class="badge badge--intervenida" style="font-size:9.5px;padding:1px 6px;margin-left:6px;vertical-align:1px" title="Con análisis de IA">IA</span>' : '';
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
-      <div><div class="row-name">${esc(v.titular)}${tieneIA ? ` <span title="Con análisis IA">${iconoIA}</span>` : ''}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
+      <div><div class="row-name">${esc(v.titular)}${badgeIA}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
