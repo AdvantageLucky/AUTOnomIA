@@ -11,6 +11,7 @@ import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/routing/registro_router.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/marca_badge.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/welcome_viewmodel.dart';
@@ -366,21 +367,7 @@ class _WelcomeViewState extends State<WelcomeView>
           ),
         ),
         const Spacer(),
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: KigoDesign.brand,
-            borderRadius: BorderRadius.circular(KigoDesign.radius),
-          ),
-          child: const Center(
-            child: Text('K',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 23,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ),
+        const MarcaBadge(lado: 48),
         const SizedBox(width: 14),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
