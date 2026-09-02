@@ -9,7 +9,7 @@
         </intent>
     </queries>
     <application
-        android:label="kigo_kiosco"
+        android:label="Kigo Checkpoint"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
