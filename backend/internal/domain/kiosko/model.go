@@ -81,12 +81,6 @@ type KioskoConfig struct {
 	// Nuevos campos de UI configurable
 	TiempoExitoSeg int `gorm:"not null;default:5"`
 
-	// Numero del vigilante/admin que muestra el botón "hablar con el
-	// administrador" del kiosko -- funciona incluso sin internet en el
-	// kiosko porque el visitante marca desde su propio celular (red móvil,
-	// no el wifi del kiosko).
-	TelefonoContacto string `gorm:"column:telefono_contacto;not null;default:''"`
-
 	// Si el visitante ve el sello "Verificado por IA" y el detalle de
 	// vigilante en el kiosko (ver AnalisisIaView). Prendido por default --
 	// un admin que no lo quiera lo apaga desde el dashboard.

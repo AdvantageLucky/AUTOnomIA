@@ -14,6 +14,10 @@ type CentroHabitacional struct {
 	// de sí mismo en una constraint única).
 	Codigo      *string `gorm:"uniqueIndex"`
 	Descripcion string  `gorm:"not null;default:''"`
+	// TelefonoContacto vivía antes por-kiosko (KioskoConfig) -- un mismo
+	// centro con varios kioskos terminaba con un número distinto en cada
+	// uno, sin ninguna razón real para variar. Un solo número por centro.
+	TelefonoContacto string `gorm:"column:telefono_contacto;not null;default:''"`
 }
 
 func (CentroHabitacional) TableName() string {
