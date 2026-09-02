@@ -140,6 +140,7 @@ class InvitationViewModel extends ChangeNotifier {
     required String nombre,
     required int destinoId,
     required bool permiteReconocimientoFacial,
+    String? motivo,
     DateTime? expiraEl,
   }) async {
     _isLoading = true;
@@ -155,6 +156,7 @@ class InvitationViewModel extends ChangeNotifier {
           'tipo': 'PERSONAL',
           'destino_id': destinoId,
           'permite_reconocimiento_facial': permiteReconocimientoFacial,
+          if (motivo != null && motivo.isNotEmpty) 'motivo': motivo,
           if (expiraEl != null) 'expires_at': expiraEl.toUtc().toIso8601String(),
         },
         auth: true,

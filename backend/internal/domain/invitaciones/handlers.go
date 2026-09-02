@@ -204,6 +204,7 @@ func (h *Handler) UsarInvitacion(c *gin.Context) {
 		FotoRostroURL:    fotos.rostro,
 		FotoPlacaURL:     fotos.placa,
 		CasaDestino:      casaDestino,
+		Motivo:           inv.Motivo,
 		Placa:            strings.ToUpper(strings.TrimSpace(req.Placa)),
 		Estado:           visitas.EstadoAprobado,
 		KioskoID:         uint(kioskoID),

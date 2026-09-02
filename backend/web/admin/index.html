@@ -752,6 +752,17 @@
 									<div class="pipeline-preview-hint">
 										Nota: <strong>Orden de ejecución:</strong> El visitante completará los pasos de arriba hacia abajo. Los pasos desactivados se omitirán por completo.
 									</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Preguntar motivo de la visita</div>
+											<div class="toggle-sub">Chips de un toque (Paquete, Servicio, Visita, Proveedor, Otro) justo después de elegir destino. Un invitado con pase QR no lo ve -- quien lo invitó ya lo capturó al crear la invitación.</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-motivo-visitante">
+											<span class="toggle-slider"></span>
+										</label>
+									</div>
 								</div>
 
 							</div>
@@ -848,6 +859,17 @@
 											<div class="toggle-sub">Qué tanto se debe parecer la cara para que el kiosko dé por buena la identidad. Más alto = más estricto, más rechazos legítimos. Recomendado 85.</div>
 										</div>
 										<input type="number" id="cfg-umbral-facial" min="50" max="99" class="search-select" style="width:80px;text-align:right">
+									</div>
+
+									<div class="toggle-row">
+										<div>
+											<div class="toggle-label">Mostrar análisis de IA en el kiosko</div>
+											<div class="toggle-sub">El visitante ve un sello "Verificado por IA" con el nivel de confianza; el vigilante puede tocarlo, meter su PIN de operador y ver el detalle completo (factores, recomendaciones)</div>
+										</div>
+										<label class="toggle-switch">
+											<input type="checkbox" id="cfg-score-ia-kiosko">
+											<span class="toggle-slider"></span>
+										</label>
 									</div>
 								</div>
 

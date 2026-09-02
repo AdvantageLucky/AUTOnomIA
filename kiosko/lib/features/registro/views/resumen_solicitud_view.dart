@@ -246,6 +246,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   /// actualiza aquí mismo en cada tick del polling hasta que aparezca,
   /// sin importar en qué estado esté la visita.
   void _actualizarAnalisisIA(Map<String, dynamic> respuesta) {
+    if (!context.read<KioskoConfigNotifier>().config.mostrarScoreIaKiosko) return;
     final scoreJson = respuesta['score_ia'] as Map<String, dynamic>?;
     if (scoreJson == null) return;
     setState(() {

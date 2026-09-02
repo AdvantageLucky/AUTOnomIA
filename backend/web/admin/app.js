@@ -2758,6 +2758,8 @@
     document.getElementById("cfg-umbral-autopass").value = cfg.umbral_autopass_pct ?? 80;
     document.getElementById("cfg-horario-inicio").value = cfg.horario_inicio || "00:00";
     document.getElementById("cfg-horario-fin").value    = cfg.horario_fin    || "23:59";
+    document.getElementById("cfg-motivo-visitante").checked = !!cfg.motivo_obligatorio_visitante;
+    document.getElementById("cfg-score-ia-kiosko").checked  = cfg.mostrar_score_ia_kiosko !== false;
 
     const rowPlacaInv = document.getElementById("cfg-row-placa-invitado");
     if (rowPlacaInv) rowPlacaInv.style.opacity = esPeatonal ? "0.35" : "1";
@@ -2907,6 +2909,8 @@
                                   parseInt(document.getElementById("cfg-umbral-autopass").value) || 80)),
       horario_inicio:           document.getElementById("cfg-horario-inicio").value,
       horario_fin:              document.getElementById("cfg-horario-fin").value,
+      motivo_obligatorio_visitante: document.getElementById("cfg-motivo-visitante").checked,
+      mostrar_score_ia_kiosko:      document.getElementById("cfg-score-ia-kiosko").checked,
     };
 
     const res = await api(`/kioskos/${cfgAccesoId}/config`, {

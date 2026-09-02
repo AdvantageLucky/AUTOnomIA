@@ -52,6 +52,10 @@ type KioskoConfig struct {
 	FotoRostroVisitante bool   `gorm:"not null;default:true"`
 	FotoIneVisitante    bool   `gorm:"not null;default:false"`
 	PasosSinInvitacion  string `gorm:"not null;default:'[\"ROSTRO\",\"DESTINO\"]'"`
+	// A un invitado no se le pregunta el motivo en el kiosko -- quien lo
+	// invitó ya lo capturó al crear la invitación. Este toggle solo aplica
+	// a quien llega sin invitación (peatonal o vehicular).
+	MotivoObligatorioVisitante bool `gorm:"column:motivo_obligatorio_visitante;not null;default:false"`
 
 	// Bitacora para visitantes con invitacion
 	FotoPlacaInvitado      bool `gorm:"not null;default:false"`
@@ -82,6 +86,11 @@ type KioskoConfig struct {
 	// kiosko porque el visitante marca desde su propio celular (red móvil,
 	// no el wifi del kiosko).
 	TelefonoContacto string `gorm:"column:telefono_contacto;not null;default:''"`
+
+	// Si el visitante ve el sello "Verificado por IA" y el detalle de
+	// vigilante en el kiosko (ver AnalisisIaView). Prendido por default --
+	// un admin que no lo quiera lo apaga desde el dashboard.
+	MostrarScoreIaKiosko bool `gorm:"column:mostrar_score_ia_kiosko;not null;default:true"`
 }
 
 func (Kiosko) TableName() string       { return "kioskos" }

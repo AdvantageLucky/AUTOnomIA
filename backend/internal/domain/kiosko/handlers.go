@@ -427,6 +427,9 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 			cfg.PasosSinInvitacion = string(data)
 		}
 	}
+	if req.MotivoObligatorioVisitante != nil {
+		cfg.MotivoObligatorioVisitante = *req.MotivoObligatorioVisitante
+	}
 	if req.FotoPlacaInvitado != nil {
 		cfg.FotoPlacaInvitado = *req.FotoPlacaInvitado
 	}
@@ -468,6 +471,9 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	}
 	if req.TelefonoContacto != nil {
 		cfg.TelefonoContacto = *req.TelefonoContacto
+	}
+	if req.MostrarScoreIaKiosko != nil {
+		cfg.MostrarScoreIaKiosko = *req.MostrarScoreIaKiosko
 	}
 
 	if err := repoCtx.UpdateConfig(cfg); err != nil {

@@ -17,10 +17,16 @@ class CasaDestinoView extends StatefulWidget {
   /// caer en cualquier lugar y no solo antes del resumen.
   final int currentStep;
 
+  /// Si se pregunta el motivo tras elegir destino (KioskoConfig.
+  /// motivoObligatorioVisitante) -- apagado, esta pantalla se comporta
+  /// exactamente como antes de que existiera el sub-paso de motivo.
+  final bool motivoHabilitado;
+
   const CasaDestinoView({
     super.key,
     this.totalSteps = 4,
     this.currentStep = 2,
+    this.motivoHabilitado = false,
   });
 
   @override
@@ -37,14 +43,10 @@ enum _SubPaso { calle, tipo, numero, motivo }
 
 /// Motivos frecuentes como chips de un toque -- pedir el motivo por texto
 /// con teclado va contra el listón de "menos de 3 minutos, sin
-/// entrenamiento" del PRD. "Otro" cae al mismo campo libre que ya existe
-/// para destino, por si ninguno aplica.
-const _motivosFrecuentes = [
-  'Visita',
-  'Entrega o paquetería',
-  'Servicio o mantenimiento',
-  'Proveedor',
-];
+/// entrenamiento" del PRD. Genéricos a propósito (no "reparación de AC",
+/// etc.): el visitante no debería tener que pensar cuál aplica. "Otro" cae
+/// al mismo campo libre que ya existe para destino, por si ninguno aplica.
+const _motivosFrecuentes = ['Paquete', 'Servicio', 'Visita', 'Proveedor'];
 
 class _CasaDestinoViewState extends State<CasaDestinoView> {
   final KioskoServicio _kioskoServicio = KioskoServicio();
@@ -179,6 +181,12 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
   /// directo -- así el motivo se captura sin importar cómo se llegó al
   /// destino.
   void _irAMotivo(String destino) {
+    // Sin el toggle prendido, esta pantalla se comporta como antes de que
+    // existiera el sub-paso: elegir destino cierra la pantalla directo.
+    if (!widget.motivoHabilitado) {
+      Navigator.pop(context, {'destino': destino, 'motivo': ''});
+      return;
+    }
     setState(() {
       _destinoElegido = destino;
       _destinoSugeridoPorVoz = null;

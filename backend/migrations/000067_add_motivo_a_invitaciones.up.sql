@@ -1,0 +1,1 @@
+ALTER TABLE invitaciones ADD COLUMN motivo TEXT NOT NULL DEFAULT '';

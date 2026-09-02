@@ -27,6 +27,10 @@ type Invitacion struct {
 	PersonaInvitadaID           *uint          `gorm:"column:persona_invitada_id;index"`
 	PersonaCreadoraID           *uint          `gorm:"column:persona_creadora_id;index"`
 	PermiteReconocimientoFacial bool           `gorm:"column:permite_reconocimiento_facial;not null;default:false"`
+	// Motivo lo captura quien invita, no el kiosko -- para un invitado no
+	// tiene sentido preguntarle "a qué viene" si quien lo invitó ya lo sabe.
+	// Viaja a la Visita al consumir la invitación (ver UsarInvitacion).
+	Motivo string `gorm:"not null;default:''"`
 }
 
 func (Invitacion) TableName() string { return "invitaciones" }

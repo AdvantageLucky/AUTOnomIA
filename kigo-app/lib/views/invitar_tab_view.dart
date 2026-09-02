@@ -34,6 +34,8 @@ class _InvitarTabViewState extends State<InvitarTabView>
   final _nombreCtrl = TextEditingController();
   int? _destinoIdSeleccionado;
   bool _permiteFacial = true;
+  String? _motivoSeleccionado;
+  static const _motivosFrecuentes = ['Paquete', 'Servicio', 'Visita', 'Proveedor'];
   DateTime? _expiraEl;
   int? _tenantIdCargado;
   String? _errorLocal;
@@ -79,6 +81,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
         nombre: nombre,
         destinoId: destinoId,
         permiteReconocimientoFacial: _permiteFacial,
+        motivo: _motivoSeleccionado,
         expiraEl: _expiraEl,
       );
 
@@ -105,7 +108,10 @@ class _InvitarTabViewState extends State<InvitarTabView>
       if (!mounted) return;
       _telefonoCtrl.clear();
       _nombreCtrl.clear();
-      setState(() => _expiraEl = null);
+      setState(() {
+        _expiraEl = null;
+        _motivoSeleccionado = null;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -391,6 +397,22 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   onChanged: destinos.isEmpty
                       ? null
                       : (val) => setState(() => _destinoIdSeleccionado = val),
+                ),
+                const SizedBox(height: 14),
+                const Text('Motivo (opcional)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _motivosFrecuentes.map((m) {
+                    final seleccionado = _motivoSeleccionado == m;
+                    return ChoiceChip(
+                      label: Text(m),
+                      selected: seleccionado,
+                      selectedColor: AppTheme.primaryOrange.withValues(alpha: 0.2),
+                      onSelected: (_) => setState(() => _motivoSeleccionado = seleccionado ? null : m),
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 16),
                 Container(

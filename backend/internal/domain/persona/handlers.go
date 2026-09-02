@@ -546,6 +546,7 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 		Tipo:                        req.Tipo,
 		Titular:                     titular,
 		DestinoID:                   req.DestinoID,
+		Motivo:                      strings.TrimSpace(req.Motivo),
 		PersonaInvitadaID:           &invitado.ID,
 		PersonaCreadoraID:           &personaID,
 		PermiteReconocimientoFacial: req.PermiteReconocimientoFacial,
