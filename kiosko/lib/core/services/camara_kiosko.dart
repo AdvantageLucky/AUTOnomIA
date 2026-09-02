@@ -137,10 +137,24 @@ class CamaraKiosko {
   }
 
   /// Controlador ya configurado para este hardware.
+  ///
+  /// [formatoImagen] solo hace falta cuando algo va a leer los frames en
+  /// vivo con `startImageStream` (reconocimiento facial de residente) --
+  /// ML Kit en Android solo soporta un frame de un plano (NV21) de forma
+  /// confiable; sin pedirlo explícito, la cámara entrega YUV_420_888 de 3
+  /// planos y la conversión a InputImage se descarta en cada frame. El
+  /// resto de los usos (documento, placa, registro de visitante) no lo
+  /// necesitan -- solo toman fotos fijas, nunca leen el stream en vivo.
   static CameraController controlador(
     CameraDescription camara,
-    ResolutionPreset resolucion,
-  ) {
-    return CameraController(camara, resolucion, enableAudio: false);
+    ResolutionPreset resolucion, {
+    ImageFormatGroup? formatoImagen,
+  }) {
+    return CameraController(
+      camara,
+      resolucion,
+      enableAudio: false,
+      imageFormatGroup: formatoImagen,
+    );
   }
 }
