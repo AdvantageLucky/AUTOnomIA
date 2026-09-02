@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/deep_link_servicio.dart';
 import '../theme/app_theme.dart';
@@ -108,18 +109,18 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
     }
   }
 
-  static const _titulos = [
-    'Mi QR',
-    'Solicitudes',
-    'Invitar',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
     final pendingVM = context.watch<PendingVisitsViewModel>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final pendientesCount = pendingVM.visitas.length;
+
+    final titulos = [
+      AppLocalizations.t(context, 'nav_mi_qr'),
+      AppLocalizations.t(context, 'nav_solicitudes'),
+      AppLocalizations.t(context, 'nav_invitar'),
+    ];
 
     final tabs = [
       MyQrView(onGoToSolicitudes: () => _irA(1)),
@@ -132,7 +133,7 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _titulos[_index],
+          titulos[_index],
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
         actions: [
@@ -151,7 +152,7 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
                     const Icon(Icons.apartment_rounded, color: AppTheme.primaryOrange, size: 16),
                     const SizedBox(width: 4),
                     Text(
-                      auth.centroActivo?.centroNombre ?? 'Centro',
+                      auth.centroActivo?.centroNombre ?? AppLocalizations.t(context, 'centro_fallback'),
                       style: const TextStyle(
                         color: AppTheme.primaryOrange,
                         fontSize: 12,
@@ -161,7 +162,7 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
                   ],
                 ),
               ),
-              tooltip: 'Cambiar de centro',
+              tooltip: AppLocalizations.t(context, 'cambiar_de_centro'),
               onSelected: (tenantId) => auth.setCentroActivo(tenantId),
               itemBuilder: (_) => auth.membresiasActivas
                   .map((m) => PopupMenuItem(
@@ -189,7 +190,7 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: AppTheme.primaryOrange),
             iconSize: 24,
-            tooltip: 'Ajustes',
+            tooltip: AppLocalizations.t(context, 'ajustes_tooltip'),
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
           const SizedBox(width: 8),
@@ -212,10 +213,10 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
           indicatorColor: AppTheme.primaryOrange.withOpacity(0.18),
           height: 65,
           destinations: [
-            const NavigationDestination(
-              icon: Icon(Icons.qr_code_2_outlined),
-              selectedIcon: Icon(Icons.qr_code_2_rounded, color: AppTheme.primaryOrange),
-              label: 'Mi QR',
+            NavigationDestination(
+              icon: const Icon(Icons.qr_code_2_outlined),
+              selectedIcon: const Icon(Icons.qr_code_2_rounded, color: AppTheme.primaryOrange),
+              label: titulos[0],
             ),
             NavigationDestination(
               icon: Badge(
@@ -230,12 +231,12 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
                 backgroundColor: AppTheme.primaryOrange,
                 child: const Icon(Icons.mark_chat_unread_rounded, color: AppTheme.primaryOrange),
               ),
-              label: 'Solicitudes',
+              label: titulos[1],
             ),
-            const NavigationDestination(
-              icon: Icon(Icons.person_add_alt_1_outlined),
-              selectedIcon: Icon(Icons.person_add_alt_1_rounded, color: AppTheme.primaryOrange),
-              label: 'Invitar',
+            NavigationDestination(
+              icon: const Icon(Icons.person_add_alt_1_outlined),
+              selectedIcon: const Icon(Icons.person_add_alt_1_rounded, color: AppTheme.primaryOrange),
+              label: titulos[2],
             ),
           ],
         ),

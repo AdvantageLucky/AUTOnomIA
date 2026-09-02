@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import 'onboarding/widgets/step_espera.dart';
 import 'onboarding/widgets/step_unirse_centro.dart';
@@ -22,7 +23,7 @@ class _JoinCentroViewState extends State<JoinCentroView> {
     final mostrarEspera = _recienUnido || auth.membresiaEstado == MembresiaEstado.pendiente;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Unirme a un centro')),
+      appBar: AppBar(title: Text(AppLocalizations.t(context, 'join_centro_title'))),
       body: SafeArea(
         child: mostrarEspera
             ? const StepEspera()

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../models/visita_historial_model.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -35,7 +36,7 @@ class _VisitHistoryViewState extends State<VisitHistoryView> {
     }
 
     if (tenantId == null) {
-      return const Center(child: Text('No tienes una membresía activa'));
+      return Center(child: Text(AppLocalizations.t(context, 'no_active_membership')));
     }
     if (vm.isLoading && vm.visitas.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -53,15 +54,15 @@ class _VisitHistoryViewState extends State<VisitHistoryView> {
           if (vm.error != null)
             _Aviso(
               icono: Icons.cloud_off_rounded,
-              titulo: 'No se pudo cargar el historial',
+              titulo: AppLocalizations.t(context, 'no_se_pudo_cargar_historial'),
               detalle: vm.error!,
               onReintentar: () => vm.cargar(tenantId),
             )
           else if (vm.visitas.isEmpty)
-            const _Aviso(
+            _Aviso(
               icono: Icons.history_rounded,
-              titulo: 'Todavía no has resuelto ninguna visita',
-              detalle: 'Aquí aparecerán las solicitudes que apruebes o rechaces desde Inicio.',
+              titulo: AppLocalizations.t(context, 'sin_historial_titulo'),
+              detalle: AppLocalizations.t(context, 'sin_historial_detalle'),
             )
           else
             for (final v in vm.visitas) ...[
@@ -108,7 +109,7 @@ class _Aviso extends StatelessWidget {
           ),
           if (onReintentar != null) ...[
             const SizedBox(height: 18),
-            OutlinedButton(onPressed: onReintentar, child: const Text('Reintentar')),
+            OutlinedButton(onPressed: onReintentar, child: Text(AppLocalizations.t(context, 'retry'))),
           ],
         ],
       ),
@@ -144,7 +145,7 @@ class _FilaHistorial extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                visita.titular.isEmpty ? 'Visitante' : visita.titular,
+                visita.titular.isEmpty ? AppLocalizations.t(context, 'visitante_fallback') : visita.titular,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 2),
@@ -152,7 +153,7 @@ class _FilaHistorial extends StatelessWidget {
               if (visita.autorizadoPorNombre.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(
-                  'Por ${visita.autorizadoPorNombre}',
+                  '${AppLocalizations.t(context, 'por_prefix')} ${visita.autorizadoPorNombre}',
                   style: TextStyle(fontSize: 12, color: tenue),
                 ),
               ],
@@ -181,10 +182,10 @@ class _EstadoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, etiqueta) = switch (estado) {
-      'APROBADO' => (AppTheme.success, 'Aprobada'),
-      'RECHAZADO' => (AppTheme.error, 'Rechazada'),
-      'PENDIENTE' => (AppTheme.amber, 'Pendiente'),
-      'REVISION' => (AppTheme.blue, 'En revisión'),
+      'APROBADO' => (AppTheme.success, AppLocalizations.t(context, 'estado_aprobada')),
+      'RECHAZADO' => (AppTheme.error, AppLocalizations.t(context, 'estado_rechazada')),
+      'PENDIENTE' => (AppTheme.amber, AppLocalizations.t(context, 'estado_pendiente')),
+      'REVISION' => (AppTheme.blue, AppLocalizations.t(context, 'estado_en_revision')),
       _ => (AppTheme.textGrey, estado.isEmpty ? '—' : estado),
     };
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Abre enrollmentUrl en un WebView de pantalla completa. Regresa true si
 /// detecto el redirect de fin (el flujo del lado de Kigo ya termino, sea
@@ -66,7 +67,7 @@ class _KigoVerifyWebviewViewState extends State<_KigoVerifyWebviewView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verificación con Kigo'),
+        title: Text(AppLocalizations.t(context, 'kigo_verify_webview_title')),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context, false),

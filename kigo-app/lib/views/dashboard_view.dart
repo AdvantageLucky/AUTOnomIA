@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/pending_visits_viewmodel.dart';
@@ -24,7 +25,7 @@ class _DashboardViewState extends State<DashboardView> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo enviar tu respuesta')),
+        SnackBar(content: Text(AppLocalizations.t(context, 'visit_response_error'))),
       );
     }
   }
@@ -48,7 +49,10 @@ class _DashboardViewState extends State<DashboardView> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         children: [
-          Text('Hola, ${auth.nombre}', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            '${AppLocalizations.t(context, 'saludo_hola')}${auth.nombre}',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 4),
           if (auth.membresiaEstado == MembresiaEstado.activa && membresia != null)
             Text(
@@ -70,7 +74,7 @@ class _DashboardViewState extends State<DashboardView> {
     PendingVisitsViewModel vm,
   ) {
     if (tenantId == null) {
-      return const [_Vacio(texto: 'No tienes una membresía activa')];
+      return [_Vacio(texto: AppLocalizations.t(context, 'no_active_membership'))];
     }
     if (vm.isLoading) {
       return const [
@@ -84,11 +88,11 @@ class _DashboardViewState extends State<DashboardView> {
     // "no hay solicitudes" y no hay forma de distinguirlos.
     if (vm.error != null) {
       return [
-        _Vacio(texto: 'No se pudieron cargar las solicitudes: ${vm.error}'),
+        _Vacio(texto: '${AppLocalizations.t(context, 'load_pending_visits_error')} ${vm.error}'),
       ];
     }
     if (vm.visitas.isEmpty) {
-      return const [_Vacio(texto: 'No hay visitas esperando tu autorización')];
+      return [_Vacio(texto: AppLocalizations.t(context, 'no_visits_waiting_for_you'))];
     }
     return [
       for (final v in vm.visitas) ...[
@@ -112,9 +116,9 @@ class _Encabezado extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Text(
-          'Solicitudes de acceso',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+        Text(
+          AppLocalizations.t(context, 'pending_visits'),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1.2),
         ),
         if (cuantas > 0) ...[
           const SizedBox(width: 10),

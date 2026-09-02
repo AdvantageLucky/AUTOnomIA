@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 import '../../../widgets/kigo_primary_button.dart';
@@ -26,7 +27,7 @@ class _StepOtpState extends State<StepOtp> {
   Future<void> _verificar() async {
     final codigo = _codigoCtrl.text.trim();
     if (codigo.length != 6) {
-      setState(() => _errorLocal = 'El código tiene 6 dígitos');
+      setState(() => _errorLocal = AppLocalizations.t(context, 'codigo_6_digitos'));
       return;
     }
     setState(() => _errorLocal = null);
@@ -47,13 +48,13 @@ class _StepOtpState extends State<StepOtp> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Código de verificación', style: Theme.of(context).textTheme.headlineSmall),
+          Text(AppLocalizations.t(context, 'codigo_verificacion_title'), style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 6),
-          Text('Lo mandamos a ${auth.telefono}.'),
+          Text('${AppLocalizations.t(context, 'lo_mandamos_a')} ${auth.telefono}.'),
           const SizedBox(height: 24),
           KigoTextField(
             controller: _codigoCtrl,
-            label: 'Código de 6 dígitos',
+            label: AppLocalizations.t(context, 'codigo_6_digitos_label'),
             keyboardType: TextInputType.number,
             maxLength: 6,
           ),
@@ -63,7 +64,7 @@ class _StepOtpState extends State<StepOtp> {
           ],
           const SizedBox(height: 20),
           KigoPrimaryButton(
-            label: 'Verificar',
+            label: AppLocalizations.t(context, 'verificar_btn'),
             loading: auth.isLoading,
             onPressed: _verificar,
           ),

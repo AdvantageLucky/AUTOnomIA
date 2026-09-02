@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../models/companero_casa_model.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/companeros_casa_viewmodel.dart';
@@ -30,7 +31,7 @@ class _CompanerosCasaViewState extends State<CompanerosCasaView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Compañeros de casa', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(AppLocalizations.t(context, 'companeros_de_casa_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -63,12 +64,14 @@ class _CompanerosCasaViewState extends State<CompanerosCasaView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Casa / Unidad: ${vm.casaDestino}',
+                              '${AppLocalizations.t(context, 'casa_unidad_prefix')} ${vm.casaDestino}',
                               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${vm.companeros.length} compañero${vm.companeros.length != 1 ? 's' : ''} registrado${vm.companeros.length != 1 ? 's' : ''}',
+                              '${vm.companeros.length} '
+                              '${AppLocalizations.t(context, vm.companeros.length != 1 ? 'companero_plural' : 'companero_singular')} '
+                              '${AppLocalizations.t(context, vm.companeros.length != 1 ? 'registrado_plural' : 'registrado_singular')}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDark ? AppTheme.textGrey : AppTheme.textDimmed,
@@ -91,15 +94,15 @@ class _CompanerosCasaViewState extends State<CompanerosCasaView> {
               else if (vm.error != null)
                 _Aviso(
                   icono: Icons.cloud_off_rounded,
-                  titulo: 'No se pudo cargar la lista',
+                  titulo: AppLocalizations.t(context, 'no_se_pudo_cargar_lista'),
                   detalle: vm.error!,
                   onReintentar: () => vm.cargar(widget.tenantId),
                 )
               else if (vm.companeros.isEmpty)
-                const _Aviso(
+                _Aviso(
                   icono: Icons.people_outline_rounded,
-                  titulo: 'Aún no hay nadie más registrado en tu casa',
-                  detalle: 'Aquí aparecerán los demás miembros de tu hogar cuando se registren y sean aprobados.',
+                  titulo: AppLocalizations.t(context, 'sin_companeros_titulo'),
+                  detalle: AppLocalizations.t(context, 'sin_companeros_detalle'),
                 )
               else
                 for (final c in vm.companeros) ...[
@@ -154,7 +157,7 @@ class _Aviso extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onReintentar,
               icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
+              label: Text(AppLocalizations.t(context, 'retry')),
             ),
           ],
         ],
@@ -171,7 +174,9 @@ class _FilaCompanero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nombre = companero.nombreCompleto.isNotEmpty ? companero.nombreCompleto : 'Residente';
+    final nombre = companero.nombreCompleto.isNotEmpty
+        ? companero.nombreCompleto
+        : AppLocalizations.t(context, 'residente_fallback');
     final inicial = nombre.isNotEmpty ? nombre.substring(0, 1).toUpperCase() : 'R';
 
     return Container(
@@ -211,12 +216,12 @@ class _FilaCompanero extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Row(
-                  children: const [
-                    Icon(Icons.verified_rounded, size: 13, color: AppTheme.success),
-                    SizedBox(width: 4),
+                  children: [
+                    const Icon(Icons.verified_rounded, size: 13, color: AppTheme.success),
+                    const SizedBox(width: 4),
                     Text(
-                      'Residente Aprobado',
-                      style: TextStyle(fontSize: 12, color: AppTheme.success, fontWeight: FontWeight.w600),
+                      AppLocalizations.t(context, 'residente_aprobado'),
+                      style: const TextStyle(fontSize: 12, color: AppTheme.success, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
@@ -33,23 +34,23 @@ enum _Paso { codigo, centro, calle, tipo, numero, confirmar }
 /// distinguía 'edificio' de cualquier otra cosa (relabeleada como "Casa"),
 /// así que departamento/oficina/local/bodega/lote se mostraban todos como
 /// "Casa" aunque el dato real ya llegaba correcto del backend.
-String _etiquetaTipoDestino(String tipo) {
+String _etiquetaTipoDestino(BuildContext context, String tipo) {
   switch (tipo) {
     case 'departamento':
-      return 'Depto';
+      return AppLocalizations.t(context, 'tipo_departamento');
     case 'edificio':
-      return 'Edificio';
+      return AppLocalizations.t(context, 'tipo_edificio');
     case 'oficina':
-      return 'Oficina';
+      return AppLocalizations.t(context, 'tipo_oficina');
     case 'local':
-      return 'Local';
+      return AppLocalizations.t(context, 'tipo_local');
     case 'bodega':
-      return 'Bodega';
+      return AppLocalizations.t(context, 'tipo_bodega');
     case 'lote':
-      return 'Lote';
+      return AppLocalizations.t(context, 'tipo_lote');
     case 'casa':
     default:
-      return 'Casa';
+      return AppLocalizations.t(context, 'tipo_casa');
   }
 }
 
@@ -93,7 +94,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
   Future<void> _buscarCentro() async {
     final codigo = _codigoCtrl.text.trim();
     if (codigo.isEmpty) {
-      setState(() => _errorLocal = 'Ingresa el código del centro');
+      setState(() => _errorLocal = AppLocalizations.t(context, 'ingresa_codigo_centro'));
       return;
     }
     setState(() {
@@ -102,10 +103,11 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
     });
     try {
       final data = await ApiService().get('/personas/me/centros/$codigo/destinos');
+      if (!mounted) return;
       final destinos = List<Map<String, dynamic>>.from(data['destinos'] ?? []);
       if (destinos.isEmpty) {
         setState(() {
-          _errorLocal = 'Ese centro todavía no tiene casas registradas — avisa a tu administrador';
+          _errorLocal = AppLocalizations.t(context, 'centro_sin_casas');
           _cargandoDestinos = false;
         });
         return;
@@ -125,8 +127,9 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
         _cargandoDestinos = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
-        _errorLocal = 'No se pudo verificar el código, intenta de nuevo';
+        _errorLocal = AppLocalizations.t(context, 'error_verificar_codigo');
         _cargandoDestinos = false;
       });
     }
@@ -216,11 +219,11 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
                 child: const Icon(Icons.arrow_back_rounded, size: 20),
               ),
             ),
-          Text(_titulo(), style: Theme.of(context).textTheme.headlineSmall),
+          Text(_titulo(context), style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 6),
-          Text(_subtitulo()),
+          Text(_subtitulo(context)),
           const SizedBox(height: 20),
-          _buildContenido(auth),
+          _buildContenido(context, auth),
           if (_errorLocal ?? auth.error case final mensaje?) ...[
             const SizedBox(height: 8),
             Text(mensaje, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
@@ -230,48 +233,52 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
     );
   }
 
-  String _titulo() {
+  String _titulo(BuildContext context) {
     switch (_paso) {
       case _Paso.codigo:
-        return 'Únete a tu centro';
+        return AppLocalizations.t(context, 'unete_a_tu_centro');
       case _Paso.centro:
-        return _centroNombre ?? 'Tu centro';
+        return _centroNombre ?? AppLocalizations.t(context, 'tu_centro');
       case _Paso.calle:
-        return '¿En qué calle vives?';
+        return AppLocalizations.t(context, 'en_que_calle_vives');
       case _Paso.tipo:
-        return '¿Cuál es tu destino?';
+        return AppLocalizations.t(context, 'cual_es_tu_destino');
       case _Paso.numero:
-        return '¿Cuál es el número?';
+        return AppLocalizations.t(context, 'cual_es_el_numero');
       case _Paso.confirmar:
-        return 'Confirma tu casa';
+        return AppLocalizations.t(context, 'confirma_tu_casa');
     }
   }
 
-  String _subtitulo() {
+  String _subtitulo(BuildContext context) {
     switch (_paso) {
       case _Paso.codigo:
-        return 'Pide el código a tu administrador si no lo tienes.';
+        return AppLocalizations.t(context, 'pide_codigo_admin');
       case _Paso.centro:
-        return '¿Es este tu centro?';
+        return AppLocalizations.t(context, 'es_este_tu_centro');
       case _Paso.calle:
-        return 'Elige la calle de tu casa o edificio.';
+        return AppLocalizations.t(context, 'elige_calle');
       case _Paso.tipo:
         return _calleSeleccionada ?? '';
       case _Paso.numero:
-        return '$_calleSeleccionada · ${_etiquetaTipoDestino(_tipoSeleccionado ?? 'casa')}';
+        return '$_calleSeleccionada · ${_etiquetaTipoDestino(context, _tipoSeleccionado ?? 'casa')}';
       case _Paso.confirmar:
-        return 'Al unirte generamos tu PIN de 5 dígitos; lo encuentras en "Mi QR".';
+        return AppLocalizations.t(context, 'al_unirte_generamos_pin');
     }
   }
 
-  Widget _buildContenido(AuthViewModel auth) {
+  Widget _buildContenido(BuildContext context, AuthViewModel auth) {
     switch (_paso) {
       case _Paso.codigo:
         return Column(
           children: [
-            KigoTextField(controller: _codigoCtrl, label: 'Código del centro'),
+            KigoTextField(controller: _codigoCtrl, label: AppLocalizations.t(context, 'codigo_del_centro')),
             const SizedBox(height: 20),
-            KigoPrimaryButton(label: 'Buscar', loading: _cargandoDestinos, onPressed: _buscarCentro),
+            KigoPrimaryButton(
+              label: AppLocalizations.t(context, 'buscar_btn'),
+              loading: _cargandoDestinos,
+              onPressed: _buscarCentro,
+            ),
           ],
         );
       case _Paso.centro:
@@ -305,7 +312,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
                 ),
               ),
             const SizedBox(height: 20),
-            KigoPrimaryButton(label: 'Unirme', onPressed: _continuarConEsteCentro),
+            KigoPrimaryButton(label: AppLocalizations.t(context, 'unirme_btn'), onPressed: _continuarConEsteCentro),
           ],
         );
       case _Paso.calle:
@@ -313,7 +320,7 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
       case _Paso.tipo:
         return _buildLista(
           _tiposDeLaCalle,
-          _etiquetaTipoDestino,
+          (tipo) => _etiquetaTipoDestino(context, tipo),
           _elegirTipo,
         );
       case _Paso.numero:
@@ -338,7 +345,11 @@ class _StepUnirseCentroState extends State<StepUnirseCentro> {
               ),
             ),
             const SizedBox(height: 20),
-            KigoPrimaryButton(label: 'Unirme', loading: auth.isLoading, onPressed: _confirmar),
+            KigoPrimaryButton(
+              label: AppLocalizations.t(context, 'unirme_btn'),
+              loading: auth.isLoading,
+              onPressed: _confirmar,
+            ),
           ],
         );
     }

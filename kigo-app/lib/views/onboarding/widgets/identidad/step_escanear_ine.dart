@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../models/ine_ocr_model.dart';
 import '../../../../services/camera_permission_servicio.dart';
 import '../../../../services/detector_ine_servicio.dart';
@@ -78,7 +79,7 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
     try {
       final camaras = await availableCameras();
       if (camaras.isEmpty) {
-        setState(() => _error = 'No se encontró ninguna cámara en este dispositivo');
+        setState(() => _error = AppLocalizations.t(context, 'ine_sin_camara'));
         return;
       }
       _controller = CameraController(camaras.first, ResolutionPreset.high, enableAudio: false);
@@ -102,7 +103,7 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
       if (mounted) setState(() {});
       _iniciarAutoCaptura();
     } catch (e) {
-      if (mounted) setState(() => _error = 'No se pudo iniciar la cámara');
+      if (mounted) setState(() => _error = AppLocalizations.t(context, 'ine_error_iniciar_camara'));
     }
   }
 
@@ -202,7 +203,7 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
       _cerrando = true;
       widget.onEscaneado(resultado);
     } catch (_) {
-      setState(() => _error = 'No se pudo capturar la foto, intenta de nuevo');
+      setState(() => _error = AppLocalizations.t(context, 'ine_error_capturar'));
       _iniciarAutoCaptura();
     } finally {
       if (mounted) setState(() => _procesando = false);
@@ -237,7 +238,10 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
                   children: [
                     Text(_error!, textAlign: TextAlign.center),
                     const SizedBox(height: 16),
-                    ElevatedButton(onPressed: _initCamera, child: const Text('Reintentar')),
+                    ElevatedButton(
+                      onPressed: _initCamera,
+                      child: Text(AppLocalizations.t(context, 'retry')),
+                    ),
                   ],
                 ),
               )
@@ -284,11 +288,11 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
                   if (_confirmando) ...[
                     const Icon(Icons.check_circle, color: Colors.white, size: 18),
                     const SizedBox(width: 8),
-                    const Flexible(
+                    Flexible(
                       child: Text(
-                        'INE detectada, confirmando…',
+                        AppLocalizations.t(context, 'ine_detectada_confirmando'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ] else ...[
@@ -298,11 +302,11 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
                       child: CircularProgressIndicator(color: AppTheme.primaryOrange, strokeWidth: 2),
                     ),
                     const SizedBox(width: 10),
-                    const Flexible(
+                    Flexible(
                       child: Text(
-                        'Encuadra tu INE dentro del recuadro, detectando…',
+                        AppLocalizations.t(context, 'encuadra_ine_detectando'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],

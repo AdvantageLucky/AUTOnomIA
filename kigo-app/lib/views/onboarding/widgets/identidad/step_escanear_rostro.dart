@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../services/camera_permission_servicio.dart';
 import '../../../../services/face_detector_servicio.dart';
 import '../../../../services/kigo_verify_servicio.dart';
@@ -83,7 +84,7 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
     try {
       final camaras = await availableCameras();
       if (camaras.isEmpty) {
-        setState(() => _error = 'No se encontró ninguna cámara en este dispositivo');
+        setState(() => _error = AppLocalizations.t(context, 'ine_sin_camara'));
         return;
       }
       final frontal = camaras.firstWhere(
@@ -99,7 +100,7 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       if (mounted) setState(() {});
       _iniciarAutoDeteccion();
     } catch (e) {
-      if (mounted) setState(() => _error = 'No se pudo iniciar la cámara');
+      if (mounted) setState(() => _error = AppLocalizations.t(context, 'ine_error_iniciar_camara'));
     }
   }
 
@@ -166,7 +167,7 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
     if (embedding == null) {
       // El sondeo (ML Kit) dio válido pero el recorte final falló -- reintenta.
       setState(() {
-        _error = 'No detectamos tu rostro con claridad, intenta de nuevo';
+        _error = AppLocalizations.t(context, 'rostro_no_detectado_claridad');
         _rostroDetectado = false;
         _capturaFinalizada = false;
         _procesando = false;
@@ -192,13 +193,13 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       final foto = await _controller!.takePicture();
       final embedding = await _servicio.calcularEmbedding(foto.path);
       if (embedding == null) {
-        setState(() => _error = 'No detectamos tu rostro con claridad, intenta de nuevo');
+        setState(() => _error = AppLocalizations.t(context, 'rostro_no_detectado_claridad'));
         _iniciarAutoDeteccion();
         return;
       }
       widget.onCapturado(foto.path, embedding);
     } catch (_) {
-      setState(() => _error = 'No se pudo capturar la foto, intenta de nuevo');
+      setState(() => _error = AppLocalizations.t(context, 'ine_error_capturar'));
       _iniciarAutoDeteccion();
     } finally {
       if (mounted) setState(() => _procesando = false);
@@ -221,20 +222,22 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       if (!mounted) return;
 
       final resultado = await _esperarResultado(enrollment.enrollmentId);
+      if (!mounted) return;
       if (resultado == null) {
-        _registrarIntentoKigoFallido('No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
+        _registrarIntentoKigoFallido(AppLocalizations.t(context, 'kigo_verify_fallo'));
         return;
       }
 
       final pathLocal = await _descargarYGuardarLocal(resultado);
       final embedding = await _servicio.calcularEmbedding(pathLocal);
+      if (!mounted) return;
       if (embedding == null) {
-        _registrarIntentoKigoFallido('No detectamos tu rostro con claridad en la foto de Kigo, intenta de nuevo o usa la cámara');
+        _registrarIntentoKigoFallido(AppLocalizations.t(context, 'kigo_verify_rostro_no_claro'));
         return;
       }
       widget.onCapturado(pathLocal, embedding);
     } catch (_) {
-      if (mounted) _registrarIntentoKigoFallido('No se pudo completar la verificación con Kigo, intenta de nuevo o usa la cámara');
+      if (mounted) _registrarIntentoKigoFallido(AppLocalizations.t(context, 'kigo_verify_fallo'));
     } finally {
       if (mounted) {
         setState(() => _verificandoConKigo = false);
@@ -249,7 +252,7 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
       _intentosKigoFallidos++;
       _error = _kigoDisponible
           ? mensaje
-          : 'No se pudo verificar con Kigo tras varios intentos. Usa la cámara para continuar.';
+          : AppLocalizations.t(context, 'kigo_verify_fallo_definitivo');
     });
   }
 
@@ -313,7 +316,10 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
                   children: [
                     Text(_error!, textAlign: TextAlign.center),
                     const SizedBox(height: 16),
-                    ElevatedButton(onPressed: _initCamera, child: const Text('Reintentar')),
+                    ElevatedButton(
+                      onPressed: _initCamera,
+                      child: Text(AppLocalizations.t(context, 'retry')),
+                    ),
                   ],
                 ),
               )
@@ -360,11 +366,11 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
                   if (_rostroDetectado) ...[
                     const Icon(Icons.check_circle, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
-                    const Flexible(
+                    Flexible(
                       child: Text(
-                        'Rostro detectado, capturando…',
+                        AppLocalizations.t(context, 'rostro_detectado_capturando'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ] else ...[
@@ -374,11 +380,11 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryOrange),
                     ),
                     const SizedBox(width: 10),
-                    const Flexible(
+                    Flexible(
                       child: Text(
-                        'Encuadra tu rostro dentro del óvalo, detectando…',
+                        AppLocalizations.t(context, 'encuadra_rostro_detectando'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600),
+                        style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -428,7 +434,7 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Verificar con Kigo', style: TextStyle(color: Colors.white)),
+                      : Text(AppLocalizations.t(context, 'verificar_con_kigo_btn'), style: const TextStyle(color: Colors.white)),
                 ),
               ],
             ],

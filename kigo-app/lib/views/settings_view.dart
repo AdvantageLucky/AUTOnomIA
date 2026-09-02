@@ -19,12 +19,12 @@ class SettingsView extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: const Text('¿Cerrar sesión?', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text('Tendrás que volver a ingresar con tu número de teléfono.'),
+        title: Text(AppLocalizations.t(ctx, 'cerrar_sesion_titulo'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(AppLocalizations.t(ctx, 'cerrar_sesion_contenido')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: Text(AppLocalizations.t(ctx, 'cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -32,7 +32,7 @@ class SettingsView extends StatelessWidget {
               minimumSize: const Size(120, 44),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cerrar sesión'),
+            child: Text(AppLocalizations.t(ctx, 'logout_tooltip')),
           ),
         ],
       ),
@@ -54,7 +54,7 @@ class SettingsView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajustes', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(AppLocalizations.t(context, 'ajustes_tooltip'), style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: SafeArea(
         child: ListView(
@@ -65,19 +65,19 @@ class SettingsView extends StatelessWidget {
             const SizedBox(height: 24),
 
             // 2. Sección de Residencia y Fraccionamientos
-            _buildSectionHeader('MI RESIDENCIA'),
+            _buildSectionHeader(AppLocalizations.t(context, 'seccion_mi_residencia')),
             const SizedBox(height: 8),
             _buildResidenciaCard(context, auth, membresia, isDark),
             const SizedBox(height: 24),
 
             // 3. Sección de Preferencias
-            _buildSectionHeader('PREFERENCIAS'),
+            _buildSectionHeader(AppLocalizations.t(context, 'seccion_preferencias')),
             const SizedBox(height: 8),
             _buildPreferenciasCard(context, settings, isDark),
             const SizedBox(height: 24),
 
             // 4. Sección Legal e Información
-            _buildSectionHeader('SOPORTE E INFORMACIÓN'),
+            _buildSectionHeader(AppLocalizations.t(context, 'seccion_soporte_info')),
             const SizedBox(height: 8),
             _buildInfoCard(context, isDark),
             const SizedBox(height: 32),
@@ -93,9 +93,9 @@ class SettingsView extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.logout_rounded),
-              label: const Text(
-                'Cerrar sesión',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              label: Text(
+                AppLocalizations.t(context, 'logout_tooltip'),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
               onPressed: () => _cerrarSesion(context),
             ),
@@ -121,7 +121,7 @@ class SettingsView extends StatelessWidget {
   }
 
   Widget _buildProfileCard(BuildContext context, AuthViewModel auth, bool isDark) {
-    final nombre = auth.nombreCompleto.isNotEmpty ? auth.nombreCompleto : 'Residente Kigo';
+    final nombre = auth.nombreCompleto.isNotEmpty ? auth.nombreCompleto : AppLocalizations.t(context, 'residente_kigo_fallback');
     final inicial = nombre.isNotEmpty ? nombre.substring(0, 1).toUpperCase() : 'R';
 
     return Container(
@@ -194,12 +194,12 @@ class SettingsView extends StatelessWidget {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.verified_user_rounded, color: AppTheme.success, size: 12),
-                      SizedBox(width: 4),
+                    children: [
+                      const Icon(Icons.verified_user_rounded, color: AppTheme.success, size: 12),
+                      const SizedBox(width: 4),
                       Text(
-                        'Identidad Activa',
-                        style: TextStyle(
+                        AppLocalizations.t(context, 'identidad_activa'),
+                        style: const TextStyle(
                           color: AppTheme.success,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -246,7 +246,7 @@ class SettingsView extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
               subtitle: Text(
-                'Casa / Destino: ${membresia.casaDestino}',
+                '${AppLocalizations.t(context, 'casa_destino_prefix')} ${membresia.casaDestino}',
                 style: TextStyle(
                   fontSize: 12,
                   color: isDark ? AppTheme.textGrey : AppTheme.textDimmed,
@@ -258,9 +258,9 @@ class SettingsView extends StatelessWidget {
                   color: AppTheme.success.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Activo',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.t(context, 'activo_label'),
+                  style: const TextStyle(
                     color: AppTheme.success,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -279,13 +279,13 @@ class SettingsView extends StatelessWidget {
                 ),
                 child: const Icon(Icons.people_alt_rounded, color: AppTheme.blue, size: 22),
               ),
-              title: const Text(
-                'Compañeros de casa',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              title: Text(
+                AppLocalizations.t(context, 'companeros_de_casa_title'),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
-              subtitle: const Text(
-                'Ver quiénes más están registrados en tu casa',
-                style: TextStyle(fontSize: 12, color: AppTheme.textDimmed),
+              subtitle: Text(
+                AppLocalizations.t(context, 'ver_companeros_detalle'),
+                style: const TextStyle(fontSize: 12, color: AppTheme.textDimmed),
               ),
               trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textDimmed),
               onTap: () {
@@ -309,13 +309,13 @@ class SettingsView extends StatelessWidget {
               ),
               child: const Icon(Icons.add_home_work_rounded, color: AppTheme.primaryOrange, size: 22),
             ),
-            title: const Text(
-              'Unirme a otro fraccionamiento',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            title: Text(
+              AppLocalizations.t(context, 'unirme_otro_fraccionamiento'),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
-            subtitle: const Text(
-              'Ingresa el código público de otro centro',
-              style: TextStyle(fontSize: 12, color: AppTheme.textDimmed),
+            subtitle: Text(
+              AppLocalizations.t(context, 'ingresa_codigo_otro_centro'),
+              style: const TextStyle(fontSize: 12, color: AppTheme.textDimmed),
             ),
             trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textDimmed),
             onTap: () {
@@ -353,12 +353,12 @@ class SettingsView extends StatelessWidget {
                 size: 22,
               ),
             ),
-            title: const Text(
-              'Modo Oscuro',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            title: Text(
+              AppLocalizations.t(context, 'dark_mode'),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
-              settings.themeMode == ThemeMode.dark ? 'Activado' : 'Desactivado',
+              AppLocalizations.t(context, settings.themeMode == ThemeMode.dark ? 'dark_mode_on' : 'dark_mode_off'),
               style: const TextStyle(fontSize: 12, color: AppTheme.textDimmed),
             ),
             value: settings.themeMode == ThemeMode.dark,
@@ -376,9 +376,9 @@ class SettingsView extends StatelessWidget {
               ),
               child: const Icon(Icons.language_rounded, color: AppTheme.success, size: 22),
             ),
-            title: const Text(
-              'Idioma',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            title: Text(
+              AppLocalizations.t(context, 'language'),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
               settings.currentLocale.languageCode == 'es' ? 'Español' : 'English',
@@ -444,9 +444,9 @@ class SettingsView extends StatelessWidget {
               ),
               child: const Icon(Icons.info_rounded, color: AppTheme.textGrey, size: 22),
             ),
-            title: const Text(
-              'Versión de Kigo',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            title: Text(
+              AppLocalizations.t(context, 'version_de_kigo'),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: const Text(
               'v1.2.0 · AUTOnomIA Platform',

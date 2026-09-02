@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -68,7 +69,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
         (vm.destinos.isNotEmpty ? vm.destinos.first.id : null);
 
     if (nombre.isEmpty || telefono.isEmpty || destinoId == null) {
-      setState(() => _errorLocal = 'Completa el nombre, teléfono y casa destino');
+      setState(() => _errorLocal = AppLocalizations.t(context, 'completa_nombre_telefono_casa'));
       return;
     }
     setState(() => _errorLocal = null);
@@ -113,11 +114,12 @@ class _InvitarTabViewState extends State<InvitarTabView>
         _motivoSeleccionado = null;
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('¡Invitación creada con éxito!'),
+        SnackBar(
+          content: Text(AppLocalizations.t(context, 'invitacion_creada_con_exito')),
           backgroundColor: AppTheme.success,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
 
@@ -126,7 +128,8 @@ class _InvitarTabViewState extends State<InvitarTabView>
 
       if (token != null) {
         unawaited(Share.share(
-          'Te invité a ${_nombreDestinoSeleccionado(vm, destinoId)} en Kigo. Abre este link: ${_linkInvitacion(token)}',
+          '${AppLocalizations.t(context, 'te_invite_a')} ${_nombreDestinoSeleccionado(context, vm, destinoId)}'
+          ' ${AppLocalizations.t(context, 'en_kigo_abre_link')} ${_linkInvitacion(token)}',
         ));
       }
     } catch (_) {
@@ -134,9 +137,9 @@ class _InvitarTabViewState extends State<InvitarTabView>
     }
   }
 
-  String _nombreDestinoSeleccionado(InvitationViewModel vm, int destinoId) {
+  String _nombreDestinoSeleccionado(BuildContext context, InvitationViewModel vm, int destinoId) {
     final d = vm.destinos.where((d) => d.id == destinoId);
-    return d.isEmpty ? 'mi casa' : d.first.nombre;
+    return d.isEmpty ? AppLocalizations.t(context, 'mi_casa_fallback') : d.first.nombre;
   }
 
   Future<void> _elegirFechaExpiracion(BuildContext context) async {
@@ -146,27 +149,29 @@ class _InvitarTabViewState extends State<InvitarTabView>
       initialDate: _expiraEl ?? ahora.add(const Duration(days: 1)),
       firstDate: ahora,
       lastDate: ahora.add(const Duration(days: 365)),
-      helpText: 'Vence el',
+      helpText: AppLocalizations.t(context, 'vence_el'),
     );
     if (elegida != null) setState(() => _expiraEl = elegida);
   }
 
   void _compartir(String token) {
-    unawaited(Share.share('Te invité a Kigo. Abre este link: ${_linkInvitacion(token)}'));
+    unawaited(Share.share(
+      '${AppLocalizations.t(context, 'te_invite_a_kigo')} ${_linkInvitacion(token)}',
+    ));
   }
 
   Future<void> _revocar(int id) async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('¿Revocar invitación?'),
-        content: const Text('El invitado ya no podrá ingresar al fraccionamiento con este pase.'),
+        title: Text(AppLocalizations.t(ctx, 'revocar_invitacion_titulo')),
+        content: Text(AppLocalizations.t(ctx, 'revocar_invitacion_contenido')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(ctx, 'cancel'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Revocar'),
+            child: Text(AppLocalizations.t(ctx, 'revoke')),
           ),
         ],
       ),
@@ -178,12 +183,12 @@ class _InvitarTabViewState extends State<InvitarTabView>
       await context.read<InvitationViewModel>().revocar(id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invitación revocada')),
+        SnackBar(content: Text(AppLocalizations.t(context, 'inv_revoked'))),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo revocar la invitación')),
+        SnackBar(content: Text(AppLocalizations.t(context, 'revoke_invitation_error'))),
       );
     }
   }
@@ -247,10 +252,10 @@ class _InvitarTabViewState extends State<InvitarTabView>
             labelPadding: const EdgeInsets.symmetric(horizontal: 4),
             dividerColor: Colors.transparent,
             tabs: [
-              const Tab(
+              Tab(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text('Nueva Invitación'),
+                  child: Text(AppLocalizations.t(context, 'tab_nueva_invitacion')),
                 ),
               ),
               Tab(
@@ -259,7 +264,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Mis Invitaciones'),
+                      Text(AppLocalizations.t(context, 'my_invitations')),
                       if (vigentesCount > 0) ...[
                         const SizedBox(width: 6),
                         Container(
@@ -282,10 +287,10 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   ),
                 ),
               ),
-              const Tab(
+              Tab(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text('Recibidas'),
+                  child: Text(AppLocalizations.t(context, 'tab_recibidas')),
                 ),
               ),
             ],
@@ -299,13 +304,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
             children: [
               // 1. NUEVA INVITACIÓN
               if (tenantId == null)
-                const Center(child: Text('No tienes una membresía activa'))
+                Center(child: Text(AppLocalizations.t(context, 'no_active_membership')))
               else
                 _buildFormularioNuevaInvitacion(context, vm, isDark),
 
               // 2. MIS INVITACIONES
               if (tenantId == null)
-                const Center(child: Text('No tienes una membresía activa'))
+                Center(child: Text(AppLocalizations.t(context, 'no_active_membership')))
               else
                 RefreshIndicator(
                   onRefresh: () async {
@@ -344,7 +349,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
       children: [
         if (vm.contactos.isNotEmpty) ...[
           Text(
-            'Invitar de nuevo',
+            AppLocalizations.t(context, 'invitar_de_nuevo'),
             style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
@@ -377,7 +382,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Datos del Invitado',
+                  AppLocalizations.t(context, 'datos_del_invitado'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -385,24 +390,24 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 const SizedBox(height: 16),
                 KigoTextField(
                   controller: _nombreCtrl,
-                  label: 'Nombre completo',
+                  label: AppLocalizations.t(context, 'nombre_completo_label'),
                 ),
                 const SizedBox(height: 14),
                 KigoTextField(
                   controller: _telefonoCtrl,
-                  label: 'Teléfono del invitado',
+                  label: AppLocalizations.t(context, 'telefono_del_invitado'),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<int>(
                   value: destinoValido,
-                  decoration: const InputDecoration(labelText: 'Casa destino'),
+                  decoration: InputDecoration(labelText: AppLocalizations.t(context, 'casa_destino_label')),
                   items: destinos.isEmpty
                       ? [
-                          const DropdownMenuItem<int>(
+                          DropdownMenuItem<int>(
                             value: null,
                             enabled: false,
-                            child: Text('Sin casas registradas'),
+                            child: Text(AppLocalizations.t(context, 'sin_casas_registradas')),
                           ),
                         ]
                       : destinos
@@ -413,7 +418,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                       : (val) => setState(() => _destinoIdSeleccionado = val),
                 ),
                 const SizedBox(height: 14),
-                const Text('Motivo (opcional)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(AppLocalizations.t(context, 'motivo_opcional'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -442,14 +447,14 @@ class _InvitarTabViewState extends State<InvitarTabView>
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
-                              'Acceso frecuente por reconocimiento facial',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              AppLocalizations.t(context, 'acceso_frecuente_facial_titulo'),
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                             ),
                             Text(
-                              'Podrá entrar por rostro en el kiosko de ahora en adelante, sin invitación cada vez. Lo puedes quitar cuando quieras desde "Mis Invitaciones".',
-                              style: TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                              AppLocalizations.t(context, 'acceso_frecuente_facial_detalle'),
+                              style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
                             ),
                           ],
                         ),
@@ -480,13 +485,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Vence el',
-                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              Text(
+                                AppLocalizations.t(context, 'vence_el'),
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                               ),
                               Text(
                                 _expiraEl == null
-                                    ? 'Sin fecha límite (toca para elegir una)'
+                                    ? AppLocalizations.t(context, 'sin_fecha_limite')
                                     : '${_expiraEl!.day}/${_expiraEl!.month}/${_expiraEl!.year}',
                                 style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
                               ),
@@ -496,7 +501,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                         if (_expiraEl != null)
                           IconButton(
                             icon: const Icon(Icons.close_rounded, size: 18),
-                            tooltip: 'Quitar fecha límite',
+                            tooltip: AppLocalizations.t(context, 'quitar_fecha_limite'),
                             onPressed: () => setState(() => _expiraEl = null),
                           ),
                       ],
@@ -513,7 +518,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 ],
                 const SizedBox(height: 20),
                 KigoPrimaryButton(
-                  label: 'Generar Pase de Acceso',
+                  label: AppLocalizations.t(context, 'generar_pase_acceso'),
                   loading: vm.isLoading,
                   onPressed: _crearInvitacion,
                 ),
@@ -558,15 +563,15 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   child: const Icon(Icons.mail_outline_rounded, size: 38, color: AppTheme.textGrey),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Sin invitaciones activas',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  AppLocalizations.t(context, 'sin_invitaciones_activas'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Crea un nuevo pase desde la pestaña "Nueva Invitación" para autorizar la entrada de tus visitas.',
+                Text(
+                  AppLocalizations.t(context, 'crea_nuevo_pase_detalle'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textDimmed, fontSize: 13),
+                  style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13),
                 ),
               ],
             ),
@@ -628,7 +633,9 @@ class _InvitarTabViewState extends State<InvitarTabView>
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          inv.vigente ? 'Vigente' : 'No disponible / Revocada',
+                          inv.vigente
+                              ? AppLocalizations.t(context, 'inv_vigente')
+                              : AppLocalizations.t(context, 'no_disponible_revocada'),
                           style: TextStyle(
                             fontSize: 12,
                             color: inv.vigente ? AppTheme.success : AppTheme.textDimmed,
@@ -638,7 +645,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                         if (inv.expiresAt != null) ...[
                           const Text(' · ', style: TextStyle(color: AppTheme.textDimmed, fontSize: 12)),
                           Text(
-                            'Vence ${inv.expiresAt!.day}/${inv.expiresAt!.month}/${inv.expiresAt!.year}',
+                            '${AppLocalizations.t(context, 'vence_prefix')} ${inv.expiresAt!.day}/${inv.expiresAt!.month}/${inv.expiresAt!.year}',
                             style: const TextStyle(color: AppTheme.textDimmed, fontSize: 12),
                           ),
                         ],
@@ -650,13 +657,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
               if (inv.vigente && inv.token != null)
                 IconButton(
                   icon: const Icon(Icons.share_outlined, color: AppTheme.primaryOrange),
-                  tooltip: 'Compartir link',
+                  tooltip: AppLocalizations.t(context, 'compartir_link_tooltip'),
                   onPressed: () => _compartir(inv.token!),
                 ),
               if (inv.vigente)
                 IconButton(
                   icon: const Icon(Icons.cancel_outlined, color: AppTheme.error),
-                  tooltip: 'Revocar invitación',
+                  tooltip: AppLocalizations.t(context, 'revocar_invitacion_tooltip'),
                   onPressed: () => _revocar(inv.id),
                 ),
             ],
@@ -691,15 +698,15 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   child: const Icon(Icons.move_to_inbox_outlined, size: 38, color: AppTheme.textGrey),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'No has recibido invitaciones',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  AppLocalizations.t(context, 'no_recibidas_titulo'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Cuando alguien te invite a su casa, aparecerá aquí.',
+                Text(
+                  AppLocalizations.t(context, 'no_recibidas_detalle'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textDimmed, fontSize: 13),
+                  style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13),
                 ),
               ],
             ),
@@ -745,7 +752,9 @@ class _InvitarTabViewState extends State<InvitarTabView>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      inv.nombreInvita.isNotEmpty ? 'Te invitó ${inv.nombreInvita}' : 'Invitación pendiente',
+                      inv.nombreInvita.isNotEmpty
+                          ? '${AppLocalizations.t(context, 'te_invito_prefix')} ${inv.nombreInvita}'
+                          : AppLocalizations.t(context, 'invitacion_pendiente'),
                       style: const TextStyle(fontSize: 12, color: AppTheme.textDimmed, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -784,9 +793,9 @@ class _InvitarTabViewState extends State<InvitarTabView>
               children: [
                 const Icon(Icons.face_retouching_natural, color: AppTheme.primaryOrange, size: 18),
                 const SizedBox(width: 8),
-                const Text(
-                  'Acceso frecuente por rostro',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                Text(
+                  AppLocalizations.t(context, 'acceso_frecuente_por_rostro'),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                 ),
               ],
             ),
@@ -805,9 +814,9 @@ class _InvitarTabViewState extends State<InvitarTabView>
                       ),
                       InkWell(
                         onTap: () => _revocarInvitadoFrecuente(context, tenantId, inv.id),
-                        child: const Text(
-                          'Quitar',
-                          style: TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w700),
+                        child: Text(
+                          AppLocalizations.t(context, 'quitar_btn'),
+                          style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -823,14 +832,14 @@ class _InvitarTabViewState extends State<InvitarTabView>
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('¿Quitar acceso frecuente?'),
-        content: const Text('Ya no podrá entrar por reconocimiento facial.'),
+        title: Text(AppLocalizations.t(ctx, 'quitar_acceso_frecuente_titulo')),
+        content: Text(AppLocalizations.t(ctx, 'quitar_acceso_frecuente_contenido')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(ctx, 'cancel'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Quitar'),
+            child: Text(AppLocalizations.t(ctx, 'quitar_btn')),
           ),
         ],
       ),
@@ -842,7 +851,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo quitar el acceso')),
+        SnackBar(content: Text(AppLocalizations.t(context, 'no_se_pudo_quitar_acceso'))),
       );
     }
   }

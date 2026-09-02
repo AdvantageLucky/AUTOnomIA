@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/kigo_primary_button.dart';
 
@@ -27,18 +28,18 @@ class StepBienvenida extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Tu acceso, sin filas',
+            AppLocalizations.t(context, 'bienvenida_titulo'),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
           Text(
-            'Comparte tu QR, recibe invitados y entra a tu comunidad sin esperar en la caseta.',
+            AppLocalizations.t(context, 'bienvenida_subtitulo'),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const Spacer(),
-          KigoPrimaryButton(label: 'Continuar', onPressed: onContinuar),
+          KigoPrimaryButton(label: AppLocalizations.t(context, 'continue_btn'), onPressed: onContinuar),
           const SizedBox(height: 8),
         ],
       ),

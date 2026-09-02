@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../models/visita_historial_model.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -51,7 +52,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
       context.read<VisitHistoryViewModel>().cargar(tenantId);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(estado == 'APROBADO' ? 'Visita autorizada' : 'Visita rechazada'),
+          content: Text(AppLocalizations.t(context, estado == 'APROBADO' ? 'visita_autorizada' : 'visita_rechazada')),
           backgroundColor: estado == 'APROBADO' ? AppTheme.success : AppTheme.error,
           duration: const Duration(seconds: 2),
         ),
@@ -59,7 +60,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo enviar tu respuesta')),
+        SnackBar(content: Text(AppLocalizations.t(context, 'visit_response_error'))),
       );
     }
   }
@@ -82,7 +83,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
     }
 
     if (tenantId == null) {
-      return const Center(child: Text('No tienes una membresía activa'));
+      return Center(child: Text(AppLocalizations.t(context, 'no_active_membership')));
     }
 
     final pendientesCount = pendingVM.visitas.length;
@@ -112,7 +113,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Pendientes'),
+                    Text(AppLocalizations.t(context, 'tab_pendientes')),
                     if (pendientesCount > 0) ...[
                       const SizedBox(width: 6),
                       Container(
@@ -134,7 +135,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
                   ],
                 ),
               ),
-              const Tab(text: 'Historial'),
+              Tab(text: AppLocalizations.t(context, 'tab_historial')),
             ],
           ),
         ),
@@ -185,7 +186,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
               const Icon(Icons.cloud_off_rounded, size: 48, color: AppTheme.textGrey),
               const SizedBox(height: 12),
               Text(
-                'No se pudieron cargar las solicitudes',
+                AppLocalizations.t(context, 'no_se_pudieron_cargar_solicitudes'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 6),
@@ -194,7 +195,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
               ElevatedButton.icon(
                 onPressed: () => vm.cargar(tenantId),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
+                label: Text(AppLocalizations.t(context, 'retry')),
               ),
             ],
           ),
@@ -218,15 +219,15 @@ class _SolicitudesViewState extends State<SolicitudesView>
                   child: const Icon(Icons.check_circle_outline_rounded, size: 38, color: AppTheme.success),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Todo al día',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  AppLocalizations.t(context, 'todo_al_dia'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'No hay visitas esperando tu autorización en este momento.',
+                Text(
+                  AppLocalizations.t(context, 'sin_visitas_esperando'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textDimmed, fontSize: 13),
+                  style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13),
                 ),
               ],
             ),
@@ -268,14 +269,14 @@ class _SolicitudesViewState extends State<SolicitudesView>
             children: [
               const Icon(Icons.cloud_off_rounded, size: 48, color: AppTheme.textGrey),
               const SizedBox(height: 12),
-              Text('No se pudo cargar el historial', style: Theme.of(context).textTheme.titleMedium),
+              Text(AppLocalizations.t(context, 'no_se_pudo_cargar_historial'), style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 6),
               Text(vm.error!, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.textDimmed)),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () => vm.cargar(tenantId),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
+                label: Text(AppLocalizations.t(context, 'retry')),
               ),
             ],
           ),
@@ -299,15 +300,15 @@ class _SolicitudesViewState extends State<SolicitudesView>
                   child: const Icon(Icons.history_rounded, size: 38, color: AppTheme.textGrey),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Sin registros todavía',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  AppLocalizations.t(context, 'sin_registros_todavia'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Aquí aparecerá el historial de todas las visitas que hayas autorizado o rechazado.',
+                Text(
+                  AppLocalizations.t(context, 'aqui_aparecera_historial'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textDimmed, fontSize: 13),
+                  style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13),
                 ),
               ],
             ),
@@ -404,7 +405,7 @@ class _HistorialCard extends StatelessWidget {
                 if (visita.createdAt != null) ...[
                   const SizedBox(height: 3),
                   Text(
-                    _formatearFecha(visita.createdAt!),
+                    _formatearFecha(context, visita.createdAt!),
                     style: const TextStyle(fontSize: 11, color: AppTheme.textDimmed),
                   ),
                 ],
@@ -430,7 +431,9 @@ class _HistorialCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  esAprobado ? 'Aprobado' : 'Rechazado',
+                  esAprobado
+                      ? AppLocalizations.t(context, 'aprobado_masc')
+                      : AppLocalizations.t(context, 'rechazado_masc'),
                   style: TextStyle(
                     color: esAprobado ? AppTheme.success : AppTheme.error,
                     fontSize: 11,
@@ -446,16 +449,22 @@ class _HistorialCard extends StatelessWidget {
     );
   }
 
-  String _formatearFecha(DateTime dt) {
+  String _formatearFecha(BuildContext context, DateTime dt) {
     final dia = dt.day.toString().padLeft(2, '0');
-    final mes = _meses[dt.month - 1];
+    final esEs = AppLocalizations.of(context).locale.languageCode == 'es';
+    final mes = (esEs ? _mesesEs : _mesesEn)[dt.month - 1];
     final hora = dt.hour.toString().padLeft(2, '0');
     final min = dt.minute.toString().padLeft(2, '0');
     return '$dia $mes · $hora:$min';
   }
 
-  static const _meses = [
+  static const _mesesEs = [
     'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+  ];
+
+  static const _mesesEn = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 }

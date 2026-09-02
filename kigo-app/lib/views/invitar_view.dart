@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/invitation_viewmodel.dart';
@@ -32,7 +33,7 @@ class _InvitarViewState extends State<InvitarView> {
     final telefono = _telefonoCtrl.text.trim();
     final nombre = _nombreCtrl.text.trim();
     if (telefono.isEmpty || nombre.isEmpty || _destinoIdSeleccionado == null) {
-      setState(() => _errorLocal = 'Completa el teléfono, el nombre y la casa destino');
+      setState(() => _errorLocal = AppLocalizations.t(context, 'completa_telefono_nombre_casa'));
       return;
     }
     setState(() => _errorLocal = null);
@@ -55,7 +56,7 @@ class _InvitarViewState extends State<InvitarView> {
         _permiteFacial = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invitación creada')),
+        SnackBar(content: Text(AppLocalizations.t(context, 'invitacion_creada'))),
       );
     } catch (_) {
       // el error ya quedó en vm.error, se muestra abajo
@@ -77,19 +78,19 @@ class _InvitarViewState extends State<InvitarView> {
 
     return Scaffold(
       body: tenantId == null
-          ? const Center(child: Text('No tienes una membresía activa'))
+          ? Center(child: Text(AppLocalizations.t(context, 'no_active_membership')))
           : SafeArea(
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
                   KigoTextField(
                     controller: _nombreCtrl,
-                    label: 'Nombre del invitado',
+                    label: AppLocalizations.t(context, 'nombre_del_invitado'),
                   ),
                   const SizedBox(height: 16),
                   KigoTextField(
                     controller: _telefonoCtrl,
-                    label: 'Teléfono del invitado',
+                    label: AppLocalizations.t(context, 'telefono_del_invitado'),
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 16),
@@ -97,13 +98,13 @@ class _InvitarViewState extends State<InvitarView> {
                     value: vm.destinos.any((d) => d.id == _destinoIdSeleccionado)
                         ? _destinoIdSeleccionado
                         : (vm.destinos.isNotEmpty ? vm.destinos.first.id : null),
-                    decoration: const InputDecoration(labelText: 'Casa destino'),
+                    decoration: InputDecoration(labelText: AppLocalizations.t(context, 'casa_destino_label')),
                     items: vm.destinos.isEmpty
                         ? [
-                            const DropdownMenuItem<int>(
+                            DropdownMenuItem<int>(
                               value: null,
                               enabled: false,
-                              child: Text('Sin casas registradas'),
+                              child: Text(AppLocalizations.t(context, 'sin_casas_registradas')),
                             ),
                           ]
                         : vm.destinos
@@ -116,8 +117,8 @@ class _InvitarViewState extends State<InvitarView> {
                   const SizedBox(height: 8),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Permitir reconocimiento facial'),
-                    subtitle: const Text('El invitado podrá entrar sin escanear su QR'),
+                    title: Text(AppLocalizations.t(context, 'permitir_reconocimiento_facial')),
+                    subtitle: Text(AppLocalizations.t(context, 'invitado_entra_sin_qr')),
                     value: _permiteFacial,
                     onChanged: (v) => setState(() => _permiteFacial = v),
                   ),
@@ -133,7 +134,7 @@ class _InvitarViewState extends State<InvitarView> {
                       child: Text(vm.error!, style: const TextStyle(color: AppTheme.error)),
                     ),
                   KigoPrimaryButton(
-                    label: 'Crear invitación',
+                    label: AppLocalizations.t(context, 'generate_button_short'),
                     loading: vm.isLoading,
                     onPressed: _crear,
                   ),

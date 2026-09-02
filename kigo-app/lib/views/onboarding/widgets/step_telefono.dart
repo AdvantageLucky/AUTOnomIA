@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 import '../../../widgets/kigo_primary_button.dart';
@@ -32,11 +33,11 @@ class _StepTelefonoState extends State<StepTelefono> {
     // real — sin correo, la solicitud no llega a ningún lado. Se pide
     // primero porque es el canal que de verdad se usa ahorita.
     if (correo.isEmpty || !correo.contains('@')) {
-      setState(() => _errorLocal = 'Ingresa un correo válido para recibir el código');
+      setState(() => _errorLocal = AppLocalizations.t(context, 'correo_invalido'));
       return;
     }
     if (telefono.isEmpty) {
-      setState(() => _errorLocal = 'Ingresa tu número de teléfono');
+      setState(() => _errorLocal = AppLocalizations.t(context, 'telefono_requerido'));
       return;
     }
     setState(() => _errorLocal = null);
@@ -59,19 +60,19 @@ class _StepTelefonoState extends State<StepTelefono> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Tu correo y teléfono', style: Theme.of(context).textTheme.headlineSmall),
+          Text(AppLocalizations.t(context, 'correo_telefono_title'), style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 6),
-          const Text('Te mandamos un código por correo para verificarte.'),
+          Text(AppLocalizations.t(context, 'correo_telefono_subtitulo')),
           const SizedBox(height: 24),
           KigoTextField(
             controller: _correoCtrl,
-            label: 'Correo (recibirás el código aquí)',
+            label: AppLocalizations.t(context, 'correo_label'),
             keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 12),
           KigoTextField(
             controller: _telefonoCtrl,
-            label: 'Teléfono',
+            label: AppLocalizations.t(context, 'telefono_label'),
             keyboardType: TextInputType.phone,
           ),
           if (_errorLocal ?? auth.error case final mensaje?) ...[
@@ -80,7 +81,7 @@ class _StepTelefonoState extends State<StepTelefono> {
           ],
           const SizedBox(height: 20),
           KigoPrimaryButton(
-            label: 'Continuar',
+            label: AppLocalizations.t(context, 'continue_btn'),
             loading: auth.isLoading,
             onPressed: _continuar,
           ),
