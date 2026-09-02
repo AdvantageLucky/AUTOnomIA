@@ -233,6 +233,13 @@ class _ScoreConfianza extends StatelessWidget {
             Text(etiqueta, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
+        if (!score.generadoPorIA) ...[
+          const SizedBox(height: 10),
+          const Text(
+            'Análisis automático (asistente de IA no disponible)',
+            style: TextStyle(color: AppTheme.textDimmed, fontSize: 12),
+          ),
+        ],
         if (score.factores.isNotEmpty) ...[
           const SizedBox(height: 16),
           ...score.factores.map((f) => Padding(

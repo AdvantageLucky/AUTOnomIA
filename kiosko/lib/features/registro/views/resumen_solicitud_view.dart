@@ -4,12 +4,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:provider/provider.dart';
+import 'package:kigo_kiosco/core/models/score_ia_model.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
+import 'package:kigo_kiosco/core/widgets/pin_operador_sheet.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/text_to_speak_servicio.dart';
 import 'package:kigo_kiosco/features/registro/models/user_registration_model.dart';
+import 'package:kigo_kiosco/features/registro/views/analisis_ia_view.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
@@ -45,6 +48,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
   String _estado = 'PENDIENTE';
   int? _visitaId;
   DateTime _horaSolicitud = DateTime.now();
+  ScoreIaModel? _scoreIa;
+  String? _resumenIa;
   final _led = LedServicio();
   bool _ledDisparado = false;
 
@@ -163,6 +168,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
         _horaSolicitud = creadoEn ?? DateTime.now();
         _isSubmitting = false;
       });
+      _actualizarAnalisisIA(respuesta);
 
       _tts.speak('Solicitud enviada al residente. Por favor espere.');
       _iniciarPolling();
@@ -199,6 +205,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       final yaEstabaEnRevision = _estado == 'REVISION';
       final cambioEstado = nuevoEstado != _estado;
       setState(() => _estado = nuevoEstado);
+      _actualizarAnalisisIA(respuesta);
       _dispararLedSiCorresponde();
 
       if (nuevoEstado == 'APROBADO' ||
@@ -232,6 +239,30 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       // tick reintenta solo. Mostrar un error aquí cada 3s sería peor UX.
       debugPrint('Error consultando estado de visita: $e');
     }
+  }
+
+  /// El análisis corre async en el backend (goroutine tras crear la
+  /// visita) y no siempre está listo en la respuesta inicial -- se
+  /// actualiza aquí mismo en cada tick del polling hasta que aparezca,
+  /// sin importar en qué estado esté la visita.
+  void _actualizarAnalisisIA(Map<String, dynamic> respuesta) {
+    final scoreJson = respuesta['score_ia'] as Map<String, dynamic>?;
+    if (scoreJson == null) return;
+    setState(() {
+      _scoreIa = ScoreIaModel.fromJson(scoreJson);
+      _resumenIa = respuesta['resumen_ia'] as String?;
+    });
+  }
+
+  Future<void> _abrirAnalisisVigilante() async {
+    final score = _scoreIa;
+    if (score == null) return;
+    final autorizado = await pedirPinOperador(context);
+    if (!mounted || !autorizado) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AnalisisIaView(score: score, resumen: _resumenIa)),
+    );
   }
 
   bool get _esperandoAprobacion => _estado == 'PENDIENTE';
@@ -322,6 +353,10 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
                       _buildEstadoHeader(),
                       const SizedBox(height: 38),
                       _buildResumenCard(),
+                      if (_scoreIa != null) ...[
+                        const SizedBox(height: 16),
+                        _buildSelloConfianza(),
+                      ],
                     ],
                   ],
                 ),
@@ -555,6 +590,54 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
               data.motivo!,
             ),
         ],
+      ),
+    );
+  }
+
+  /// Versión segura del análisis para quien está siendo evaluado: solo el
+  /// número/nivel de confianza, nunca los factores ni recomendaciones --
+  /// esos son señales de fraude/anomalías (ej. "rechazo previo", "placa
+  /// distinta a la habitual") que no se le muestran a la persona evaluada,
+  /// solo al vigilante detrás del PIN (ver AnalisisIaView).
+  Widget _buildSelloConfianza() {
+    final score = _scoreIa!;
+    final (color, icono, etiqueta) = switch (score.nivelConfianza) {
+      'alta' => (const Color(0xFF4CAF50), Icons.verified_outlined, 'Verificado por IA · Confianza alta'),
+      'media' => (KigoDesign.brand, Icons.shield_outlined, 'Verificado por IA · Confianza media'),
+      _ => (const Color(0xFFE53935), Icons.shield_outlined, 'Verificado por IA · Confianza baja'),
+    };
+    return GestureDetector(
+      onTap: _abrirAnalisisVigilante,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icono, color: color, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(etiqueta, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
+                ),
+                Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.6), size: 18),
+              ],
+            ),
+            if (!score.generadoPorIA) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Análisis automático (asistente de IA no disponible)',
+                style: TextStyle(color: context.kTextSecondary, fontSize: 12),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -36,10 +36,17 @@ class ScoreIaModel {
   final String nivelConfianza; // 'alta' | 'media' | 'baja'
   final List<FactorScoreModel> factores;
 
+  /// false cuando el resumen es el heurístico de respaldo (LLM apagado,
+  /// sin configurar, o falló esta vez) -- el score en sí es igual de
+  /// confiable en ambos casos (es puramente determinista), lo que cambia
+  /// es si hay redacción del LLM detrás del resumen narrativo.
+  final bool generadoPorIA;
+
   ScoreIaModel({
     required this.confianzaPct,
     required this.nivelConfianza,
     required this.factores,
+    required this.generadoPorIA,
   });
 
   factory ScoreIaModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +60,7 @@ class ScoreIaModel {
               .cast<Map<String, dynamic>>()
               .map(FactorScoreModel.fromJson)
               .toList(),
+      generadoPorIA: json['generado_por_ia'] as bool? ?? false,
     );
   }
 }
