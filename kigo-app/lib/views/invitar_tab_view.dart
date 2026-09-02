@@ -226,11 +226,16 @@ class _InvitarTabViewState extends State<InvitarTabView>
           ),
           child: TabBar(
             controller: _tabController,
-            // Con 4 pestañas el ancho fijo ya no alcanza sin apretar texto
-            // -- scrollable evita el juego de Flexible/ellipsis por cada
-            // pestaña nueva que se agregue.
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
+            // isScrollable (probado antes) obligaba a scrollear horizontal
+            // para ver las 3 pestañas -- con solo 3 (ya no 4, se quitó
+            // "Acceso frecuente") caben perfectamente en un solo renglón.
+            // Cada pestaña envuelve su contenido en FittedBox para que el
+            // texto se achique solo si el dispositivo es muy angosto, en
+            // vez de truncarse o forzar scroll -- con anchos acotados
+            // (isScrollable: false reparte 1/3 fijo por pestaña) FittedBox
+            // sí funciona aquí (antes, con isScrollable: true, un Flexible
+            // rompía el layout por constraints no acotadas).
+            isScrollable: false,
             indicator: BoxDecoration(
               color: AppTheme.primaryOrange,
               borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -239,41 +244,50 @@ class _InvitarTabViewState extends State<InvitarTabView>
             labelColor: Colors.white,
             unselectedLabelColor: isDark ? AppTheme.textGrey : AppTheme.textDimmed,
             labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
             dividerColor: Colors.transparent,
             tabs: [
-              const Tab(text: 'Nueva Invitación'),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // El TabBar ahora es isScrollable (ver más arriba): cada
-                    // tab mide su ancho intrínseco, así que ya no hay
-                    // desborde que evitar -- Flexible aquí rompía el layout
-                    // (null-check en _TabLabelBarRenderer, un tab
-                    // scrollable no da constraints acotadas para Flexible).
-                    const Text('Mis Invitaciones'),
-                    if (vigentesCount > 0) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '$vigentesCount',
-                          style: const TextStyle(
-                            color: AppTheme.primaryOrange,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
+              const Tab(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Nueva Invitación'),
                 ),
               ),
-              const Tab(text: 'Recibidas'),
+              Tab(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Mis Invitaciones'),
+                      if (vigentesCount > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '$vigentesCount',
+                            style: const TextStyle(
+                              color: AppTheme.primaryOrange,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const Tab(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Recibidas'),
+                ),
+              ),
             ],
           ),
         ),
