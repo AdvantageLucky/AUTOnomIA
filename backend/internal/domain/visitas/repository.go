@@ -544,6 +544,25 @@ func (r *Repository) ResolverDestinoID(tenantID uint, casaDestino string) *uint 
 // para un residente que entra por PIN/rostro la Visita nunca captura CURP
 // (no se escanea INE en cada entrada), pero su perfil ya la tiene si la
 // dio al enrolarse. Vacío si no se conoce.
+// FotosDePersona trae la INE y el rostro que la Persona ya subió al
+// registrarse en kigo-app -- se usa como respaldo de evidencia en visitas
+// que no tomaron su propia foto en el momento (residente por PIN/rostro,
+// invitado que entra con QR): el sistema ya conoce esos documentos, no hay
+// razón para que el expediente se vea vacío.
+func (r *Repository) FotosDePersona(personaID uint) (fotoIne string, fotoCara string) {
+	var fila struct {
+		FotoIneUrl  string
+		FotoCaraUrl string
+	}
+	if err := r.db.Table("personas").
+		Select("foto_ine_url, foto_cara_url").
+		Where("id = ?", personaID).
+		Scan(&fila).Error; err != nil {
+		return "", ""
+	}
+	return fila.FotoIneUrl, fila.FotoCaraUrl
+}
+
 func (r *Repository) CurpDePersona(personaID uint) string {
 	var curp string
 	err := r.db.Table("personas").

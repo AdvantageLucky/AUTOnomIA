@@ -439,6 +439,20 @@ func (h *Handler) GetVisitaByID(c *gin.Context) {
 		}
 		item.Telefono = repoCtx.TelefonoVerificadoDePersona(*v.PersonaID)
 		item.PersonaCurp = repoCtx.CurpDePersona(*v.PersonaID)
+
+		// Residente (PIN/rostro) e invitado por QR no toman foto propia al
+		// entrar -- el documento ya lo tiene la Persona desde su alta en
+		// kigo-app, así que se usa como respaldo en vez de dejar el
+		// expediente sin evidencia.
+		if item.FotoDocumentoURL == "" || item.FotoRostroURL == "" {
+			fotoIne, fotoCara := repoCtx.FotosDePersona(*v.PersonaID)
+			if item.FotoDocumentoURL == "" {
+				item.FotoDocumentoURL = fotoIne
+			}
+			if item.FotoRostroURL == "" {
+				item.FotoRostroURL = fotoCara
+			}
+		}
 	}
 	c.JSON(http.StatusOK, item)
 }
