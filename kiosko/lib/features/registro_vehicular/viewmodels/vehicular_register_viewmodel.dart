@@ -39,12 +39,6 @@ class VehicularRegisterViewModel extends ChangeNotifier {
   /// invitado si la config del kiosko lo pide.
   late final bool requierePlaca;
 
-  /// Si CasaDestinoView debe preguntar el motivo -- solo aplica a quien no
-  /// trae invitación, pero como esta pantalla nunca se muestra a un
-  /// invitado (ver `!invitado` en `habilitados` abajo), no hace falta
-  /// distinguir aquí.
-  late final bool motivoHabilitado;
-
   /// [tokenInvitacion] llega cuando el visitante ya escaneó su QR: cambia qué
   /// capturas se piden y con qué endpoint se registra la visita. [titular] y
   /// [casaDestino] vienen de la invitación validada, así que a un invitado no se
@@ -65,7 +59,6 @@ class VehicularRegisterViewModel extends ChangeNotifier {
     // la casa destino. Antes su lista estaba escrita a mano (INE y luego
     // ROSTRO) y el orden configurado no lo tocaba.
     requierePlaca = !invitado || config.fotoPlacaInvitado;
-    motivoHabilitado = config.motivoObligatorioVisitante;
 
     pasos = construirPasosOrdenados(
       orden: config.pasosSinInvitacion,
@@ -77,6 +70,8 @@ class VehicularRegisterViewModel extends ChangeNotifier {
         if (requierePlaca) PasoRegistro.placa,
         // Al invitado no se le pregunta a dónde va: viene en la invitación.
         if (!invitado) PasoRegistro.destino,
+        // Ni el motivo: quien lo invitó ya lo capturó al crear la invitación.
+        if (!invitado && config.motivoObligatorioVisitante) PasoRegistro.motivo,
       },
       // Un invitado sin ninguna captura habilitada pasa sólo con su QR, así
       // que su fallback es vacío a propósito.
@@ -253,6 +248,14 @@ class VehicularRegisterViewModel extends ChangeNotifier {
           subtitle: '',
           description: 'Elige tu destino dentro del residencial.',
           icon: Icons.home_outlined,
+          buttonTextKey: 'continue_button_text',
+        );
+      case PasoRegistro.motivo:
+        return TouchStepModel(
+          title: '¿Cuál es el motivo de tu visita?',
+          subtitle: '',
+          description: 'Elige la opción que mejor describa tu visita.',
+          icon: Icons.info_outline,
           buttonTextKey: 'continue_button_text',
         );
     }

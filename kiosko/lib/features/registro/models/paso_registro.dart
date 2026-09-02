@@ -19,21 +19,30 @@ enum PasoRegistro {
 
   /// Elegir a qué casa va. Empuja CasaDestinoView.
   destino,
+
+  /// Por qué viene el visitante. Empuja MotivoView. Solo aplica a quien
+  /// llega sin invitación -- un invitado ya trae el motivo desde la
+  /// invitación que lo creó, así que este paso nunca se habilita para él
+  /// (ver `habilitados` en los viewmodels).
+  motivo,
 }
 
 /// true si el paso se resuelve solo al llegarle el turno, sin esperar un
 /// toque del visitante. INE y ROSTRO necesitan que aprete el botón de la
-/// pantalla; DESTINO y PLACA no tienen nada que encuadrar, así que empujan su
-/// pantalla de una vez — es el comportamiento que DESTINO ya tenía cuando
-/// estaba clavado al final.
+/// pantalla; DESTINO, PLACA y MOTIVO no tienen nada que encuadrar, así que
+/// empujan su pantalla de una vez — es el comportamiento que DESTINO ya
+/// tenía cuando estaba clavado al final.
 bool esPasoAutomatico(PasoRegistro paso) =>
-    paso == PasoRegistro.destino || paso == PasoRegistro.placa;
+    paso == PasoRegistro.destino ||
+    paso == PasoRegistro.placa ||
+    paso == PasoRegistro.motivo;
 
 const _tokenPorPaso = {
   'INE': PasoRegistro.ine,
   'ROSTRO': PasoRegistro.rostro,
   'PLACA': PasoRegistro.placa,
   'DESTINO': PasoRegistro.destino,
+  'MOTIVO': PasoRegistro.motivo,
 };
 
 /// Traduce la lista ordenada del dashboard a los pasos que este kiosko va a

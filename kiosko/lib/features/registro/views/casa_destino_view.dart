@@ -17,16 +17,10 @@ class CasaDestinoView extends StatefulWidget {
   /// caer en cualquier lugar y no solo antes del resumen.
   final int currentStep;
 
-  /// Si se pregunta el motivo tras elegir destino (KioskoConfig.
-  /// motivoObligatorioVisitante) -- apagado, esta pantalla se comporta
-  /// exactamente como antes de que existiera el sub-paso de motivo.
-  final bool motivoHabilitado;
-
   const CasaDestinoView({
     super.key,
     this.totalSteps = 4,
     this.currentStep = 2,
-    this.motivoHabilitado = false,
   });
 
   @override
@@ -34,19 +28,9 @@ class CasaDestinoView extends StatefulWidget {
 }
 
 /// Selección progresiva: calle → tipo (si la calle tiene más de uno) →
-/// número → motivo. Una lista plana de todas las casas no escala a un
-/// fraccionamiento con decenas o cientos de unidades. MOTIVO va al final,
-/// una vez que ya se sabe a dónde va, porque es la captura del núcleo
-/// obligatorio del reto FEPRO ("Nombre, motivo, anfitrión/destino") que
-/// antes no existía en ningún paso del kiosko.
-enum _SubPaso { calle, tipo, numero, motivo }
-
-/// Motivos frecuentes como chips de un toque -- pedir el motivo por texto
-/// con teclado va contra el listón de "menos de 3 minutos, sin
-/// entrenamiento" del PRD. Genéricos a propósito (no "reparación de AC",
-/// etc.): el visitante no debería tener que pensar cuál aplica. "Otro" cae
-/// al mismo campo libre que ya existe para destino, por si ninguno aplica.
-const _motivosFrecuentes = ['Paquete', 'Servicio', 'Visita', 'Proveedor'];
+/// número. Una lista plana de todas las casas no escala a un fraccionamiento
+/// con decenas o cientos de unidades.
+enum _SubPaso { calle, tipo, numero }
 
 class _CasaDestinoViewState extends State<CasaDestinoView> {
   final KioskoServicio _kioskoServicio = KioskoServicio();
@@ -58,7 +42,6 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
   String? _calleSeleccionada;
   String? _tipoSeleccionado;
   String? _destinoSugeridoPorVoz;
-  String? _destinoElegido;
 
   void _onCampoExtraido(CampoExtraido campo) {
     final valor = campo.valor;
@@ -168,34 +151,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
           }
           _tipoSeleccionado = null;
         });
-      case _SubPaso.motivo:
-        setState(() {
-          _subPaso = _SubPaso.numero;
-          _destinoElegido = null;
-        });
     }
-  }
-
-  /// Todos los caminos para elegir destino (tarjeta de número, sugerencia
-  /// de voz, escritura manual) convergen aquí en vez de cerrar la pantalla
-  /// directo -- así el motivo se captura sin importar cómo se llegó al
-  /// destino.
-  void _irAMotivo(String destino) {
-    // Sin el toggle prendido, esta pantalla se comporta como antes de que
-    // existiera el sub-paso: elegir destino cierra la pantalla directo.
-    if (!widget.motivoHabilitado) {
-      Navigator.pop(context, {'destino': destino, 'motivo': ''});
-      return;
-    }
-    setState(() {
-      _destinoElegido = destino;
-      _destinoSugeridoPorVoz = null;
-      _subPaso = _SubPaso.motivo;
-    });
-  }
-
-  void _confirmarMotivo(String motivo) {
-    Navigator.pop(context, {'destino': _destinoElegido ?? '', 'motivo': motivo});
   }
 
   @override
@@ -223,7 +179,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                       ),
                       const SizedBox(width: 16),
                       ElevatedButton(
-                        onPressed: () => _irAMotivo(_destinoSugeridoPorVoz!),
+                        onPressed: () => Navigator.pop(context, _destinoSugeridoPorVoz),
                         style: ElevatedButton.styleFrom(backgroundColor: KigoDesign.brand),
                         child: const Text('Sí, confirmar', style: TextStyle(color: Colors.white)),
                       ),
@@ -271,7 +227,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                   ],
                   const SizedBox(height: 32),
                   _buildContenido(),
-                  if (!_isLoading && _error == null && _subPaso != _SubPaso.motivo) ...[
+                  if (!_isLoading && _error == null) ...[
                     const SizedBox(height: 24),
                     _buildBotonNoEncuentroDestino(),
                   ],
@@ -307,13 +263,11 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         return AppLocalizations.t(context, 'casa_o_edificio');
       case _SubPaso.numero:
         return AppLocalizations.t(context, 'cual_es_el_numero');
-      case _SubPaso.motivo:
-        return '¿Cuál es el motivo de tu visita?';
     }
   }
 
   String? _subtitulo() {
-    if (_subPaso == _SubPaso.calle || _subPaso == _SubPaso.motivo) return null;
+    if (_subPaso == _SubPaso.calle) return null;
     return _calleSeleccionada;
   }
 
@@ -398,24 +352,9 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
               .map((d) => _buildCard(
                     icono: _iconoDeTipo(_tipoSeleccionado),
                     titulo: d['numero'] as String? ?? '—',
-                    onTap: () => _irAMotivo(d['nombre'] as String? ?? ''),
+                    onTap: () => Navigator.pop(context, d['nombre'] as String?),
                   ))
               .toList(),
-        );
-      case _SubPaso.motivo:
-        return Column(
-          children: [
-            ..._motivosFrecuentes.map((m) => _buildCard(
-                  icono: Icons.info_outline_rounded,
-                  titulo: m,
-                  onTap: () => _confirmarMotivo(m),
-                )),
-            _buildCard(
-              icono: Icons.more_horiz_rounded,
-              titulo: AppLocalizations.t(context, 'otro_destino_label'),
-              onTap: _escribirMotivoManual,
-            ),
-          ],
         );
     }
   }
@@ -525,45 +464,8 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
       ),
     );
     if (destino != null && destino.isNotEmpty && mounted) {
-      _irAMotivo(destino);
+      Navigator.pop(context, destino);
     }
-  }
-
-  Future<void> _escribirMotivoManual() async {
-    final controller = TextEditingController();
-    final motivo = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.kSurfaceCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '¿Cuál es el motivo de tu visita?',
-          style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: TextStyle(color: context.kTextPrimary),
-          decoration: InputDecoration(
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.kBorder)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: KigoDesign.brand)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.t(context, 'cancelar_button'),
-                style: TextStyle(color: context.kTextSecondary, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(AppLocalizations.t(context, 'continue_button_text'),
-                style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-    if (mounted) _confirmarMotivo(motivo ?? '');
   }
 
   Widget _buildCard({required IconData icono, required String titulo, required VoidCallback onTap}) {

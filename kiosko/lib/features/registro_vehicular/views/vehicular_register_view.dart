@@ -6,6 +6,7 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:kigo_kiosco/features/registro/views/casa_destino_view.dart';
+import 'package:kigo_kiosco/features/registro/views/motivo_view.dart';
 import 'package:kigo_kiosco/features/registro/views/resumen_solicitud_view.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/face_approach_animation.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animation.dart';
@@ -81,6 +82,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       // _ejecutarSiEsAutomatico al tocarles el turno.
       case PasoRegistro.placa:
       case PasoRegistro.destino:
+      case PasoRegistro.motivo:
         await _ejecutarSiEsAutomatico();
     }
   }
@@ -108,6 +110,8 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         await _pasoPlaca();
       case PasoRegistro.destino:
         await _pasoCasaDestino();
+      case PasoRegistro.motivo:
+        await _pasoMotivo();
       case PasoRegistro.ine:
       case PasoRegistro.rostro:
         break;
@@ -136,26 +140,42 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
 
   Future<void> _pasoCasaDestino() async {
     if (!mounted) return;
-    final resultado = await Navigator.push<Map<String, String>>(
+    final String? casa = await Navigator.push<String>(
       context,
       MaterialPageRoute(
         builder: (_) => CasaDestinoView(
           currentStep: viewModel.indicatorStep,
           totalSteps: viewModel.indicatorTotalSteps,
-          motivoHabilitado: viewModel.motivoHabilitado,
         ),
       ),
     );
 
     // Si el visitante da "atrás" aquí, se cancela toda la solicitud: no hay un
     // punto intermedio al que reanudar.
-    final casa = resultado?['destino'];
-    if (casa == null || casa.isEmpty) {
+    if (casa == null) {
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
     viewModel.registrationData.casaDestino = casa;
-    viewModel.registrationData.motivo = resultado?['motivo'];
+    await _avanzar();
+  }
+
+  Future<void> _pasoMotivo() async {
+    if (!mounted) return;
+    final String? motivo = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MotivoView(
+          currentStep: viewModel.indicatorStep,
+          totalSteps: viewModel.indicatorTotalSteps,
+        ),
+      ),
+    );
+    if (motivo == null) {
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+    viewModel.registrationData.motivo = motivo;
     await _avanzar();
   }
 
@@ -465,7 +485,7 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
                 PasoRegistro.ine => const IneApproachAnimation(),
                 PasoRegistro.rostro => const FaceApproachAnimation(),
                 // No se alcanzan a ver: estos pasos empujan su pantalla.
-                PasoRegistro.placa || PasoRegistro.destino => const SizedBox.shrink(),
+                PasoRegistro.placa || PasoRegistro.destino || PasoRegistro.motivo => const SizedBox.shrink(),
               },
             ),
           ),

@@ -186,6 +186,7 @@ class AppLocalizations {
       // Generico: el dashboard ya permite 7 tipos de destino, no solo dos.
       'casa_o_edificio': '¿Qué tipo de destino?',
       'cual_es_el_numero': '¿Cuál es el número?',
+      'cual_es_el_motivo': '¿Cuál es el motivo de tu visita?',
       'sin_casas_registradas': 'Todavía no hay casas registradas en este kiosko.\nAvisa a la administración.',
       'edificio_label': 'Edificio',
       'casa_label': 'Casa',
@@ -377,6 +378,7 @@ class AppLocalizations {
       'en_que_calle_esta_destino': 'Which street is your destination on?',
       'casa_o_edificio': 'What kind of destination?',
       'cual_es_el_numero': 'What is the number?',
+      'cual_es_el_motivo': 'What is the reason for your visit?',
       'sin_casas_registradas': 'There are no houses registered in this kiosk yet.\nLet the administration know.',
       'edificio_label': 'Building',
       'casa_label': 'House',
