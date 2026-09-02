@@ -7,19 +7,20 @@ import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 /// asistente que "en cuál de los tres estados estoy".
 enum EstadoMascota { inactivo, escuchando, procesando, hablando }
 
-/// Mascota vectorial del asistente: un orbe con antena y carita, inspirado
-/// en el asistente animado de Nintendo 3DS que pidió el usuario — sustituye
-/// al ícono de micrófono plano. Relleno sólido de marca (no un tono oscuro
-/// "de cristal"): un relleno oscuro se pierde contra el fondo negro del
-/// kiosko, confirmado en el companion visual de brainstorming.
+/// Mascota vectorial del asistente: una carita redonda sobre un pequeño
+/// pedestal, sin brazos ni piernas -- la referencia exacta que pidió el
+/// usuario es el asistente de configuración de internet de Wii/DS (dos
+/// puntos por ojos, una curva por boca, flotando sobre una base blanca).
+/// Deliberadamente simple: nada de gradientes ni sombras complejas, calca
+/// esa economía de trazo a propósito -- y de paso es la opción más liviana
+/// para un F10 de 2GB de RAM (CustomPainter puro, cero assets que cargar).
 class MascotaAsistente extends StatelessWidget {
   final EstadoMascota estado;
 
-  /// 0..1, sube y baja en bucle — anima el punto de la antena mientras
-  /// escucha.
+  /// 0..1, sube y baja en bucle -- respira/parpadea según el estado.
   final double pulseValue;
 
-  /// 0..1, avanza en bucle — gira el arco de "procesando" alrededor del orbe.
+  /// 0..1, avanza en bucle -- anima los puntos de "procesando".
   final double rotValue;
 
   /// Lado del cuadro donde se dibuja. El painter escala todo desde el
@@ -65,61 +66,99 @@ class _MascotaPainter extends CustomPainter {
     final s = size.width / 60;
     Offset p(double x, double y) => Offset(x * s, y * s);
 
-    final orbCentro = p(30, 34);
-    final orbRadio = 22 * s;
+    final pedestalPaint = Paint()..color = Colors.white.withValues(alpha: 0.92);
 
-    final orbPaint = Paint()..color = KigoDesign.brand;
-    canvas.drawCircle(orbCentro, orbRadio, orbPaint);
+    // Pedestal de dos niveles -- es lo que le da presencia sin necesitar
+    // brazos ni piernas, igual que la referencia.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: p(30, 55), width: 16 * s, height: 5 * s),
+        Radius.circular(2.5 * s),
+      ),
+      pedestalPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: p(30, 49), width: 7 * s, height: 8 * s),
+        Radius.circular(2 * s),
+      ),
+      pedestalPaint,
+    );
 
-    // Antena: tallo + punta. La punta "respira" (pulseValue) solo mientras
-    // escucha; en los otros dos estados queda fija.
-    final tallo = Paint()
-      ..color = KigoDesign.brand
-      ..strokeWidth = 2.5 * s
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(p(30, 8), p(30, 14), tallo);
+    // La cabeza "respira" un poco mientras escucha -- sube y baja sobre el
+    // pedestal, nunca lo abandona.
+    final bounce = estado == EstadoMascota.escuchando ? -1.5 * pulseValue * s : 0.0;
+    canvas.save();
+    canvas.translate(0, bounce);
 
-    final puntaRadio = (estado == EstadoMascota.escuchando
-            ? 3 + 2 * pulseValue
-            : 3) *
-        s;
-    canvas.drawCircle(p(30, 6), puntaRadio, orbPaint);
+    // Cabeza: blob redondeado, más ancho que alto -- no una esfera ni un
+    // óvalo perfecto, calcado de la proporción del mockup.
+    final cabezaPaint = Paint()..color = KigoDesign.brand;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: p(30, 28), width: 34 * s, height: 28 * s),
+        Radius.circular(15 * s),
+      ),
+      cabezaPaint,
+    );
 
-    // Ojos: blancos, un poco más grandes mientras escucha (mismo lenguaje
-    // que ya usaba el resto de la app: "más grande y firme" = atento).
-    final ojoPaint = Paint()..color = Colors.white;
-    final ojoRadio = (estado == EstadoMascota.escuchando ? 4 : 3) * s;
-    canvas.drawCircle(p(23, 32), ojoRadio, ojoPaint);
-    canvas.drawCircle(p(37, 32), ojoRadio, ojoPaint);
+    _pintarCara(canvas, p, s);
 
-    // Procesando: arco blanco semitransparente girando alrededor del orbe.
+    canvas.restore();
+
+    // Procesando: tres puntos parpadeando en cascada bajo la cabeza -- el
+    // lenguaje de "escribiendo..." de un chat, no un spinner de carga.
     if (estado == EstadoMascota.procesando) {
-      final arcoPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.7)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2 * s
-        ..strokeCap = StrokeCap.round;
-      final rect = Rect.fromCircle(center: orbCentro, radius: orbRadio - 4 * s);
-      final inicio = rotValue * 2 * 3.14159265;
-      canvas.drawArc(rect, inicio, 3.14159265 / 2, false, arcoPaint);
+      final puntoPaint = Paint()..color = Colors.white;
+      for (var i = 0; i < 3; i++) {
+        final fase = (rotValue * 3 - i) % 1.0;
+        final alpha = (0.3 + 0.7 * (1 - (fase - 0.5).abs() * 2)).clamp(0.3, 1.0);
+        canvas.drawCircle(
+          p(24.0 + i * 6, 55),
+          1.6 * s,
+          puntoPaint..color = Colors.white.withValues(alpha: alpha),
+        );
+      }
     }
+  }
 
-    // Hablando: una boca ovalada bajo los ojos que se abre/cierra con
-    // pulseValue -- visualmente distinta del pulso de la antena
-    // (escuchando) y del arco girando (procesando), para que el usuario no
-    // confunda "ella me habla" con "ella me escucha".
-    if (estado == EstadoMascota.hablando) {
-      final bocaPaint = Paint()..color = Colors.white.withValues(alpha: 0.85);
-      final bocaAlto = (2 + 4 * pulseValue) * s;
-      final bocaAncho = 10 * s;
-      final bocaCentro = p(30, 40);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: bocaCentro, width: bocaAncho, height: bocaAlto),
-          Radius.circular(bocaAlto / 2),
-        ),
-        bocaPaint,
-      );
+  void _pintarCara(Canvas canvas, Offset Function(double, double) p, double s) {
+    // Ojos: puntos simples, un poco más grandes y separados mientras
+    // escucha -- "más atenta", mismo lenguaje que ya usaba el resto de la
+    // app.
+    final ojoPaint = Paint()..color = Colors.white;
+    final ojoRadio = (estado == EstadoMascota.escuchando ? 2.8 : 2.3) * s;
+    final ojoY = estado == EstadoMascota.escuchando ? 26.0 : 27.0;
+    canvas.drawCircle(p(22.5, ojoY), ojoRadio, ojoPaint);
+    canvas.drawCircle(p(37.5, ojoY), ojoRadio, ojoPaint);
+
+    final bocaPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4 * s
+      ..strokeCap = StrokeCap.round;
+
+    switch (estado) {
+      case EstadoMascota.inactivo:
+        // Sonrisa fija, curva simple -- exactamente la cara de la
+        // referencia en reposo.
+        final camino = Path()
+          ..moveTo(p(24, 35).dx, p(24, 35).dy)
+          ..quadraticBezierTo(p(30, 40).dx, p(30, 40).dy, p(36, 35).dx, p(36, 35).dy);
+        canvas.drawPath(camino, bocaPaint);
+      case EstadoMascota.escuchando:
+        // Boca pequeña y redonda -- atenta, no hablando.
+        canvas.drawCircle(p(30, 37), (2.2 + 1 * pulseValue) * s, Paint()..color = Colors.white);
+      case EstadoMascota.procesando:
+        // Línea recta y neutral: está pensando, no sonriendo ni hablando.
+        canvas.drawLine(p(25, 37), p(35, 37), bocaPaint);
+      case EstadoMascota.hablando:
+        // Óvalo que se abre y cierra con pulseValue -- la única boca que
+        // cambia de tamaño en bucle, para que se lea claro "está hablando".
+        canvas.drawOval(
+          Rect.fromCenter(center: p(30, 37), width: 11 * s, height: (2.5 + 5 * pulseValue) * s),
+          Paint()..color = Colors.white,
+        );
     }
   }
 
