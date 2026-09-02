@@ -72,7 +72,7 @@ class _MascotaPainter extends CustomPainter {
     // brazos ni piernas, igual que la referencia.
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: p(30, 52), width: 16 * s, height: 5 * s),
+        Rect.fromCenter(center: p(30, 55), width: 16 * s, height: 5 * s),
         Radius.circular(2.5 * s),
       ),
       pedestalPaint,
@@ -82,7 +82,7 @@ class _MascotaPainter extends CustomPainter {
     // hueco feo entre la cabeza y el pedestal.
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: p(30, 44), width: 7 * s, height: 12 * s),
+        Rect.fromCenter(center: p(30, 45), width: 7 * s, height: 16 * s),
         Radius.circular(2 * s),
       ),
       pedestalPaint,
@@ -94,15 +94,16 @@ class _MascotaPainter extends CustomPainter {
     canvas.save();
     canvas.translate(0, bounce);
 
-    // Cabeza: rectángulo vertical de esquinas redondeadas, no un blob ni una
-    // esfera -- a propósito recuerda a una pantalla en modo retrato (como el
-    // panel 800x1280 del propio F10), para que se lea "este es el kiosko
-    // mismo con carita", no un personaje aparte.
+    // Cabeza: rectángulo vertical de esquinas apenas redondeadas, no un blob
+    // ni una esfera -- a propósito recuerda a una pantalla en modo retrato
+    // (como el panel 800x1280 del propio F10), para que se lea "este es el
+    // kiosko mismo con carita", no un personaje aparte. Más alta que ancha
+    // y con radio chico (5, no 8): se ve más "pantalla", menos "burbuja".
     final cabezaPaint = Paint()..color = KigoDesign.brand;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: p(30, 27), width: 27 * s, height: 32 * s),
-        Radius.circular(8 * s),
+        Rect.fromCenter(center: p(30, 25), width: 25 * s, height: 40 * s),
+        Radius.circular(5 * s),
       ),
       cabezaPaint,
     );
@@ -133,7 +134,7 @@ class _MascotaPainter extends CustomPainter {
     // app.
     final ojoPaint = Paint()..color = Colors.white;
     final ojoRadio = (estado == EstadoMascota.escuchando ? 2.8 : 2.3) * s;
-    final ojoY = estado == EstadoMascota.escuchando ? 26.0 : 27.0;
+    final ojoY = estado == EstadoMascota.escuchando ? 23.0 : 24.0;
     canvas.drawCircle(p(22.5, ojoY), ojoRadio, ojoPaint);
     canvas.drawCircle(p(37.5, ojoY), ojoRadio, ojoPaint);
 
@@ -148,20 +149,20 @@ class _MascotaPainter extends CustomPainter {
         // Sonrisa fija, curva simple -- exactamente la cara de la
         // referencia en reposo.
         final camino = Path()
-          ..moveTo(p(24, 35).dx, p(24, 35).dy)
-          ..quadraticBezierTo(p(30, 40).dx, p(30, 40).dy, p(36, 35).dx, p(36, 35).dy);
+          ..moveTo(p(24, 33).dx, p(24, 33).dy)
+          ..quadraticBezierTo(p(30, 38).dx, p(30, 38).dy, p(36, 33).dx, p(36, 33).dy);
         canvas.drawPath(camino, bocaPaint);
       case EstadoMascota.escuchando:
         // Boca pequeña y redonda -- atenta, no hablando.
-        canvas.drawCircle(p(30, 37), (2.2 + 1 * pulseValue) * s, Paint()..color = Colors.white);
+        canvas.drawCircle(p(30, 35), (2.2 + 1 * pulseValue) * s, Paint()..color = Colors.white);
       case EstadoMascota.procesando:
         // Línea recta y neutral: está pensando, no sonriendo ni hablando.
-        canvas.drawLine(p(25, 37), p(35, 37), bocaPaint);
+        canvas.drawLine(p(25, 35), p(35, 35), bocaPaint);
       case EstadoMascota.hablando:
         // Óvalo que se abre y cierra con pulseValue -- la única boca que
         // cambia de tamaño en bucle, para que se lea claro "está hablando".
         canvas.drawOval(
-          Rect.fromCenter(center: p(30, 37), width: 11 * s, height: (2.5 + 5 * pulseValue) * s),
+          Rect.fromCenter(center: p(30, 35), width: 11 * s, height: (2.5 + 5 * pulseValue) * s),
           Paint()..color = Colors.white,
         );
     }
