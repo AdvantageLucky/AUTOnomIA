@@ -57,6 +57,17 @@ func (r *Repository) CorreosAdminsDeTenant(tenantID uint) ([]string, error) {
 	return correos, err
 }
 
+// ExisteVinculoKigoUserID resuelve si algún Persona ya está vinculada a esta
+// cuenta de Kigo Parkimovil -- es todo lo que la mini-app del marketplace
+// necesita saber (nunca el payload completo de Persona: kigo_user_id llega
+// como input no verificado del lado del cliente, ver
+// docs/integracion-kigo-marketplace-y-face-enrollment.md).
+func (r *Repository) ExisteVinculoKigoUserID(kigoUserID string) (bool, error) {
+	var count int64
+	err := r.db.Model(&Persona{}).Where("kigo_user_id = ?", kigoUserID).Count(&count).Error
+	return count > 0, err
+}
+
 func (r *Repository) FindByID(id uint) (*Persona, error) {
 	var p Persona
 	if err := r.db.First(&p, id).Error; err != nil {

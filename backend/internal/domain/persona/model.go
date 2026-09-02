@@ -24,6 +24,11 @@ type Persona struct {
 	Curp                 string `gorm:"not null;default:''"`
 	FotoIneUrl           string
 	DeviceToken          *string
+	// KigoUserID vincula esta Persona con su cuenta en Kigo Parkimovil --
+	// la mini-app del marketplace solo recibe este id (via kigo.auth.init()),
+	// nunca teléfono ni nombre, así que es la única clave que tiene para
+	// resolver "¿ya estás registrado en AUTOnomIA?".
+	KigoUserID *string `gorm:"uniqueIndex"`
 }
 
 func (Persona) TableName() string { return "personas" }
