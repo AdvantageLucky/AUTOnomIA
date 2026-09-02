@@ -689,6 +689,11 @@ textarea { resize: vertical; }
 }
 
 .screen-header--back {
+  /* .screen-header hereda justify-content:space-between, pensado para
+     título + acciones en los extremos -- aquí son 3 elementos en línea
+     (botón, separador, título) y space-between los desparramaba a lo
+     ancho del header en vez de dejarlos juntos. */
+  justify-content: flex-start;
   align-items: center;
   gap: 12px;
 }
