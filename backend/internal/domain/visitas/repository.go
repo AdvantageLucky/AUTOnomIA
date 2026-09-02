@@ -374,21 +374,26 @@ func (r *Repository) HistorialPorRostro(embedding []float64, umbralPct int) ([]V
 }
 
 // HistorialDeVisitante agrupa por CURP cuando la hay, si no por placa, y si
-// tampoco hay, por parecido de rostro.
+// tampoco hay, por parecido de rostro -- de las fuentes que fuentes deje
+// prendidas (ver ScoreIaFuentes). Si el admin apagó todas, no hay con qué
+// ligar la visita y se trata como primera vez, que es la opción segura.
 //
 // Nunca consulta con un identificador vacío: un `WHERE curp = ”` traeria todas
 // las visitas sin INE del tenant y el análisis heredaría el historial de
 // desconocidos — rechazos ajenos, visitas ajenas y, con autopass encendido,
 // aprobaciones que nadie se ganó. El match por rostro respeta lo mismo: sin
 // embedding no busca nada, en vez de traer el tenant entero.
-func (r *Repository) HistorialDeVisitante(v Visita, umbralFacialPct int) ([]Visita, error) {
-	if v.Curp != "" {
+func (r *Repository) HistorialDeVisitante(v Visita, umbralFacialPct int, fuentes ScoreIaFuentes) ([]Visita, error) {
+	if fuentes.Documento && v.Curp != "" {
 		return r.HistorialPorCURP(v.Curp)
 	}
-	if v.Placa != "" {
+	if fuentes.Placa && v.Placa != "" {
 		return r.HistorialPorPlaca(v.Placa)
 	}
-	return r.HistorialPorRostro(v.EmbeddingRostro, umbralFacialPct)
+	if fuentes.Rostro {
+		return r.HistorialPorRostro(v.EmbeddingRostro, umbralFacialPct)
+	}
+	return nil, nil
 }
 
 // GuardarAnalisisIA persiste el resultado del análisis de patrones (resumen

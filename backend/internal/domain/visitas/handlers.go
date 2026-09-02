@@ -267,7 +267,8 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 			return
 		}
 
-		historial, err := asyncRepo.HistorialDeVisitante(visitaCopy, cfg.UmbralFacialPct)
+		fuentes := scoreIaFuentesDe(cfg)
+		historial, err := asyncRepo.HistorialDeVisitante(visitaCopy, cfg.UmbralFacialPct, fuentes)
 		if err != nil {
 			return
 		}
@@ -278,7 +279,7 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 			}
 		}
 
-		sc := AnalizarVisita(historialPrevio, visitaCopy, evidenciaEsperadaDe(cfg, visitaCopy))
+		sc := AnalizarVisita(historialPrevio, visitaCopy, evidenciaEsperadaDe(cfg, visitaCopy), fuentes)
 		resumen, err := GenerarResumen(ctx, h.llmURL, sc, visitaCopy)
 		if err != nil {
 			log.Printf("visita %d: LLM falló, usando resumen heurístico: %v", visitaCopy.ID, err)

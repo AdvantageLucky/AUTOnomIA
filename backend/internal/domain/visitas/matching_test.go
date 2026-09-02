@@ -62,7 +62,7 @@ func TestHistorialDeVisitante_CaeARostroSinCurpNiPlaca(t *testing.T) {
 	})
 
 	nueva := Visita{TenantID: tenantID, EmbeddingRostro: residente.FloatArray(cara)}
-	historial, err := repoCtx.HistorialDeVisitante(nueva, 85)
+	historial, err := repoCtx.HistorialDeVisitante(nueva, 85, fuentesTodas)
 	if err != nil {
 		t.Fatalf("no esperaba error: %v", err)
 	}
@@ -91,7 +91,7 @@ func TestHistorialDeVisitante_SinIdentificadorNoTraeNada(t *testing.T) {
 		Estado: EstadoRechazado, EmbeddingRostro: residente.FloatArray([]float64{1, 0, 0, 0}),
 	})
 
-	historial, err := repoCtx.HistorialDeVisitante(Visita{TenantID: tenantID}, 85)
+	historial, err := repoCtx.HistorialDeVisitante(Visita{TenantID: tenantID}, 85, fuentesTodas)
 	if err != nil {
 		t.Fatalf("no esperaba error: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestHistorialDeVisitante_PrefiereCurpSobreRostro(t *testing.T) {
 	})
 
 	nueva := Visita{TenantID: tenantID, Curp: "GARJ900101HMCRNA01", EmbeddingRostro: cara}
-	historial, err := repoCtx.HistorialDeVisitante(nueva, 85)
+	historial, err := repoCtx.HistorialDeVisitante(nueva, 85, fuentesTodas)
 	if err != nil {
 		t.Fatalf("no esperaba error: %v", err)
 	}

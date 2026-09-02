@@ -44,7 +44,11 @@ var rePlaceholder = regexp.MustCompile(`\[[^\]]*\]|\{[^}]*\}|<[^>]*>`)
 // falló de verdad (a diferencia de "no había LLM configurado", que no es error).
 func GenerarResumen(ctx context.Context, llmURL string, s ScoreContexto, v Visita) (string, error) {
 	if len(s.Factores) == 0 {
-		evaluarEntrada(&s, v, nil, EvidenciaEsperada{})
+		// Sin config de kiosko a la mano en esta función, se asume el
+		// comportamiento de siempre (las 3 fuentes prendidas) -- este
+		// recálculo es solo un respaldo para cuando el score llegó sin
+		// factores, no la vía normal en la que sí se conoce la config.
+		evaluarEntrada(&s, v, nil, EvidenciaEsperada{}, ScoreIaFuentes{Documento: true, Placa: true, Rostro: true})
 	}
 
 	if strings.TrimSpace(llmURL) == "" {

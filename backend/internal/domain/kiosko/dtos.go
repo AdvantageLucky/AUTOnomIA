@@ -58,6 +58,10 @@ type KioskoConfigRequest struct {
 	TelefonoContacto *string `json:"telefono_contacto"`
 
 	MostrarScoreIaKiosko *bool `json:"mostrar_score_ia_kiosko"`
+
+	UsarPlacaEnScoreIA     *bool `json:"usar_placa_en_score_ia"`
+	UsarDocumentoEnScoreIA *bool `json:"usar_documento_en_score_ia"`
+	UsarRostroEnScoreIA    *bool `json:"usar_rostro_en_score_ia"`
 }
 
 // KioskoConfigResponse DTO de respuesta de la config del kiosko
@@ -94,6 +98,10 @@ type KioskoConfigResponse struct {
 	TelefonoContacto string `json:"telefono_contacto"`
 
 	MostrarScoreIaKiosko bool `json:"mostrar_score_ia_kiosko"`
+
+	UsarPlacaEnScoreIA     bool `json:"usar_placa_en_score_ia"`
+	UsarDocumentoEnScoreIA bool `json:"usar_documento_en_score_ia"`
+	UsarRostroEnScoreIA    bool `json:"usar_rostro_en_score_ia"`
 }
 
 // helper func para convertir un Kiosko (DB Model) a DTO Reponse
@@ -155,5 +163,9 @@ func toKioskoConfigResponse(cfg *KioskoConfig, tipo TipoKiosko) KioskoConfigResp
 		TelefonoContacto: cfg.TelefonoContacto,
 
 		MostrarScoreIaKiosko: cfg.MostrarScoreIaKiosko,
+
+		UsarPlacaEnScoreIA:     cfg.UsarPlacaEnScoreIA,
+		UsarDocumentoEnScoreIA: cfg.UsarDocumentoEnScoreIA,
+		UsarRostroEnScoreIA:    cfg.UsarRostroEnScoreIA,
 	}
 }

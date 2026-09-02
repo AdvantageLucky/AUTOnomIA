@@ -33,7 +33,8 @@ func AnalizarYGuardarInformativo(repo *Repository, tenantID uint, v Visita, llmU
 		return
 	}
 
-	historial, err := asyncRepo.HistorialDeVisitante(v, cfg.UmbralFacialPct)
+	fuentes := scoreIaFuentesDe(cfg)
+	historial, err := asyncRepo.HistorialDeVisitante(v, cfg.UmbralFacialPct, fuentes)
 	if err != nil {
 		return
 	}
@@ -44,7 +45,7 @@ func AnalizarYGuardarInformativo(repo *Repository, tenantID uint, v Visita, llmU
 		}
 	}
 
-	sc := AnalizarVisita(historialPrevio, v, evidenciaEsperadaDe(cfg, v))
+	sc := AnalizarVisita(historialPrevio, v, evidenciaEsperadaDe(cfg, v), fuentes)
 	resumen, err := GenerarResumen(ctx, llmURL, sc, v)
 	if err != nil {
 		log.Printf("visita %d: LLM falló, usando resumen heurístico: %v", v.ID, err)

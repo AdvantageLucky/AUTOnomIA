@@ -475,6 +475,15 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	if req.MostrarScoreIaKiosko != nil {
 		cfg.MostrarScoreIaKiosko = *req.MostrarScoreIaKiosko
 	}
+	if req.UsarPlacaEnScoreIA != nil {
+		cfg.UsarPlacaEnScoreIA = *req.UsarPlacaEnScoreIA
+	}
+	if req.UsarDocumentoEnScoreIA != nil {
+		cfg.UsarDocumentoEnScoreIA = *req.UsarDocumentoEnScoreIA
+	}
+	if req.UsarRostroEnScoreIA != nil {
+		cfg.UsarRostroEnScoreIA = *req.UsarRostroEnScoreIA
+	}
 
 	if err := repoCtx.UpdateConfig(cfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
