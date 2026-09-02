@@ -218,6 +218,11 @@ class AppLocalizations {
       'apunta_a_tu_ine': 'Apunta a tu INE',
       'deteccion_automatica_ine': 'Detección automática — mantén la INE dentro del recuadro',
       'acerca_aleja_ine': 'Acerca o aleja la INE hasta que se vea nítida',
+      'apunta_a_tu_placa': 'Apunta a tu placa',
+      'deteccion_automatica_placa': 'Detección automática — mantén la placa dentro del recuadro',
+      'acerca_aleja_placa': 'Acerca o aleja la placa hasta que se vea nítida',
+      'no_se_detecto_placa_reintentando': 'No se detectó la placa, reintentando...',
+      'usar_teclado_button': 'Usar teclado en su lugar',
     },
     'en': {
       'welcome_message': "Hi, I'm Kigo. I'll help you register. Let's start.",
@@ -410,6 +415,11 @@ class AppLocalizations {
       'apunta_a_tu_ine': 'Point at your ID',
       'deteccion_automatica_ine': 'Automatic detection — keep the ID inside the frame',
       'acerca_aleja_ine': 'Move the ID closer or farther until it looks sharp',
+      'apunta_a_tu_placa': 'Point at your plate',
+      'deteccion_automatica_placa': 'Automatic detection — keep the plate inside the frame',
+      'acerca_aleja_placa': 'Move the plate closer or farther until it looks sharp',
+      'no_se_detecto_placa_reintentando': "Couldn't detect the plate, retrying...",
+      'usar_teclado_button': 'Use keyboard instead',
     },
   };
 

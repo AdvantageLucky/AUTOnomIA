@@ -13,6 +13,7 @@ import 'package:kigo_kiosco/features/registro/views/widgets/ine_approach_animati
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_ine_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/scanner_rostro_widget.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/step_indicator.dart';
+import 'package:kigo_kiosco/features/registro_vehicular/views/escaneo_placa_view.dart';
 import 'package:kigo_kiosco/features/registro/models/paso_registro.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/viewmodels/vehicular_register_viewmodel.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/views/confirmar_placa_view.dart';
@@ -119,12 +120,23 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
   }
 
   Future<void> _pasoPlaca() async {
-    // La lectura arrancó en paralelo desde que se creó el viewmodel — para
-    // cuando se llega aquí, normalmente ya está resuelta. Sin lectura, el
-    // teclado manual es el único respaldo (no hay cámara dedicada a la placa
-    // todavía).
-    final placa = await viewModel.leerPlaca();
+    // 1) Lectura en paralelo vía hardware dedicado (PlacaLectorServicio) --
+    // hoy siempre null, mock a propósito hasta que exista una cámara IP real
+    // (ver ADR-0026). 2) Si no hubo lectura, la cámara propia del kiosko con
+    // el OCR local (EscaneoPlacaView) -- revive lo que el ADR quitó, porque
+    // el hardware que esa decisión asumía nunca llegó. 3) Si tampoco, el
+    // teclado manual sigue siendo el respaldo final, sin cambios.
+    var placa = await viewModel.leerPlaca();
     if (!mounted) return;
+
+    if (placa == null) {
+      placa = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(builder: (_) => const EscaneoPlacaView()),
+      );
+      if (!mounted) return;
+    }
+
     if (placa == null) {
       final placaManual = await pedirConfirmacionPlaca(context);
       if (!mounted) return;
@@ -134,6 +146,8 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
         return;
       }
       viewModel.confirmarPlaca(placaManual);
+    } else {
+      viewModel.confirmarPlaca(placa);
     }
     await _avanzar();
   }
