@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/hazard_stripe.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/pending_visits_viewmodel.dart';
 
@@ -89,7 +90,7 @@ class _MyQrViewState extends State<MyQrView> {
               else if (_error != null)
                 _buildErrorState(context)
               else
-                _buildQrCard(context, pin, isDark),
+                _buildQrCard(context, pin, isDark, auth.nombre.isNotEmpty ? auth.nombre : 'Residente', membresia),
 
               const SizedBox(height: 20),
 
@@ -276,26 +277,95 @@ class _MyQrViewState extends State<MyQrView> {
     );
   }
 
-  Widget _buildQrCard(BuildContext context, String pin, bool isDark) {
+  /// Trata el QR como una credencial física, no como un dato en una tarjeta
+  /// genérica: cabecera oscura tipo gafete (con el mismo naranja de
+  /// seguridad del resto del sistema), muesca de agujero de cordón y un
+  /// doblez hazard-stripe en la esquina -- el mismo motivo que corre por el
+  /// kiosko y el dashboard.
+  Widget _buildQrCard(BuildContext context, String pin, bool isDark, String nombre, dynamic membresia) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildBadgeHeader(nombre, membresia),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+                  child: Column(children: [_buildQrContenido(pin, isDark)]),
+                ),
+              ],
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: ClipPath(
+                clipper: _EsquinaTriangleClipper(),
+                child: const SizedBox(width: 34, height: 34, child: HazardStripeBar(height: 34, borderRadius: BorderRadius.zero)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadgeHeader(String nombre, dynamic membresia) {
+    final subtitulo = membresia != null ? '${membresia.centroNombre} · ${membresia.casaDestino}' : 'Credencial de acceso';
     return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 18, 44, 22),
+      decoration: const BoxDecoration(color: AppTheme.backgroundBlack),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'KIGO · ID DE ACCESO',
+            style: TextStyle(
+              fontFamily: 'Unbounded',
+              color: AppTheme.primaryOrange,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            nombre,
+            style: const TextStyle(fontFamily: 'Unbounded', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitulo,
+            style: const TextStyle(color: AppTheme.textGrey, fontSize: 12),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Tarjeta del QR en fondo blanco para lectura óptica impecable
-          Container(
+    );
+  }
+
+  Widget _buildQrContenido(String pin, bool isDark) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Tarjeta del QR en fondo blanco para lectura óptica impecable
+        Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -325,12 +395,11 @@ class _MyQrViewState extends State<MyQrView> {
           ),
 
           // Tarjeta del PIN si está disponible
-          if (pin.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            _buildCuadroPin(context, pin, isDark),
-          ],
+        if (pin.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          _buildCuadroPin(context, pin, isDark),
         ],
-      ),
+      ],
     );
   }
 
@@ -395,4 +464,20 @@ class _MyQrViewState extends State<MyQrView> {
       ),
     );
   }
+}
+
+/// Recorta un triángulo en la esquina superior derecha -- el "doblez" de la
+/// credencial donde se asoma la franja hazard-stripe.
+class _EsquinaTriangleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..moveTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, 0)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
