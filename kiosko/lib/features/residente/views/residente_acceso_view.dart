@@ -425,7 +425,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
             fit: StackFit.expand,
             children: [
               ClipOval(child: _buildContenidoCamara()),
-              MarcoGuiaCamara(ancho: circuloD, alto: circuloD),
+              MarcoGuiaCamara(ancho: circuloD, alto: circuloD, mostrarBarrido: _bucleVerificacionActivo),
             ],
           ),
         ),

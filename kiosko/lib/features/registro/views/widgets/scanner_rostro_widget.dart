@@ -223,6 +223,7 @@ class _EscaneoRostroState extends State<EscaneoRostro> {
               ancho: ovalW,
               alto: ovalH,
               colorBorde: colorGuia,
+              mostrarBarrido: !_rostroDetectado,
             ),
           ),
 

@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/widgets/checkpoint_sweep.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:kigo_kiosco/features/registro/views/widgets/consent_dialog.dart';
 import 'package:kigo_kiosco/features/registro_vehicular/services/placa_detector_servicio.dart';
@@ -214,6 +215,7 @@ class _EscaneoPlacaViewState extends State<EscaneoPlacaView> {
                 border: Border.all(color: Colors.green, width: 3),
                 borderRadius: BorderRadius.circular(12),
               ),
+              child: const CheckpointSweep(borderRadius: BorderRadius.all(Radius.circular(9))),
             ),
           ),
           Positioned(

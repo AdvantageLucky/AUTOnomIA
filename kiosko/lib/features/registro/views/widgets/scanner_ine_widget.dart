@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
 import 'package:kigo_kiosco/core/services/consentimiento_servicio.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
+import 'package:kigo_kiosco/core/widgets/checkpoint_sweep.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:kigo_kiosco/features/registro/services/detector_servicio.dart';
 import 'consent_dialog.dart';
@@ -219,7 +220,9 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
               child: VistaPreviaCamara(_controller!),
             ),
           ),
-          // Tu recuadro verde guía...
+          // Recuadro guía -- el barrido de luz adentro es lo que le dice al
+          // visitante "te estoy leyendo", el mismo lenguaje de un lector de
+          // credencial en una caseta.
           Center(
             child: Container(
               width: MediaQuery.of(context).size.width * 0.85,
@@ -228,6 +231,7 @@ class _EscaneoInePageState extends State<EscaneoInePage> {
                 border: Border.all(color: Colors.green, width: 3),
                 borderRadius: BorderRadius.circular(12),
               ),
+              child: const CheckpointSweep(borderRadius: BorderRadius.all(Radius.circular(9))),
             ),
           ),
           // Aviso de detección automática

@@ -51,9 +51,10 @@ class KigoWordmark extends StatelessWidget {
         Text(
           'Kigo',
           style: TextStyle(
+            fontFamily: 'Unbounded',
             color: colorTexto,
             fontSize: 15 * escala,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             letterSpacing: 0.2 * escala,
           ),
         ),
