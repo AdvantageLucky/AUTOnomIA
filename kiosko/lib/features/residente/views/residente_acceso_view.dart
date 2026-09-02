@@ -16,6 +16,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/face_detector_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
+import 'package:kigo_kiosco/features/residente/services/camera_image_convertidor.dart';
 import 'package:kigo_kiosco/features/residente/services/reconocimiento_facial_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_pin_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/resident_welcome_viewmodel.dart';
@@ -46,20 +47,29 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   final _reconocimientoServicio = ReconocimientoFacialServicio();
 
   /// Chequeo liviano (solo ML Kit, sin TFLite ni red) para el sondeo de cada
-  /// tick -- el mismo que usa el registro de visitante. Antes cada tick del
-  /// sondeo corría el embedding completo (TFLite) Y una ida y vuelta al
-  /// backend, y encima se exigían 2 coincidencias CONFIRMADAS POR EL BACKEND
-  /// seguidas -- eso pagaba el costo caro (cámara + ML Kit accurate + TFLite
-  /// + red, potencialmente 10s de timeout por intento) dos veces por cada
-  /// acceso, de ahí el reporte de "tarda demasiado y ni funciona". Ahora el
-  /// costo caro se paga una sola vez, cuando ya hay un frame estable.
+  /// frame. Antes cada tick del sondeo corría el embedding completo (TFLite)
+  /// Y una ida y vuelta al backend, y encima se exigían 2 coincidencias
+  /// CONFIRMADAS POR EL BACKEND seguidas -- eso pagaba el costo caro (cámara
+  /// + ML Kit accurate + TFLite + red, potencialmente 10s de timeout por
+  /// intento) dos veces por cada acceso. Ahora el costo caro se paga una
+  /// sola vez, cuando ya hay un frame estable.
+  ///
+  /// El sondeo en sí YA NO toma una foto fija por intento
+  /// (`controller.takePicture()`): eso dispara el pipeline completo de
+  /// captura fija del hardware (enfoque, JPEG, escritura a disco) en cada
+  /// ciclo, y en el HAL de este panel (ya documentado como frágil en
+  /// AjustesCamara) eso pausaba brevemente la vista previa -- el "se
+  /// congela la pantalla por momentos" reportado. Ahora se lee el stream de
+  /// la vista previa en vivo (`startImageStream`), mucho más barato; la
+  /// foto fija de verdad solo se toma UNA vez, cuando ya se confirmó un
+  /// frame estable y toca calcular el embedding real.
   final _detectorLigero = FaceDetectorServicio();
   static const _deteccionesRequeridas = 2;
   int _deteccionesConsecutivas = 0;
+  bool _procesandoFrame = false;
+  bool _streamActivo = false;
 
-  Timer? _timerVerificacion;
-  bool _verificandoRostro = false;
-  // Controla el bucle de reintentos -- ver _programarSiguienteIntento.
+  // Controla el bucle de reintentos.
   bool _bucleVerificacionActivo = false;
 
   /// Se enciende apenas se confirma la racha de 2 coincidencias -- da la
@@ -86,7 +96,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
       _bucleVerificacionActivo = false;
-      _timerVerificacion?.cancel();
+      _streamActivo = false;
       _led.apagar();
       _cameraController = null;
       controller.dispose();
@@ -139,6 +149,9 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
       final controller = CamaraKiosko.controlador(
         camara,
         AjustesCamara.resolucionRostro,
+        // NV21 (un solo plano) es lo único que este flujo sabe convertir a
+        // InputImage para el sondeo en vivo -- ver camera_image_convertidor.dart.
+        formatoImagen: ImageFormatGroup.nv21,
       );
 
       await CamaraKiosko.inicializar(controller);
@@ -156,7 +169,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
       _led.encenderIluminacion();
 
       _bucleVerificacionActivo = true;
-      _programarSiguienteIntento(Duration.zero);
+      await _iniciarStream();
     } catch (e) {
       debugPrint('Error al inicializar la cámara: $e');
       if (mounted) {
@@ -171,46 +184,28 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     }
   }
 
-  // Encadena el siguiente intento justo después de que termina el anterior,
-  // en vez de un Timer.periodic de intervalo fijo.
-  //
-  // Root cause del reconocimiento "ultra lento": con Timer.periodic(1500ms),
-  // si un intento (cámara + ML Kit + TFLite + ida y vuelta al backend) tarda
-  // más de 1500ms -- muy probable en el hardware del kiosko -- el siguiente
-  // tick llega ocupado y se descarta (ver el guard al inicio de
-  // _intentarVerificarRostro), así que el intento real empieza hasta el
-  // *próximo* tick de 1500ms. Eso suma hasta 1500ms de espera muerta por
-  // ciclo que no tiene nada que ver con el trabajo real, y como se exigen 2
-  // coincidencias seguidas (mitigación de spoofing, no se toca aquí), esa
-  // espera se paga dos veces. Encadenar el siguiente intento apenas termina
-  // el anterior elimina ese tiempo muerto sin tocar la exigencia de 2
-  // coincidencias.
-  void _programarSiguienteIntento([Duration espera = const Duration(milliseconds: 300)]) {
-    _timerVerificacion = Timer(espera, () async {
-      await _intentarVerificarRostro();
-      if (_bucleVerificacionActivo && mounted) {
-        _programarSiguienteIntento();
-      }
-    });
+  // Arranca (o reanuda) la lectura de la vista previa en vivo -- el sondeo
+  // "gratis" que reemplaza al takePicture() por tick.
+  Future<void> _iniciarStream() async {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized || _streamActivo) return;
+    _streamActivo = true;
+    await controller.startImageStream(_onFrame);
   }
 
-  // Sondeo de cada tick: solo el chequeo liviano (ML Kit, sin TFLite ni red).
-  // El embedding + la verificación contra el backend se pagan una sola vez,
-  // en _confirmarYVerificar, cuando ya hubo 2 frames consecutivos válidos.
-  Future<void> _intentarVerificarRostro() async {
-    if (_verificandoRostro) return;
-    final controller = _cameraController;
-    if (controller == null ||
-        !controller.value.isInitialized ||
-        controller.value.isTakingPicture) {
-      return;
-    }
+  // Sondeo de cada frame de la vista previa: solo el chequeo liviano (ML
+  // Kit, sin TFLite ni red). El embedding + la verificación contra el
+  // backend se pagan una sola vez, en _confirmarConFotoReal, cuando ya hubo
+  // 2 frames consecutivos válidos.
+  Future<void> _onFrame(CameraImage frame) async {
+    if (!_bucleVerificacionActivo || _procesandoFrame) return;
 
-    _verificandoRostro = true;
-    XFile? foto;
+    final inputImage = convertirFrameAInputImage(frame);
+    if (inputImage == null) return;
+
+    _procesandoFrame = true;
     try {
-      foto = await controller.takePicture();
-      final esValido = await _detectorLigero.tieneRostroValido(foto.path);
+      final esValido = await _detectorLigero.tieneRostroValidoEnFrame(inputImage);
 
       if (!esValido) {
         _deteccionesConsecutivas = 0;
@@ -221,27 +216,56 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
       if (_deteccionesConsecutivas < _deteccionesRequeridas) return;
       _deteccionesConsecutivas = 0;
 
-      await _confirmarYVerificar(foto.path);
+      await _confirmarConFotoReal();
     } catch (e) {
       _deteccionesConsecutivas = 0;
     } finally {
-      _verificandoRostro = false;
-      final rutaFoto = foto?.path;
-      if (rutaFoto != null) {
-        unawaited(
-          Future(() async {
-            try {
-              await File(rutaFoto).delete();
-            } catch (_) {}
-          }),
-        );
-      }
+      _procesandoFrame = false;
     }
   }
 
   // Frame estable confirmado (2 detecciones seguidas del chequeo liviano) --
-  // ahora sí vale la pena pagar el costo real: embedding local (TFLite) +
+  // ahora sí vale la pena pagar el costo real: una foto fija de verdad
+  // (para el embedding, que necesita la mejor calidad posible) + TFLite +
   // una sola ida y vuelta al backend para comparar contra los residentes.
+  //
+  // takePicture() no se puede llamar con el stream activo -- hay que
+  // pararlo primero y, si no hubo match, reanudarlo para seguir buscando.
+  Future<void> _confirmarConFotoReal() async {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    try {
+      await controller.stopImageStream();
+    } catch (_) {}
+    _streamActivo = false;
+
+    XFile? foto;
+    try {
+      foto = await controller.takePicture();
+      await _confirmarYVerificar(foto.path);
+    } catch (e) {
+      // Sin match, sin red, rostro no reconocido, etc. -- se reanuda el
+      // sondeo abajo en el finally, en vez de dejar la pantalla congelada.
+    } finally {
+      if (foto != null) {
+        unawaited(
+          Future(() async {
+            try {
+              await File(foto!.path).delete();
+            } catch (_) {}
+          }),
+        );
+      }
+      // Si _confirmarYVerificar tuvo éxito, ya apagó _bucleVerificacionActivo.
+      if (_bucleVerificacionActivo && mounted) {
+        await _iniciarStream();
+      }
+    }
+  }
+
+  // Calcula el embedding de la foto fija ya tomada y lo manda al backend a
+  // comparar contra los residentes -- llamado desde _confirmarConFotoReal.
   Future<void> _confirmarYVerificar(String pathFoto) async {
     final embedding = await _reconocimientoServicio.calcularEmbedding(pathFoto);
     if (embedding == null) return;
@@ -253,7 +277,6 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
 
     if (!mounted) return;
     _bucleVerificacionActivo = false;
-    _timerVerificacion?.cancel();
     _led.apagar();
     setState(() => _coincidenciaConfirmada = true);
 
@@ -279,7 +302,7 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _bucleVerificacionActivo = false;
-    _timerVerificacion?.cancel();
+    _streamActivo = false;
     _led.apagar();
     unawaited(_reconocimientoServicio.dispose());
     _detectorLigero.dispose();

@@ -46,29 +46,46 @@ class FaceDetectorServicio {
 
   /// Retorna true si la imagen contiene un rostro con tamaño suficiente Y
   /// centrado dentro del óvalo guía (no solo "hay una cara en algún lado
-  /// de la foto").
+  /// de la foto"). Para una foto ya guardada en disco (`takePicture()`).
   Future<bool> tieneRostroValido(String pathImagen) async {
-    final inputImage = InputImage.fromFilePath(pathImagen);
-
     try {
-      final List<Face> rostros = await _detector.processImage(inputImage);
-      if (rostros.isEmpty) return false;
-
-      final caja = rostros.first.boundingBox;
-      if (caja.width * caja.height <= areaMinimaRostro) return false;
-
-      // `InputImage.fromFilePath` nunca llena `metadata` (solo lo hace
-      // `fromBytes`) -- se decodifica el archivo aparte para saber el
-      // tamaño real de la foto y poder validar la posición del rostro.
       final bytes = await File(pathImagen).readAsBytes();
       final imagen = imglib.decodeImage(bytes);
       if (imagen == null) return false;
 
-      return estaDentroDelMarco(caja, Size(imagen.width.toDouble(), imagen.height.toDouble()));
+      return await _validarContraImagen(
+        InputImage.fromFilePath(pathImagen),
+        Size(imagen.width.toDouble(), imagen.height.toDouble()),
+      );
     } catch (e) {
       debugPrint("Error en detección de rostro: $e");
       return false;
     }
+  }
+
+  /// Misma validación, pero sobre un frame ya convertido a `InputImage`
+  /// (`CameraController.startImageStream`, ver camera_image_convertidor.dart)
+  /// -- no hay archivo que decodificar aparte, `InputImage.fromBytes` ya
+  /// trae el tamaño real en su `metadata`.
+  Future<bool> tieneRostroValidoEnFrame(InputImage frame) async {
+    final tamano = frame.metadata?.size;
+    if (tamano == null) return false;
+    try {
+      return await _validarContraImagen(frame, tamano);
+    } catch (e) {
+      debugPrint("Error en detección de rostro (stream): $e");
+      return false;
+    }
+  }
+
+  Future<bool> _validarContraImagen(InputImage inputImage, Size tamano) async {
+    final List<Face> rostros = await _detector.processImage(inputImage);
+    if (rostros.isEmpty) return false;
+
+    final caja = rostros.first.boundingBox;
+    if (caja.width * caja.height <= areaMinimaRostro) return false;
+
+    return estaDentroDelMarco(caja, tamano);
   }
 
   /// Cerrar el detector es responsabilidad de quien lo instancia, al desmontar
