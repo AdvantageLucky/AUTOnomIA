@@ -1,8 +1,9 @@
-/// Un factor del análisis de confianza — mismo shape que FactorScore en el
-/// backend (internal/domain/visitas/score.go). El backend ya filtra la
-/// lista a solo lo que es seguro mostrarle a un residente (ver
-/// FiltrarScoreParaResidente): nunca llegan aquí factores que comparen
-/// contra el historial del visitante en otras casas del fraccionamiento.
+/// Un factor del análisis de confianza -- mismo shape que FactorScore en el
+/// backend (internal/domain/visitas/score.go). A diferencia de kigo-app
+/// (donde el backend ya filtra la lista para un residente), aquí llega la
+/// lista completa: este modelo solo lo usa la vista de detalle del
+/// vigilante, protegida por PIN de operador -- nunca la pantalla que ve el
+/// visitante.
 class FactorScoreModel {
   final String clave;
   final String etiqueta;
@@ -29,37 +30,38 @@ class FactorScoreModel {
   }
 }
 
-/// El score de confianza de una visita, ya recortado por el backend a lo
-/// que un residente puede ver de una entrada dirigida a su propia casa.
+/// El score de confianza de una visita, tal cual lo calcula el backend --
+/// sin filtrar (ver comentario de [FactorScoreModel]).
 class ScoreIaModel {
   final int confianzaPct;
   final String nivelConfianza; // 'alta' | 'media' | 'baja'
   final List<FactorScoreModel> factores;
+  final List<String> recomendaciones;
 
   /// false cuando el resumen es el heurístico de respaldo (LLM apagado,
-  /// sin configurar, o falló esta vez) -- el score en sí es igual de
-  /// confiable en ambos casos (es puramente determinista), lo que cambia
-  /// es si hay redacción del LLM detrás del resumen narrativo.
+  /// sin configurar, o falló esta vez) -- el número/nivel de confianza es
+  /// igual de confiable en ambos casos (es puramente determinista), lo que
+  /// cambia es si hay redacción del LLM detrás del texto narrativo.
   final bool generadoPorIA;
 
   ScoreIaModel({
     required this.confianzaPct,
     required this.nivelConfianza,
     required this.factores,
+    required this.recomendaciones,
     required this.generadoPorIA,
   });
 
   factory ScoreIaModel.fromJson(Map<String, dynamic> json) {
     final rawFactores = json['factores'] as List<dynamic>?;
+    final rawRecs = json['recomendaciones'] as List<dynamic>?;
     return ScoreIaModel(
       confianzaPct: json['confianza_pct'] as int? ?? 0,
       nivelConfianza: json['nivel_confianza'] as String? ?? '',
       factores: rawFactores == null
           ? []
-          : rawFactores
-              .cast<Map<String, dynamic>>()
-              .map(FactorScoreModel.fromJson)
-              .toList(),
+          : rawFactores.cast<Map<String, dynamic>>().map(FactorScoreModel.fromJson).toList(),
+      recomendaciones: rawRecs == null ? [] : rawRecs.cast<String>(),
       generadoPorIA: json['generado_por_ia'] as bool? ?? false,
     );
   }

@@ -1740,6 +1740,7 @@
             ${pct === null ? "" : renderScoreAnillo(pct, nivel)}
             <div class="ia-texto">
               ${v.resumen_ia ? `<div class="ia-resumen">${formatMarkdown(esc(v.resumen_ia))}</div>` : ''}
+              ${s.generado_por_ia === false ? `<div style="font-size:12px;color:var(--text-3);margin-top:4px">Análisis automático (asistente de IA no disponible)</div>` : ''}
               ${badges.length ? `<div class="ia-badges">${badges.join('')}</div>` : ''}
             </div>
           </div>

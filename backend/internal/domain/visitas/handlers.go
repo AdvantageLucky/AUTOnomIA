@@ -283,6 +283,10 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		if err != nil {
 			log.Printf("visita %d: LLM falló, usando resumen heurístico: %v", visitaCopy.ID, err)
 		}
+		// err == nil también cubre "no hay LLM configurado" (GenerarResumen no
+		// lo trata como falla) -- ese caso también debe marcarse como NO
+		// generado por IA, así que se checa aparte que sí había URL.
+		generadoPorIA := err == nil && strings.TrimSpace(h.llmURL) != ""
 
 		tieneAnomalias := sc.AnomaliaMatricula || sc.CambioModalidad || sc.HorarioInusual ||
 			sc.RechazadoPrevio || sc.OCRSospechoso
@@ -297,7 +301,9 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 			nuevoEstado = EstadoRevision
 		}
 
-		scoreIA, _ := json.Marshal(sc.AScoreIA())
+		scoreIAValor := sc.AScoreIA()
+		scoreIAValor.GeneradoPorIA = generadoPorIA
+		scoreIA, _ := json.Marshal(scoreIAValor)
 		var estadoParaGuardar *EstadoVisita
 		if nuevoEstado != EstadoPendiente {
 			estadoParaGuardar = &nuevoEstado

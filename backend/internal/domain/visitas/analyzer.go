@@ -46,6 +46,12 @@ type ScoreIA struct {
 	RechazadoPrevio   bool          `json:"rechazado_previo"`
 	OCRSospechoso     bool          `json:"ocr_sospechoso"`
 	Confiable         bool          `json:"confiable"`
+	// GeneradoPorIA distingue el resumen narrativo del LLM del heurístico
+	// determinista de respaldo (resumenHeuristicoDe) -- sin esto, kiosko,
+	// kigo-app y el dashboard no tenían forma de avisar "análisis
+	// automático, el asistente de IA no está disponible" en vez de
+	// presentar el heurístico como si fuera el análisis del LLM.
+	GeneradoPorIA bool `json:"generado_por_ia"`
 }
 
 // clavesSeguraParaResidente son los factores que describen solo ESTA
@@ -94,6 +100,7 @@ func FiltrarScoreParaResidente(s *ScoreIA) *ScoreIA {
 		ConfianzaPct:   s.ConfianzaPct,
 		NivelConfianza: s.NivelConfianza,
 		Factores:       factoresSeguros,
+		GeneradoPorIA:  s.GeneradoPorIA,
 	}
 }
 
