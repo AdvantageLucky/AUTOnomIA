@@ -56,7 +56,9 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
   @override
   void initState() {
     super.initState();
-    _pedirPermisoEIniciar();
+    // Mismo motivo que en step_escanear_ine: pedir el permiso durante la
+    // transición de entrada a este paso puede dejar el request colgado.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _pedirPermisoEIniciar());
   }
 
   Future<void> _pedirPermisoEIniciar() async {
@@ -64,11 +66,20 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
     if (!mounted) return;
     setState(() => _permiso = resultado);
     if (resultado == ResultadoPermisoCamara.concedido) {
+      // Ver comentario equivalente en step_escanear_ine: abrir la cámara en
+      // el mismo tick en que se resuelve el diálogo de permiso se quedaba
+      // colgado en algunos Android.
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
       _initCamera();
     }
   }
 
   Future<void> _initCamera() async {
+    if (mounted) setState(() => _error = null);
+    final anterior = _controller;
+    _controller = null;
+    await anterior?.dispose();
     try {
       final camaras = await availableCameras();
       if (camaras.isEmpty) {
@@ -80,7 +91,10 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
         orElse: () => camaras.first,
       );
       _controller = CameraController(frontal, ResolutionPreset.high, enableAudio: false);
-      await _controller!.initialize();
+      await _controller!.initialize().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw CameraException('timeout', 'La cámara no respondió'),
+      );
       await _controller!.setFlashMode(FlashMode.off);
       if (mounted) setState(() {});
       _iniciarAutoDeteccion();
@@ -294,7 +308,14 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
         child: _error != null
             ? Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(_error!, textAlign: TextAlign.center),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: _initCamera, child: const Text('Reintentar')),
+                  ],
+                ),
               )
             : const CircularProgressIndicator(),
       );

@@ -35,10 +35,20 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
   bool _sondeando = false;
   bool _cerrando = false;
 
+  /// true entre la primera detección válida y la reconfirmación -- feedback
+  /// visual (verde) de "ya casi, no muevas la INE" mientras se vuelve a
+  /// tomar la foto para descartar que fue un frame suelto (documento
+  /// retirándose o momentáneamente borroso).
+  bool _confirmando = false;
+
   @override
   void initState() {
     super.initState();
-    _pedirPermisoEIniciar();
+    // Pedir el permiso durante la animación de transición desde el paso
+    // anterior (OTP) hace que el diálogo del sistema se pierda o el
+    // request se quede colgado en algunos Android -- se espera al primer
+    // frame ya asentado, mismo criterio que el consentimiento del kiosko.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _pedirPermisoEIniciar());
   }
 
   Future<void> _pedirPermisoEIniciar() async {
@@ -46,11 +56,25 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
     if (!mounted) return;
     setState(() => _permiso = resultado);
     if (resultado == ResultadoPermisoCamara.concedido) {
+      // El diálogo del sistema pausa la Activity un instante -- abrir la
+      // cámara en el mismo tick en que se resuelve el permiso se quedaba
+      // colgado en algunos Android (CameraController.initialize() nunca
+      // completaba ni tronaba, spinner infinito). Un respiro corto evita la
+      // carrera; el timeout de abajo es la red de seguridad si aun así pasa.
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
       _initCamera();
     }
   }
 
   Future<void> _initCamera() async {
+    if (mounted) setState(() => _error = null);
+    // Un reintento (tras timeout o error) puede dejar un controller a medio
+    // inicializar aferrado al hardware -- liberarlo antes de abrir uno
+    // nuevo, o el segundo intento se queda esperando igual.
+    final anterior = _controller;
+    _controller = null;
+    await anterior?.dispose();
     try {
       final camaras = await availableCameras();
       if (camaras.isEmpty) {
@@ -58,7 +82,10 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
         return;
       }
       _controller = CameraController(camaras.first, ResolutionPreset.high, enableAudio: false);
-      await _controller!.initialize();
+      await _controller!.initialize().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw CameraException('timeout', 'La cámara no respondió'),
+      );
       // El flash automático contra el plástico laminado de la INE genera
       // un reflejo que arruina el OCR — se apaga explícitamente.
       await _controller!.setFlashMode(FlashMode.off);
@@ -87,7 +114,7 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
   }
 
   Future<void> _sondeoAutomatico() async {
-    if (_sondeando || _cerrando) return;
+    if (_sondeando || _cerrando || _confirmando) return;
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized || controller.value.isTakingPicture) {
       return;
@@ -103,13 +130,10 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
         try { File(foto.path).deleteSync(); } catch (_) {}
         return;
       }
+      try { File(foto.path).deleteSync(); } catch (_) {}
 
       if (resultado.curp != null) {
-        _cerrando = true;
-        _autoTimer?.cancel();
-        widget.onEscaneado(resultado);
-      } else {
-        try { File(foto.path).deleteSync(); } catch (_) {}
+        await _confirmarYReintentar();
       }
     } catch (e) {
       // Falla transitoria (cámara ocupada, OCR sin texto): el siguiente tick reintenta.
@@ -118,8 +142,55 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
     }
   }
 
+  /// Primera detección válida -> pausa visible (verde) -> se vuelve a tomar
+  /// la foto y a correr el OCR antes de avanzar. Sin esto, un solo frame
+  /// afortunado (documento a medio acomodar, o a medio retirarse) bastaba
+  /// para avanzar con datos que un instante después ya no eran legibles.
+  Future<void> _confirmarYReintentar() async {
+    _autoTimer?.cancel();
+    if (!mounted) return;
+    setState(() => _confirmando = true);
+
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (!mounted || _cerrando) return;
+
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      setState(() => _confirmando = false);
+      _iniciarAutoCaptura();
+      return;
+    }
+
+    try {
+      final foto = await controller.takePicture();
+      final resultado = await _detector.analizarIne(foto.path);
+
+      if (!mounted || _cerrando) {
+        try { File(foto.path).deleteSync(); } catch (_) {}
+        return;
+      }
+
+      if (resultado.curp != null) {
+        _cerrando = true;
+        widget.onEscaneado(resultado);
+      } else {
+        // Se movió o se puso borrosa entre la primera detección y ahora --
+        // se descarta y se reanuda el sondeo en vez de avanzar con datos
+        // que ya no son confiables.
+        try { File(foto.path).deleteSync(); } catch (_) {}
+        setState(() => _confirmando = false);
+        _iniciarAutoCaptura();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _confirmando = false);
+        _iniciarAutoCaptura();
+      }
+    }
+  }
+
   Future<void> _capturar() async {
-    if (_controller == null || !_controller!.value.isInitialized || _procesando || _cerrando) return;
+    if (_controller == null || !_controller!.value.isInitialized || _procesando || _cerrando || _confirmando) return;
     _autoTimer?.cancel();
     setState(() {
       _procesando = true;
@@ -161,24 +232,36 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
         child: _error != null
             ? Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(_error!, textAlign: TextAlign.center),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: _initCamera, child: const Text('Reintentar')),
+                  ],
+                ),
               )
             : const CircularProgressIndicator(),
       );
     }
 
+    final colorGuia = _confirmando ? AppTheme.success : AppTheme.primaryOrange;
+
     return Stack(
       children: [
         Positioned.fill(child: CameraPreview(_controller!)),
         Center(
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
             width: MediaQuery.of(context).size.width * 0.85,
             height: MediaQuery.of(context).size.width * 0.85 * 0.63,
             decoration: BoxDecoration(
-              border: Border.all(color: AppTheme.primaryOrange, width: 3),
+              border: Border.all(color: colorGuia, width: 3),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const CheckpointSweep(borderRadius: BorderRadius.all(Radius.circular(9))),
+            child: _confirmando
+                ? null
+                : const CheckpointSweep(borderRadius: BorderRadius.all(Radius.circular(9))),
           ),
         ),
         Positioned(
@@ -186,28 +269,43 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
           left: 16,
           right: 16,
           child: Center(
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.65),
+                color: _confirmando
+                    ? AppTheme.success.withValues(alpha: 0.92)
+                    : Colors.black.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(color: AppTheme.primaryOrange, strokeWidth: 2),
-                  ),
-                  const SizedBox(width: 10),
-                  const Flexible(
-                    child: Text(
-                      'Encuadra tu INE dentro del recuadro, detectando…',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                  if (_confirmando) ...[
+                    const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'INE detectada, confirmando…',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
                     ),
-                  ),
+                  ] else ...[
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(color: AppTheme.primaryOrange, strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 10),
+                    const Flexible(
+                      child: Text(
+                        'Encuadra tu INE dentro del recuadro, detectando…',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
