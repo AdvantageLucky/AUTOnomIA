@@ -94,13 +94,15 @@ class _MascotaPainter extends CustomPainter {
     canvas.save();
     canvas.translate(0, bounce);
 
-    // Cabeza: blob redondeado, más ancho que alto -- no una esfera ni un
-    // óvalo perfecto, calcado de la proporción del mockup.
+    // Cabeza: rectángulo vertical de esquinas redondeadas, no un blob ni una
+    // esfera -- a propósito recuerda a una pantalla en modo retrato (como el
+    // panel 800x1280 del propio F10), para que se lea "este es el kiosko
+    // mismo con carita", no un personaje aparte.
     final cabezaPaint = Paint()..color = KigoDesign.brand;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: p(30, 28), width: 34 * s, height: 28 * s),
-        Radius.circular(15 * s),
+        Rect.fromCenter(center: p(30, 27), width: 27 * s, height: 32 * s),
+        Radius.circular(8 * s),
       ),
       cabezaPaint,
     );
