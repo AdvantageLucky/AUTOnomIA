@@ -63,10 +63,11 @@ class _BotonAsistenteState extends State<BotonAsistente> with TickerProviderStat
   /// toque -- el long-press no cambiaba nada visible hasta empezar a oir.
   bool _presionado = false;
 
-  /// Punto de la antena de la mascota "respira" mientras escucha.
+  /// La cabeza de la mascota "respira" (rebota, parpadea la boca) mientras
+  /// escucha o habla.
   late final AnimationController _pulseCtrl;
 
-  /// Arco de la mascota gira alrededor del orbe mientras procesa.
+  /// Los puntitos de "procesando" bajo la cabeza avanzan en cascada.
   late final AnimationController _rotCtrl;
 
   @override
