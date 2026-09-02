@@ -10,17 +10,31 @@ responder si nos aprietan con el "¿y por qué no X?".
 
 **¿Qué es el sistema?**
 Un backend Go (Gin + GORM + PostgreSQL) como única fuente de verdad, un dashboard web que el
-propio backend sirve en `/admin`, y dos apps Flutter (kiosko y residente) que hablan con la API
-por HTTP REST. La IA de scoring corre en el servidor (llama.cpp); el ML de visión (OCR de INE,
-detección de rostro) corre **en el dispositivo** del kiosko con MLKit, sin APIs externas.
+propio backend sirve en `/admin`, y dos apps Flutter: el kiosko (Android, self-checkin) y
+kigo-app (Android/iOS, para residentes). La IA de scoring corre en el servidor (llama.cpp); el
+ML de visión (OCR de INE, detección y reconocimiento de rostro) corre **en el dispositivo** del
+kiosko con MLKit y un modelo TFLite propio, sin APIs externas.
 
-```
-PostgreSQL ◄── backend Go ──► llama.cpp (scoring, async)
-                  │ sirve /admin
-                  ▼
-     dashboard web (vanilla JS) ── JWT admin + SSE
-     app kiosko  ── token de sesión opaco + SSE config
-     app residente ── JWT residente (solo pull)
+```mermaid
+flowchart LR
+    subgraph Dispositivos
+        K[Kiosko Android<br/>OCR + rostro on-device]
+        A[kigo-app<br/>residentes]
+    end
+    subgraph Servidor
+        B[Backend Go<br/>Gin + GORM]
+        L[llama.cpp<br/>scoring async]
+        D[Dashboard admin<br/>vanilla JS, servido en /admin]
+    end
+    PG[(PostgreSQL)]
+
+    K -- HTTP REST, token de sesión --> B
+    A -- HTTP REST, JWT --> B
+    B -- SSE --> D
+    B -- push FCM --> A
+    B --> PG
+    B -. análisis async .-> L
+    L -. resumen + score .-> B
 ```
 
 **¿Por qué el dashboard es vanilla y no React?**
@@ -30,8 +44,28 @@ el inspector del navegador sin toolchain. Para el alcance de un panel de adminis
 suficiente; si creciera a decenas de vistas, reconsideraríamos.
 
 **¿Por qué Flutter?**
-Un solo código para las dos apps (kiosko Android y residente Android/iOS), buen soporte de cámara
-y MLKit, y el equipo ya lo conocía.
+Un solo código por app, buen soporte de cámara y MLKit, y el equipo ya lo conocía. El kiosko y
+kigo-app son proyectos Flutter separados (no comparten código) porque su UI, su modelo de auth y
+su ciclo de vida son distintos: uno es un dispositivo fijo desatendido, el otro un teléfono
+personal.
+
+---
+
+## Nuestro segmento: comunidad cerrada / horizontal
+
+FEPRO asigna un segmento de acceso real de Kigo por equipo. El nuestro es **fraccionamiento con
+caseta, acceso vehicular** — el anfitrión es la casa destino, filtra un vigilante, y el dato
+distintivo es la placa. Esto no es un detalle de negocio suelto: explica varias decisiones
+técnicas que de otro modo parecerían sobre-ingeniería.
+
+- **`DestinoID` en vez de solo texto libre**: casa destino empezó como un string (`"Casa 12"`) y
+  hoy resuelve a un `Destino` real con calle/tipo/número — necesario para agrupar por calle,
+  contar residentes por casa y filtrar visitas por destino en el dashboard.
+- **`Placa` como identificador de visita sin documento** (ADR 0024): en acceso vehicular no
+  siempre hay una INE que fotografiar — la matrícula es lo único garantizado.
+- **La vista de análisis de IA en el kiosko, detrás de PIN de operador**: el PRD del reto nombra
+  explícitamente "una vista de consulta para el vigilante" como el foco de excelencia de este
+  segmento. Ver sección "La IA" más abajo.
 
 ---
 
@@ -53,6 +87,12 @@ SQL (ADR 0021).
 Cada admin *dueño* crea su propio `CentroHabitacional` al registrarse. Los vigilantes que ese
 admin da de alta heredan su tenant (no crean uno).
 
+**¿Una persona puede pertenecer a más de un centro?**
+Sí. Una `Persona` (identidad de kigo-app) puede tener varias `Membresia` activas, una por cada
+`CentroHabitacional` al que se unió — vive en un edificio y visita seguido la casa de un familiar
+en otro fraccionamiento, por ejemplo. kigo-app deja elegir el centro activo desde un selector; el
+backend nunca mezcla datos de dos tenants en la misma respuesta.
+
 **¿Y si un programador olvida el filtro en una consulta nueva?**
 Respuesta honesta: hoy esa consulta vería datos de todos los tenants. El aislamiento vive en el
 código, no en la base de datos. La mitigación conocida es **Row-Level Security de PostgreSQL**:
@@ -67,7 +107,7 @@ discriminadora es el estándar SaaS (Slack, Shopify empezaron así) y escala has
 
 ---
 
-## Autenticación (hay tres, y es a propósito)
+## Identidad y autenticación (hay cuatro, y es a propósito)
 
 Principio: **menor privilegio por tipo de interfaz** (ADR 0004).
 
@@ -75,7 +115,18 @@ Principio: **menor privilegio por tipo de interfaz** (ADR 0004).
 |---|---|---|
 | Admin / vigilante | JWT (HS256, 24 h), login con correo/contraseña o Google | Humano con sesión corta; stateless, no toca BD por request |
 | Kiosko | **Token de sesión opaco persistido en BD** | Dispositivo desatendido que debe poder **revocarse al instante** desde el dashboard (JWT no se puede revocar sin lista negra) |
-| Residente | JWT (7 días), login con código de instalación + casa + PIN | Usuario final no técnico; el PIN (bcrypt) minimiza fricción |
+| Persona (kigo-app) | JWT, login con teléfono + código OTP (por SMS o correo) | Usuario final: el teléfono es el ancla de identidad, no una contraseña que se le olvida |
+| Residente en el kiosko | PIN (bcrypt) o reconocimiento facial 1:N, sin JWT | Auto-checkin frente al kiosko — no hay teclado cómodo para escribir un correo, y el PIN es memorizable |
+
+**¿Qué pasó con el modelo `Residente`?**
+Se eliminó por completo — modelo, tabla, handlers y JWT propio. La identidad de un residente hoy
+es `Persona` (teléfono + OTP, la misma que usa kigo-app) y su relación con un centro es una
+`Membresia`. El login por PIN o rostro **desde el kiosko** no cambió de contrato (mismas rutas),
+pero por dentro ya consulta `Persona` + `Membresia`.
+
+**¿Dos residentes de la misma casa pueden compartir PIN?**
+Si coinciden, el kiosko no adivina: muestra un selector con los candidatos (nombre + casa) para
+que la persona elija la suya. Antes resolvía al primer match, que era el bug real.
 
 **¿JWT vs token opaco — por qué los dos?**
 JWT: el servidor no guarda nada, verifica la firma; ideal para humanos con sesiones cortas.
@@ -106,27 +157,84 @@ código corto se teclea donde hay teclado real. El código expira en 15 min, usa
 
 ---
 
-## Comunicación en tiempo real
+## Tiempo real y notificaciones
 
-Solo hay **tres** mecanismos vivos; todo lo demás es request/response:
+```mermaid
+sequenceDiagram
+    participant V as Visitante
+    participant K as Kiosko
+    participant B as Backend
+    participant R as Residente (kigo-app)
+    participant Ad as Admin (dashboard)
+
+    V->>K: Registro sin invitación
+    K->>B: POST /visitas/
+    B-->>K: 201 PENDIENTE (polling cada 3s desde aquí)
+    par
+        B->>R: Push FCM "quiere entrar a tu casa"
+    and
+        B->>Ad: SSE, aparece en Solicitudes
+    end
+    alt Nadie recibió el push (sin residente enlazado)
+        B->>Ad: Correo "visita sin residente al que avisar"
+    end
+    R->>B: Aprueba / rechaza desde kigo-app
+    B-->>K: Siguiente poll trae el veredicto
+    Note over B,K: Si nadie responde en TiempoEsperaSeg,<br/>SISTEMA la manda a revisión
+```
+
+Los mecanismos vivos:
 
 1. **SSE dashboard** (`/kioskos/solicitudes/stream`): las solicitudes nuevas aparecen sin refrescar.
 2. **SSE config del kiosko** (`/kioskos/:id/config/stream`): cambiar tema/idioma/fotos desde el
    dashboard se aplica en caliente en el dispositivo.
 3. **Polling del kiosko tras registrar visita** (cada 3 s): espera el veredicto
    (APROBADO/RECHAZADO/REVISION) para mostrarlo al visitante.
+4. **Push FCM a kigo-app**: al residente cuando llega una visita que necesita su autorización, y
+   también cuando un invitado con QR/rostro entra auto-aprobado ("ya entró tu visita").
+5. **Correo al admin como respaldo**: si nadie recibe el push (destino sin residente enlazado, o
+   ninguno con la app instalada), un correo avisa a los admins del tenant — sin esto, la solicitud
+   quedaba esperando en silencio si nadie miraba el dashboard.
 
 **¿Por qué SSE y no WebSockets?**
-El flujo es unidireccional (servidor → cliente). SSE es HTTP plano: pasa por cualquier proxy,
-reconecta solo, y no necesita protocolo propio. WebSockets se justificaría con tráfico
-bidireccional, que hoy no tenemos (el ADR 0014 lo dejó previsto si hiciera falta).
+El flujo dashboard↔servidor es unidireccional (servidor → cliente). SSE es HTTP plano: pasa por
+cualquier proxy, reconecta solo, y no necesita protocolo propio. WebSockets se justificaría con
+tráfico bidireccional, que ahí no tenemos (ADR 0014).
 
-**¿La app residente recibe notificaciones push?**
-**No todavía.** Hoy el residente solo consulta al abrir la app (pull). El flujo "el residente
-aprueba la visita desde su teléfono" está diseñado pero no implementado: requiere FCM (Firebase
-Cloud Messaging), guardar el token del dispositivo por residente, un vínculo visita→residente que
-hoy no existe (la casa es un string, no una FK), y un estado nuevo de visita ("esperando
-residente"). Es la siguiente fase del roadmap y lo decimos tal cual si preguntan.
+**¿Por qué FCM y no otra cosa para el push?**
+Estándar de facto para Android/iOS, gratis, y Flutter lo soporta de fábrica. Si no hay credenciales
+de Firebase configuradas, el sistema cae solo a un notificador que solo loguea (`LogPushSender`) —
+nunca truena por falta de configuración (ADR 0029).
+
+---
+
+## Modo offline del kiosko
+
+Si se cae la red a mitad de un fraccionamiento, el kiosko no debe dejar de registrar accesos.
+
+```mermaid
+flowchart TD
+    R[Visitante se registra] --> C{Hay internet?}
+    C -- sí --> P[POST directo al backend]
+    C -- no --> Q[Se encola en SQLite local<br/>con client_id único]
+    Q -.-> W[SyncWorker detecta reconexión]
+    W --> D[Drena la cola en orden]
+    D --> X{Respuesta del backend}
+    X -- éxito --> N[Marca sincronizada]
+    X -- conflicto de negocio<br/>ej. invitación ya usada --> N
+    X -- falla de red --> S[Detiene el drenado,<br/>reintenta el mismo client_id luego]
+```
+
+- **`LocalCacheDb`** (SQLite en el dispositivo) guarda un snapshot de destinos, residentes con
+  huella facial e invitaciones activas — para que el kiosko pueda operar sin red, no solo encolar.
+- Cada registro offline lleva un **`client_id`** generado en el dispositivo: si el mismo registro
+  se reintenta dos veces (ej. el kiosko se reinicia a medio drenado), el backend lo reconoce y no
+  duplica la visita.
+- **Conflicto de negocio vs. falla de red son cosas distintas**: una invitación ya consumida por
+  otro kiosko offline al mismo tiempo es un rechazo legítimo (se descarta el registro encolado);
+  un timeout de red detiene el drenado entero para no perder ni duplicar nada.
+- El LED del kiosko cambia a **ámbar** mientras no hay internet — señal ambiental para el
+  vigilante, no para el visitante.
 
 ---
 
@@ -135,13 +243,36 @@ residente"). Es la siguiente fase del roadmap y lo decimos tal cual si preguntan
 **¿Qué hace exactamente?**
 Dos cosas separadas que no hay que confundir:
 
-1. **Visión on-device (kiosko):** OCR de la INE y detección de rostro con Google MLKit, corriendo
-   en el dispositivo. Nada sale a APIs externas — privacidad y funcionamiento sin latencia de red.
-   El OCR corrige confusiones típicas (O↔0, I↔1) apoyándose en la estructura fija de la CURP.
-2. **Scoring en servidor:** al registrar una visita, una goroutine (timeout 2 s) evalúa el
-   historial de ese CURP (recurrencia, anomalías de placa, horario inusual, rechazos previos) y un
-   LLM local vía llama.cpp genera el resumen. Resultado: auto-aprobar, mandar a revisión, o dejar
-   pendiente para el vigilante.
+1. **Visión on-device (kiosko):** OCR de la INE y detección/reconocimiento de rostro con Google
+   MLKit + un modelo TFLite propio (MobileFaceNet), corriendo en el dispositivo. Nada sale a APIs
+   externas — privacidad y funcionamiento sin latencia de red. El OCR corrige confusiones típicas
+   (O↔0, I↔1) apoyándose en la estructura fija de la CURP.
+2. **Scoring en servidor:** al registrar una visita, una goroutine evalúa el historial de ese
+   visitante (recurrencia, anomalías de placa, horario inusual, rechazos previos, calidad de la
+   evidencia) y arma un score de confianza 0-100, **explicable**: cada factor que suma o resta
+   queda guardado, no es una caja negra. Un LLM local (llama.cpp) redacta el resumen narrativo a
+   partir de esos mismos factores — nunca decide él solo, solo lo explica en español.
+
+**¿Dónde se ve el análisis?**
+Se divide en dos audiencias, porque los factores negativos del score (placa distinta a la
+habitual, rechazo previo, CURP con formato inválido) son señales de fraude — mostrárselas a la
+persona que está siendo evaluada sería filtrarle exactamente lo que sospechamos de ella.
+
+- **El visitante** (en el kiosko, mientras espera) ve solo un sello: *"Verificado por IA ·
+  Confianza alta/media/baja"*. Nada de factores.
+- **El vigilante** puede tocar ese sello, meter su PIN de operador, y ver el detalle completo:
+  factores, recomendaciones, resumen. Es la vista de consulta que el PRD del reto pide para este
+  segmento.
+- El **dashboard admin** y **kigo-app** (para el residente de esa casa) ya mostraban esto antes;
+  kigo-app recibe una versión filtrada — nunca los factores que comparan contra el historial del
+  visitante en *otras* casas del fraccionamiento, para no filtrarle a un residente que alguien fue
+  rechazado en la casa del vecino.
+
+**¿Qué pasa si el LLM está apagado o no responde?**
+El score (el número, los factores) es **puramente determinista** — no depende del LLM en
+absoluto. Solo el resumen narrativo cae a un texto heurístico armado con plantillas. Las tres
+apps muestran una nota discreta ("análisis automático, asistente no disponible") en vez de
+presentar el heurístico como si fuera redacción del LLM.
 
 **¿Por qué llama.cpp local y no OpenAI/Claude?**
 Datos personales (INE, CURP, rostros) no salen de nuestra infraestructura; costo cero por
@@ -149,9 +280,30 @@ inferencia; funciona sin internet. El trade-off es capacidad del modelo, aceptab
 solo redacta resúmenes — el scoring es lógica determinista.
 
 **¿El autopass es seguro?**
-Solo aprueba si: historial confiable (umbral configurable por kiosko) **y** cero anomalías **y**
-el admin tiene autopass habilitado. Cualquier anomalía → revisión humana. Y todo queda en
-bitácora auditable con foto.
+Solo aprueba si: score de confianza sobre el umbral configurado **y** cero anomalías bloqueantes
+(rechazo previo, placa distinta, CURP sospechosa) **y** el admin tiene autopass habilitado.
+Cualquier bloqueante manda a revisión humana sin importar qué tan alto sea el score. Todo queda
+en bitácora auditable con foto y con quién autorizó.
+
+---
+
+## Hardware del kiosko (Telpo F10)
+
+El dispositivo objetivo trae lector QR y LED RGBW integrados, controlados vía el SDK propio del
+fabricante (`PosUtil`, expuesto a Flutter por un `MethodChannel` nativo en Kotlin).
+
+- **Lector QR**: funciona como teclado HID — el hardware ya entrega el texto leído, no hace falta
+  cámara ni librería de decodificación en la app.
+- **LED RGBW**: cuatro canales independientes y aditivos (rojo/verde/azul/blanco, no un selector
+  de color exclusivo). Verde para aprobado, rojo para rechazado, blanco de apoyo durante captura,
+  y **ámbar sin conexión** — logrado prendiendo rojo+verde a la vez, porque el hardware no tiene
+  un canal ámbar dedicado.
+- **Modo kiosko real** (`startLockTask`/`stopLockTask` de Android): el dispositivo no sale de la
+  app sin el PIN de operador, y el bloqueo se re-arma solo si el sistema lo soltó (ej. al volver
+  de segundo plano).
+- **Fuera de alcance del reto** (explícito en el PRD): fabricación de kiosko físico, torniquete,
+  pluma o barrera — el control de acceso físico (chapa/torniquete) lo abre hoy un humano, no el
+  sistema.
 
 ---
 
@@ -162,7 +314,7 @@ Relacional (el dominio es relacional: tenants→kioskos→visitas), soporte de R
 aislamiento, y es el estándar que Kigo puede operar.
 
 **¿Migraciones?**
-Versionadas con archivos SQL numerados (`000001`–`000030`), up/down, aplicadas con golang-migrate.
+Versionadas con archivos SQL numerados (`000001`–`000066`), up/down, aplicadas con golang-migrate.
 Nada de auto-migrate de GORM en producción: queremos control exacto del esquema.
 
 **¿Borrado de datos?**
@@ -177,13 +329,16 @@ Decir esto con franqueza da más credibilidad que esconderlo:
 - **Sin RLS**: el aislamiento multi-tenant depende del código; una consulta sin scope fugaría
   datos. Roadmap claro para añadirlo.
 - **Sin rate limiting** en el endpoint público de activación de kioskos.
-- **Sin push al residente**: su rol de aprobar visitas está diseñado, no construido.
 - **Sin CI**: los checks (build, tests, analyze) corren a mano, no en cada push.
-- **PIN por casa sin unicidad forzada**: dos residentes de la misma casa con el mismo PIN
-  colisionarían (el login resuelve al primero).
 - **URLs del backend hardcodeadas** en las apps para el entorno de demo.
-- **Sin modo offline en el kiosko**: si se cae la red, el kiosko no registra (roadmap: cola local
-  SQLite con sincronización).
+- **Cola offline solo para el flujo de registro de visitas**: otros flujos del kiosko (login de
+  residente por PIN/rostro, invitación, QR de kigo-app) sí encolan, pero el snapshot local
+  (`LocalCacheDb`) tiene que estar fresco de antes — si el kiosko nunca tuvo red, no tiene con qué
+  operar offline.
+- **Dependencia externa inestable si se integra Kigo Verify**: en pruebas manuales, 2 de 5
+  enrolamientos de prueba se quedaron atorados indefinidamente en un estado no terminal. Por eso
+  la mini-app del reto usa solo `kigo.auth.init()` (confirmado estable) y no el flujo de
+  enrolamiento facial completo en la demo en vivo.
 
 ---
 
@@ -195,8 +350,11 @@ Decir esto con franqueza da más credibilidad que esconderlo:
 - **Token opaco**: cadena aleatoria que solo significa algo consultando la BD; revocable.
 - **SSE**: Server-Sent Events — el servidor empuja eventos por una conexión HTTP abierta.
 - **RFC 8628**: Device Authorization Grant — activación de dispositivos sin teclado con código corto.
+- **OTP**: One-Time Password — código de un solo uso, aquí para verificar el teléfono de una Persona.
 - **bcrypt**: hash adaptativo para contraseñas/PINs, con salt y costo configurable.
-- **FCM**: Firebase Cloud Messaging — push a móviles (pendiente de integrar).
+- **FCM**: Firebase Cloud Messaging — push real a móviles, con respaldo a un notificador falso si no está configurado.
 - **MLKit**: ML de Google on-device (OCR, rostros); no manda datos a la nube.
+- **TFLite**: TensorFlow Lite — formato de modelo que corre on-device (aquí, MobileFaceNet).
+- **HID**: Human Interface Device — el lector QR se comporta como teclado, no como cámara.
 - **Soft-delete**: marcar como borrado (`deleted_at`) sin destruir la fila.
 - **GORM scope**: función reutilizable que añade condiciones a una consulta (así inyectamos el tenant).
