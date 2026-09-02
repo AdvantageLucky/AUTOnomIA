@@ -1867,6 +1867,7 @@
             }</div></div>
             <div><div class="campo-label">${t("casa_destino")}</div><div class="campo-value">${v.casa_destino ? `<span class="campo-link" data-ver-destino="${esc(v.casa_destino)}">${esc(v.casa_destino)}</span>` : "—"}</div></div>
             <div><div class="campo-label">${t("placa")}</div><div class="campo-value">${v.placa ? `<span class="campo-link" data-filtro-visitas="${esc(v.placa)}">${esc(v.placa)}</span>` : t("no_placa")}</div></div>
+            <div><div class="campo-label">Motivo</div><div class="campo-value">${v.motivo ? esc(v.motivo) : "—"}</div></div>
             <div><div class="campo-label">${t("autorizado_por")}</div><div class="campo-value">${autorizadorLabel(v)}</div></div>
             ${v.telefono ? `<div><div class="campo-label">Teléfono</div><div class="campo-value" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span class="campo-mono">${esc(v.telefono)}</span>

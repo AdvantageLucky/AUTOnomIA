@@ -31,6 +31,7 @@ type VisitaRequest struct {
 	TipoVisitante TipoVisitante `form:"tipo_visitante" binding:"required,oneof=VISITANTE INVITADO"`
 	TipoDocumento TipoDocumento `form:"tipo_documento" binding:"omitempty,oneof=INE PASAPORTE LICENCIA QR PLACA"`
 	Curp          string        `form:"curp"`
+	Motivo        string        `form:"motivo"`
 	CasaDestino   string        `form:"casa_destino"   binding:"required"`
 	Placa         string        `form:"placa"`
 	ClientID      string        `form:"client_id"` // idempotencia: reenvios del kiosko tras sync offline
@@ -60,6 +61,7 @@ type VisitaResponse struct {
 	FotoRostroURL       string               `json:"foto_rostro_url"`
 	FotoPlacaURL        string               `json:"foto_placa_url,omitempty"`
 	CasaDestino         string               `json:"casa_destino"`
+	Motivo              string               `json:"motivo,omitempty"`
 	Placa               string               `json:"placa"`
 	Estado              EstadoVisita         `json:"estado"`
 	Intervenida         bool                 `json:"intervenida"`
@@ -92,6 +94,7 @@ type VisitaListItemResponse struct {
 	TipoDocumento       TipoDocumento        `json:"tipo_documento"`
 	TipoVisitante       TipoVisitante        `json:"tipo_visitante"`
 	CasaDestino         string               `json:"casa_destino"`
+	Motivo              string               `json:"motivo,omitempty"`
 	Estado              EstadoVisita         `json:"estado"`
 	Intervenida         bool                 `json:"intervenida"`
 	KioskoID            uint                 `json:"kiosko_id"`
@@ -140,6 +143,7 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		FotoRostroURL:       v.FotoRostroURL,
 		FotoPlacaURL:        v.FotoPlacaURL,
 		CasaDestino:         v.CasaDestino,
+		Motivo:              v.Motivo,
 		Placa:               v.Placa,
 		Estado:              v.Estado,
 		Intervenida:         v.Intervenida,
@@ -163,6 +167,7 @@ func toVisitaListItemResponse(v Visita) VisitaListItemResponse {
 		TipoVisitante:       v.TipoVisitante,
 		TipoDocumento:       v.TipoDocumento,
 		CasaDestino:         v.CasaDestino,
+		Motivo:              v.Motivo,
 		Estado:              v.Estado,
 		Intervenida:         v.Intervenida,
 		KioskoID:            v.KioskoID,

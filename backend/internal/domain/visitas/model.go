@@ -61,7 +61,13 @@ type Visita struct {
 	CalidadIne      string  `gorm:"column:calidad_ine;not null;default:''"`
 	FotoRostroURL   string  `gorm:"not null"`
 	FotoPlacaURL    string
-	CasaDestino     string `gorm:"not null"`
+	// Motivo: por qué viene el visitante (reparto, visita, servicio...).
+	// Campo del núcleo obligatorio del reto FEPRO ("Nombre, motivo,
+	// anfitrión/destino") -- no bloquea el registro si viene vacío (un
+	// acceso vehicular recurrente puede no pedirlo), pero se captura
+	// cuando el kiosko lo pide.
+	Motivo      string `gorm:"not null;default:''"`
+	CasaDestino string `gorm:"not null"`
 	// DestinoID liga con destinos.id cuando CasaDestino pudo resolverse a un
 	// Destino real (backfill por texto + resuelto en cada punto de escritura
 	// nuevo) -- null en registros viejos sin match, la UI cae al texto.

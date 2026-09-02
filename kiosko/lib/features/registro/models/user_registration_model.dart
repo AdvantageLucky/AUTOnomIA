@@ -26,6 +26,10 @@ class UserRegistrationModel {
   String? casaDestino;
   String? placa;
 
+  // Por qué viene el visitante (reparto, visita, servicio...). Opcional:
+  // no bloquea el registro si el visitante lo deja en blanco.
+  String? motivo;
+
   // Token de la invitación escaneada. Null en el flujo sin invitación.
   String? tokenInvitacion;
 
@@ -54,6 +58,7 @@ class UserRegistrationModel {
     calidadIne = null;
     casaDestino = null;
     placa = null;
+    motivo = null;
     tokenInvitacion = null;
   }
 

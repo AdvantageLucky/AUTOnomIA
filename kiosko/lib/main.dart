@@ -99,6 +99,7 @@ Future<Map<String, dynamic>> _reproducirRegistroContraBackend(
         curp: payload['curp'] as String? ?? '',
         casaDestino: payload['casa_destino'] as String? ?? '',
         placa: payload['placa'] as String? ?? '',
+        motivo: payload['motivo'] as String?,
         pathFotoIne: fotoPaths['ine'] as String?,
         pathFotoRostro: fotoPaths['rostro'] as String?,
         pathFotoPlaca: fotoPaths['placa'] as String?,
