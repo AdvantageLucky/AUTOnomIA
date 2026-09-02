@@ -297,7 +297,9 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         Scaffold(
           backgroundColor: context.kBg,
           body: PantallaAdaptable(
-            padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 48),
+            // Ver welcome_view.dart: el footer queda detrás del
+            // micrófono/vigilante sin esta reserva extra abajo.
+            padding: const EdgeInsets.fromLTRB(34, 48, 34, 48 + KigoDesign.clearanceBotonesFlotantes),
             child: Column(
               children: [
                 _buildHeader(context),

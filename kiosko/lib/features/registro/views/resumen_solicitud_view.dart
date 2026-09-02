@@ -339,11 +339,14 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.only(
+                // El sello de confianza (último elemento cuando hay score)
+                // queda detrás del micrófono/vigilante si se scrollea hasta
+                // el fondo, sin esta reserva extra.
+                padding: EdgeInsets.only(
                   left: 42,
                   right: 42,
                   top: 40,
-                  bottom: 40,
+                  bottom: 40 + KigoDesign.clearanceBotonesFlotantes,
                 ),
                 child: Column(
                   children: [

@@ -96,7 +96,9 @@ class _ConfirmarPlacaViewState extends State<ConfirmarPlacaView> {
                 // desbordar, forzando al menos la altura disponible para que el
                 // Spacer siga empujando el teclado hacia abajo cuando sí cabe.
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                  // El teclado + botón de confirmar (ancho completo) quedaban
+                  // detrás del micrófono/vigilante sin esta reserva extra.
+                  padding: EdgeInsets.fromLTRB(28, 20, 28, 20 + KigoDesign.clearanceBotonesFlotantes),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: constraints.maxHeight),
                     child: IntrinsicHeight(

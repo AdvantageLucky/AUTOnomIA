@@ -208,7 +208,9 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
           body: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.only(left: 42, right: 42, bottom: 40),
+              // La última tarjeta de la lista queda detrás del
+              // micrófono/vigilante si se llega a scrollear hasta el fondo.
+              padding: EdgeInsets.only(left: 42, right: 42, bottom: 40 + KigoDesign.clearanceBotonesFlotantes),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
