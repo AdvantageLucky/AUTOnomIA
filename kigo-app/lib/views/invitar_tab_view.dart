@@ -43,7 +43,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 4,
+      length: 3,
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
@@ -81,6 +81,26 @@ class _InvitarTabViewState extends State<InvitarTabView>
         permiteReconocimientoFacial: _permiteFacial,
         expiraEl: _expiraEl,
       );
+
+      // El toggle "acceso frecuente por reconocimiento facial" ya no abre
+      // un flujo aparte (antes vivía en la pestaña "Acceso frecuente",
+      // ahora removida) -- activarlo aquí también inscribe a la persona
+      // como invitado frecuente, así que puede volver a entrar por rostro
+      // sin necesitar otra invitación. Un 409 significa que ya estaba
+      // inscrita (p. ej. una invitación anterior a la misma persona) --
+      // no es un error real, se ignora.
+      if (_permiteFacial) {
+        try {
+          await vm.crearInvitadoFrecuente(
+            tenantId: auth.centroActivo!.tenantId,
+            telefono: telefono,
+            nombre: nombre,
+          );
+        } catch (_) {
+          // Ya inscrita o algún otro fallo no bloqueante -- la invitación
+          // en sí ya se creó con éxito, no vale la pena interrumpir el flujo.
+        }
+      }
 
       if (!mounted) return;
       _telefonoCtrl.clear();
@@ -248,7 +268,6 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 ),
               ),
               const Tab(text: 'Recibidas'),
-              const Tab(text: 'Acceso frecuente'),
             ],
           ),
         ),
@@ -269,8 +288,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 const Center(child: Text('No tienes una membresía activa'))
               else
                 RefreshIndicator(
-                  onRefresh: () => vm.cargarInvitaciones(),
-                  child: _buildListaInvitaciones(context, vm, isDark),
+                  onRefresh: () async {
+                    await vm.cargarInvitaciones();
+                    await vm.cargarInvitadosFrecuentes(tenantId);
+                  },
+                  child: _buildListaInvitaciones(context, vm, isDark, tenantId),
                 ),
 
               // 3. RECIBIDAS
@@ -278,15 +300,6 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 onRefresh: () => vm.cargarRecibidas(),
                 child: _buildListaRecibidas(context, vm, isDark),
               ),
-
-              // 4. ACCESO FRECUENTE
-              if (tenantId == null)
-                const Center(child: Text('No tienes una membresía activa'))
-              else
-                RefreshIndicator(
-                  onRefresh: () => vm.cargarInvitadosFrecuentes(tenantId),
-                  child: _buildInvitadosFrecuentes(context, vm, isDark, tenantId),
-                ),
             ],
           ),
         ),
@@ -395,11 +408,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: const [
                             Text(
-                              'Reconocimiento facial',
+                              'Acceso frecuente por reconocimiento facial',
                               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                             ),
                             Text(
-                              'Permite al invitado ingresar mediante cámara',
+                              'Podrá entrar por rostro en el kiosko de ahora en adelante, sin invitación cada vez. Lo puedes quitar cuando quieras desde "Mis Invitaciones".',
                               style: TextStyle(color: AppTheme.textDimmed, fontSize: 11),
                             ),
                           ],
@@ -480,15 +493,23 @@ class _InvitarTabViewState extends State<InvitarTabView>
     BuildContext context,
     InvitationViewModel vm,
     bool isDark,
+    int tenantId,
   ) {
     if (vm.isLoading && vm.invitaciones.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    final encabezadoFrecuentes = vm.invitadosFrecuentes.isEmpty
+        ? const SizedBox.shrink()
+        : _buildSeccionFrecuentes(context, vm, isDark, tenantId);
+
     if (vm.invitaciones.isEmpty) {
       return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
+          encabezadoFrecuentes,
           Padding(
-            padding: const EdgeInsets.only(top: 80, left: 24, right: 24),
+            padding: const EdgeInsets.only(top: 60, left: 8, right: 8),
             child: Column(
               children: [
                 Container(
@@ -520,10 +541,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-      itemCount: vm.invitaciones.length,
+      itemCount: vm.invitaciones.length + 1,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
-        final inv = vm.invitaciones[i];
+        if (i == 0) return encabezadoFrecuentes;
+        final inv = vm.invitaciones[i - 1];
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -700,132 +722,65 @@ class _InvitarTabViewState extends State<InvitarTabView>
     );
   }
 
-  Widget _buildInvitadosFrecuentes(
+  // Sección compacta al inicio de "Mis Invitaciones": quién tiene acceso
+  // frecuente por reconocimiento facial. Ya no tiene un flujo de alta
+  // propio -- se activa desde el toggle de "Nueva Invitación" (ver
+  // _crearInvitacion) -- solo lista y permite revocar.
+  Widget _buildSeccionFrecuentes(
     BuildContext context,
     InvitationViewModel vm,
     bool isDark,
     int tenantId,
   ) {
-    if (vm.cargandoInvitadosFrecuentes && vm.invitadosFrecuentes.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      children: [
-        Text(
-          'Dale acceso por reconocimiento facial a alguien de tu confianza -- entra por rostro '
-          'en el kiosko, sin invitación cada vez. Lo puedes quitar cuando quieras.',
-          style: TextStyle(fontSize: 12.5, color: isDark ? AppTheme.textGrey : AppTheme.textDimmed),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
         ),
-        const SizedBox(height: 14),
-        KigoPrimaryButton(
-          label: 'Agregar invitado frecuente',
-          onPressed: () => _mostrarDialogoInvitadoFrecuente(context, tenantId),
-        ),
-        const SizedBox(height: 20),
-        if (vm.invitadosFrecuentes.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 40),
-            child: Column(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.face_retouching_natural, size: 34, color: AppTheme.textGrey),
-                ),
-                const SizedBox(height: 14),
+                const Icon(Icons.face_retouching_natural, color: AppTheme.primaryOrange, size: 18),
+                const SizedBox(width: 8),
                 const Text(
-                  'Nadie tiene acceso frecuente todavía',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  'Acceso frecuente por rostro',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                 ),
               ],
             ),
-          )
-        else
-          ...vm.invitadosFrecuentes.map((inv) => Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
-                  borderRadius: BorderRadius.circular(AppTheme.radius),
-                  border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryOrange.withOpacity(0.12),
-                        shape: BoxShape.circle,
+            const SizedBox(height: 10),
+            ...vm.invitadosFrecuentes.map((inv) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.face_rounded, color: AppTheme.primaryOrange, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          inv.nombre.isNotEmpty ? inv.nombre : inv.telefono,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
                       ),
-                      child: const Icon(Icons.face_rounded, color: AppTheme.primaryOrange, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        inv.nombre.isNotEmpty ? inv.nombre : inv.telefono,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      InkWell(
+                        onTap: () => _revocarInvitadoFrecuente(context, tenantId, inv.id),
+                        child: const Text(
+                          'Quitar',
+                          style: TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w700),
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.cancel_outlined, color: AppTheme.error),
-                      tooltip: 'Quitar acceso',
-                      onPressed: () => _revocarInvitadoFrecuente(context, tenantId, inv.id),
-                    ),
-                  ],
-                ),
-              )),
-      ],
-    );
-  }
-
-  Future<void> _mostrarDialogoInvitadoFrecuente(BuildContext context, int tenantId) async {
-    final nombreCtrl = TextEditingController();
-    final telefonoCtrl = TextEditingController();
-    final vm = context.read<InvitationViewModel>();
-
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nuevo invitado frecuente'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            KigoTextField(controller: nombreCtrl, label: 'Nombre completo'),
-            const SizedBox(height: 12),
-            KigoTextField(controller: telefonoCtrl, label: 'Teléfono', keyboardType: TextInputType.phone),
+                    ],
+                  ),
+                )),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Agregar')),
-        ],
       ),
     );
-
-    if (confirmar != true) return;
-    final nombre = nombreCtrl.text.trim();
-    final telefono = telefonoCtrl.text.trim();
-    if (nombre.isEmpty || telefono.isEmpty) return;
-
-    try {
-      await vm.crearInvitadoFrecuente(tenantId: tenantId, telefono: telefono, nombre: nombre);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Acceso frecuente agregado'), backgroundColor: AppTheme.success),
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(vm.error ?? 'No se pudo agregar')),
-      );
-    }
   }
 
   Future<void> _revocarInvitadoFrecuente(BuildContext context, int tenantId, int id) async {

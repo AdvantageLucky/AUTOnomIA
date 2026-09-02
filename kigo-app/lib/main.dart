@@ -45,6 +45,16 @@ class MyApp extends StatelessWidget {
 
   static final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
+  /// Se incrementa cada vez que llega una notificación push en foreground
+  /// (ver PushService.iniciar) -- KigoShell lo escucha para refrescar
+  /// solicitudes pendientes / historial sin esperar a que la persona
+  /// cambie de pestaña. Antes el badge de "Solicitudes" solo se
+  /// actualizaba al tocar esa pestaña, así que quedaba desactualizado si
+  /// la solicitud se resolvía por otro medio (otro residente de la casa,
+  /// el kiosko, o el sistema por vencimiento) mientras la app seguía
+  /// abierta en otra pestaña.
+  static final notificationTick = ValueNotifier<int>(0);
+
   @override
   Widget build(BuildContext context) {
     final settingsVM = context.watch<SettingsViewModel>();

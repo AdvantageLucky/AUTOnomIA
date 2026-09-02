@@ -24,6 +24,10 @@ class VisitaPendienteModel {
   /// contactar (desconocido, o invitación nunca reclamada).
   final String telefono;
 
+  /// CURP capturada en esta entrada (OCR de la INE) -- vacía si el flujo no
+  /// pidió documento (p. ej. acceso vehicular).
+  final String curp;
+
   /// Análisis de confianza, ya recortado por el backend a lo que es seguro
   /// mostrarle a un residente (ver ScoreIaModel). Null si no se calculó.
   final ScoreIaModel? scoreIa;
@@ -40,6 +44,7 @@ class VisitaPendienteModel {
     this.placa = '',
     this.tipoVisitante = '',
     this.telefono = '',
+    this.curp = '',
     this.scoreIa,
     required this.createdAt,
   });
@@ -55,6 +60,7 @@ class VisitaPendienteModel {
       placa: json['placa'] as String? ?? '',
       tipoVisitante: json['tipo_visitante'] as String? ?? '',
       telefono: json['telefono'] as String? ?? '',
+      curp: json['curp'] as String? ?? '',
       scoreIa: json['score_ia'] != null
           ? ScoreIaModel.fromJson(json['score_ia'] as Map<String, dynamic>)
           : null,
