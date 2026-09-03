@@ -138,16 +138,23 @@ func (h *KioskoLoginHandler) LoginDesdeKiosko(c *gin.Context) {
 	}
 
 	v := &visitas.Visita{
-		TenantID:            tenantID,
-		Titular:             mejor.Nombre + " " + mejor.ApellidoPaterno,
-		TipoVisitante:       visitas.TipoResidente,
-		TipoDocumento:       visitas.DocumentoPIN,
-		CasaDestino:         mejor.CasaDestino,
-		DestinoID:           mejor.DestinoID,
-		Estado:              visitas.EstadoAprobado,
-		KioskoID:            uint(kioskoID),
-		PersonaID:           &mejor.PersonaID,
-		ClientID:            clientIDPtr,
+		TenantID:      tenantID,
+		Titular:       mejor.Nombre + " " + mejor.ApellidoPaterno,
+		TipoVisitante: visitas.TipoResidente,
+		TipoDocumento: visitas.DocumentoPIN,
+		CasaDestino:   mejor.CasaDestino,
+		DestinoID:     mejor.DestinoID,
+		Estado:        visitas.EstadoAprobado,
+		KioskoID:      uint(kioskoID),
+		PersonaID:     &mejor.PersonaID,
+		ClientID:      clientIDPtr,
+		// El login por PIN no vuelve a escanear INE ni rostro, pero la
+		// Persona ya los capturó en completarIdentidad -- sin copiarlos
+		// aquí, esta entrada quedaba sin CURP ni huella facial pese a que
+		// ambos ya existían, y HistorialDeVisitante no podía cruzarla por
+		// esos caminos con una visita de otro flujo de la misma persona.
+		Curp:                mejor.Curp,
+		EmbeddingRostro:     residente.FloatArray(mejor.Embedding),
 		AutorizadoPorTipo:   visitas.AutorizadorPropio,
 		AutorizadoPorNombre: autorizadoPorNombre,
 	}
@@ -234,6 +241,10 @@ func (h *KioskoLoginHandler) VerificarRostroDesdeKiosko(c *gin.Context) {
 		KioskoID:      uint(kioskoID),
 		ClientID:      visitas.ClientIDPtr(req.ClientID),
 		PersonaID:     &mejor.PersonaID,
+		// La Persona ya tiene su CURP de completarIdentidad -- mismo
+		// razonamiento que en LoginDesdeKiosko, para que esta entrada
+		// tambien se pueda cruzar por CURP con otro flujo.
+		Curp: mejor.Curp,
 		// Sin esto, HistorialPorRostro no podía cruzar esta entrada con
 		// una visita posterior de la misma persona por otro camino (p.ej.
 		// entra caminando sin invitación) -- el análisis de IA de esa otra

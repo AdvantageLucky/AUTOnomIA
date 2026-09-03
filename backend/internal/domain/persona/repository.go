@@ -124,6 +124,10 @@ type CandidatoKiosko struct {
 	DestinoID       *uint
 	PinHash         string
 	Embedding       []float64
+	// Curp viene de la Persona (se captura en completarIdentidad, junto con
+	// el rostro) -- el acceso propio por PIN/rostro ya la tiene disponible
+	// aqui mismo, sin necesidad de escanear nada de nuevo en el kiosko.
+	Curp string
 	// Rol distingue un residente real de un invitado frecuente
 	// (residente.RolInvitadoFrecuente) -- sin esto, el kiosko no tenía
 	// forma de saludar distinto a alguien que solo tiene acceso recurrente
@@ -146,6 +150,7 @@ type candidatoKioskoFila struct {
 	DestinoID       *uint
 	PinHash         string
 	Embedding       residente.FloatArray `gorm:"type:float[]"`
+	Curp            string
 	Rol             string
 }
 
@@ -155,7 +160,7 @@ type candidatoKioskoFila struct {
 func (r *Repository) FindActivasPorTenant(tenantID uint) ([]CandidatoKiosko, error) {
 	var filas []candidatoKioskoFila
 	err := r.db.Table("membresias").
-		Select("membresias.id AS membresia_id, membresias.persona_id AS persona_id, personas.nombre AS nombre, personas.apellido_paterno AS apellido_paterno, membresias.casa_destino AS casa_destino, membresias.destino_id AS destino_id, membresias.pin AS pin_hash, personas.embedding AS embedding, membresias.rol AS rol").
+		Select("membresias.id AS membresia_id, membresias.persona_id AS persona_id, personas.nombre AS nombre, personas.apellido_paterno AS apellido_paterno, membresias.casa_destino AS casa_destino, membresias.destino_id AS destino_id, membresias.pin AS pin_hash, personas.embedding AS embedding, personas.curp AS curp, membresias.rol AS rol").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ?", tenantID, residente.ResidenteStatusActivo).
 		Where("membresias.deleted_at IS NULL AND personas.deleted_at IS NULL").
@@ -169,7 +174,7 @@ func (r *Repository) FindActivasPorTenant(tenantID uint) ([]CandidatoKiosko, err
 		out[i] = CandidatoKiosko{
 			MembresiaID: f.MembresiaID, PersonaID: f.PersonaID, Nombre: f.Nombre, ApellidoPaterno: f.ApellidoPaterno,
 			CasaDestino: f.CasaDestino, DestinoID: f.DestinoID, PinHash: f.PinHash, Embedding: []float64(f.Embedding),
-			Rol: f.Rol,
+			Curp: f.Curp, Rol: f.Rol,
 		}
 	}
 	return out, nil
