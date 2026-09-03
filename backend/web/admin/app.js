@@ -259,6 +259,19 @@
       revocar_acceso_texto: "Ya no podrán entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo, solo su acceso a este centro.",
       revocar_button: "Revocar",
       no_pudo_revocar_reintentar: "No se pudo revocar. Intenta de nuevo.",
+      nav_ayuda: "Ayuda",
+      ayuda_title: "Ayuda",
+      asistencias_urgentes_sub: "Solicitudes de asistencia urgente desde los kioskos",
+      ayuda_filtro_pendientes: "Pendientes",
+      ayuda_filtro_todas: "Todas",
+      ayuda_cargando: "Cargando asistencias…",
+      ayuda_sin_solicitudes: "Sin solicitudes de ayuda",
+      ayuda_sin_solicitudes_sub: "Cuando un visitante pida ayuda urgente desde un kiosko, aparecerá aquí.",
+      ayuda_sin_motivo: "Sin motivo especificado",
+      ayuda_marcar_resuelta: "Marcar resuelta",
+      ayuda_estado_pendiente: "Pendiente",
+      ayuda_estado_resuelta: "Resuelta",
+      ayuda_resuelta_hace: h => `Resuelta hace ${h}`,
       // __NEW_I18N_ES_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Activo",
@@ -744,6 +757,19 @@
       revocar_acceso_texto: "They will no longer be able to enter by PIN or facial recognition. This does not delete their Kigo account, only their access to this center.",
       revocar_button: "Revoke",
       no_pudo_revocar_reintentar: "Could not revoke access. Try again.",
+      nav_ayuda: "Help",
+      ayuda_title: "Help",
+      asistencias_urgentes_sub: "Urgent assistance requests from the kiosks",
+      ayuda_filtro_pendientes: "Pending",
+      ayuda_filtro_todas: "All",
+      ayuda_cargando: "Loading assistance requests…",
+      ayuda_sin_solicitudes: "No assistance requests",
+      ayuda_sin_solicitudes_sub: "When a visitor asks for urgent help from a kiosk, it will show up here.",
+      ayuda_sin_motivo: "No reason given",
+      ayuda_marcar_resuelta: "Mark resolved",
+      ayuda_estado_pendiente: "Pending",
+      ayuda_estado_resuelta: "Resolved",
+      ayuda_resuelta_hace: h => `Resolved ${h} ago`,
       // __NEW_I18N_EN_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Active",
@@ -1049,8 +1075,8 @@
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado", REVISION: "badge--revision" };
 
   const RUTAS_POR_ROL = {
-    admin:     ["dashboard","solicitudes","visitas","detalle","residentes","kioskos","configuracion","instalacion","perfil"],
-    vigilante: ["solicitudes","perfil"],
+    admin:     ["dashboard","solicitudes","visitas","detalle","residentes","kioskos","ayuda","configuracion","instalacion","perfil"],
+    vigilante: ["solicitudes","ayuda","perfil"],
   };
 
   const state = {
@@ -1162,6 +1188,11 @@
         if (String(v.tenant_id) !== String(state.tenantId)) return;
         if (v.tipo === "asistencia_urgente") {
           mostrarToast(`🆘 ${t("asistencia_urgente_sse")}`, "urgente");
+          // El toast se autodestruye a los 5s -- sin esto, si el admin no
+          // lo alcanzaba a ver (o no tenía el dashboard abierto), la
+          // solicitud no dejaba ningún rastro consultable después.
+          loadAyudaBadge();
+          if (currentNavScreen === "ayuda") loadAyuda();
           return;
         }
         const nombre = v.titular || t("nuevo_visitante");
@@ -1265,6 +1296,7 @@
     if (screen === "solicitudes")   startSolPolling();
     if (screen === "residentes")    { loadResidentesActivos(); loadResidentesPendientesBadge(); }
     if (screen === "kioskos")       startKioPolling();
+    if (screen === "ayuda")         loadAyuda();
     if (screen === "instalacion")   { loadDestinosSection(); }
     if (screen === "configuracion") loadConfigAccesos();
     if (screen === "perfil")        loadPerfil();
@@ -1732,6 +1764,7 @@
     loadAlertasIABadge();
     loadResidentesPendientesBadge();
     loadKioskosOfflineBadge();
+    loadAyudaBadge();
     startBadgesAmbientalesPolling();
     // state.rol viene del JWT y a veces no trae el rol real (visto con
     // login por Google) -- state.admin.rol viene de /admins/:id, directo
@@ -2706,6 +2739,7 @@
       loadResidentesPendientesBadge();
       loadAlertasIABadge();
       loadKioskosOfflineBadge();
+      loadAyudaBadge();
     }, 20000);
   }
 
@@ -2788,6 +2822,99 @@
     const badgeMob = document.getElementById("nav-badge-kioskos-offline-mob");
     if (badgeMob) { badgeMob.textContent = text; badgeMob.hidden = hidden; }
   }
+
+  /* ─── Ayuda (asistencias urgentes) ──────────────────── */
+  // Antes el botón de "llamar al vigilante" del kiosko era 100% efímero: un
+  // toast de 5s (ver el "asistencia_urgente" dentro de initSSE) y un correo,
+  // sin ningún registro consultable después. Ahora el backend las persiste
+  // (GET/PATCH /asistencias-urgentes/) y esta pestaña es el listado real.
+  state.ayudaFiltro = "pendiente";
+
+  async function loadAyudaBadge() {
+    const res = await api("/asistencias-urgentes/?estado=pendiente");
+    if (!res || !res.ok) return;
+    let total = 0;
+    try {
+      const d = await res.json();
+      total = d.total || 0;
+    } catch (e) { console.error(e); return; }
+    const text = total > 99 ? "99+" : String(total);
+    const hidden = total <= 0;
+    const badge = document.getElementById("nav-badge-ayuda");
+    if (badge) { badge.textContent = text; badge.hidden = hidden; }
+    const badgeMob = document.getElementById("nav-badge-ayuda-mob");
+    if (badgeMob) { badgeMob.textContent = text; badgeMob.hidden = hidden; }
+  }
+
+  function showAyudaState(s) {
+    ["loading", "empty", "error"].forEach(x => {
+      const el = document.getElementById(`ayuda-${x}`);
+      if (el) el.hidden = x !== s;
+    });
+    const rows = document.getElementById("ayuda-rows");
+    if (rows) rows.hidden = s !== "rows";
+  }
+
+  async function loadAyuda() {
+    showAyudaState("loading");
+    const query = state.ayudaFiltro === "pendiente" ? "?estado=pendiente" : "";
+    const res = await api(`/asistencias-urgentes/${query}`);
+    if (!res || !res.ok) { showAyudaState("error"); return; }
+
+    let asistencias = [];
+    try {
+      const d = await res.json();
+      asistencias = d.asistencias || [];
+    } catch (e) { console.error(e); showAyudaState("error"); return; }
+
+    loadAyudaBadge();
+
+    if (asistencias.length === 0) { showAyudaState("empty"); return; }
+
+    const container = document.getElementById("ayuda-rows");
+    if (!container) return;
+    container.innerHTML = asistencias.map((a, i) => renderAyudaRow(a, i)).join("");
+    container.querySelectorAll("[data-resolver-ayuda]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        resolverAyuda(btn.dataset.resolverAyuda);
+      });
+    });
+    showAyudaState("rows");
+  }
+
+  function renderAyudaRow(a, i) {
+    const pendiente = a.estado === "pendiente";
+    const badgeClase = pendiente ? "badge--pendiente" : "badge--aprobado";
+    const badgeTexto = pendiente ? t("ayuda_estado_pendiente") : t("ayuda_estado_resuelta");
+    const sub = pendiente
+      ? fmtElapsed(a.created_at)
+      : (a.resuelta_at ? STRINGS[lang].ayuda_resuelta_hace(fmtElapsed(a.resuelta_at)) : "");
+    return `<div class="sol-card" style="animation-delay:${i * 40}ms">
+      <div class="sol-card-left">
+        <div class="feed-dot"></div>
+        <div>
+          <div class="row-name">${esc(a.kiosko_nombre || `Kiosko #${a.kiosko_id}`)} <span class="badge ${badgeClase}">${badgeTexto}</span></div>
+          <div class="row-sub">${esc(a.motivo && a.motivo.trim() ? a.motivo : t("ayuda_sin_motivo"))} · ${fmtDate(a.created_at)}${sub && !pendiente ? ` · ${sub}` : ""}</div>
+        </div>
+      </div>
+      ${pendiente ? `<div class="sol-card-actions"><button class="btn-aprobar" data-resolver-ayuda="${a.id}">${t("ayuda_marcar_resuelta")}</button></div>` : ""}
+    </div>`;
+  }
+
+  async function resolverAyuda(id) {
+    const res = await api(`/asistencias-urgentes/${id}/resolver`, { method: "PATCH" });
+    if (!res || !res.ok) return;
+    loadAyuda();
+  }
+
+  document.querySelectorAll('#screen-ayuda .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#screen-ayuda .tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      state.ayudaFiltro = btn.dataset.ayudaFiltro;
+      loadAyuda();
+    });
+  });
 
   async function loadSolicitudes() {
     const [resPend, resRev] = await Promise.all([
