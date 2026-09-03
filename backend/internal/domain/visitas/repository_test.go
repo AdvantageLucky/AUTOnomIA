@@ -28,7 +28,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("no se pudo obtener *sql.DB: %v", err)
 	}
 	sqlDB.SetMaxOpenConns(1)
-	if err := db.AutoMigrate(&Visita{}); err != nil {
+	if err := db.AutoMigrate(&Visita{}, &HistorialReset{}); err != nil {
 		t.Fatalf("no se pudo migrar Visita: %v", err)
 	}
 	return db
@@ -467,5 +467,102 @@ func TestHistorialDeVisitante_PorPersonaID(t *testing.T) {
 	}
 	if historial[0].Titular != "Ivan" {
 		t.Errorf("esperaba encontrar la visita de Ivan, got %q", historial[0].Titular)
+	}
+}
+
+// TestHistorialDeVisitante_ResetGlobal_OlvidaHistorialAnterior reproduce el
+// reset que solo un admin puede pedir: aplica sin importar a qué casa
+// llegue la identidad después.
+func TestHistorialDeVisitante_ResetGlobal_OlvidaHistorialAnterior(t *testing.T) {
+	db := setupTestDB(t)
+	if err := db.AutoMigrate(&HistorialReset{}); err != nil {
+		t.Fatalf("no se pudo migrar HistorialReset: %v", err)
+	}
+	repo := NewRepository(db)
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, uint(1))
+	repoCtx := repo.WithContext(ctx)
+
+	personaID := uint(42)
+	adminID := uint(7)
+	anterior := &Visita{
+		Model:    gorm.Model{CreatedAt: time.Now().Add(-48 * time.Hour)},
+		TenantID: 1, Titular: "Ivan", CasaDestino: "Casa 1", PersonaID: &personaID,
+		Estado: EstadoAprobado, KioskoID: 1,
+		TipoVisitante: TipoResidente, TipoDocumento: DocumentoPIN,
+	}
+	if err := repoCtx.Create(anterior); err != nil {
+		t.Fatalf("no esperaba error creando la visita anterior: %v", err)
+	}
+
+	if err := repoCtx.CrearReset(1, personaID, "", nil, &adminID); err != nil {
+		t.Fatalf("no esperaba error creando el reset: %v", err)
+	}
+
+	nueva := Visita{TenantID: 1, PersonaID: &personaID, CasaDestino: "Casa 2", TipoVisitante: TipoResidente, TipoDocumento: DocumentoPIN}
+	historial, err := repoCtx.HistorialDeVisitante(nueva, 70, ScoreIaFuentes{})
+	if err != nil {
+		t.Fatalf("no esperaba error: %v", err)
+	}
+	if len(historial) != 0 {
+		t.Fatalf("esperaba historial vacío tras el reset global (aunque la casa sea distinta), got %d", len(historial))
+	}
+}
+
+// TestHistorialDeVisitante_ResetDeCasa_SoloAfectaEsaCasa reproduce el reset
+// de un residente: "SOLO LOS MIOS" -- olvida la confianza ganada con SU
+// casa, sin tocar la que la misma identidad se ganó en otra.
+func TestHistorialDeVisitante_ResetDeCasa_SoloAfectaEsaCasa(t *testing.T) {
+	db := setupTestDB(t)
+	if err := db.AutoMigrate(&HistorialReset{}); err != nil {
+		t.Fatalf("no se pudo migrar HistorialReset: %v", err)
+	}
+	repo := NewRepository(db)
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, uint(1))
+	repoCtx := repo.WithContext(ctx)
+
+	personaID := uint(42)
+	residentePersonaID := uint(99)
+	for _, casa := range []string{"Casa 1", "Casa 2"} {
+		v := &Visita{
+			Model:    gorm.Model{CreatedAt: time.Now().Add(-48 * time.Hour)},
+			TenantID: 1, Titular: "Ivan", CasaDestino: casa, PersonaID: &personaID,
+			Estado: EstadoAprobado, KioskoID: 1,
+			TipoVisitante: TipoResidente, TipoDocumento: DocumentoPIN,
+		}
+		if err := repoCtx.Create(v); err != nil {
+			t.Fatalf("no esperaba error creando la visita a %s: %v", casa, err)
+		}
+	}
+
+	// El residente de Casa 1 resetea la confianza de esta identidad -- solo
+	// para su propia casa.
+	if err := repoCtx.CrearReset(1, personaID, "Casa 1", &residentePersonaID, nil); err != nil {
+		t.Fatalf("no esperaba error creando el reset: %v", err)
+	}
+
+	// HistorialPorPersonaID trae el historial completo de la identidad sin
+	// importar la casa (es un enlace directo, no algo que se filtre por
+	// destino) -- lo que el reset de Casa 1 quita es específicamente LA
+	// ENTRADA hacia Casa 1, sin importar desde qué casa se esté analizando
+	// ahora. Por eso, al analizar una visita nueva hacia Casa 1, solo queda
+	// la entrada de Casa 2 (la de Casa 1 fue olvidada); y al analizar una
+	// visita nueva hacia Casa 2, ambas entradas siguen contando -- el reset
+	// de Casa 1 nunca tocó la confianza que esta identidad se ganó en Casa 2.
+	nuevaCasa1 := Visita{TenantID: 1, PersonaID: &personaID, CasaDestino: "Casa 1", TipoVisitante: TipoResidente, TipoDocumento: DocumentoPIN}
+	historialCasa1, err := repoCtx.HistorialDeVisitante(nuevaCasa1, 70, ScoreIaFuentes{})
+	if err != nil {
+		t.Fatalf("no esperaba error: %v", err)
+	}
+	if len(historialCasa1) != 1 || historialCasa1[0].CasaDestino != "Casa 2" {
+		t.Errorf("esperaba solo la entrada de Casa 2 (la de Casa 1 reseteada), got %d entradas", len(historialCasa1))
+	}
+
+	nuevaCasa2 := Visita{TenantID: 1, PersonaID: &personaID, CasaDestino: "Casa 2", TipoVisitante: TipoResidente, TipoDocumento: DocumentoPIN}
+	historialCasa2, err := repoCtx.HistorialDeVisitante(nuevaCasa2, 70, ScoreIaFuentes{})
+	if err != nil {
+		t.Fatalf("no esperaba error: %v", err)
+	}
+	if len(historialCasa2) != 2 {
+		t.Errorf("esperaba las 2 visitas previas al analizar hacia Casa 2 (el reset de Casa 1 no afecta este destino), got %d", len(historialCasa2))
 	}
 }

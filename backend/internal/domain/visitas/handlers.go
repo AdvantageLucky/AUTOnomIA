@@ -686,6 +686,55 @@ func (h *Handler) HistorialVisita(c *gin.Context) {
 	})
 }
 
+// HistorialCorrelacionado devuelve el historial de una identidad (por
+// PersonaID) para el dashboard admin -- reusa la misma correlación fuerte
+// que ya usa el análisis de IA (HistorialPorPersonaID: un enlace directo,
+// no un cruce por CURP exacto como HistorialVisita) para responder "qué
+// otras entradas tiene esta persona", visto desde el detalle de una visita
+// o de un residente.
+func (h *Handler) HistorialCorrelacionado(c *gin.Context) {
+	personaID64, err := strconv.ParseUint(c.Param("personaId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	list, err := repoCtx.HistorialPorPersonaID(uint(personaID64))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]VisitaResponse, 0, len(list))
+	for _, v := range list {
+		items = append(items, toVisitaResponse(v))
+	}
+	c.JSON(http.StatusOK, gin.H{"visitas": items, "total": len(items)})
+}
+
+// ResetHistorialPersona (admin) resetea globalmente la confianza acumulada
+// con una identidad -- a diferencia del reset que puede pedir un residente
+// (limitado a su propia casa, ver persona.Handler.ResetHistorialContacto),
+// este aplica sin importar a qué destino del tenant llegue después.
+func (h *Handler) ResetHistorialPersona(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	personaID64, err := strconv.ParseUint(c.Param("personaId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	if err := repoCtx.CrearReset(tenantID, uint(personaID64), "", nil, &adminID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
+}
+
 // parsearEmbedding lee el vector que manda el kiosko. Un embedding invalido se
 // descarta en silencio en vez de rechazar la visita entera: sirve para
 // identificar al visitante despues, no para dejarlo pasar ahora, y tumbar un
