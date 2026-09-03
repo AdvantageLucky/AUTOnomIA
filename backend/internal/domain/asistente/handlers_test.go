@@ -155,6 +155,49 @@ func TestExtraerCampo_Placa(t *testing.T) {
 	}
 }
 
+func TestExtraerCampo_Motivo(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupAsistenteTestDB(t)
+	kioskoRepo := kiosko.NewRepository(db)
+	destinoRepo := destinos.NewRepository(db)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]string{"content": `{"valor":"Entrega de paquete","confianza":0.92}`})
+	}))
+	defer srv.Close()
+
+	h := NewHandler(kioskoRepo, destinoRepo, srv.URL)
+
+	router := gin.New()
+	router.POST("/kioskos/:id/asistente/extraer-campo", func(c *gin.Context) {
+		c.Set(ctxkeys.KioskoID, uint(1))
+		c.Set(ctxkeys.TenantID, uint(1))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkeys.KioskoID, uint(1)))
+		h.ExtraerCampo(c)
+	})
+
+	body, _ := json.Marshal(map[string]string{
+		"transcripcion": "vengo a dejarle un paquete a mi tía porque hoy es su cumpleaños",
+		"tipo_campo":    "motivo",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/kioskos/1/asistente/extraer-campo", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Valor     *string `json:"valor"`
+		Confianza float64 `json:"confianza"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.Valor == nil || *resp.Valor != "Entrega de paquete" {
+		t.Fatalf("esperaba valor 'Entrega de paquete', got %+v", resp)
+	}
+}
+
 func TestExtraerCampo_Destino_SoloListaDestinosReales(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db := setupAsistenteTestDB(t)

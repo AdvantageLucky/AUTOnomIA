@@ -21,8 +21,13 @@ class MotivoView extends StatelessWidget {
   /// etc.): el visitante no debería tener que pensar cuál aplica.
   static const _motivosFrecuentes = ['Paquete', 'Servicio', 'Visita', 'Proveedor'];
 
-  Future<void> _escribirMotivoManual(BuildContext context) async {
-    final controller = TextEditingController();
+  /// [textoInicial] precarga lo que el asistente de voz entendió -- el
+  /// visitante siempre ve el diálogo (nunca se acepta el motivo por voz sin
+  /// pasar por aquí) porque a diferencia de destino, aquí no hay catálogo
+  /// contra qué confirmar la coincidencia; el propio diálogo de texto,
+  /// editable, es la confirmación.
+  Future<void> _escribirMotivoManual(BuildContext context, {String? textoInicial}) async {
+    final controller = TextEditingController(text: textoInicial ?? '');
     final motivo = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -114,8 +119,12 @@ class MotivoView extends StatelessWidget {
         BotonAsistenteFlotante(
           topDelBorde: 0,
           rightDelBorde: 16,
+          tipoCampo: 'motivo',
           onRespuestaLibre: (_) {},
-          onCampoExtraido: (_) {},
+          onCampoExtraido: (campo) {
+            if (campo.valor == null || campo.valor!.trim().isEmpty) return;
+            _escribirMotivoManual(context, textoInicial: campo.valor);
+          },
         ),
       ],
     );

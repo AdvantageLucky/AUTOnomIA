@@ -100,6 +100,8 @@ func (h *Handler) ExtraerCampo(c *gin.Context) {
 	switch req.TipoCampo {
 	case "placa":
 		prompt = construirPromptPlaca(req.Transcripcion)
+	case "motivo":
+		prompt = construirPromptMotivo(req.Transcripcion)
 	case "destino":
 		destinosDB, err := h.destinoRepo.FindByTenantID(tenantID)
 		if err != nil {
@@ -112,7 +114,7 @@ func (h *Handler) ExtraerCampo(c *gin.Context) {
 		}
 		prompt = construirPromptDestino(req.Transcripcion, nombres)
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "tipo_campo debe ser 'placa' o 'destino'"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tipo_campo debe ser 'placa', 'destino' o 'motivo'"})
 		return
 	}
 
