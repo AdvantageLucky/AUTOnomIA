@@ -44,13 +44,27 @@ class KioskoConfigNotifier extends ChangeNotifier {
       _necesitaActivacion = true;
       notifyListeners();
     } catch (_) {
-      // Backend no disponible — los defaults permiten que el kiosko opere.
-      // El teléfono de contacto sí se rellena desde el respaldo local: es
-      // justo el arranque en frío sin internet donde el botón "llamar al
-      // administrador" más hace falta.
-      final telRespaldo = await _servicio.telefonoContactoRespaldo();
-      if (telRespaldo.isNotEmpty) {
-        _config = _config.withTelefonoContacto(telRespaldo);
+      // Backend no disponible. Antes se arrancaba con KioskoConfig.defaults
+      // -- el kiosko opera, pero ahí `mensajeBienvenida` es cadena vacía y el
+      // escáner QR lee eso como "no hay pastilla que mostrar": el panel se
+      // quedaba sin el nombre del fraccionamiento hasta el siguiente arranque
+      // con red. Y no se recuperaba solo, porque el SSE únicamente emite
+      // cuando el admin guarda cambios, no manda el estado al conectarse.
+      //
+      // Así que se arranca con la última config buena que haya en disco. Es
+      // vieja, pero es la del kiosko; los defaults no son de nadie.
+      final respaldo = await _servicio.configRespaldo();
+      if (respaldo != null) {
+        _config = respaldo;
+      } else {
+        // Sin respaldo entero (kiosko recién activado que nunca completó un
+        // GET) queda el teléfono suelto del arranque anterior: es justo el
+        // arranque en frío sin internet donde el botón "llamar al
+        // administrador" más hace falta.
+        final telRespaldo = await _servicio.telefonoContactoRespaldo();
+        if (telRespaldo.isNotEmpty) {
+          _config = _config.withTelefonoContacto(telRespaldo);
+        }
       }
       _cargando = false;
       notifyListeners();
