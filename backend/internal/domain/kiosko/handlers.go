@@ -502,8 +502,16 @@ func (h *Handler) PatchConfig(c *gin.Context) {
 	}
 }
 
-// StreamConfig abre una conexión SSE y emite la config cada vez que el admin la actualiza.
-// El kiosko se suscribe al arrancar y reconecta automáticamente si se cae la red.
+// StreamConfig abre una conexión SSE: emite la config al conectarse y después
+// cada vez que el admin la actualiza. El kiosko se suscribe al arrancar y
+// reconecta automáticamente si se cae la red.
+//
+// La foto inicial no es un lujo. Sin ella el stream solo servía para enterarse
+// de CAMBIOS, así que un kiosko que arrancó sin red -- el GET de config falla,
+// se queda con los defaults -- no tenía por dónde recuperarse: se quedaba sin
+// mensaje de bienvenida hasta que alguien tocara la config en el dashboard.
+// Con la foto se repara solo en cuanto la red vuelve, incluso en un panel
+// recién estrenado que nunca ha completado un GET.
 //
 // @Summary Stream SSE de config del kiosko
 // @Tags kioskos
@@ -526,6 +534,15 @@ func (h *Handler) StreamConfig(c *gin.Context) {
 	hub := h.cfgHubs.get(uint(id))
 	ch := hub.Subscribe()
 	defer hub.Unsubscribe(ch)
+
+	// Suscribirse ANTES de la foto: al revés se abre una ventana en la que un
+	// cambio del admin no lo ve ni la foto (se tomó antes) ni el hub (aún no
+	// había suscriptor), y el kiosko se quedaría con el valor viejo hasta el
+	// siguiente cambio.
+	if data, err := h.configActual(c, uint(id)); err == nil {
+		fmt.Fprintf(c.Writer, "data: %s\n\n", data)
+		c.Writer.Flush()
+	}
 
 	c.Stream(func(w io.Writer) bool {
 		select {
@@ -562,6 +579,26 @@ func (h *Handler) Ping(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
+
+// configActual devuelve la config del kiosko ya serializada, en el mismo
+// formato que GET /config/mia y que los Broadcast del hub -- el kiosko parsea
+// los tres con el mismo KioskoConfig.fromJson, así que tienen que coincidir.
+func (h *Handler) configActual(c *gin.Context, kioskoID uint) ([]byte, error) {
+	repoCtx := h.repo.WithContext(c.Request.Context())
+
+	cfg, err := repoCtx.FindConfigByKioskoID(kioskoID)
+	if err != nil {
+		return nil, err
+	}
+	kiosko, err := repoCtx.FindByID(kioskoID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := toKioskoConfigResponse(cfg, kiosko.Tipo)
+	resp.TelefonoContacto = repoCtx.TelefonoContactoDeTenant(kiosko.TenantID)
+	return json.Marshal(resp)
 }
 
 // acotarPct deja un porcentaje dentro de un rango util. Fuera de el, el valor
