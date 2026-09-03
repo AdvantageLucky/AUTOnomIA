@@ -235,6 +235,24 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 	// (ver Repository.HistorialDeVisitante), así que esto detecta al mismo
 	// rostro que antes entró como residente aunque esta vez no traiga CURP
 	// que lo ligue por ese lado.
+	//
+	// v.PersonaID != nil en este punto significa que RegisterVisita YA
+	// cruzó esta entrada contra los residentes ACTIVOS del tenant
+	// (BuscarPersonaPorIdentidad) y la encontró -- es decir, quien entra
+	// sigue siendo residente en este momento, con acceso vigente. Eso NO es
+	// una bajada de verificación real (la identidad se confirmó igual de
+	// fuerte que un login por PIN/rostro, solo que por el flujo de
+	// visitante), así que no debe bloquear el autopase ni restar como una
+	// anomalía -- solo se anota como contexto informativo.
+	//
+	// Cuando v.PersonaID es nil, en cambio, quien entra NO es reconocido
+	// como residente activo ahora mismo -- el único motivo por el que el
+	// historial de esta identidad puede traer entradas RESIDENTE/CON
+	// INVITACION sin que BuscarPersonaPorIdentidad la haya enlazado es que
+	// ese acceso ya no está vigente (se le revocó la membresía, o la
+	// invitación expiró y el residente que la dio ya no responde por él).
+	// Eso sí es una bajada real de verificación y debe seguir bloqueando el
+	// autopase como hasta ahora.
 	if v.TipoVisitante == TipoSinInvitacion {
 		var huboResidente, huboInvitado bool
 		for _, h := range historial {
@@ -246,17 +264,31 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 			}
 		}
 		if huboResidente || huboInvitado {
-			sc.CambioModalidad = true
-			detalle := "Esta misma identidad ya entró antes "
+			procedencia := "con una invitación QR válida"
 			switch {
 			case huboResidente && huboInvitado:
-				detalle += "como residente y también con invitación QR, y esta vez llegó como visitante sin invitación."
+				procedencia = "como residente y también con invitación QR"
 			case huboResidente:
-				detalle += "como residente (PIN o reconocimiento facial), y esta vez llegó como visitante sin invitación."
-			default:
-				detalle += "con una invitación QR válida, y esta vez llegó como visitante sin invitación."
+				procedencia = "como residente (PIN o reconocimiento facial)"
 			}
-			add("cambio_modalidad", "Cambio de modalidad", detalle, -10, FactorNegativo)
+
+			if v.PersonaID != nil {
+				add("entrada_por_visitante_siendo_residente", "Entró como visitante, pero sigue siendo residente",
+					fmt.Sprintf(
+						"Esta identidad entró antes %s y esta vez usó el flujo de visitante sin invitación -- "+
+							"el sistema la reconoció contra el padrón de residentes activos y le dio el mismo acceso "+
+							"que por PIN o reconocimiento facial. No es una anomalía.",
+						procedencia,
+					), 5, FactorPositivo)
+			} else {
+				sc.CambioModalidad = true
+				add("cambio_modalidad", "Cambio de modalidad",
+					fmt.Sprintf(
+						"Esta misma identidad ya entró antes %s, pero ese acceso ya no está vigente "+
+							"(no se reconoce como residente activo ahora) y esta vez llegó como visitante sin invitación.",
+						procedencia,
+					), -10, FactorNegativo)
+			}
 		}
 	}
 
