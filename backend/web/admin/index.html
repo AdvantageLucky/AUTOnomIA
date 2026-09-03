@@ -227,6 +227,11 @@
 							<input id="ob-inst-nombre" type="text" required placeholder="Ej. Residencial Las Palmas">
 							<div class="form-hint">Tu código público será: <strong id="ob-inst-codigo-preview">—</strong>. Los residentes lo usan para unirse desde la app.</div>
 						</div>
+						<div class="form-group">
+							<label>Teléfono de contacto</label>
+							<input id="ob-inst-telefono" type="tel" placeholder="2221234567">
+							<div class="form-hint">Número del vigilante/admin para el botón "Llamar al administrador" del kiosko -- funciona aunque el kiosko no tenga internet.</div>
+						</div>
 						<div id="ob-inst-error" class="form-error" hidden></div>
 						<button type="submit" class="btn-primary btn-block">Siguiente →</button>
 					</form>
@@ -1206,16 +1211,6 @@
 								<option value="es">Español</option>
 								<option value="en">Inglés</option>
 							</select>
-						</div>
-						<div class="toggle-row">
-							<div>
-								<div class="toggle-label">Foto de rostro (sin invitación)</div>
-								<div class="toggle-sub">Captura facial al registrar visitante</div>
-							</div>
-							<label class="toggle-switch">
-								<input type="checkbox" id="nk-cfg-rostro" checked>
-								<span class="toggle-slider"></span>
-							</label>
 						</div>
 						<div class="toggle-row">
 							<div>
