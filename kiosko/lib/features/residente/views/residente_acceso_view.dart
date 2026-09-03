@@ -338,6 +338,11 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         Scaffold(
           backgroundColor: context.kBg,
           body: PantallaAdaptable(
+            // Pantalla fija: aquí no hay nada que leer más abajo, el residente
+            // solo tiene que ponerse frente a la cámara. Arrastrarla solo
+            // descuadraba la vista contra la mascota y los botones flotantes,
+            // que van en el Stack y no se mueven con el contenido.
+            desplazable: false,
             // Ver welcome_view.dart: el footer queda detrás del
             // micrófono/vigilante sin esta reserva extra abajo.
             padding: const EdgeInsets.fromLTRB(34, 48, 34, 48 + KigoDesign.clearanceBotonesFlotantes),
@@ -354,8 +359,18 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           ),
         ),
         BotonAsistenteFlotante(
-          // Mismo header que WelcomeView (PantallaAdaptable, padding 48/34).
-          topDelBorde: 48,
+          // A la altura del logotipo, DENTRO de la franja del header, no
+          // debajo: con topDelBorde: 48 el bloque (etiqueta + mascota, 97 de
+          // alto) llegaba hasta y≈145 y se montaba sobre "Mira a la cámara
+          // para identificarte", que arranca justo después del header.
+          //
+          // 12 sale de centrar la mascota en el título: el header ocupa
+          // y=[48,111] y "AUTOnomIA" y=[48,89] (medido con tester.getRect);
+          // la etiqueta (11) + su separación (6) van encima de la mascota
+          // (76), así que 12 + 17 = 29 deja la mascota en [29,105] --
+          // centrada en el título y todavía dentro del header.
+          // rightDelBorde: 34 = el padding horizontal de PantallaAdaptable.
+          topDelBorde: 12,
           rightDelBorde: 34,
           mostrarEtiqueta: true,
           onRespuestaLibre: (_) {},
@@ -427,7 +442,16 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     // reconocimiento facial. El PIN ahora es un botón compacto (ver
     // _buildPinFallback) para liberar ese espacio.
     final size = MediaQuery.sizeOf(context);
-    double ovalH = math.min(size.width * 0.85, size.height * 0.5);
+    final altoUtil = size.height - MediaQuery.paddingOf(context).vertical;
+    double ovalH = math.min(size.width * 0.85, altoUtil * 0.5);
+    // Sin scroll (ver desplazable: false arriba) el óvalo es la única pieza
+    // elástica de la columna: todo lo demás -- header, instrucción, pastilla
+    // de estado, botón de PIN, sus separaciones y los paddings de
+    // PantallaAdaptable, con la reserva de los botones flotantes incluida --
+    // suma 500 fijos, medido con tester.getRect. Sin este tope, en un panel
+    // corto el 50% del alto dejaba al botón de PIN debajo del micrófono.
+    const altoFijoColumna = 500.0;
+    ovalH = math.max(160, math.min(ovalH, altoUtil - altoFijoColumna));
     double ovalW = ovalH / 1.25;
     final anchoMax = size.width - 68; // 34 de padding horizontal a cada lado (ver PantallaAdaptable)
     if (ovalW > anchoMax) {
