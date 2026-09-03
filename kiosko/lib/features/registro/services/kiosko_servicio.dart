@@ -212,12 +212,21 @@ class KioskoServicio {
 
   // ── Config & SSE ────────────────────────────────────────────────────────────
 
+  /// Límite POR INTENTO del GET de config, no del arranque completo.
+  ///
+  /// Tiene que ser bastante menor que el presupuesto de arranque que aplica
+  /// KioskoConfigNotifier (`presupuestoArranqueConfig`): en el
+  /// camino del 401 se gastan dos intentos más el re-login, y si cada intento
+  /// pudiera comerse el presupuesto entero el segundo nunca llegaría a
+  /// hacerse. Con 10 pasaba justo eso.
+  static const Duration timeoutConfigPorIntento = Duration(seconds: 5);
+
   Future<KioskoConfig> obtenerConfig() async {
     await _ensureLogin();
     var response = await http.get(
       Uri.parse('$_baseUrl/kioskos/$_kioskoId/config/mia'),
       headers: {'Authorization': 'Bearer $_sessionToken'},
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(timeoutConfigPorIntento);
 
     if (response.statusCode == 401) {
       _sessionToken = null;
@@ -225,7 +234,7 @@ class KioskoServicio {
         response = await http.get(
           Uri.parse('$_baseUrl/kioskos/$_kioskoId/config/mia'),
           headers: {'Authorization': 'Bearer $_sessionToken'},
-        ).timeout(const Duration(seconds: 10));
+        ).timeout(timeoutConfigPorIntento);
       } else {
         await cerrarSesion();
         throw DeviceNotActivatedException();
@@ -338,6 +347,23 @@ class KioskoServicio {
     } catch (_) {}
   }
 
+  /// Generación del loop SSE vivo. Cada llamada a [escucharConfigStream]
+  /// incrementa el contador y el loop anterior se apaga al verlo cambiado.
+  ///
+  /// Sin esto los loops se acumulaban: `reinicializar()` vuelve a llamar a
+  /// `inicializar()`, que arranca otro loop, y el viejo es un `while (true)`
+  /// sin forma de pararse -- seguía reconectando y empujando config a un
+  /// notifier que a lo mejor ya nadie escucha. Uno por reactivación.
+  int _sseGeneracion = 0;
+
+  /// Cliente del loop vivo, para poder cortarle la conexión desde fuera.
+  ///
+  /// El contador solo se revisa entre vueltas, y un SSE sano se queda
+  /// bloqueado dentro del `forEach` indefinidamente -- que es justo el caso
+  /// normal. Cerrar el cliente rompe ese stream y devuelve el control al
+  /// loop, que ahí sí ve que ya no es el vigente y se va.
+  http.Client? _sseClient;
+
   /// [onRevocado] se llama si la sesión del kiosko fue revocada (ej. el admin lo
   /// eliminó desde el dashboard) y no se pudo re-autenticar: el dispositivo
   /// debe volver a la pantalla de activación.
@@ -345,17 +371,32 @@ class KioskoServicio {
     void Function(KioskoConfig) onConfig, {
     VoidCallback? onRevocado,
   }) {
-    _sseLoop(onConfig, onRevocado);
+    final generacion = ++_sseGeneracion;
+    _cerrarSseVivo();
+    _sseLoop(generacion, onConfig, onRevocado);
+  }
+
+  /// Apaga el loop SSE sin arrancar otro (lo llama el dispose del notifier).
+  void detenerConfigStream() {
+    _sseGeneracion++;
+    _cerrarSseVivo();
+  }
+
+  void _cerrarSseVivo() {
+    _sseClient?.close();
+    _sseClient = null;
   }
 
   Future<void> _sseLoop(
+    int generacion,
     void Function(KioskoConfig) onConfig,
     VoidCallback? onRevocado,
   ) async {
-    while (true) {
+    while (generacion == _sseGeneracion) {
       try {
         await _ensureLogin();
         final client = http.Client();
+        _sseClient = client;
         final request = http.Request(
           'GET',
           Uri.parse('$_baseUrl/kioskos/$_kioskoId/config/stream'),
@@ -379,6 +420,10 @@ class KioskoServicio {
             .transform(utf8.decoder)
             .transform(const LineSplitter())
             .forEach((line) {
+          // Un loop relevado puede tener una línea a medio camino cuando le
+          // cierran el cliente: no debe entregarla, el notifier que la
+          // esperaba puede estar ya desechado.
+          if (generacion != _sseGeneracion) return;
           if (line.startsWith('data: ')) {
             try {
               final cuerpo = line.substring(6);

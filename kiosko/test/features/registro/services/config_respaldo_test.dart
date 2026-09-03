@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
+import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 
 const _canal = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
@@ -89,5 +90,21 @@ void main() {
   test('un respaldo ilegible se ignora en vez de reventar', () async {
     _almacenFalso()['kiosko_config_respaldo'] = 'esto no es json';
     expect(await KioskoServicio().configRespaldo(), isNull);
+  });
+
+  // El limite de fuera valia 5s y el del GET de dentro 10: el de fuera
+  // siempre ganaba, asi que el de dentro no llegaba a dispararse nunca y una
+  // red lenta pero sana se descartaba con la respuesta en camino. Este es el
+  // invariante que lo impide: el presupuesto tiene que dar para los DOS
+  // intentos del camino del 401, no para uno solo a medias.
+  test('el presupuesto de arranque cubre los dos intentos del GET', () {
+    expect(
+      KioskoServicio.timeoutConfigPorIntento,
+      lessThan(presupuestoArranqueConfig),
+    );
+    expect(
+      KioskoServicio.timeoutConfigPorIntento * 2,
+      lessThan(presupuestoArranqueConfig),
+    );
   });
 }
