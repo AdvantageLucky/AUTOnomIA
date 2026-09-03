@@ -1733,7 +1733,14 @@
     loadResidentesPendientesBadge();
     loadKioskosOfflineBadge();
     startBadgesAmbientalesPolling();
-    if (state.rol !== 'vigilante' && !state.tenant?.nombre) {
+    // state.rol viene del JWT y a veces no trae el rol real (visto con
+    // login por Google) -- state.admin.rol viene de /admins/:id, directo
+    // de la BD, así que es la fuente confiable para decidir si es
+    // vigilante. No se toca de dónde sale state.rol en sí (se usa en más
+    // lugares) -- solo se refuerza este chequeo puntual con la fuente que
+    // sí es correcta, para que un vigilante nunca vea el wizard de
+    // onboarding de un centro que no le corresponde crear.
+    if (state.rol !== 'vigilante' && state.admin?.rol !== 'vigilante' && !state.tenant?.nombre) {
       showOnboarding();
     } else {
       const hash = window.location.hash.replace(/^#/, "");
