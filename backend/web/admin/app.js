@@ -2171,8 +2171,8 @@
     const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
     const tvLabel = tipoVisLabel(v.tipo_visitante);
     const titular = v.titular || v.placa || (v.tipo_visitante === "RESIDENTE" ? tvLabel : t("visitante_sin_nombre"));
-    return `<div class="row-item" style="grid-template-columns:2fr auto 1fr 80px;gap:12px;align-items:center;animation-delay:${i*40}ms;cursor:pointer" data-id="${v.id}">
-      <div>
+    return `<div class="row-item" style="grid-template-columns:minmax(0,2fr) auto minmax(0,1fr) 80px;gap:12px;align-items:center;animation-delay:${i*40}ms;cursor:pointer" data-id="${v.id}">
+      <div style="min-width:0">
         <div class="row-name">${esc(titular)}</div>
         <div class="row-sub">${esc(v.casa_destino || v.placa || "")}</div>
       </div>
@@ -2289,7 +2289,7 @@
     const tieneIA = !!(v.resumen_ia || v.score_ia);
     const badgeIA = tieneIA ? `<span class="badge badge--intervenida" style="font-size:9.5px;padding:1px 6px;margin-left:6px;vertical-align:1px" title="${t('con_analisis_ia')}">IA</span>` : '';
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
-      <div><div class="row-name">${esc(v.titular)}${badgeIA}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
+      <div style="min-width:0"><div class="row-name">${esc(v.titular)}${badgeIA}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
       <div class="row-sub">${acceso ? esc(acceso.nombre) : `#${v.kiosko_id}`}</div>
       <div><span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span></div>
