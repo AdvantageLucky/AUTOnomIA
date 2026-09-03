@@ -45,10 +45,31 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
 
   void _onCampoExtraido(CampoExtraido campo) {
     final valor = campo.valor;
-    if (valor == null || _destinos == null) return;
+    if (valor == null || _destinos == null) {
+      _avisarDestinoNoReconocido();
+      return;
+    }
     final existe = _destinos!.any((d) => d['nombre'] == valor);
-    if (!existe) return;
+    if (!existe) {
+      _avisarDestinoNoReconocido();
+      return;
+    }
     setState(() => _destinoSugeridoPorVoz = valor);
+  }
+
+  /// Antes un destino no reconocido por voz simplemente no hacía nada -- el
+  /// visitante se quedaba sin saber si el micrófono lo escuchó, si su
+  /// destino no existe en el catálogo, o si debía intentar de nuevo. Este
+  /// aviso cubre los dos caminos que sí tiene la pantalla: reintentar por
+  /// voz (el botón sigue ahí) o usar el escape táctil de siempre.
+  void _avisarDestinoNoReconocido() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.t(context, 'destino_no_reconocido_por_voz')),
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   @override

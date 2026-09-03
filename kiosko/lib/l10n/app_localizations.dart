@@ -234,6 +234,7 @@ class AppLocalizations {
       'otro_destino_label': 'Otro',
       'no_encuentro_mi_destino': 'No encuentro mi destino',
       'escribe_tu_destino': 'Escribe tu destino',
+      'destino_no_reconocido_por_voz': 'No reconocí ese destino. Intenta decirlo de nuevo o toca "No encuentro mi destino".',
 
       // Salida de modo operador (PIN)
       'modo_operador': 'MODO OPERADOR',
@@ -466,6 +467,7 @@ class AppLocalizations {
       'otro_destino_label': 'Other',
       'no_encuentro_mi_destino': "I can't find my destination",
       'escribe_tu_destino': 'Type your destination',
+      'destino_no_reconocido_por_voz': 'I didn\'t recognize that destination. Try saying it again or tap "I can\'t find my destination".',
 
       // Salida de modo operador (PIN)
       'modo_operador': 'OPERATOR MODE',

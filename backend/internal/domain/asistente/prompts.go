@@ -50,6 +50,29 @@ Extrae una placa vehicular mexicana de la transcripción. Normaliza letras/dígi
 `, systemPromptExtraerCampo, transcripcion)
 }
 
+// construirPromptMotivo extrae el motivo de visita de una transcripción que
+// puede ser larga o enredada ("vengo a dejarle un paquete a mi tía porque
+// hoy es su cumpleaños y quiero darle la sorpresa...") -- a diferencia de
+// destino, no hay catálogo contra el cual matchear: el motivo es y siempre
+// ha sido texto libre, así que aquí el LLM solo limpia/resume la
+// transcripción a una frase breve y clara, sin inventar información que la
+// persona no dijo. Solo responde null si la transcripción no tiene ningún
+// motivo reconocible (silencio, ruido, "no sé", etc.).
+func construirPromptMotivo(transcripcion string) string {
+	return fmt.Sprintf(`### Instrucción
+%s
+Resume el motivo de la visita en una frase breve y clara (máximo 15 palabras), en español, sin inventar
+información que la persona no haya dicho. Si la transcripción no describe ningún motivo reconocible
+(silencio, ruido, "no sé", etc.), responde valor null. Responde EXACTAMENTE en este formato JSON, nada más:
+{"valor": "<motivo resumido o null>", "confianza": <0.0 a 1.0>}
+
+### Transcripción
+%s
+
+### JSON
+`, systemPromptExtraerCampo, transcripcion)
+}
+
 func construirPromptDestino(transcripcion string, destinosValidos []string) string {
 	lista := strings.Join(destinosValidos, ", ")
 	return fmt.Sprintf(`### Instrucción
