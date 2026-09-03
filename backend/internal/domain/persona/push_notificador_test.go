@@ -12,7 +12,7 @@ type fakeSender struct {
 	enviados []string
 }
 
-func (f *fakeSender) Send(_ context.Context, deviceToken, _, _ string) error {
+func (f *fakeSender) Send(_ context.Context, deviceToken, _, _ string, _ map[string]string) error {
 	f.enviados = append(f.enviados, deviceToken)
 	return nil
 }

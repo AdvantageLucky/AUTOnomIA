@@ -30,13 +30,14 @@ func NewFirebasePushSender(ctx context.Context, credentialsPath string) (*Fireba
 	return &FirebasePushSender{client: client}, nil
 }
 
-func (s *FirebasePushSender) Send(ctx context.Context, deviceToken, titulo, cuerpo string) error {
+func (s *FirebasePushSender) Send(ctx context.Context, deviceToken, titulo, cuerpo string, data map[string]string) error {
 	_, err := s.client.Send(ctx, &messaging.Message{
 		Token: deviceToken,
 		Notification: &messaging.Notification{
 			Title: titulo,
 			Body:  cuerpo,
 		},
+		Data: data,
 	})
 	return err
 }

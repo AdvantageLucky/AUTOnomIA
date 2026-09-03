@@ -38,8 +38,9 @@ func (n *PushNotificador) NotificarNuevaVisita(
 	titulo := "Nueva solicitud de acceso"
 	cuerpo := v.Titular + " quiere entrar a tu casa"
 
+	data := map[string]string{"tipo": "solicitud_pendiente"}
 	for _, p := range destinatarios {
-		if err := n.sender.Send(ctx, *p.DeviceToken, titulo, cuerpo); err != nil {
+		if err := n.sender.Send(ctx, *p.DeviceToken, titulo, cuerpo, data); err != nil {
 			log.Printf("PushNotificador: error mandando a persona %d: %v", p.ID, err)
 		}
 	}
