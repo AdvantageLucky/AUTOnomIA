@@ -330,6 +330,19 @@ func (r *Repository) HistorialPorCURP(curp string) ([]Visita, error) {
 	return visitas, err
 }
 
+// HistorialPorPersonaID devuelve visitas previas de una Persona autenticada
+// (kigo-app), de más reciente a más antigua. A diferencia de CURP/rostro
+// (señales que se infieren y pueden fallar en encontrarse a sí mismas),
+// PersonaID es el enlace directo a la cuenta real -- se usa sin depender
+// de qué "fuentes" tenga prendidas el admin, porque no es una evidencia
+// biométrica/documental sujeta a falsos positivos, es la misma fila de
+// identidad.
+func (r *Repository) HistorialPorPersonaID(personaID uint) ([]Visita, error) {
+	var visitas []Visita
+	err := r.db.Scopes(ByTenant).Where("persona_id = ?", personaID).Order("created_at DESC").Find(&visitas).Error
+	return visitas, err
+}
+
 // HistorialPorPlaca devuelve visitas previas de una placa, de más reciente a más antigua.
 // Es el historial de los accesos vehiculares que no capturan INE: ahí la matrícula
 // es lo único que liga una visita con las anteriores (ADR-0024).
@@ -374,12 +387,14 @@ func (r *Repository) HistorialPorRostro(embedding []float64, umbralPct int) ([]V
 	return coincidencias, nil
 }
 
-// HistorialDeVisitante liga esta visita con sus antecedentes por CURP y/o
-// por parecido de rostro (identidad de la misma persona), y si ninguna de
-// las dos aplica, por placa (identidad del mismo vehículo) -- de las
-// fuentes que fuentes deje prendidas (ver ScoreIaFuentes). Si el admin
-// apagó todas, no hay con qué ligar la visita y se trata como primera vez,
-// que es la opción segura.
+// HistorialDeVisitante liga esta visita con sus antecedentes por PersonaID
+// (si es una Persona autenticada, kigo-app), por CURP y/o por parecido de
+// rostro (identidad de la misma persona sin cuenta), y si ninguna aplica,
+// por placa (identidad del mismo vehículo) -- CURP y rostro respetan las
+// fuentes que el admin deje prendidas (ver ScoreIaFuentes); PersonaID no,
+// por ser un enlace directo de identidad, no una señal inferida. Si el
+// admin apagó CURP y rostro y no hay PersonaID ni placa, no hay con qué
+// ligar la visita y se trata como primera vez, que es la opción segura.
 //
 // CURP y rostro se UNEN (no "la primera que aplique gana"): un residente
 // entra por PIN/rostro sin CURP nunca capturada, y un visitante sin
@@ -396,6 +411,21 @@ func (r *Repository) HistorialPorRostro(embedding []float64, umbralPct int) ([]V
 // embedding no busca nada, en vez de traer el tenant entero.
 func (r *Repository) HistorialDeVisitante(v Visita, umbralFacialPct int, fuentes ScoreIaFuentes) ([]Visita, error) {
 	porIdentidad := map[uint]Visita{}
+
+	// El acceso propio de un residente por PIN (LoginDesdeKiosko) no
+	// captura CURP ni rostro en ese momento -- sin este enlace, cada
+	// entrada por PIN se veía como "primera visita" para siempre, sin
+	// importar cuántas veces hubiera entrado antes, porque ninguna de las
+	// otras dos señales tenía nada que comparar.
+	if v.PersonaID != nil {
+		lista, err := r.HistorialPorPersonaID(*v.PersonaID)
+		if err != nil {
+			return nil, err
+		}
+		for _, vh := range lista {
+			porIdentidad[vh.ID] = vh
+		}
+	}
 
 	if fuentes.Documento && v.Curp != "" {
 		lista, err := r.HistorialPorCURP(v.Curp)
