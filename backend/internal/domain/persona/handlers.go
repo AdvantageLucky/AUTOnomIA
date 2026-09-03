@@ -621,7 +621,8 @@ func (h *Handler) CrearInvitacion(c *gin.Context) {
 	if h.pushSender != nil && invitado.TelefonoVerificadoAt != nil &&
 		invitado.DeviceToken != nil && *invitado.DeviceToken != "" {
 		cuerpo := "Tienes una invitación nueva a " + destino.Nombre
-		if err := h.pushSender.Send(c.Request.Context(), *invitado.DeviceToken, "Nueva invitación", cuerpo); err != nil {
+		data := map[string]string{"tipo": "invitacion_recibida"}
+		if err := h.pushSender.Send(c.Request.Context(), *invitado.DeviceToken, "Nueva invitación", cuerpo, data); err != nil {
 			log.Printf("CrearInvitacion: error mandando push a persona %d: %v", invitado.ID, err)
 		}
 	}
@@ -985,11 +986,12 @@ func (h *Handler) notificarEntradaAutorizada(tenantID uint, casaDestino, titular
 		return
 	}
 	cuerpo := titular + " ya entró. ¡Prepárate!"
+	data := map[string]string{"tipo": "invitacion_usada"}
 	for _, p := range personas {
 		if p.DeviceToken == nil || *p.DeviceToken == "" {
 			continue
 		}
-		if err := h.pushSender.Send(ctx, *p.DeviceToken, "Tu visita llegó", cuerpo); err != nil {
+		if err := h.pushSender.Send(ctx, *p.DeviceToken, "Tu visita llegó", cuerpo, data); err != nil {
 			log.Printf("notificarEntradaAutorizada: error mandando a persona %d: %v", p.ID, err)
 		}
 	}
