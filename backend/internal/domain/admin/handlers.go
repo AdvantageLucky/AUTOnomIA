@@ -159,7 +159,7 @@ func (h *Handler) PatchAdmin(c *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /admins/{id} [delete]
 func (h *Handler) DeleteAdmin(c *gin.Context) {
-	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
 
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -168,7 +168,17 @@ func (h *Handler) DeleteAdmin(c *gin.Context) {
 		return
 	}
 
-	if uint(id) != adminID {
+	target, err := h.repo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "admin no encontrado"})
+		return
+	}
+
+	// Solo se eliminan vigilantes del propio tenant: este endpoint alimenta
+	// la pantalla de Equipo, nunca la baja de la propia cuenta del admin
+	// (uint(id) != adminID bloqueaba absolutamente cualquier borrado, ya
+	// que el objetivo nunca es uno mismo).
+	if target.TenantID != tenantID || target.Rol != "vigilante" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "no autorizado"})
 		return
 	}
