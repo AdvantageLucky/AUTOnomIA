@@ -96,3 +96,21 @@ func (r *AsistenciaUrgenteRepository) MarcarResuelta(id, tenantID, adminID uint)
 	}
 	return nil
 }
+
+// ActualizarMotivo permite al admin capturar o corregir el motivo desde el
+// dashboard -- el kiosko lo manda opcional (ver Solicitar), así que la
+// mayoría de las filas llegan sin él; esto es lo que hace falta para que el
+// admin lo pueda anotar él mismo al atender la solicitud, en vez de que el
+// campo se quede vacío para siempre.
+func (r *AsistenciaUrgenteRepository) ActualizarMotivo(id, tenantID uint, motivo string) error {
+	res := r.db.Model(&AsistenciaUrgente{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Update("motivo", motivo)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
