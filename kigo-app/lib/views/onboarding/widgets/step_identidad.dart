@@ -5,10 +5,11 @@ import '../../../models/ine_ocr_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 import 'identidad/step_confirmar_datos.dart';
+import 'identidad/step_consentimiento_identidad.dart';
 import 'identidad/step_escanear_ine.dart';
 import 'identidad/step_escanear_rostro.dart';
 
-enum _SubPaso { ine, confirmar, rostro }
+enum _SubPaso { consentimiento, ine, confirmar, rostro }
 
 /// Wizard de identidad (INE + confirmar + rostro) — reemplaza el viejo paso
 /// de solo texto "Perfil". Coordina sus 3 sub-pasos y, al final, junta todo
@@ -23,7 +24,7 @@ class StepIdentidad extends StatefulWidget {
 }
 
 class _StepIdentidadState extends State<StepIdentidad> {
-  _SubPaso _subPaso = _SubPaso.ine;
+  _SubPaso _subPaso = _SubPaso.consentimiento;
   IneOcrResult? _resultadoOcr;
   String? _nombre, _apellidoPaterno, _apellidoMaterno, _curp;
   bool _enviando = false;
@@ -93,6 +94,8 @@ class _StepIdentidadState extends State<StepIdentidad> {
           ),
         Expanded(
           child: switch (_subPaso) {
+            _SubPaso.consentimiento =>
+              StepConsentimientoIdentidad(onAceptar: () => setState(() => _subPaso = _SubPaso.ine)),
             _SubPaso.ine => StepEscanearIne(onEscaneado: _onEscaneado),
             _SubPaso.confirmar =>
               StepConfirmarDatos(resultadoOcr: _resultadoOcr!, onConfirmado: _onConfirmado),

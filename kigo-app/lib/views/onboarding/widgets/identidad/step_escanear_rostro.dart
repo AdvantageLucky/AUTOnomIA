@@ -82,7 +82,13 @@ class _StepEscanearRostroState extends State<StepEscanearRostro> {
     _controller = null;
     await anterior?.dispose();
     try {
-      final camaras = await availableCameras();
+      // Ver comentario equivalente en step_escanear_ine: sin timeout, un
+      // availableCameras() colgado dejaba la pantalla en spinner infinito
+      // sin llegar siquiera al timeout que ya protegía a initialize().
+      final camaras = await availableCameras().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw CameraException('timeout', 'No se pudo listar las cámaras'),
+      );
       if (camaras.isEmpty) {
         setState(() => _error = AppLocalizations.t(context, 'ine_sin_camara'));
         return;

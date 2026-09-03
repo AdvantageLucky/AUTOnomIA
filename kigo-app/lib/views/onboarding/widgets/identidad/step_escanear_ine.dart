@@ -83,7 +83,14 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
     _controller = null;
     await anterior?.dispose();
     try {
-      final camaras = await availableCameras();
+      // Sin timeout aquí, un availableCameras() colgado en el HAL de
+      // algunos Android dejaba la pantalla en el spinner de "cargando" para
+      // siempre -- nunca se llegaba ni siquiera al timeout que ya protegía
+      // a controller.initialize() más abajo, porque esta llamada es ANTES.
+      final camaras = await availableCameras().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw CameraException('timeout', 'No se pudo listar las cámaras'),
+      );
       if (camaras.isEmpty) {
         setState(() => _error = AppLocalizations.t(context, 'ine_sin_camara'));
         return;

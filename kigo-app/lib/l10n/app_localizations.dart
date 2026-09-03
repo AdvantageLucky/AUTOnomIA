@@ -68,6 +68,12 @@ class AppLocalizations {
       'bienvenida_subtitulo': 'Comparte tu QR, recibe invitados y entra a tu comunidad sin esperar en la caseta.',
       'ya_vivo_aqui_btn': 'Ya vivo aquí',
       'soy_nuevo_aqui_btn': 'Soy nuevo aquí',
+      'consentimiento_identidad_titulo': 'Antes de continuar',
+      'consentimiento_identidad_cuerpo':
+          'Vamos a tomar una foto de tu identificación oficial y una foto de tu rostro para verificar quién eres. '
+          'Guardamos ambas fotos junto con una firma digital de tu rostro (un conjunto de números que te identifica, '
+          'no una imagen), y las usamos solo para reconocerte en los accesos de tu comunidad.',
+      'consentimiento_identidad_aceptar': 'Entendido, continuar',
       'solicitud_aprobada': '¡Tu solicitud ha sido aprobada!',
       'solicitud_rechazada': 'Tu solicitud fue rechazada por la administración.',
       'solicitud_en_revision': 'Tu solicitud sigue en revisión por la administración.',
@@ -384,6 +390,12 @@ class AppLocalizations {
       'bienvenida_subtitulo': 'Share your QR, receive guests, and get into your community without waiting at the gate.',
       'ya_vivo_aqui_btn': 'I already live here',
       'soy_nuevo_aqui_btn': "I'm new here",
+      'consentimiento_identidad_titulo': 'Before you continue',
+      'consentimiento_identidad_cuerpo':
+          "We're going to take a photo of your official ID and a photo of your face to verify who you are. "
+          "We store both photos along with a digital signature of your face (a set of numbers that identifies you, "
+          "not an image), and use them only to recognize you at your community's entrances.",
+      'consentimiento_identidad_aceptar': 'Got it, continue',
       'solicitud_aprobada': 'Your request has been approved!',
       'solicitud_rechazada': 'Your request was rejected by the administrator.',
       'solicitud_en_revision': 'Your request is still under review by the administrator.',
