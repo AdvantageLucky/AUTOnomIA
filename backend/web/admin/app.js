@@ -272,6 +272,8 @@
       ayuda_estado_pendiente: "Pendiente",
       ayuda_estado_resuelta: "Resuelta",
       ayuda_resuelta_hace: h => `Resuelta hace ${h}`,
+      ayuda_motivo_label: "Motivo",
+      ayuda_guardar_motivo: "Guardar motivo",
       // __NEW_I18N_ES_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Activo",
@@ -770,6 +772,8 @@
       ayuda_estado_pendiente: "Pending",
       ayuda_estado_resuelta: "Resolved",
       ayuda_resuelta_hace: h => `Resolved ${h} ago`,
+      ayuda_motivo_label: "Reason",
+      ayuda_guardar_motivo: "Save reason",
       // __NEW_I18N_EN_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Active",
@@ -2871,6 +2875,10 @@
 
     if (asistencias.length === 0) { showAyudaState("empty"); return; }
 
+    // Cache en memoria para que abrirAyudaDetalle no tenga que volver a
+    // pedirle al backend el mismo registro que ya está en pantalla.
+    state.ayudaCache = new Map(asistencias.map(a => [String(a.id), a]));
+
     const container = document.getElementById("ayuda-rows");
     if (!container) return;
     container.innerHTML = asistencias.map((a, i) => renderAyudaRow(a, i)).join("");
@@ -2878,6 +2886,12 @@
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         resolverAyuda(btn.dataset.resolverAyuda);
+      });
+    });
+    container.querySelectorAll("[data-ayuda-detalle]").forEach(card => {
+      card.addEventListener("click", () => abrirAyudaDetalle(card.dataset.ayudaDetalle));
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirAyudaDetalle(card.dataset.ayudaDetalle); }
       });
     });
     showAyudaState("rows");
@@ -2890,7 +2904,7 @@
     const sub = pendiente
       ? fmtElapsed(a.created_at)
       : (a.resuelta_at ? STRINGS[lang].ayuda_resuelta_hace(fmtElapsed(a.resuelta_at)) : "");
-    return `<div class="sol-card" style="animation-delay:${i * 40}ms">
+    return `<div class="sol-card" style="animation-delay:${i * 40}ms" data-ayuda-detalle="${a.id}" role="button" tabindex="0">
       <div class="sol-card-left">
         <div class="feed-dot"></div>
         <div>
@@ -2907,6 +2921,64 @@
     if (!res || !res.ok) return;
     loadAyuda();
   }
+
+  // Abre el detalle de una asistencia con un textarea editable de motivo --
+  // sin esto, un motivo vacío (lo más común: el kiosko lo manda opcional)
+  // se quedaba vacío para siempre, sin forma de que el admin lo anotara al
+  // atenderla.
+  function abrirAyudaDetalle(id) {
+    const a = state.ayudaCache?.get(String(id));
+    const modal = document.getElementById("modal-ayuda");
+    if (!modal || !a) return;
+
+    const pendiente = a.estado === "pendiente";
+    const badgeClase = pendiente ? "badge--pendiente" : "badge--aprobado";
+    const badgeTexto = pendiente ? t("ayuda_estado_pendiente") : t("ayuda_estado_resuelta");
+
+    modal.innerHTML = `<div class="modal-box">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px">
+        <div>
+          <div class="badge ${badgeClase}" style="margin-bottom:8px;display:inline-block">${badgeTexto}</div>
+          <div class="modal-title">${esc(a.kiosko_nombre || `Kiosko #${a.kiosko_id}`)}</div>
+          <div class="modal-sub" style="margin-bottom:0">${fmtDate(a.created_at)}</div>
+        </div>
+        <button type="button" class="btn-cancel" data-cerrar-ayuda style="padding:4px 10px;font-size:16px;border-radius:6px;cursor:pointer">&#10005;</button>
+      </div>
+
+      <div style="margin-top:16px">
+        <div class="campo-label" style="margin-bottom:6px">${t("ayuda_motivo_label")}</div>
+        <textarea id="ayuda-motivo-input" rows="3" style="width:100%;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:10px 12px;font:inherit;resize:vertical" placeholder="${t("ayuda_sin_motivo")}">${esc(a.motivo || "")}</textarea>
+      </div>
+
+      <div class="modal-actions">
+        ${pendiente ? `<button type="button" class="btn-aprobar" data-ayuda-resolver="${a.id}">${t("ayuda_marcar_resuelta")}</button>` : ""}
+        <button type="button" class="btn-cancel" data-ayuda-guardar="${a.id}">${t("ayuda_guardar_motivo")}</button>
+      </div>
+    </div>`;
+
+    modal.hidden = false;
+    modal.querySelectorAll("[data-cerrar-ayuda]").forEach(btn => {
+      btn.addEventListener("click", () => { modal.hidden = true; });
+    });
+    modal.querySelector("[data-ayuda-guardar]")?.addEventListener("click", async () => {
+      const motivo = document.getElementById("ayuda-motivo-input")?.value || "";
+      const res = await api(`/asistencias-urgentes/${a.id}/motivo`, {
+        method: "PATCH",
+        body: JSON.stringify({ motivo }),
+      });
+      if (!res || !res.ok) return;
+      modal.hidden = true;
+      loadAyuda();
+    });
+    modal.querySelector("[data-ayuda-resolver]")?.addEventListener("click", async () => {
+      modal.hidden = true;
+      await resolverAyuda(a.id);
+    });
+  }
+
+  document.getElementById("modal-ayuda")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-ayuda") e.target.hidden = true;
+  });
 
   document.querySelectorAll('#screen-ayuda .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {

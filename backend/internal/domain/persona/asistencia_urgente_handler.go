@@ -200,3 +200,42 @@ func (h *AsistenciaUrgenteHandler) MarcarResuelta(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"estado": AsistenciaUrgenteEstadoResuelta})
 }
+
+// ActualizarMotivo permite al admin capturar/corregir el motivo desde el
+// dashboard -- la mayoría de las solicitudes llegan sin motivo (el kiosko lo
+// manda opcional, ver Solicitar), así que sin esto el campo se quedaba vacío
+// para siempre sin forma de anotarlo después.
+//
+// @Summary Editar el motivo de una asistencia urgente
+// @Tags asistencia-urgente
+// @Produce json
+// @Param id path int true "ID de la solicitud"
+// @Success 200 {object} map[string]string
+// @Router /asistencias-urgentes/{id}/motivo [patch]
+func (h *AsistenciaUrgenteHandler) ActualizarMotivo(c *gin.Context) {
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	var body struct {
+		Motivo string `json:"motivo"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	motivo := strings.TrimSpace(body.Motivo)
+
+	if err := h.asistenciaRepo.ActualizarMotivo(uint(id64), tenantID, motivo); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "asistencia no encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"motivo": motivo})
+}

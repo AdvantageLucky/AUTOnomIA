@@ -283,6 +283,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	{
 		au.GET("/", asistenciaHandler.ListarAsistencias)
 		au.PATCH("/:id/resolver", asistenciaHandler.MarcarResuelta)
+		au.PATCH("/:id/motivo", asistenciaHandler.ActualizarMotivo)
 	}
 }
 
