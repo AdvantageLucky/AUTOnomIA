@@ -233,7 +233,6 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Consumer<KioskoConfigNotifier>(
       builder: (context, cfg, _) {
