@@ -274,6 +274,11 @@
       ayuda_resuelta_hace: h => `Resuelta hace ${h}`,
       ayuda_motivo_label: "Motivo",
       ayuda_guardar_motivo: "Guardar motivo",
+      resetear_confianza_btn: "Restablecer confianza",
+      resetear_confianza_titulo: "¿Restablecer la confianza con esta persona?",
+      resetear_confianza_texto: "Se olvida todo su historial anterior para el cálculo de confianza -- su próxima visita se evalúa desde cero, como si fuera la primera vez. Esto no borra el historial, solo deja de contar para el análisis.",
+      no_pudo_resetear_confianza: "No se pudo restablecer la confianza. Intenta de nuevo.",
+      confianza_reseteada_ok: "Confianza restablecida",
       // __NEW_I18N_ES_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Activo",
@@ -774,6 +779,11 @@
       ayuda_resuelta_hace: h => `Resolved ${h} ago`,
       ayuda_motivo_label: "Reason",
       ayuda_guardar_motivo: "Save reason",
+      resetear_confianza_btn: "Reset trust",
+      resetear_confianza_titulo: "Reset trust with this person?",
+      resetear_confianza_texto: "Forgets their entire prior history for the trust calculation -- their next visit is evaluated from scratch, as if it were the first time. This does not delete the history, it just stops counting for the analysis.",
+      no_pudo_resetear_confianza: "Could not reset trust. Try again.",
+      confianza_reseteada_ok: "Trust reset",
       // __NEW_I18N_EN_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Active",
@@ -2631,12 +2641,31 @@
         <div class="expediente-header">
           <span class="expediente-title">Historial de esta persona</span>
           <span class="expediente-count" id="exp-count"></span>
+          ${v.persona_id ? `<button type="button" class="btn-cancel" id="btn-resetear-confianza" data-persona-id="${v.persona_id}" style="margin-left:auto;padding:4px 10px;font-size:12px">${t("resetear_confianza_btn")}</button>` : ""}
         </div>
         <div class="expediente-timeline" id="exp-timeline">
           <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
         </div>
       </div>`;
 
+    cargarExpediente(v);
+    document.getElementById("btn-resetear-confianza")?.addEventListener("click", () => resetearConfianza(v.persona_id, v.id));
+  }
+
+  async function resetearConfianza(personaId, visitaActualId) {
+    const ok = await confirmarAccion({
+      titulo: t("resetear_confianza_titulo"),
+      texto: t("resetear_confianza_texto"),
+      textoBoton: t("resetear_confianza_btn"),
+    });
+    if (!ok) return;
+    const res = await api(`/visitas/personas/${personaId}/resetear-historial`, { method: "POST" });
+    if (!res || !res.ok) {
+      mostrarToast(t("no_pudo_resetear_confianza"), "err");
+      return;
+    }
+    mostrarToast(t("confianza_reseteada_ok"), "ok");
+    const v = await (await api(`/visitas/${visitaActualId}`)).json();
     cargarExpediente(v);
   }
 
@@ -2647,7 +2676,17 @@
     const curp = visitaActual.curp?.trim();
     let mismaPersona = [];
 
-    if (curp) {
+    if (visitaActual.persona_id) {
+      // Correlación fuerte (PersonaID) -- la misma que usa el análisis de
+      // IA, más precisa que cruzar solo por CURP exacto o por nombre.
+      const res = await api(`/visitas/personas/${visitaActual.persona_id}/historial`);
+      if (!res || !res.ok) {
+        timeline.innerHTML = renderExpEmpty(t("historial_no_disponible"));
+        return;
+      }
+      const data = await res.json();
+      mismaPersona = (data.visitas || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    } else if (curp) {
       /* /visitas/buscar devuelve VisitaResponse completo (con curp, fotos, etc.) */
       const res = await api(`/visitas/buscar?curp=${encodeURIComponent(curp)}`);
       if (!res || !res.ok) {
