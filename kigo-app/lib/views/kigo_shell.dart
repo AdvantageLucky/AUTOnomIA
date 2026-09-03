@@ -37,6 +37,7 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
     _auth.addListener(_onAuthChanged);
     WidgetsBinding.instance.addObserver(this);
     MyApp.notificationTick.addListener(_refrescarPendientes);
+    MyApp.pushNavigationTipo.addListener(_onPushNavigacionCambio);
 
     // Carga inicial de datos
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -54,6 +55,12 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
           _invitarTabInicial = 2;
         });
       }
+      // Igual que el deep link: si la app arrancó porque la persona tocó
+      // una notificación (app cerrada, ver PushService.getInitialMessage),
+      // ese valor ya pudo haberse fijado ANTES de que este listener se
+      // registrara arriba -- se revisa el valor actual una vez más aquí
+      // para no perderlo.
+      _aplicarTipoNotificacion(MyApp.pushNavigationTipo.value);
     });
   }
 
@@ -62,7 +69,38 @@ class _KigoShellState extends State<KigoShell> with WidgetsBindingObserver {
     _auth.removeListener(_onAuthChanged);
     WidgetsBinding.instance.removeObserver(this);
     MyApp.notificationTick.removeListener(_refrescarPendientes);
+    MyApp.pushNavigationTipo.removeListener(_onPushNavigacionCambio);
     super.dispose();
+  }
+
+  void _onPushNavigacionCambio() {
+    _aplicarTipoNotificacion(MyApp.pushNavigationTipo.value);
+  }
+
+  /// Traduce el `tipo` de la notificación tocada a la pestaña/sub-pestaña
+  /// correcta -- las 3 clases de push que manda el backend hoy son todas
+  /// sobre invitaciones o solicitudes, nunca algo genérico:
+  /// - `invitacion_recibida`: alguien te invitó -> Invitar / Recibidas.
+  /// - `invitacion_usada`: tu invitado ya entró -> Invitar / Mis invitaciones.
+  /// - `solicitud_pendiente`: un visitante espera en la puerta -> Solicitudes.
+  void _aplicarTipoNotificacion(String? tipo) {
+    if (tipo == null || !mounted) return;
+    MyApp.pushNavigationTipo.value = null; // consumido, no se vuelve a aplicar
+    switch (tipo) {
+      case 'invitacion_recibida':
+        setState(() {
+          _index = 2;
+          _invitarTabInicial = 2;
+        });
+      case 'invitacion_usada':
+        setState(() {
+          _index = 2;
+          _invitarTabInicial = 1;
+        });
+      case 'solicitud_pendiente':
+        setState(() => _index = 1);
+        _refrescarPendientes();
+    }
   }
 
   // El badge de "Solicitudes" solo se recargaba al tocar esa pestaña --
