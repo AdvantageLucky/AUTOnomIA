@@ -1066,6 +1066,7 @@
     deletingAccesoId: null,
     visSearchTimeout: null,
     solPollingId: null,
+    badgesAmbientalesPollingId: null,
     sseSource: null,
     detalleAbiertoId: null,
   };
@@ -1731,6 +1732,7 @@
     loadAlertasIABadge();
     loadResidentesPendientesBadge();
     loadKioskosOfflineBadge();
+    startBadgesAmbientalesPolling();
     if (state.rol !== 'vigilante' && !state.tenant?.nombre) {
       showOnboarding();
     } else {
@@ -1785,6 +1787,7 @@
   /* ─── Logout ─────────────────────────────── */
   function logout() {
     if (state.sseSource) { state.sseSource.close(); state.sseSource = null; }
+    stopBadgesAmbientalesPolling();
     clearToken();
     state.adminId = null;
     state.admin = null;
@@ -2678,6 +2681,31 @@
     if (state.solPollingId) {
       clearInterval(state.solPollingId);
       state.solPollingId = null;
+    }
+  }
+
+  // Los badges de Residentes, Bitácora (alertas IA) y Kioskos solo se
+  // refrescaban al entrar a esa pantalla o al completar una acción ahí
+  // mismo -- si el cambio pasaba en otra pestaña, otra sesión de admin, o
+  // simplemente el tiempo avanzaba mientras el usuario veía otra pantalla,
+  // se quedaban pegados en el último número que vieron (ver aprobación de
+  // residente que ya no aparecía en ningún lado, pero el badge seguía en
+  // 1). A diferencia de Solicitudes, que sí tiene su propio polling, estos
+  // tres no tenían ninguno: corren siempre desde el login, sin importar
+  // qué pantalla esté abierta.
+  function startBadgesAmbientalesPolling() {
+    stopBadgesAmbientalesPolling();
+    state.badgesAmbientalesPollingId = setInterval(() => {
+      loadResidentesPendientesBadge();
+      loadAlertasIABadge();
+      loadKioskosOfflineBadge();
+    }, 20000);
+  }
+
+  function stopBadgesAmbientalesPolling() {
+    if (state.badgesAmbientalesPollingId) {
+      clearInterval(state.badgesAmbientalesPollingId);
+      state.badgesAmbientalesPollingId = null;
     }
   }
 
