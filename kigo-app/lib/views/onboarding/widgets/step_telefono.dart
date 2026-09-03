@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_theme.dart';
@@ -74,6 +75,12 @@ class _StepTelefonoState extends State<StepTelefono> {
             controller: _telefonoCtrl,
             label: AppLocalizations.t(context, 'telefono_label'),
             keyboardType: TextInputType.phone,
+            // TextInputType.phone solo cambia qué teclado sugiere el SO --
+            // en varios Android igual muestra letras/símbolos, y nada
+            // impedía pegar o escribir con teclado físico un valor no
+            // numérico. Esto sí lo bloquea de verdad, sin importar el
+            // teclado que use el dispositivo.
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           if (_errorLocal ?? auth.error case final mensaje?) ...[
             const SizedBox(height: 8),
