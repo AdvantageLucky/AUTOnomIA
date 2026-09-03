@@ -828,6 +828,14 @@ class _InvitarTabViewState extends State<InvitarTabView>
                         ),
                       ),
                       InkWell(
+                        onTap: () => _resetearConfianza(context, tenantId, inv.personaId),
+                        child: Text(
+                          AppLocalizations.t(context, 'resetear_confianza_btn'),
+                          style: const TextStyle(color: AppTheme.primaryOrange, fontSize: 12, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      InkWell(
                         onTap: () => _revocarInvitadoFrecuente(context, tenantId, inv.id),
                         child: Text(
                           AppLocalizations.t(context, 'quitar_btn'),
@@ -841,6 +849,37 @@ class _InvitarTabViewState extends State<InvitarTabView>
         ),
       ),
     );
+  }
+
+  Future<void> _resetearConfianza(BuildContext context, int tenantId, int personaId) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.t(ctx, 'resetear_confianza_titulo')),
+        content: Text(AppLocalizations.t(ctx, 'resetear_confianza_contenido')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(ctx, 'cancel'))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(AppLocalizations.t(ctx, 'resetear_confianza_btn')),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+
+    try {
+      await context.read<InvitationViewModel>().resetearConfianza(tenantId, personaId);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.t(context, 'confianza_reseteada_ok'))),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.t(context, 'no_pudo_resetear_confianza'))),
+      );
+    }
   }
 
   Future<void> _revocarInvitadoFrecuente(BuildContext context, int tenantId, int id) async {
