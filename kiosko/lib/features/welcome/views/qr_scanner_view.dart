@@ -35,17 +35,92 @@ import 'package:kigo_kiosco/l10n/app_localizations.dart';
 /// lado en el panel de 800x1280, de sobra para leer un QR a un brazo de
 /// distancia) le devuelve a esa franja el espacio que necesita para
 /// renderizarse a tamaño completo.
-const double _fraccionRecuadro = 0.5;
+///
+/// 0.5375 son 430px clavados en el panel de 800x1280, que es la medida
+/// pedida; sigue siendo una fracción y no un número fijo para que el
+/// recuadro se adapte a otros lienzos.
+const double _fraccionRecuadro = 0.5375;
 
-/// Lado del recuadro para un lienzo dado. Lo comparten el painter y el
-/// layout: el texto se coloca respecto al recuadro real, así nunca vuelve a
-/// montarse encima de él.
+/// Lado del recuadro para un lienzo dado.
 ///
 /// El tope contra el alto es para no quedarnos sin las dos franjas de
 /// contenido: en un lienzo apaisado 0.5 del ancho no cabe siquiera en la
 /// pantalla, y arriba y abajo sobraba espacio negativo.
-double _ladoRecuadro(Size lienzo) =>
-    math.min(lienzo.width * _fraccionRecuadro, lienzo.height * 0.38);
+double _ladoRecuadro(Size lienzo) => math.min(
+      _ladoRecuadroPedido,
+      math.min(lienzo.width * _fraccionRecuadro, lienzo.height * 0.38),
+    );
+
+/// La medida pedida para el panel, en píxeles lógicos y no como fracción.
+///
+/// La fracción sola daba 430 sólo si el lienzo mide exactamente 800 de ancho;
+/// en cualquier otro el recuadro salía de otro tamaño y parecía que el cambio
+/// no se había aplicado. Con el tope, 430 son 430 mientras quepan, y la
+/// fracción sigue mandando en lienzos más chicos.
+const double _ladoRecuadroPedido = 430.0;
+
+/// Qué parte del sobrante vertical va ARRIBA del recuadro.
+///
+/// Era 0.32. Con el bloque de abajo anclado a los botones flotantes, el
+/// recuadro y sus textos bajan: el sobrante que eso libera se va todo a la
+/// franja de arriba, que es donde vive la pastilla del mensaje.
+const double _fraccionTopRecuadro = 0.48;
+
+/// Hueco que ocupa el recuadro de escaneo en un lienzo dado: la única fuente
+/// de verdad de esa geometría.
+///
+/// La comparten el layout (que cuelga las dos franjas de texto de sus bordes)
+/// y el painter (que recorta el velo y dibuja el anillo ahí). Antes cada uno
+/// la calculaba por su lado y se salieron de sincronía: el layout subía el
+/// recuadro al 32% del sobrante y el painter lo centraba, así que en el panel
+/// de 800x1280 el anillo caía 158px más abajo de lo que el layout creía y
+/// "Apunta al código QR" terminaba dibujado adentro del encuadre.
+///
+/// No va centrado en vertical: a la franja de abajo (texto + botón "no tengo
+/// la app") le hace falta más alto que a la de arriba (solo la marca), así que
+/// el recuadro se sube en vez de repartir el sobrante a la mitad. El piso de
+/// 100 es lo que la marca (KigoWordmark, fija, no Expanded) necesita para no
+/// desbordar en un lienzo apaisado bajito -- por debajo de eso el Column de la
+/// franja de arriba revienta (RenderFlex overflow), confirmado con
+/// qr_scanner_layout_test en Size(784, 361).
+Rect rectRecuadroQr(Size lienzo) {
+  final lado = _ladoRecuadro(lienzo);
+  final top = math
+      .max((lienzo.height - lado) * _fraccionTopRecuadro, 100.0)
+      .clamp(0.0, lienzo.height);
+  return Rect.fromLTWH((lienzo.width - lado) / 2, top, lado, lado);
+}
+
+/// Alto del CTA "no tengo la app". Va fijo y no calculado desde el padding:
+/// la medida es un requisito de diseño (750x100 en el panel) y derivarla del
+/// texto la dejaba a merced de cuántos renglones ocupe la frase en cada
+/// idioma.
+const double _altoBotonSinCodigo = 100;
+
+/// Ancho pedido para el CTA. Mismo motivo que [_ladoRecuadroPedido]: derivarlo
+/// del ancho del lienzo sólo daba 750 en un panel de 800.
+const double _anchoBotonPedido = 750.0;
+
+/// Aire entre el CTA y los botones flotantes de abajo.
+const double _huecoCtaBotonesFlotantes = 10.0;
+
+/// Margen lateral de la franja de arriba, y por lo tanto lo unico que le
+/// queda por crecer a la pastilla del mensaje: es lo unico de esa franja que
+/// ocupa todo el ancho (la marca va centrada y no lo nota). A 8 la pastilla
+/// mide 784 en el panel -- el 98% del ancho, 1.8 veces el lado del recuadro
+/// QR. Por debajo de esto ya no es una pastilla, es una barra pegada al
+/// borde del cristal.
+const double _margenFranjaSuperior = 8.0;
+
+/// Aire entre el bloque del asistente (etiqueta + mascota, arriba a la
+/// derecha) y la pastilla del mensaje.
+///
+/// [KigoDesign.clearanceAsistenteArriba] sola deja la pastilla a 8px del
+/// dibujo de la mascota: no se solapan, pero de lejos -- que es como se ve un
+/// kiosko -- el borde de la pastilla parece parte del asistente. Esto los
+/// separa lo justo para que se lean como dos cosas distintas sin que la
+/// pastilla se despegue y quede flotando a media franja.
+const double _huecoAsistentePastilla = 12.0;
 
 /// Pantalla de entrada del kiosko: escanea sola, sin toque previo. Detecta
 /// tanto el QR personal de la app Kigo como el token de invitación de
@@ -365,19 +440,9 @@ class _QrScannerViewState extends State<QrScannerView>
     // siempre la pantalla completa, que es sobre lo que pinta el painter.
     final pantalla = MediaQuery.sizeOf(context);
     final safe = MediaQuery.paddingOf(context);
-    final lado = _ladoRecuadro(pantalla);
-    // No centrado: a la franja de abajo (texto + botón "no tengo la app")
-    // le hace falta más alto que a la de arriba (solo la marca), así que el
-    // recuadro se sube un poco en vez de repartir el sobrante a la mitad.
-    // El piso de 100 es lo que la marca (KigoWordmark, fija, no Expanded)
-    // necesita para no desbordar en un lienzo apaisado bajito -- por debajo
-    // de eso el Column de la franja de arriba revienta (RenderFlex
-    // overflow), confirmado con qr_scanner_layout_test en Size(784, 361).
-    final topRecuadro = math.max((pantalla.height - lado) * 0.32, 100.0).clamp(
-      0.0,
-      pantalla.height,
-    );
-    final bottomRecuadro = (topRecuadro + lado).clamp(0.0, pantalla.height);
+    final recuadro = rectRecuadroQr(pantalla);
+    final topRecuadro = recuadro.top;
+    final bottomRecuadro = recuadro.bottom.clamp(0.0, pantalla.height);
 
     return Scaffold(
       // Fuera del recuadro no se ve la vista previa: el fondo del Scaffold y
@@ -472,26 +537,70 @@ class _QrScannerViewState extends State<QrScannerView>
             right: 0,
             height: topRecuadro,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(24, safe.top + 24, 24, 20),
+              padding: EdgeInsets.fromLTRB(
+                _margenFranjaSuperior,
+                safe.top + 24,
+                _margenFranjaSuperior,
+                20,
+              ),
               child: Column(
                 children: [
-                  const KigoWordmark(escala: 1.7),
+                  // La marca y el bloque del asistente (etiqueta + mascota,
+                  // pegado al techo a la derecha) comparten renglón, y el
+                  // renglón lo dicta el más alto de los dos: el asistente.
+                  // Sin esta reserva el badge de comunidad -- que es de ancho
+                  // completo -- subía hasta meterse por debajo de la mascota
+                  // (medido: su borde de arriba caía 10px dentro de ella).
+                  // El tope contra la franja es para el apaisado, donde no
+                  // hay 108px que reservar; ahí el FittedBox achica la marca
+                  // en vez de desbordar.
+                  SizedBox(
+                    height: math.min(
+                      KigoDesign.clearanceAsistenteArriba -
+                          24 +
+                          _huecoAsistentePastilla,
+                      math.max(topRecuadro - safe.top - 44, 0.0) * 0.55,
+                    ),
+                    child: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.topCenter,
+                      child: KigoWordmark(escala: 1.7),
+                    ),
+                  ),
                   Expanded(
-                    child: Center(
+                    // Arriba, no centrada: así la pastilla queda lo más
+                    // pegada posible al bloque del asistente (el renglón de
+                    // arriba ya reservó su huella exacta) en vez de flotar a
+                    // media altura entre él y el recuadro.
+                    child: Align(
+                      alignment: Alignment.topCenter,
                       child: mensaje.isEmpty
                           ? const SizedBox.shrink()
                           : FittedBox(
                               fit: BoxFit.scaleDown,
                               child: SizedBox(
-                                width: pantalla.width - 48,
-                                // El `Center` deja que la pastilla se ajuste al
-                                // texto en vez de estirarse a todo el ancho.
-                                child: Center(
-                                  child: ComunidadBadge(
-                                    mensaje: mensaje,
-                                    escala: 1.7,
-                                    envolverTexto: true,
-                                  ),
+                                width: pantalla.width -
+                                    _margenFranjaSuperior * 2,
+                                // Sin `Center` en medio: con él la pastilla se
+                                // encogía hasta abrazar su texto, así que su
+                                // ancho lo decidía el mensaje del dashboard y
+                                // no el hueco reservado -- subir la escala
+                                // agrandaba la letra pero la pastilla seguía a
+                                // media pantalla. Pegada al SizedBox recibe
+                                // ancho fijo y ocupa la franja completa.
+                                // 3.0 sale de medir el hueco: la franja de
+                                // arriba deja 264px y a esta escala la
+                                // pastilla ocupa 187 con dos renglones y 247
+                                // con tres, así que entra sin que el
+                                // FittedBox tenga que encogerla en ninguno de
+                                // los dos casos. El alto de cada renglón sí
+                                // es independiente de la fuente (se lo fija
+                                // el `height: 1.25` del badge); cuántos
+                                // renglones salen, no.
+                                child: ComunidadBadge(
+                                  mensaje: mensaje,
+                                  escala: 3.0,
+                                  envolverTexto: true,
                                 ),
                               ),
                             ),
@@ -513,25 +622,40 @@ class _QrScannerViewState extends State<QrScannerView>
             right: 0,
             bottom: 0,
             child: Padding(
-              // El CTA "no tengo la app o código QR" es de ancho completo:
-              // sin la reserva extra queda tapado por el micrófono/vigilante
-              // de BotonAsistenteFlotante (confirmado por screenshot). Se
-              // acota a una fracción de la franja disponible -- en un
-              // apaisado bajito (784x361) la franja mide ~100px, y la
-              // reserva completa (110) dejaba al FittedBox con alto
-              // negativo (RenderParagraph con NaN, ver
+              // El CTA se cuelga del piso, no del recuadro: queda exactamente
+              // [_huecoCtaBotonesFlotantes] por encima del micrófono y el
+              // vigilante, que ocupan 64 de lado a 20 del borde de abajo.
+              // El tope contra la mitad de la franja es para el apaisado
+              // bajito (784x361), donde la reserva entera dejaría al
+              // FittedBox con alto negativo (RenderParagraph con NaN, ver
               // qr_scanner_layout_test.dart).
               padding: EdgeInsets.fromLTRB(
-                24,
+                25,
                 12,
-                24,
-                safe.bottom + 16 + math.min(KigoDesign.clearanceBotonesFlotantes, (pantalla.height - bottomRecuadro) * 0.3),
+                25,
+                math.min(
+                  safe.bottom +
+                      KigoDesign.offsetBotonesFlotantes +
+                      KigoDesign.ladoBotonAccion +
+                      _huecoCtaBotonesFlotantes,
+                  (pantalla.height - bottomRecuadro) * 0.5,
+                ),
               ),
+              // El ancho pedido es exactamente el que deja el padding de 24
+              // por lado. Antes pedía `width - 32`, 16px más de los que hay:
+              // el FittedBox no tenía más remedio que encoger todo el bloque
+              // aunque sobrara alto, así que el CTA nunca llegaba a ocupar la
+              // franja completa.
               child: FittedBox(
                 fit: BoxFit.scaleDown,
+                // Al piso de su franja: lo que sobra queda ARRIBA, entre el
+                // recuadro y el texto, no repartido a la mitad.
+                alignment: Alignment.bottomCenter,
                 child: SizedBox(
-                  width: pantalla.width - 32,
-                  child: _buildBottomHint(),
+                  width: pantalla.width - 50,
+                  child: _buildBottomHint(
+                    math.min(_anchoBotonPedido, pantalla.width - 50),
+                  ),
                 ),
               ),
             ),
@@ -554,7 +678,7 @@ class _QrScannerViewState extends State<QrScannerView>
 
   /// Tipografía de kiosko: esto se lee de pie y a un brazo de distancia, no
   /// con el teléfono en la mano.
-  Widget _buildBottomHint() {
+  Widget _buildBottomHint(double ancho) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -570,7 +694,7 @@ class _QrScannerViewState extends State<QrScannerView>
               color: widget.viewModel.isScanned
                   ? KigoDesign.success
                   : context.kTextPrimary,
-              fontSize: 48,
+              fontSize: 35,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
             ),
@@ -582,19 +706,19 @@ class _QrScannerViewState extends State<QrScannerView>
           textAlign: TextAlign.center,
           style: TextStyle(
             color: context.kTextSecondary,
-            fontSize: 26,
+            fontSize: 19,
             fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 20),
-        _buildBotonSinCodigo(),
+        _buildBotonSinCodigo(ancho),
       ],
     );
   }
 
   /// Acción primaria de quien llega sin QR — mismo naranja y mismo resplandor
   /// que los botones de la pantalla de bienvenida.
-  Widget _buildBotonSinCodigo() {
+  Widget _buildBotonSinCodigo(double ancho) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _botonPresionado = true),
       onTapUp: (_) {
@@ -605,8 +729,9 @@ class _QrScannerViewState extends State<QrScannerView>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 44),
+        width: ancho,
+        height: _altoBotonSinCodigo,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: _botonPresionado ? KigoDesign.brandHover : KigoDesign.brand,
           borderRadius: BorderRadius.circular(22),
@@ -621,14 +746,29 @@ class _QrScannerViewState extends State<QrScannerView>
             ),
           ],
         ),
-        child: Text(
-          AppLocalizations.t(context, 'no_tengo_app_o_qr'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 38,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
+        // Con el alto fijo el texto ya no puede empujar la caja, así que le
+        // toca a él caber: el ancho interior (20 de margen por lado) es el
+        // que decide dónde parte el renglón, y el FittedBox sólo entra en
+        // acción si aun así no cabe -- en inglés la frase es más larga y se
+        // va a tres renglones. Sin esta red, ahí desbordaría.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SizedBox(
+            width: ancho - 40,
+            child: Text(
+              AppLocalizations.t(context, 'no_tengo_app_o_qr'),
+              textAlign: TextAlign.center,
+              // 38 dejaba la frase en tres renglones: de un tirón pide
+              // ~1400px, más del ancho entero del panel. A 32 parte limpio en
+              // dos ("No tengo la app" / "AUTOnomIA o código QR") y sigue
+              // siendo más grande que el subtítulo de la franja.
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
           ),
         ),
       ),
@@ -661,13 +801,19 @@ class _QrOverlayPainter extends CustomPainter {
     // sala de fondo compita con el texto.
     final overlayPaint = Paint()..color = colorVelo;
 
-    final cutBase = _ladoRecuadro(size);
-    // Respiración sutil (0.97–1.0) mientras espera; sólido y estable ya detectado.
+    // El hueco sale de rectRecuadroQr, el mismo que usa el layout para
+    // colocar las franjas de texto: calcularlo aquí de nuevo es justo lo que
+    // dejó el anillo montado encima del "Apunta al código QR".
+    final hueco = rectRecuadroQr(size);
+    // Respiración sutil (0.97–1.0) mientras espera; sólido y estable ya
+    // detectado. Late alrededor de su propio centro, así que nunca se sale
+    // del hueco reservado.
     final escala = scanned ? 1.0 : 0.97 + (0.03 * pulso);
-    final cutSize = cutBase * escala;
-    final left = (size.width - cutSize) / 2;
-    final top = (size.height - cutSize) / 2;
-    final rect = Rect.fromLTWH(left, top, cutSize, cutSize);
+    final rect = Rect.fromCenter(
+      center: hueco.center,
+      width: hueco.width * escala,
+      height: hueco.height * escala,
+    );
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
     final path = Path()

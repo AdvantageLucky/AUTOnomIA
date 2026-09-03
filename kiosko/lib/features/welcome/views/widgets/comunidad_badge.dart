@@ -56,13 +56,24 @@ class _ComunidadBadgeState extends State<ComunidadBadge>
   @override
   Widget build(BuildContext context) {
     final e = widget.escala;
+    // El cromo de los lados deja de crecer con la escala. La pastilla del
+    // escaneo va a x3 y de ancho completo: ahi 22*e daban 66px de padding por
+    // lado y 10*e otros 30 de separacion contra cada punto, 192 de los 776 de
+    // ancho que no eran texto. El mensaje del panel mide 625 en un renglon,
+    // no le quedaban mas que 541 y se partia en dos -- la pastilla salia
+    // corta y alta, y era ese alto de mas el que la subia contra la mascota
+    // del asistente. Con el tope le quedan 650 y entra de largo, que es como
+    // tiene que leerse. El padding vertical y el borde si siguen a la escala:
+    // son los que le dan cuerpo.
+    final padH = math.min(22 * e, 29.0);
+    final separacion = math.min(10 * e, 13.0);
 
     return AnimatedBuilder(
       animation: _shimmerCtrl,
       builder: (_, child) {
         final angle = _shimmerCtrl.value * 2 * math.pi;
         return Container(
-          padding: EdgeInsets.symmetric(horizontal: 22 * e, vertical: 10 * e),
+          padding: EdgeInsets.symmetric(horizontal: padH, vertical: 10 * e),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(40 * e),
             gradient: LinearGradient(
@@ -86,7 +97,7 @@ class _ComunidadBadgeState extends State<ComunidadBadge>
         mainAxisSize: MainAxisSize.min,
         children: [
           _punto(e),
-          SizedBox(width: 10 * e),
+          SizedBox(width: separacion),
           Flexible(
             child: Text(
               widget.mensaje,
@@ -107,7 +118,7 @@ class _ComunidadBadgeState extends State<ComunidadBadge>
                   : TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(width: 10 * e),
+          SizedBox(width: separacion),
           _punto(e),
         ],
       ),
