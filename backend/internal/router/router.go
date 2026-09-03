@@ -239,7 +239,8 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	personaRepo := persona.NewRepository(db)
 	notificador := persona.NewPushNotificador(personaRepo, pushSender(cfg), adminEmailSender(cfg))
 	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub, notificador)
-	asistenciaHandler := persona.NewAsistenciaUrgenteHandler(personaRepo, adminEmailSender(cfg), hub)
+	asistenciaRepo := persona.NewAsistenciaUrgenteRepository(db)
+	asistenciaHandler := persona.NewAsistenciaUrgenteHandler(personaRepo, asistenciaRepo, adminEmailSender(cfg), hub)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: solo registra visitas
@@ -274,6 +275,14 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	stream.Use(auth.RequireAdmin(cfg.JWTSecret))
 	{
 		stream.GET("/stream", visitaHandler.StreamSolicitudes)
+	}
+
+	// dashboard admin: listado y resolución de asistencias urgentes
+	au := rg.Group("/asistencias-urgentes")
+	au.Use(auth.RequireAdmin(cfg.JWTSecret))
+	{
+		au.GET("/", asistenciaHandler.ListarAsistencias)
+		au.PATCH("/:id/resolver", asistenciaHandler.MarcarResuelta)
 	}
 }
 

@@ -286,6 +286,7 @@
 					<button class="nav-btn" data-nav="visitas"><span data-i18n="nav_entradas">Entradas</span><span class="nav-badge" id="nav-badge-alertas-ia" hidden>0</span></button>
 					<button class="nav-btn" data-nav="residentes"><span data-i18n="nav_residentes">Residentes</span><span class="nav-badge" id="tab-badge-res-sol" hidden>0</span></button>
 					<button class="nav-btn" data-nav="kioskos"><span data-i18n="nav_kioskos">Kioskos</span><span class="nav-badge nav-badge--danger" id="nav-badge-kioskos-offline" hidden>0</span></button>
+					<button class="nav-btn" data-nav="ayuda"><span data-i18n="nav_ayuda">Ayuda</span><span class="nav-badge nav-badge--danger" id="nav-badge-ayuda" hidden>0</span></button>
 					<button class="nav-btn" data-nav="instalacion" data-i18n="nav_instalacion">Centro</button>
 				</nav>
 
@@ -637,6 +638,39 @@
 							</div>
 							<div id="equipo-rows"></div>
 						</div>
+					</div>
+				</section>
+
+				<!-- AYUDA (asistencias urgentes pedidas desde los kioskos) -->
+				<section id="screen-ayuda" class="screen" hidden>
+					<div class="screen-header">
+						<div>
+							<div class="screen-title" data-i18n="ayuda_title">Ayuda</div>
+							<div class="screen-sub" data-i18n="asistencias_urgentes_sub">Solicitudes de asistencia urgente desde los kioskos</div>
+						</div>
+					</div>
+
+					<div class="tab-bar">
+						<div class="tab-bar-inner">
+							<button class="tab-btn active" data-ayuda-filtro="pendiente" data-i18n="ayuda_filtro_pendientes">Pendientes</button>
+							<button class="tab-btn" data-ayuda-filtro="todas" data-i18n="ayuda_filtro_todas">Todas</button>
+						</div>
+					</div>
+
+					<div class="screen-body">
+						<div id="ayuda-loading" class="loading-state" hidden>
+							<div class="spinner"></div>
+							<div class="loading-text" data-i18n="ayuda_cargando">Cargando asistencias…</div>
+						</div>
+						<div id="ayuda-empty" class="empty-state" hidden>
+							<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+							<div class="empty-title" data-i18n="ayuda_sin_solicitudes">Sin solicitudes de ayuda</div>
+							<div class="empty-text" data-i18n="ayuda_sin_solicitudes_sub">Cuando un visitante pida ayuda urgente desde un kiosko, aparecerá aquí.</div>
+						</div>
+						<div id="ayuda-error" class="empty-state" hidden>
+							<div class="empty-title" data-i18n="load_err_title">Error al cargar</div>
+						</div>
+						<div id="ayuda-rows"></div>
 					</div>
 				</section>
 
@@ -1125,6 +1159,13 @@
 						<span class="nav-badge mob-badge nav-badge--danger" id="nav-badge-kioskos-offline-mob" hidden>0</span>
 					</div>
 					<span data-i18n="nav_kioskos">Kioskos</span>
+				</button>
+				<button class="mobile-nav-btn" data-nav="ayuda">
+					<div class="mobile-nav-icon-wrap">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+						<span class="nav-badge mob-badge nav-badge--danger" id="nav-badge-ayuda-mob" hidden>0</span>
+					</div>
+					<span data-i18n="nav_ayuda">Ayuda</span>
 				</button>
 				<button class="mobile-nav-btn" data-nav="instalacion">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
