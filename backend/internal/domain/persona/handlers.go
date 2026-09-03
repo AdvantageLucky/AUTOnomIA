@@ -520,6 +520,53 @@ func (h *Handler) generarPinParaTenant(tenantID uint) (codigo string, hash strin
 	return generarPin(usados, legacy)
 }
 
+// RegenerarPin le asigna a una Membresia un PIN nuevo, generado por el
+// sistema igual que al crearla -- para cuando el admin sospecha que se
+// filtró o el residente simplemente lo olvidó. Solo afecta esa membresía:
+// el resto de los centros a los que la Persona pertenezca conservan su
+// propio PIN sin tocarse.
+//
+// @Summary Regenerar el PIN de una membresía
+// @Description El admin fuerza un PIN nuevo para un residente de su centro
+// @Tags membresias
+// @Produce json
+// @Param id path int true "ID de la membresía"
+// @Success 200 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /membresias/{id}/regenerar-pin [post]
+func (h *Handler) RegenerarPin(c *gin.Context) {
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	m, err := h.membresiaRepo.FindByTenantAndID(tenantID, uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "membresia no encontrada"})
+		return
+	}
+
+	codigo, hash, err := h.generarPinParaTenant(tenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	m.Pin = hash
+	m.PinCodigo = codigo
+	if err := h.membresiaRepo.Update(m); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"pin_codigo": codigo})
+}
+
 // CrearInvitacion crea una invitación anclada a Persona: quien invita debe
 // tener una Membresia activa en el tenant, y a quien se invita se
 // identifica por teléfono (se le crea una Persona "en blanco" si nunca ha

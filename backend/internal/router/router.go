@@ -499,6 +499,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		a.POST("/:id/aprobar", membresiaHandler.Aprobar)
 		a.POST("/:id/rechazar", membresiaHandler.Rechazar)
 		a.POST("/revocar", membresiaHandler.Revocar)
+		a.POST("/:id/regenerar-pin", personaHandler.RegenerarPin)
 	}
 }
 
