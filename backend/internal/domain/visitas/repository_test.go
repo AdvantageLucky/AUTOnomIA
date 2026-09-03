@@ -433,3 +433,39 @@ func TestFindAllByAdminID_FiltroIntervenida(t *testing.T) {
 		t.Errorf("esperaba 'Ana', got %q", list[0].Titular)
 	}
 }
+
+// TestHistorialDeVisitante_PorPersonaID reproduce el bug reportado: un
+// residente que entra por PIN no tiene CURP ni rostro en esa Visita, así
+// que sin enlazar por PersonaID, cada entrada se veía como "primera
+// visita" sin importar cuántas veces hubiera entrado antes.
+func TestHistorialDeVisitante_PorPersonaID(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+	ctx := context.WithValue(context.Background(), ctxkeys.TenantID, uint(1))
+	repoCtx := repo.WithContext(ctx)
+
+	personaID := uint(42)
+	anterior := &Visita{
+		Model:    gorm.Model{CreatedAt: time.Now().Add(-24 * time.Hour)},
+		TenantID: 1, Titular: "Ivan", CasaDestino: "Casa 1", PersonaID: &personaID,
+		Estado: EstadoAprobado, KioskoID: 1,
+		TipoVisitante: TipoResidente, TipoDocumento: DocumentoPIN,
+	}
+	if err := repoCtx.Create(anterior); err != nil {
+		t.Fatalf("no esperaba error creando la visita anterior: %v", err)
+	}
+
+	nueva := Visita{TenantID: 1, PersonaID: &personaID, TipoVisitante: TipoResidente, TipoDocumento: DocumentoPIN}
+	// Sin CURP ni rostro -- exactamente como llega una Visita creada por
+	// LoginDesdeKiosko (acceso propio por PIN).
+	historial, err := repoCtx.HistorialDeVisitante(nueva, 70, ScoreIaFuentes{})
+	if err != nil {
+		t.Fatalf("no esperaba error: %v", err)
+	}
+	if len(historial) != 1 {
+		t.Fatalf("esperaba 1 visita previa por PersonaID, got %d", len(historial))
+	}
+	if historial[0].Titular != "Ivan" {
+		t.Errorf("esperaba encontrar la visita de Ivan, got %q", historial[0].Titular)
+	}
+}
