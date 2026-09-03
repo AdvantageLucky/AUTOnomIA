@@ -2,11 +2,13 @@ package visitas
 
 import (
 	"context"
+	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -277,4 +279,212 @@ func TestRegisterVisita_VisitanteDesconocidoNoSeAutopasa(t *testing.T) {
 	if v.Estado != EstadoPendiente {
 		t.Errorf("esperaba EstadoPendiente, got %v", v.Estado)
 	}
+}
+
+// TestRegisterVisita_ExResidenteRevocado_QuedaEnRevisionPorCambioModalidad
+// reproduce el escenario que de verdad importa mostrar: un residente activo
+// (con historial real de entradas por PIN/rostro) al que el admin le revoca
+// la membresía, y que luego intenta entrar por el flujo de visitante sin
+// invitación con la MISMA identidad (CURP + rostro) que usaba como
+// residente. Como ya no es residente activo, BuscarPersonaPorIdentidad ya
+// no lo reconoce (deja de haber PersonaID) -- pero su historial, que se
+// correlaciona por CURP/rostro y no por status de membresía, sigue
+// mostrando que antes entró como RESIDENTE. Eso dispara CambioModalidad,
+// que es un bloqueante: por más limpia que sea la evidencia de esta visita,
+// debe quedar en revisión, nunca autopasarse como si fuera un desconocido
+// cualquiera.
+func TestRegisterVisita_ExResidenteRevocado_QuedaEnRevisionPorCambioModalidad(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupHandlerTestDB(t)
+	curp := "RAPI010613HPLMRVA2"
+	embedding := []float64{1, 0, 0}
+	personaID := crearResidenteDePrueba(t, db, curp, embedding)
+
+	// Historial real: ya entró varias veces como residente (PIN/rostro),
+	// cada visita con su CURP y embedding ya copiados -- mismo patrón que
+	// LoginDesdeKiosko real (ver kiosko_login_handler.go).
+	for i := 0; i < 3; i++ {
+		v := &Visita{
+			TenantID: 1, Titular: "Ivan Ramses", TipoVisitante: TipoResidente,
+			TipoDocumento: DocumentoPIN, Curp: curp, CasaDestino: "CASA 1",
+			Estado: EstadoAprobado, KioskoID: 1, PersonaID: &personaID,
+			EmbeddingRostro:     residente.FloatArray(embedding),
+			AutorizadoPorTipo:   AutorizadorPropio,
+			AutorizadoPorNombre: "Acceso propio (PIN)",
+		}
+		if err := db.Create(v).Error; err != nil {
+			t.Fatalf("no se pudo crear historial: %v", err)
+		}
+	}
+
+	// El admin le revoca la membresía -- ya no es residente activo.
+	if err := db.Model(&residente.Membresia{}).Where("persona_id = ?", personaID).
+		Update("status", "revocado").Error; err != nil {
+		t.Fatalf("no se pudo revocar membresia: %v", err)
+	}
+
+	h := NewHandler(NewRepository(db), "/tmp", "", nil, nil)
+	router := gin.New()
+	router.POST("/kioskos/:id/visitas/", func(c *gin.Context) {
+		injectTestCtx(c, ctxkeys.TenantID, uint(1))
+		injectTestCtx(c, ctxkeys.KioskoID, uint(1))
+		h.RegisterVisita(c)
+	})
+
+	fields := map[string]string{
+		"titular":          "Ivan Ramses",
+		"tipo_visitante":   "VISITANTE",
+		"casa_destino":     "Casa 1",
+		"curp":             curp,
+		"embedding_rostro": "[1,0,0]",
+	}
+	contentType, body := multipartBody(fields)
+	req := httptest.NewRequest(http.MethodPost, "/kioskos/1/visitas/", body)
+	req.Header.Set("Content-Type", contentType)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("esperaba 201, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var v Visita
+	if err := db.Where("tenant_id = 1 AND persona_id IS NULL").Order("id DESC").First(&v).Error; err != nil {
+		t.Fatalf("no se encontró la visita nueva: %v", err)
+	}
+	// Ya no lo reconoce como residente activo -- a diferencia de
+	// TestRegisterVisita_ReconoceResidentePorCurp, aquí PersonaID debe
+	// quedar sin enlazar.
+	if v.PersonaID != nil {
+		t.Fatalf("esperaba PersonaID nil (membresía revocada), got %v", *v.PersonaID)
+	}
+
+	// El análisis corre async -- se espera a que GuardarAnalisisIA escriba
+	// el estado final.
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		db.First(&v, v.ID)
+		if v.Estado != EstadoPendiente || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	if v.Estado != EstadoRevision {
+		t.Fatalf("esperaba EstadoRevision (cambio de modalidad debe bloquear el autopase), got estado=%v score_ia=%s", v.Estado, string(v.ScoreIA))
+	}
+}
+
+// TestRegisterVisita_ResidenteActivoConHistorial_ConfianzaAltaSinAnomalia
+// cubre el caso contrario a la revocación: si Ivan SIGUE siendo residente
+// activo, entrar por el flujo de visitante sin invitación no debe leerse
+// como una bajada de verificación -- BuscarPersonaPorIdentidad ya lo
+// enlazó (v.PersonaID != nil) contra el padrón de residentes ACTIVOS, así
+// que es una identidad tan verificada como un login por PIN/rostro. El
+// análisis informativo debe reflejar confianza alta y explicar el
+// contexto ("entró como visitante, pero sigue siendo residente") sin
+// tratarlo como anomalía ni bajar `confiable` -- eso queda reservado para
+// cuando la membresía ya no está vigente (ver el test de arriba).
+func TestRegisterVisita_ResidenteActivoConHistorial_ConfianzaAltaSinAnomalia(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupHandlerTestDB(t)
+	curp := "RAPI010613HPLMRVA2"
+	embedding := []float64{1, 0, 0}
+	personaID := crearResidenteDePrueba(t, db, curp, embedding)
+
+	for i := 0; i < 3; i++ {
+		v := &Visita{
+			TenantID: 1, Titular: "Ivan Ramses", TipoVisitante: TipoResidente,
+			TipoDocumento: DocumentoPIN, Curp: curp, CasaDestino: "CASA 1",
+			Estado: EstadoAprobado, KioskoID: 1, PersonaID: &personaID,
+			EmbeddingRostro:     residente.FloatArray(embedding),
+			AutorizadoPorTipo:   AutorizadorPropio,
+			AutorizadoPorNombre: "Acceso propio (PIN)",
+		}
+		if err := db.Create(v).Error; err != nil {
+			t.Fatalf("no se pudo crear historial: %v", err)
+		}
+	}
+
+	h := NewHandler(NewRepository(db), "/tmp", "", nil, nil)
+	router := gin.New()
+	router.POST("/kioskos/:id/visitas/", func(c *gin.Context) {
+		injectTestCtx(c, ctxkeys.TenantID, uint(1))
+		injectTestCtx(c, ctxkeys.KioskoID, uint(1))
+		h.RegisterVisita(c)
+	})
+
+	fields := map[string]string{
+		"titular":          "Ivan Ramses",
+		"tipo_visitante":   "VISITANTE",
+		"casa_destino":     "Casa 1",
+		"curp":             curp,
+		"embedding_rostro": "[1,0,0]",
+	}
+	contentType, body := multipartBody(fields)
+	req := httptest.NewRequest(http.MethodPost, "/kioskos/1/visitas/", body)
+	req.Header.Set("Content-Type", contentType)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("esperaba 201, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var v Visita
+	if err := db.Where("tenant_id = 1 AND persona_id = ?", personaID).
+		Order("id DESC").First(&v).Error; err != nil {
+		t.Fatalf("no se encontró la visita nueva: %v", err)
+	}
+	if v.Estado != EstadoAprobado {
+		t.Fatalf("esperaba EstadoAprobado (sigue activo, autopase por identidad), got %v", v.Estado)
+	}
+
+	// El análisis informativo corre async -- se espera a que escriba resumen_ia.
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		db.First(&v, v.ID)
+		if v.ResumenIA != "" || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	if v.ResumenIA == "" {
+		t.Fatalf("el análisis informativo nunca corrió (resumen_ia vacío)")
+	}
+	if v.Intervenida {
+		t.Errorf("no esperaba Intervenida=true -- sigue siendo residente activo, no es una anomalía. resumen: %q, score_ia=%s", v.ResumenIA, string(v.ScoreIA))
+	}
+	var scoreDecoded struct {
+		ConfianzaPct int    `json:"confianza_pct"`
+		Confiable    bool   `json:"confiable"`
+		Factores     []struct {
+			Clave string `json:"clave"`
+		} `json:"factores"`
+	}
+	if err := json.Unmarshal(v.ScoreIA, &scoreDecoded); err != nil {
+		t.Fatalf("no se pudo decodificar score_ia: %v", err)
+	}
+	if !scoreDecoded.Confiable {
+		t.Errorf("esperaba confiable=true -- sigue siendo residente activo. score_ia=%s", string(v.ScoreIA))
+	}
+	if scoreDecoded.ConfianzaPct < 90 {
+		t.Errorf("esperaba confianza_pct >= 90 (~95%%), got %d. score_ia=%s", scoreDecoded.ConfianzaPct, string(v.ScoreIA))
+	}
+	tieneFactorCambioModalidad, tieneFactorPositivo := false, false
+	for _, f := range scoreDecoded.Factores {
+		if f.Clave == "cambio_modalidad" {
+			tieneFactorCambioModalidad = true
+		}
+		if f.Clave == "entrada_por_visitante_siendo_residente" {
+			tieneFactorPositivo = true
+		}
+	}
+	if tieneFactorCambioModalidad {
+		t.Errorf("no esperaba el factor 'cambio_modalidad' (bloqueante) -- sigue siendo residente activo. score_ia=%s", string(v.ScoreIA))
+	}
+	if !tieneFactorPositivo {
+		t.Errorf("esperaba el factor 'entrada_por_visitante_siendo_residente' explicando el contexto sin penalizar. score_ia=%s", string(v.ScoreIA))
+	}
+	t.Logf("resumen_ia: %s", v.ResumenIA)
+	t.Logf("score_ia: %s", string(v.ScoreIA))
 }
