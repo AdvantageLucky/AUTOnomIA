@@ -1082,9 +1082,12 @@ textarea { resize: vertical; }
 .row-item:last-child { border-bottom: none; }
 .row-item:hover      { background: var(--surface-2); }
 
-/* 5 columnas para la lista de visitas */
+/* 5 columnas para la lista de visitas. minmax(0, ...) en vez de "2fr"/"1fr"
+   a secas: sin eso, la columna nunca se encoge por debajo del ancho
+   intrínseco de .row-name (nowrap) -- un nombre largo empujaba toda la
+   fila más ancha que el contenedor en vez de truncarse con ellipsis. */
 .vis-row-grid--list {
-  grid-template-columns: 2fr 80px 1fr 90px 92px;
+  grid-template-columns: minmax(0, 2fr) 80px minmax(0, 1fr) 90px 92px;
 }
 
 .row-name {
@@ -2926,7 +2929,7 @@ textarea { resize: vertical; }
 
 @media (max-width: 768px) {
   .res-row {
-    grid-template-columns: 18px 44px 1fr auto;
+    grid-template-columns: 18px 44px minmax(0, 1fr) auto;
     gap: 12px;
     padding: 12px 14px;
   }
@@ -2939,7 +2942,7 @@ textarea { resize: vertical; }
      apretaba y desbordaba. Se reduce a nombre + los dos badges, y se
      ocultan kiosko y fecha (ya visibles al entrar al detalle). */
   .vis-row-grid--list {
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 8px;
     padding: 12px 14px;
   }
