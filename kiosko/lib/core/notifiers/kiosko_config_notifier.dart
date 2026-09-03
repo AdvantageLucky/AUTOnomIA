@@ -4,6 +4,20 @@ import 'package:flutter/foundation.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 
+/// Presupuesto total del arranque: lo que la pantalla de splash puede tardar
+/// antes de que demos la config por perdida y tiremos del respaldo en disco.
+///
+/// Eran 5s, y el GET de dentro tenía su propio límite de 10: el de fuera
+/// siempre ganaba, así que el de dentro era código muerto y cualquier red
+/// lenta pero sana se descartaba a los 5s aunque la respuesta viniera en
+/// camino. Peor: esos 5s también tenían que alcanzar para el 401 -> re-login
+/// -> GET otra vez, que no cabe ni de lejos.
+///
+/// 12 cubre el camino sano (GET de 5) y el del 401 con holgura, sin dejar a
+/// un visitante mirando el splash. Si aun así se agota, el kiosko ya no cae
+/// en los defaults vacíos: arranca con la última config buena del disco.
+const Duration presupuestoArranqueConfig = Duration(seconds: 12);
+
 class KioskoConfigNotifier extends ChangeNotifier {
   KioskoConfig _config = KioskoConfig.defaults;
   bool _cargando = true;
@@ -25,9 +39,8 @@ class KioskoConfigNotifier extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _config = await _servicio
-          .obtenerConfig()
-          .timeout(const Duration(seconds: 5));
+      _config =
+          await _servicio.obtenerConfig().timeout(presupuestoArranqueConfig);
       _cargando = false;
       notifyListeners();
       onSesionValida?.call();
@@ -99,6 +112,10 @@ class KioskoConfigNotifier extends ChangeNotifier {
   @override
   void dispose() {
     _heartbeatTimer?.cancel();
+    // El loop SSE vive en el servicio, que es un singleton: sin esto seguiría
+    // reconectando y llamando a notifyListeners() sobre este notifier ya
+    // desechado.
+    _servicio.detenerConfigStream();
     super.dispose();
   }
 }
