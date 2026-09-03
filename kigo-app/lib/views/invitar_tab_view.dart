@@ -9,6 +9,8 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/invitation_viewmodel.dart';
 import '../widgets/kigo_primary_button.dart';
 import '../widgets/kigo_text_field.dart';
+import 'invitacion_creada_detalle_view.dart';
+import 'invitacion_recibida_detalle_view.dart';
 
 /// Landing pública servida por el backend (ver router.go,
 /// registerInvitacionLandingRoute): intenta abrir kigoapp://invitacion/<token>
@@ -587,7 +589,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
       itemBuilder: (context, i) {
         if (i == 0) return encabezadoFrecuentes;
         final inv = vm.invitaciones[i - 1];
-        return Container(
+        return InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => InvitacionCreadaDetalleView(invitacion: inv)),
+          ),
+          child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
@@ -668,6 +676,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 ),
             ],
           ),
+          ),
         );
       },
     );
@@ -721,7 +730,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final inv = vm.recibidas[i];
-        return Container(
+        return InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => InvitacionRecibidaDetalleView(invitacion: inv)),
+          ),
+          child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
@@ -760,7 +775,9 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   ],
                 ),
               ),
+              const Icon(Icons.chevron_right_rounded, color: AppTheme.textDimmed),
             ],
+          ),
           ),
         );
       },

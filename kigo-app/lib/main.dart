@@ -55,6 +55,18 @@ class MyApp extends StatelessWidget {
   /// abierta en otra pestaña.
   static final notificationTick = ValueNotifier<int>(0);
 
+  /// El `tipo` (ver `data: {'tipo': ...}` en los `pushSender.Send(...)` del
+  /// backend) de la última notificación que la persona TOCÓ -- a
+  /// diferencia de `notificationTick` (que solo dispara un refresh),
+  /// `KigoShell` lo escucha para además navegar a la pestaña correcta
+  /// (Invitar/Recibidas, Invitar/Mis invitaciones, o Solicitudes). Un
+  /// `ValueNotifier` en vez de un valor consumido una sola vez porque
+  /// `PushService.iniciar()` corre en paralelo al arranque (fire-and-forget
+  /// desde AuthViewModel) y no hay garantía de que ya haya resuelto
+  /// `getInitialMessage()` para cuando `KigoShell` monta por primera vez;
+  /// reaccionar a cambios cubre ese caso sin depender del orden.
+  static final pushNavigationTipo = ValueNotifier<String?>(null);
+
   @override
   Widget build(BuildContext context) {
     final settingsVM = context.watch<SettingsViewModel>();
