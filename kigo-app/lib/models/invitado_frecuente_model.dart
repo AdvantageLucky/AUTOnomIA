@@ -6,11 +6,16 @@ class InvitadoFrecuenteModel {
   final int id;
   final String nombre;
   final String telefono;
+  // A diferencia de [id] (el de la Membresia, usado para revocar el
+  // acceso), personaId es la identidad -- lo que hace falta para pedir un
+  // reset de confianza sobre esta persona.
+  final int personaId;
 
   InvitadoFrecuenteModel({
     required this.id,
     required this.nombre,
     required this.telefono,
+    required this.personaId,
   });
 
   factory InvitadoFrecuenteModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +23,7 @@ class InvitadoFrecuenteModel {
       id: json['id'] as int,
       nombre: json['nombre'] as String? ?? '',
       telefono: json['telefono'] as String? ?? '',
+      personaId: json['persona_id'] as int? ?? 0,
     );
   }
 }

@@ -75,6 +75,25 @@ class InvitationViewModel extends ChangeNotifier {
     }
   }
 
+  /// Olvida el historial acumulado con esta persona -- SOLO para la casa
+  /// del residente autenticado (el backend resuelve la casa via la
+  /// membresía de quien llama, ver persona.Handler.ResetHistorialContacto).
+  /// No revoca su acceso frecuente, solo el "score de confianza" que su
+  /// próxima visita ya no hereda.
+  Future<void> resetearConfianza(int tenantId, int personaId) async {
+    try {
+      await ApiService().post(
+        '/personas/contactos/$personaId/resetear-historial?tenant_id=$tenantId',
+        {},
+        auth: true,
+      );
+    } on ApiException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   Future<void> cargarContactos() async {
     _cargandoContactos = true;
     notifyListeners();

@@ -57,6 +57,10 @@ type InvitadoFrecuenteFila struct {
 	ID       uint   `json:"id"`
 	Nombre   string `json:"nombre"`
 	Telefono string `json:"telefono"`
+	// PersonaID (a diferencia de ID, que es el de la Membresia) es lo que
+	// necesita el residente para pedir un reset de confianza sobre esta
+	// identidad -- ver persona.Handler.ResetHistorialContacto.
+	PersonaID uint `json:"persona_id"`
 }
 
 // FindInvitadosFrecuentesPorCasa lista los invitados frecuentes (Rol =
@@ -66,7 +70,7 @@ type InvitadoFrecuenteFila struct {
 func (r *MembresiaRepository) FindInvitadosFrecuentesPorCasa(tenantID uint, casaDestino string) ([]InvitadoFrecuenteFila, error) {
 	var filas []InvitadoFrecuenteFila
 	err := r.db.Table("membresias").
-		Select("membresias.id AS id, personas.nombre AS nombre, personas.telefono AS telefono").
+		Select("membresias.id AS id, personas.nombre AS nombre, personas.telefono AS telefono, membresias.persona_id AS persona_id").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Where("membresias.tenant_id = ? AND UPPER(membresias.casa_destino) = UPPER(?) AND membresias.rol = ? AND membresias.status = ?",
 			tenantID, casaDestino, RolInvitadoFrecuente, ResidenteStatusActivo).
