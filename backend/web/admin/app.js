@@ -145,6 +145,123 @@
       rechazar: "Rechazar",
       sin_solicitudes: "Sin solicitudes pendientes",
       sin_solicitudes_text: "Cuando alguien solicite acceso, aparecerá aquí.",
+            confirmar_button: "Confirmar",
+      confirmar_pregunta: "¿Confirmar?",
+      stream_conectado: "Stream conectado",
+      stream_desconectado: "Stream desconectado",
+      asistencia_urgente_sse: "Asistencia urgente solicitada en el kiosko",
+      nuevo_visitante: "Nuevo visitante",
+      alerta_revision_manual: "Alerta: Requiere revisión manual:",
+      nueva_solicitud_toast: "Nueva solicitud:",
+            google_login_fallido: "Falló el inicio de sesión con Google",
+      error_conexion: "Error de conexión",
+            tema_claro_corto: "Claro",
+      tema_oscuro_corto: "Oscuro",
+            periodo_label: "Período:",
+      ultimo_periodo: "Último período",
+      total_visitas_pill: "Total visitas",
+      total_registradas_pill: "Total registradas",
+      analisis_ia_header: "Análisis de Inteligencia Artificial",
+      resumen_automatico_sin_ia: "Resumen automático · IA no disponible",
+      actividad_acumulada_reciente: "Actividad acumulada reciente",
+      resumen_dinamico_intro: (total, aprob, rech, rev) => `Se han registrado **${total} accesos** en el sistema (${aprob} aprobados, ${rech} rechazados, ${rev} pendientes de resolución).`,
+      resumen_dinamico_con_rechazos: "Se identificaron entradas rechazadas que sugieren atención por parte de vigilancia o administración.",
+      resumen_dinamico_normal: "El flujo de accesos opera con normalidad y con alta tasa de aprobación.",
+      historial_no_disponible: "No se pudo cargar el historial.",
+            sin_identificador_historial: "Sin identificador para buscar historial.",
+      primera_visita_registrada: "Primera visita registrada.",
+            visitante_sin_nombre: "Visitante sin nombre",
+      evidencia_documento: "Documento",
+      evidencia_rostro: "Rostro",
+      evidencia_placa: "Placa",
+      evidencia_sin_fotos: "Esta entrada no tiene fotos registradas.",
+      ver_completa: "Ver completa",
+            kio_nunca_conectado: "Nunca conectado",
+      kio_en_linea: "En línea",
+      kio_desconectado_hace: "Desconectado hace",
+      con_analisis_ia: "Con análisis de IA",
+      revisada_por_ia: "Revisada por IA",
+            configurar_kiosko_title: "Configurar kiosko",
+            ingresa_codigo_formato: "Ingresa el código con formato XXXX-XXXX",
+      codigo_invalido_o_usado: "Código inválido o ya utilizado",
+      codigo_no_activo_o_expiro: "El código no está activo o ya expiró",
+      error_crear_kiosko: "Error al crear kiosko",
+      kiosko_creado_sin_vincular: "Kiosko creado pero no se pudo vincular al dispositivo",
+      kiosko_configurado_listo: "Kiosko configurado y listo",
+      kiosko_activado_toast: "Kiosko activado. Configúralo cuando quieras desde Kioskos.",
+            error_generico: "Error",
+      kiosko_actualizado_toast: "Kiosko actualizado",
+      nombre_kiosko_obligatorio: "El nombre del kiosko es obligatorio",
+      error_actualizar_info_kiosko: "Error al actualizar información del kiosko",
+            pipeline_rostro_title: "Foto de Rostro",
+      pipeline_rostro_desc: "Captura facial de verificación y reconocimiento",
+      pipeline_destino_title: "Selección de Destino",
+      pipeline_destino_desc: "Búsqueda y selección de calle, edificio o casa",
+      pipeline_placa_title: "Captura de Placa Vehicular",
+      pipeline_placa_desc: "Escaneo de matrícula (obligatorio en accesos vehiculares)",
+      pipeline_ine_title: "Escaneo de INE / Identificación",
+      pipeline_ine_desc: "Escaneo de credencial con OCR (opcional según hardware)",
+      pipeline_motivo_title: "Motivo de la visita",
+      pipeline_motivo_desc: "Chips de un toque (Paquete, Servicio, Visita, Proveedor, Otro). Un invitado con pase QR no lo ve -- ya lo capturó quien lo invitó.",
+      no_aplica_kiosko_peatonal: "No aplica a kioskos peatonales",
+      no_disponible_kiosko_peatonal: "No disponible en kiosko peatonal",
+      arrastrar_para_reordenar: "Arrastrar para reordenar",
+      desactivado_no_aplica_peatonal: "Desactivado (no aplica a kioskos peatonales)",
+      mover_arriba: "Mover arriba",
+      mover_abajo: "Mover abajo",
+            no_pudo_cargar_config_kiosko: "No se pudo cargar la configuración del kiosko",
+      configuracion_label: "Configuración",
+      configuracion_de_kiosko: "Configuración de kiosko",
+      error_guardar_configuracion: "Error al guardar configuración",
+      kiosko_config_guardados_ok: "Kiosko y configuración guardados correctamente",
+            rol_admin_corto: "Admin",
+      rol_vigilante_corto: "Vigilante",
+      eliminar_vigilante_title: "Eliminar vigilante",
+      confirmar_eliminar_vigilante: "¿Eliminar este vigilante?",
+      no_pudo_eliminar_vigilante: "No se pudo eliminar el vigilante",
+      error_crear_vigilante: "Error al crear vigilante",
+      vigilante_creado_todo_listo: "Vigilante creado. ¡Todo listo!",
+      vigilante_creado_correctamente: "Vigilante creado correctamente",
+            hero_ahora: "ahora",
+            error_al_guardar: "Error al guardar",
+      correo_pass_obligatorios: "Correo y contraseña son obligatorios",
+            tipo_destino_casa: "Casa",
+      tipo_destino_departamento: "Depto.",
+      tipo_destino_edificio: "Edificio",
+      tipo_destino_oficina: "Oficina",
+      tipo_destino_local: "Local",
+      tipo_destino_bodega: "Bodega",
+      tipo_destino_lote: "Lote",
+            error_cargar_destinos: "Error al cargar destinos",
+      sin_calle: "Sin calle",
+      no_pudo_guardar_contacto: "No se pudo guardar el contacto",
+      confirmar_eliminar_destino: "¿Eliminar este destino?",
+      confirmar_eliminar_destino_texto: "Los residentes ya enlazados a esta casa no se eliminan, pero el destino dejará de estar disponible para nuevos registros.",
+      no_pudo_eliminar_destino: "No se pudo eliminar el destino",
+      ingresa_nombre_calle_bloque: "Ingresa el nombre de la calle o bloque",
+      agrega_numero_identificador: "Agrega al menos un número o identificador",
+      error_crear_destinos: "Error al crear destinos",
+      destinos_creados_ok: "Destinos creados correctamente",
+            centro_actualizado_toast: "Centro habitacional actualizado",
+      copiado_exclamacion: "¡Copiado!",
+      codigo_copiado_portapapeles: "Código copiado al portapapeles",
+            sin_calle_registrada: "Sin calle registrada",
+      sin_tipo: "Sin tipo",
+      residentes_label: "Residentes",
+      invitados_frecuentes_label: "Invitados frecuentes",
+      sin_destino: "Sin destino",
+            sin_nombre: "Sin nombre",
+      residente_activo_label: "Residente activo",
+      invitado_frecuente_badge: "Invitado frecuente",
+      sin_casa: "Sin casa",
+      alta_label: "Alta",
+      ver_detalle_label: "Ver detalle",
+            filtrando_por: "Filtrando por:",
+            confirmar_revocar_n: n => `¿Revocar a ${n} residente${n !== 1 ? 's' : ''}?`,
+      revocar_acceso_texto: "Ya no podrán entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo, solo su acceso a este centro.",
+      revocar_button: "Revocar",
+      no_pudo_revocar_reintentar: "No se pudo revocar. Intenta de nuevo.",
+      // __NEW_I18N_ES_MARKER__
     },
     en: {
       brand_sub: "Access control",
@@ -287,6 +404,123 @@
       rechazar: "Reject",
       sin_solicitudes: "No pending requests",
       sin_solicitudes_text: "When someone requests access, they'll appear here.",
+            confirmar_button: "Confirm",
+      confirmar_pregunta: "Confirm?",
+      stream_conectado: "Stream connected",
+      stream_desconectado: "Stream disconnected",
+      asistencia_urgente_sse: "Urgent assistance requested at the kiosk",
+      nuevo_visitante: "New visitor",
+      alerta_revision_manual: "Alert: Requires manual review:",
+      nueva_solicitud_toast: "New request:",
+            google_login_fallido: "Google sign-in failed",
+      error_conexion: "Connection error",
+            tema_claro_corto: "Light",
+      tema_oscuro_corto: "Dark",
+            periodo_label: "Period:",
+      ultimo_periodo: "Latest period",
+      total_visitas_pill: "Total visits",
+      total_registradas_pill: "Total recorded",
+      analisis_ia_header: "Artificial Intelligence Analysis",
+      resumen_automatico_sin_ia: "Automatic summary · AI unavailable",
+      actividad_acumulada_reciente: "Recent cumulative activity",
+      resumen_dinamico_intro: (total, aprob, rech, rev) => `**${total} accesses** have been recorded in the system (${aprob} approved, ${rech} rejected, ${rev} pending resolution).`,
+      resumen_dinamico_con_rechazos: "Rejected entries were identified that suggest attention from security or administration.",
+      resumen_dinamico_normal: "Access flow is operating normally with a high approval rate.",
+      historial_no_disponible: "Could not load the history.",
+            sin_identificador_historial: "No identifier to search history.",
+      primera_visita_registrada: "First visit recorded.",
+            visitante_sin_nombre: "Unnamed visitor",
+      evidencia_documento: "Document",
+      evidencia_rostro: "Face",
+      evidencia_placa: "License plate",
+      evidencia_sin_fotos: "This entry has no photos on record.",
+      ver_completa: "View full size",
+            kio_nunca_conectado: "Never connected",
+      kio_en_linea: "Online",
+      kio_desconectado_hace: "Disconnected",
+      con_analisis_ia: "With AI analysis",
+      revisada_por_ia: "Reviewed by AI",
+            configurar_kiosko_title: "Configure kiosk",
+            ingresa_codigo_formato: "Enter the code in XXXX-XXXX format",
+      codigo_invalido_o_usado: "Invalid or already used code",
+      codigo_no_activo_o_expiro: "The code is not active or has expired",
+      error_crear_kiosko: "Error creating kiosk",
+      kiosko_creado_sin_vincular: "Kiosk created but could not be linked to the device",
+      kiosko_configurado_listo: "Kiosk configured and ready",
+      kiosko_activado_toast: "Kiosk activated. Configure it anytime from Kiosks.",
+            error_generico: "Error",
+      kiosko_actualizado_toast: "Kiosk updated",
+      nombre_kiosko_obligatorio: "The kiosk name is required",
+      error_actualizar_info_kiosko: "Error updating kiosk information",
+            pipeline_rostro_title: "Face Photo",
+      pipeline_rostro_desc: "Facial capture for verification and recognition",
+      pipeline_destino_title: "Destination Selection",
+      pipeline_destino_desc: "Search and selection of street, building, or house",
+      pipeline_placa_title: "Vehicle License Plate Capture",
+      pipeline_placa_desc: "License plate scan (required for vehicle access)",
+      pipeline_ine_title: "ID / Identification Scan",
+      pipeline_ine_desc: "ID scan with OCR (optional depending on hardware)",
+      pipeline_motivo_title: "Reason for visit",
+      pipeline_motivo_desc: "One-tap chips (Package, Service, Visit, Vendor, Other). A guest with a QR pass doesn't see this -- whoever invited them already captured it.",
+      no_aplica_kiosko_peatonal: "Does not apply to pedestrian kiosks",
+      no_disponible_kiosko_peatonal: "Not available on pedestrian kiosk",
+      arrastrar_para_reordenar: "Drag to reorder",
+      desactivado_no_aplica_peatonal: "Disabled (does not apply to pedestrian kiosks)",
+      mover_arriba: "Move up",
+      mover_abajo: "Move down",
+            no_pudo_cargar_config_kiosko: "Could not load kiosk configuration",
+      configuracion_label: "Settings",
+      configuracion_de_kiosko: "Kiosk settings",
+      error_guardar_configuracion: "Error saving configuration",
+      kiosko_config_guardados_ok: "Kiosk and configuration saved successfully",
+            rol_admin_corto: "Admin",
+      rol_vigilante_corto: "Security guard",
+      eliminar_vigilante_title: "Delete guard",
+      confirmar_eliminar_vigilante: "Delete this guard?",
+      no_pudo_eliminar_vigilante: "Could not delete the guard",
+      error_crear_vigilante: "Error creating guard",
+      vigilante_creado_todo_listo: "Guard created. All set!",
+      vigilante_creado_correctamente: "Guard created successfully",
+            hero_ahora: "now",
+            error_al_guardar: "Error saving",
+      correo_pass_obligatorios: "Email and password are required",
+            tipo_destino_casa: "House",
+      tipo_destino_departamento: "Apt.",
+      tipo_destino_edificio: "Building",
+      tipo_destino_oficina: "Office",
+      tipo_destino_local: "Unit",
+      tipo_destino_bodega: "Warehouse",
+      tipo_destino_lote: "Lot",
+            error_cargar_destinos: "Error loading destinations",
+      sin_calle: "No street",
+      no_pudo_guardar_contacto: "Could not save the contact",
+      confirmar_eliminar_destino: "Delete this destination?",
+      confirmar_eliminar_destino_texto: "Residents already linked to this house won't be deleted, but the destination will no longer be available for new registrations.",
+      no_pudo_eliminar_destino: "Could not delete the destination",
+      ingresa_nombre_calle_bloque: "Enter the street or block name",
+      agrega_numero_identificador: "Add at least one number or identifier",
+      error_crear_destinos: "Error creating destinations",
+      destinos_creados_ok: "Destinations created successfully",
+            centro_actualizado_toast: "Residential center updated",
+      copiado_exclamacion: "Copied!",
+      codigo_copiado_portapapeles: "Code copied to clipboard",
+            sin_calle_registrada: "No street on record",
+      sin_tipo: "No type",
+      residentes_label: "Residents",
+      invitados_frecuentes_label: "Frequent guests",
+      sin_destino: "No destination",
+            sin_nombre: "No name",
+      residente_activo_label: "Active resident",
+      invitado_frecuente_badge: "Frequent guest",
+      sin_casa: "No house",
+      alta_label: "Joined",
+      ver_detalle_label: "View details",
+            filtrando_por: "Filtering by:",
+            confirmar_revocar_n: n => `Revoke access for ${n} resident${n !== 1 ? 's' : ''}?`,
+      revocar_acceso_texto: "They will no longer be able to enter by PIN or facial recognition. This does not delete their Kigo account, only their access to this center.",
+      revocar_button: "Revoke",
+      no_pudo_revocar_reintentar: "Could not revoke access. Try again.",
+      // __NEW_I18N_EN_MARKER__
     },
   };
 
@@ -426,12 +660,12 @@
   // Reemplaza confirm() nativo para acciones destructivas -- se puede
   // explicar la consecuencia con más detalle que un diálogo genérico del
   // navegador, y se ve consistente con el resto del dashboard.
-  function confirmarAccion({ titulo, texto, textoBoton = "Confirmar" }) {
+  function confirmarAccion({ titulo, texto, textoBoton = t("confirmar_button") }) {
     return new Promise(resolve => {
       const modal = document.getElementById("modal-confirmar");
       if (!modal) { resolve(window.confirm(texto || titulo)); return; }
 
-      document.getElementById("confirmar-titulo").textContent = titulo || "¿Confirmar?";
+      document.getElementById("confirmar-titulo").textContent = titulo || t("confirmar_pregunta");
       document.getElementById("confirmar-texto").textContent = texto || "";
       const btnAceptar = document.getElementById("confirmar-aceptar");
       const btnCancelar = document.getElementById("confirmar-cancelar");
@@ -460,8 +694,8 @@
 
     const dot = document.getElementById("sse-dot");
 
-    es.onopen = () => { if (dot) { dot.className = "sse-dot sse-dot--on"; dot.title = "Stream conectado"; } };
-    es.onerror = () => { if (dot) { dot.className = "sse-dot"; dot.title = "Stream desconectado"; } };
+    es.onopen = () => { if (dot) { dot.className = "sse-dot sse-dot--on"; dot.title = t("stream_conectado"); } };
+    es.onerror = () => { if (dot) { dot.className = "sse-dot"; dot.title = t("stream_desconectado"); } };
 
     es.onmessage = e => {
       try {
@@ -473,16 +707,16 @@
         // sí llegaba a este dashboard (nombre, foto, resumen de IA incluidos).
         if (String(v.tenant_id) !== String(state.tenantId)) return;
         if (v.tipo === "asistencia_urgente") {
-          mostrarToast("🆘 Asistencia urgente solicitada en el kiosko", "urgente");
+          mostrarToast(`🆘 ${t("asistencia_urgente_sse")}`, "urgente");
           return;
         }
-        const nombre = v.titular || "Nuevo visitante";
+        const nombre = v.titular || t("nuevo_visitante");
         if (v.estado === "REVISION") {
-          mostrarToast(`Alerta: Requiere revisión manual: ${nombre}`, "revision");
+          mostrarToast(`${t("alerta_revision_manual")} ${nombre}`, "revision");
           loadSolicitudes();
           loadAlertasIABadge();
         } else if (v.estado === "PENDIENTE") {
-          mostrarToast(`Nueva solicitud: ${nombre}`);
+          mostrarToast(`${t("nueva_solicitud_toast")} ${nombre}`);
           loadSolicitudes();
         }
         if (String(v.id) === String(state.detalleAbiertoId)) {
@@ -799,7 +1033,7 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        errEl.textContent = data.error || "Error";
+        errEl.textContent = data.error || t("error_generico");
         errEl.hidden = false;
       } else {
         okEl.textContent = lang === "en" ? "New code sent to your email." : "Nuevo código enviado a tu correo.";
@@ -982,13 +1216,13 @@
         body: JSON.stringify({ credential }),
       });
       const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || "Google login fallido"; errEl.hidden = false; return; }
+      if (!res.ok) { errEl.textContent = data.error || t("google_login_fallido"); errEl.hidden = false; return; }
       setToken(data.access_token);
       const claims = decodeJWT(data.access_token);
       state.adminId  = claims?.admin_id;
       state.tenantId = claims?.tenant_id;
       await bootstrapApp();
-    } catch { errEl.textContent = "Error de conexión"; errEl.hidden = false; }
+    } catch { errEl.textContent = t("error_conexion"); errEl.hidden = false; }
   }
 
   function renderGoogleButton() {
@@ -1136,7 +1370,7 @@
     const lbl    = document.getElementById("pd-label-theme");
     if (dkIcon) dkIcon.hidden = !dark;
     if (ltIcon) ltIcon.hidden = dark;
-    if (lbl)    lbl.textContent = dark ? "Claro" : "Oscuro";
+    if (lbl)    lbl.textContent = dark ? t("tema_claro_corto") : t("tema_oscuro_corto");
   }
   syncPdTheme();
 
@@ -1317,22 +1551,22 @@
       const generadoPorIA = !!(r.generado_por_ia ?? r.GeneradoPorIA);
 
       if (periodoEl) {
-        periodoEl.textContent = (inicio && fin) ? `Período: ${fmtDate(inicio)} – ${fmtDate(fin)}` : 'Último período';
+        periodoEl.textContent = (inicio && fin) ? `${t('periodo_label')} ${fmtDate(inicio)} – ${fmtDate(fin)}` : t('ultimo_periodo');
       }
 
       if (chipsEl) {
         chipsEl.innerHTML = `
-          <div class="stat-pill"><span class="stat-pill-num">${total}</span> Total visitas</div>
-          <div class="stat-pill stat-pill--green"><span class="stat-pill-num">${aprob}</span> Aprobadas</div>
-          ${rech > 0 ? `<div class="stat-pill stat-pill--red"><span class="stat-pill-num">${rech}</span> Rechazadas</div>` : ''}
-          ${rev > 0 ? `<div class="stat-pill stat-pill--yellow"><span class="stat-pill-num">${rev}</span> En revisión</div>` : ''}
+          <div class="stat-pill"><span class="stat-pill-num">${total}</span> ${t('total_visitas_pill')}</div>
+          <div class="stat-pill stat-pill--green"><span class="stat-pill-num">${aprob}</span> ${t('aprobado')}</div>
+          ${rech > 0 ? `<div class="stat-pill stat-pill--red"><span class="stat-pill-num">${rech}</span> ${t('rechazado')}</div>` : ''}
+          ${rev > 0 ? `<div class="stat-pill stat-pill--yellow"><span class="stat-pill-num">${rev}</span> ${t('revision')}</div>` : ''}
         `;
       }
 
       if (textoEl) {
         const etiqueta = generadoPorIA
-          ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.04em">✨ Análisis de Inteligencia Artificial</div>`
-          : `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Resumen automático · IA no disponible</div>`;
+          ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.04em">✨ ${t('analisis_ia_header')}</div>`
+          : `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">${t('resumen_automatico_sin_ia')}</div>`;
         textoEl.innerHTML = etiqueta + (formatMarkdown(esc(texto)) || '');
       }
       bodyEl.hidden = false;
@@ -1347,22 +1581,18 @@
       const rev = visitas.filter(v => v.estado === 'REVISION' || v.estado === 'PENDIENTE').length;
       const tasaAprob = total > 0 ? Math.round((aprob / total) * 100) : 100;
 
-      if (periodoEl) periodoEl.textContent = "Actividad acumulada reciente";
+      if (periodoEl) periodoEl.textContent = t('actividad_acumulada_reciente');
       if (chipsEl) {
         chipsEl.innerHTML = `
-          <div class="stat-pill"><span class="stat-pill-num">${total}</span> Total registradas</div>
-          <div class="stat-pill stat-pill--green"><span class="stat-pill-num">${aprob}</span> Aprobadas (${tasaAprob}%)</div>
-          ${rech > 0 ? `<div class="stat-pill stat-pill--red"><span class="stat-pill-num">${rech}</span> Rechazadas</div>` : ''}
-          ${rev > 0 ? `<div class="stat-pill stat-pill--yellow"><span class="stat-pill-num">${rev}</span> En revisión</div>` : ''}
+          <div class="stat-pill"><span class="stat-pill-num">${total}</span> ${t('total_registradas_pill')}</div>
+          <div class="stat-pill stat-pill--green"><span class="stat-pill-num">${aprob}</span> ${t('aprobado')} (${tasaAprob}%)</div>
+          ${rech > 0 ? `<div class="stat-pill stat-pill--red"><span class="stat-pill-num">${rech}</span> ${t('rechazado')}</div>` : ''}
+          ${rev > 0 ? `<div class="stat-pill stat-pill--yellow"><span class="stat-pill-num">${rev}</span> ${t('revision')}</div>` : ''}
         `;
       }
 
-      let textoDinamico = `Se han registrado **${total} accesos** en el sistema (${aprob} aprobados, ${rech} rechazados, ${rev} pendientes de resolución). `;
-      if (rech > 0) {
-        textoDinamico += `Se identificaron entradas rechazadas que sugieren atención por parte de vigilancia o administración.`;
-      } else {
-        textoDinamico += `El flujo de accesos opera con normalidad y con alta tasa de aprobación.`;
-      }
+      let textoDinamico = `${t('resumen_dinamico_intro')(total, aprob, rech, rev)} `;
+      textoDinamico += rech > 0 ? t('resumen_dinamico_con_rechazos') : t('resumen_dinamico_normal');
 
       if (textoEl) textoEl.innerHTML = formatMarkdown(textoDinamico);
       bodyEl.hidden = false;
@@ -1390,7 +1620,7 @@
     if (loadEl) loadEl.hidden = true;
 
     if (!res || !res.ok) {
-      if (emptyEl) { emptyEl.hidden = false; emptyEl.querySelector(".empty-text").textContent = "No se pudo cargar el historial."; }
+      if (emptyEl) { emptyEl.hidden = false; emptyEl.querySelector(".empty-text").textContent = t("historial_no_disponible"); }
       return;
     }
 
@@ -1484,7 +1714,7 @@
   function renderDashRow(v, i) {
     const tvBadge = TIPO_VIS_BADGE[v.tipo_visitante] || "";
     const tvLabel = tipoVisLabel(v.tipo_visitante);
-    const titular = v.titular || v.placa || (v.tipo_visitante === "RESIDENTE" ? "Residente" : "Visitante sin nombre");
+    const titular = v.titular || v.placa || (v.tipo_visitante === "RESIDENTE" ? tvLabel : t("visitante_sin_nombre"));
     return `<div class="row-item" style="grid-template-columns:2fr auto 1fr 80px;gap:12px;align-items:center;animation-delay:${i*40}ms;cursor:pointer" data-id="${v.id}">
       <div>
         <div class="row-name">${esc(titular)}</div>
@@ -1501,7 +1731,7 @@
     return map[e] || e;
   }
 
-  const ROL_ADMIN_LABEL = { admin: "Admin", vigilante: "Vigilante" };
+  function rolAdminLabel(rol) { return { admin: t("rol_admin_corto"), vigilante: t("rol_vigilante_corto") }[rol]; }
 
   function autorizadorLabel(v) {
     if (!v.autorizado_por_tipo) {
@@ -1520,7 +1750,7 @@
     };
     const tipo = map[v.autorizado_por_tipo] || v.autorizado_por_tipo;
     if (!v.autorizado_por_nombre) return tipo;
-    const detalle = [ROL_ADMIN_LABEL[v.autorizado_por_rol] || null, v.autorizado_por_correo]
+    const detalle = [rolAdminLabel(v.autorizado_por_rol) || null, v.autorizado_por_correo]
       .filter(Boolean).map(esc).join(" · ");
     return `${tipo} — ${esc(v.autorizado_por_nombre)}${detalle ? ` (${detalle})` : ""}`;
   }
@@ -1601,7 +1831,7 @@
     // analizador) -- terminaba marcando casi todas las filas con IA sin
     // haberla tenido. Solo resumen_ia/score_ia vienen del analizador real.
     const tieneIA = !!(v.resumen_ia || v.score_ia);
-    const badgeIA = tieneIA ? '<span class="badge badge--intervenida" style="font-size:9.5px;padding:1px 6px;margin-left:6px;vertical-align:1px" title="Con análisis de IA">IA</span>' : '';
+    const badgeIA = tieneIA ? `<span class="badge badge--intervenida" style="font-size:9.5px;padding:1px 6px;margin-left:6px;vertical-align:1px" title="${t('con_analisis_ia')}">IA</span>` : '';
     return `<div class="row-item vis-row-grid--list" style="animation-delay:${i*30}ms" data-id="${v.id}">
       <div><div class="row-name">${esc(v.titular)}${badgeIA}</div><div class="row-sub">${esc(v.casa_destino || "")}</div></div>
       <div><span class="badge ${tvBadge}">${esc(tvLabel)}</span></div>
@@ -1645,13 +1875,13 @@
   // bordes, y en un rostro recortado se pierde justo lo que hay que comparar.
   function renderEvidencia(v) {
     const fotos = [
-      { url: v.foto_documento_url, label: "Documento" },
-      { url: v.foto_rostro_url,    label: "Rostro" },
-      { url: v.foto_placa_url,     label: "Placa" },
+      { url: v.foto_documento_url, label: t("evidencia_documento") },
+      { url: v.foto_rostro_url,    label: t("evidencia_rostro") },
+      { url: v.foto_placa_url,     label: t("evidencia_placa") },
     ].filter(f => !!f.url);
 
     if (!fotos.length) {
-      return `<div class="evidencia-grid"><div class="evidencia-vacia">Esta entrada no tiene fotos registradas.</div></div>`;
+      return `<div class="evidencia-grid"><div class="evidencia-vacia">${t("evidencia_sin_fotos")}</div></div>`;
     }
 
     const lupa = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`;
@@ -1662,7 +1892,7 @@
           <img class="evidencia-img" src="${esc(f.url)}" alt="${esc(f.label)}" loading="lazy">
           <span class="evidencia-zoom">${lupa}</span>
         </div>
-        <div class="evidencia-pie"><span>${esc(f.label)}</span><span>Ver completa</span></div>
+        <div class="evidencia-pie"><span>${esc(f.label)}</span><span>${t("ver_completa")}</span></div>
       </div>`).join("")}</div>`;
   }
 
@@ -1873,7 +2103,7 @@
             <span class="badge ${tvBadge}">${esc(tvLabel)}</span>
             ${v.tipo_documento && v.tipo_documento !== v.tipo_visitante ? `<span class="badge ${TIPO_BADGE[v.tipo_documento] || 'badge--neutral'}">${esc(v.tipo_documento)}</span>` : ""}
             <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
-            ${v.intervenida ? `<span class="badge badge--intervenida">Revisada por IA</span>` : ""}
+            ${v.intervenida ? `<span class="badge badge--intervenida">${t("revisada_por_ia")}</span>` : ""}
           </div>
           <div class="detalle-nombre">${esc(v.titular)}</div>
           <div class="row-sub" style="margin-top:4px">${acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`} · ${fmtDate(v.created_at)}</div>
@@ -1921,7 +2151,7 @@
       /* /visitas/buscar devuelve VisitaResponse completo (con curp, fotos, etc.) */
       const res = await api(`/visitas/buscar?curp=${encodeURIComponent(curp)}`);
       if (!res || !res.ok) {
-        timeline.innerHTML = renderExpEmpty("No se pudo cargar el historial.");
+        timeline.innerHTML = renderExpEmpty(t("historial_no_disponible"));
         return;
       }
       const data = await res.json();
@@ -1930,12 +2160,12 @@
       /* fallback: busca por nombre en la lista paginada */
       const nombre = visitaActual.nombre?.trim();
       if (!nombre) {
-        timeline.innerHTML = renderExpEmpty("Sin identificador para buscar historial.");
+        timeline.innerHTML = renderExpEmpty(t("sin_identificador_historial"));
         return;
       }
       const res = await api(`/visitas/?q=${encodeURIComponent(nombre)}&page_size=100`);
       if (!res || !res.ok) {
-        timeline.innerHTML = renderExpEmpty("No se pudo cargar el historial.");
+        timeline.innerHTML = renderExpEmpty(t("historial_no_disponible"));
         return;
       }
       const data = await res.json();
@@ -1949,7 +2179,7 @@
     }
 
     if (mismaPersona.length === 0) {
-      timeline.innerHTML = renderExpEmpty("Primera visita registrada.");
+      timeline.innerHTML = renderExpEmpty(t("primera_visita_registrada"));
       return;
     }
 
@@ -2186,7 +2416,7 @@
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
             <span class="badge ${tvBadge}">${esc(tipoVisLabel(v.tipo_visitante))}</span>
             <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
-            ${v.intervenida ? `<span class="badge badge--intervenida">Revisada por IA</span>` : ""}
+            ${v.intervenida ? `<span class="badge badge--intervenida">${t("revisada_por_ia")}</span>` : ""}
           </div>
           <div class="modal-title">${esc(v.titular)}</div>
           <div class="modal-sub" style="margin-bottom:0">
@@ -2255,13 +2485,13 @@
   const KIO_PING_MARGEN_MS = 90000;
 
   function estadoConexionKiosko(ultimoPing) {
-    if (!ultimoPing) return { clase: 'nunca', texto: 'Nunca conectado' };
+    if (!ultimoPing) return { clase: 'nunca', texto: t('kio_nunca_conectado') };
     const ms = Date.now() - new Date(ultimoPing).getTime();
-    if (ms < KIO_PING_MARGEN_MS) return { clase: 'online', texto: 'En línea' };
+    if (ms < KIO_PING_MARGEN_MS) return { clase: 'online', texto: t('kio_en_linea') };
     const mins = Math.floor(ms / 60000);
-    if (mins < 60) return { clase: 'offline', texto: `Desconectado hace ${mins}m` };
+    if (mins < 60) return { clase: 'offline', texto: `${t('kio_desconectado_hace')} ${mins}m` };
     const hrs = Math.floor(mins / 60);
-    return { clase: 'offline', texto: `Desconectado hace ${hrs}h` };
+    return { clase: 'offline', texto: `${t('kio_desconectado_hace')} ${hrs}h` };
   }
 
   async function loadAccesos() {
@@ -2307,11 +2537,11 @@
           <div class="acceso-id">${esc(a.tipo || "—")}</div>
         </div>
         <div class="acceso-actions">
-          <button class="btn-cancel" data-cfg-acceso="${a.id}" style="font-size:12.5px;padding:6px 14px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px" title="Configurar kiosko">
+          <button class="btn-cancel" data-cfg-acceso="${a.id}" style="font-size:12.5px;padding:6px 14px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px" title="${t('configurar_kiosko_title')}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            Configuración
+            ${t('tab_config')}
           </button>
-          <button class="btn-ghost" data-del-acceso="${a.id}" style="color:var(--red)" title="Eliminar">
+          <button class="btn-ghost" data-del-acceso="${a.id}" style="color:var(--red)" title="${t('delete')}">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
           </button>
         </div>
@@ -2385,20 +2615,20 @@
     const errEl = document.getElementById('nk-code-error');
     errEl.hidden = true;
     if (!code || code.length < 9) {
-      errEl.textContent = 'Ingresa el código con formato XXXX-XXXX';
+      errEl.textContent = t('ingresa_codigo_formato');
       errEl.hidden = false;
       return;
     }
     const res = await api(`/device/validar?user_code=${encodeURIComponent(code)}`);
     if (!res) return;
     if (!res.ok) {
-      errEl.textContent = 'Código inválido o ya utilizado';
+      errEl.textContent = t('codigo_invalido_o_usado');
       errEl.hidden = false;
       return;
     }
     const d = await res.json();
     if (!d.valid) {
-      errEl.textContent = 'El código no está activo o ya expiró';
+      errEl.textContent = t('codigo_no_activo_o_expiro');
       errEl.hidden = false;
       return;
     }
@@ -2429,7 +2659,7 @@
     if (!resKiosko) return;
     if (!resKiosko.ok) {
       const d = await resKiosko.json();
-      errEl.textContent = d.error || 'Error al crear kiosko';
+      errEl.textContent = d.error || t('error_crear_kiosko');
       errEl.hidden = false;
       return;
     }
@@ -2440,7 +2670,7 @@
       method: 'POST', body: JSON.stringify({ kiosko_id: kiosko.id, clave_kiosko: kiosko.clave_kiosko || '' }),
     });
     if (!resAprobar || !resAprobar.ok) {
-      errEl.textContent = 'Kiosko creado pero no se pudo vincular al dispositivo';
+      errEl.textContent = t('kiosko_creado_sin_vincular');
       errEl.hidden = false;
       return;
     }
@@ -2464,7 +2694,6 @@
     const payload = {
       color_kiosko:          document.getElementById('nk-cfg-color').value,
       idioma_kiosko:         document.getElementById('nk-cfg-idioma').value,
-      foto_rostro_visitante: document.getElementById('nk-cfg-rostro').checked,
       auto_pass_habilitado:  document.getElementById('nk-cfg-autopass').checked,
       mensaje_bienvenida:    document.getElementById('nk-cfg-mensaje').value.trim(),
     };
@@ -2478,13 +2707,13 @@
       return;
     }
     cerrarNuevoKioskoWizard();
-    mostrarToast('Kiosko configurado y listo', 'ok');
+    mostrarToast(t('kiosko_configurado_listo'), 'ok');
   }
 
   document.getElementById('nk-cfg-guardar')?.addEventListener('click', nkGuardarConfig);
   document.getElementById('nk-cfg-saltar')?.addEventListener('click', () => {
     cerrarNuevoKioskoWizard();
-    mostrarToast('Kiosko activado. Configúralo cuando quieras desde Kioskos.', 'ok');
+    mostrarToast(t('kiosko_activado_toast'), 'ok');
   });
 
   /* ─── Modal: editar kiosko ───────────────── */
@@ -2516,13 +2745,13 @@
     if (!res) return;
     if (!res.ok) {
       const data = await res.json();
-      errEl.textContent = data.error || "Error";
+      errEl.textContent = data.error || t("error_generico");
       errEl.hidden = false;
       return;
     }
     document.getElementById("modal-acceso").hidden = true;
     await loadAccesos();
-    mostrarToast("Kiosko actualizado", "ok");
+    mostrarToast(t("kiosko_actualizado_toast"), "ok");
   });
 
   function openDeleteModal(accesoId) {
@@ -2590,36 +2819,36 @@
     ROSTRO: {
       id: "ROSTRO",
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
-      title: "Foto de Rostro",
-      desc: "Captura facial de verificación y reconocimiento",
+      titleKey: "pipeline_rostro_title",
+      descKey: "pipeline_rostro_desc",
       defaultChecked: true,
     },
     DESTINO: {
       id: "DESTINO",
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
-      title: "Selección de Destino",
-      desc: "Búsqueda y selección de calle, edificio o casa",
+      titleKey: "pipeline_destino_title",
+      descKey: "pipeline_destino_desc",
       defaultChecked: true,
     },
     PLACA: {
       id: "PLACA",
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="10" width="20" height="10" rx="2" ry="2"/><path d="M4 10l2-4h12l2 4"/><circle cx="7" cy="16.5" r="1.5"/><circle cx="17" cy="16.5" r="1.5"/></svg>`,
-      title: "Captura de Placa Vehicular",
-      desc: "Escaneo de matrícula (obligatorio en accesos vehiculares)",
+      titleKey: "pipeline_placa_title",
+      descKey: "pipeline_placa_desc",
       defaultChecked: false,
     },
     INE: {
       id: "INE",
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2" ry="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4m-4 4h4"/></svg>`,
-      title: "Escaneo de INE / Identificación",
-      desc: "Escaneo de credencial con OCR (opcional según hardware)",
+      titleKey: "pipeline_ine_title",
+      descKey: "pipeline_ine_desc",
       defaultChecked: false,
     },
     MOTIVO: {
       id: "MOTIVO",
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
-      title: "Motivo de la visita",
-      desc: "Chips de un toque (Paquete, Servicio, Visita, Proveedor, Otro). Un invitado con pase QR no lo ve -- ya lo capturó quien lo invitó.",
+      titleKey: "pipeline_motivo_title",
+      descKey: "pipeline_motivo_desc",
       defaultChecked: false,
     },
   };
@@ -2659,21 +2888,21 @@
       if (isPlacaPeatonal) {
         item.style.opacity = "0.38";
         item.style.filter = "grayscale(1)";
-        item.title = "No aplica a kioskos peatonales";
+        item.title = t("no_aplica_kiosko_peatonal");
       }
 
       item.innerHTML = `
-        <div class="pipeline-handle" title="${isPlacaPeatonal ? 'No disponible en kiosko peatonal' : 'Arrastrar para reordenar'}">⠿</div>
+        <div class="pipeline-handle" title="${isPlacaPeatonal ? t('no_disponible_kiosko_peatonal') : t('arrastrar_para_reordenar')}">⠿</div>
         <div class="pipeline-order-badge">—</div>
         <div class="pipeline-icon">${def.icon}</div>
         <div class="pipeline-info">
-          <div class="pipeline-title">${def.title}</div>
-          <div class="pipeline-desc">${isPlacaPeatonal ? "Desactivado (no aplica a kioskos peatonales)" : def.desc}</div>
+          <div class="pipeline-title">${t(def.titleKey)}</div>
+          <div class="pipeline-desc">${isPlacaPeatonal ? t("desactivado_no_aplica_peatonal") : t(def.descKey)}</div>
         </div>
         <div class="pipeline-actions">
           <div class="pipeline-move-btns" style="${isPlacaPeatonal ? 'opacity:0.3;pointer-events:none' : ''}">
-            <button type="button" class="pipeline-btn-move btn-move-up" title="Mover arriba" ${isPlacaPeatonal ? 'disabled' : ''}>▲</button>
-            <button type="button" class="pipeline-btn-move btn-move-down" title="Mover abajo" ${isPlacaPeatonal ? 'disabled' : ''}>▼</button>
+            <button type="button" class="pipeline-btn-move btn-move-up" title="${t('mover_arriba')}" ${isPlacaPeatonal ? 'disabled' : ''}>▲</button>
+            <button type="button" class="pipeline-btn-move btn-move-down" title="${t('mover_abajo')}" ${isPlacaPeatonal ? 'disabled' : ''}>▼</button>
           </div>
           <label class="toggle-switch">
             <input type="checkbox" class="pipeline-toggle" ${isChecked ? "checked" : ""} ${(isPlacaVehicular || isPlacaPeatonal) ? "disabled" : ""}>
@@ -2769,7 +2998,7 @@
 
     const res = await api(`/kioskos/${accesoId}/config`);
     if (!res || !res.ok) {
-      mostrarToast("No se pudo cargar la configuración del kiosko", "err");
+      mostrarToast(t("no_pudo_cargar_config_kiosko"), "err");
       return;
     }
 
@@ -2778,7 +3007,7 @@
 
     const headerTitle = document.getElementById("cfg-header-title");
     const headerSub = document.getElementById("cfg-header-sub");
-    if (headerTitle) headerTitle.textContent = acceso?.nombre ? `Configuración: ${acceso.nombre}` : "Configuración de kiosko";
+    if (headerTitle) headerTitle.textContent = acceso?.nombre ? `${t("configuracion_label")}: ${acceso.nombre}` : t("configuracion_de_kiosko");
     if (headerSub) headerSub.textContent = acceso?.ubicacion ? acceso.ubicacion : (acceso?.tipo ? `Acceso ${acceso.tipo.toLowerCase()}` : '');
 
     // Cargar datos principales del kiosko
@@ -2884,7 +3113,7 @@
     const ubiVal    = document.getElementById("cfg-ubicacion")?.value.trim() || "";
 
     if (!nombreVal) {
-      errEl.textContent = "El nombre del kiosko es obligatorio";
+      errEl.textContent = t("nombre_kiosko_obligatorio");
       errEl.hidden = false;
       return;
     }
@@ -2897,7 +3126,7 @@
 
     if (!resKiosko || !resKiosko.ok) {
       const data = resKiosko ? await resKiosko.json() : {};
-      errEl.textContent = data.error || "Error al actualizar información del kiosko";
+      errEl.textContent = data.error || t("error_actualizar_info_kiosko");
       errEl.hidden = false;
       return;
     }
@@ -2973,12 +3202,12 @@
     if (!res) return;
     if (!res.ok) {
       const data = await res.json();
-      errEl.textContent = data.error || "Error al guardar configuración";
+      errEl.textContent = data.error || t("error_guardar_configuracion");
       errEl.hidden = false;
       return;
     }
     okEl.hidden = false;
-    mostrarToast("Kiosko y configuración guardados correctamente", "ok");
+    mostrarToast(t("kiosko_config_guardados_ok"), "ok");
     setTimeout(() => { okEl.hidden = true; }, 3000);
   });
 
@@ -3013,7 +3242,7 @@
       const apeRaw = (v.apellido_paterno || v.ApellidoPaterno || "").trim();
       const correoRaw = (v.correo || v.Correo || "").trim();
       const idRaw = v.id || v.ID || 0;
-      const nombre = [nombreRaw, apeRaw].filter(Boolean).join(" ") || correoRaw || "Vigilante";
+      const nombre = [nombreRaw, apeRaw].filter(Boolean).join(" ") || correoRaw || t("rol_vigilante_corto");
       const initials = (nombreRaw ? (nombreRaw[0] + (apeRaw[0] || "")) : (correoRaw ? correoRaw[0] : "V")).toUpperCase();
       return `<div class="acceso-card" style="animation-delay:${i*30}ms">
         <div class="acceso-info" style="display:flex;align-items:center;gap:12px">
@@ -3024,7 +3253,7 @@
           </div>
         </div>
         <div class="acceso-actions">
-          <button class="btn-ghost" style="color:var(--red)" data-del-vigilante="${idRaw}" title="Eliminar vigilante">
+          <button class="btn-ghost" style="color:var(--red)" data-del-vigilante="${idRaw}" title="${t('eliminar_vigilante_title')}">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
           </button>
         </div>
@@ -3037,10 +3266,10 @@
   }
 
   async function eliminarVigilante(id) {
-    if (!confirm("¿Eliminar este vigilante?")) return;
+    if (!confirm(t("confirmar_eliminar_vigilante"))) return;
     const res = await api(`/admins/${id}`, { method: "DELETE" });
     if (res && res.ok) loadEquipo();
-    else mostrarToast("No se pudo eliminar el vigilante", "err");
+    else mostrarToast(t("no_pudo_eliminar_vigilante"), "err");
   }
 
   document.getElementById("btn-nuevo-vigilante")?.addEventListener("click", () => {
@@ -3074,13 +3303,13 @@
 
     if (!res.ok) {
       const data = await res.json();
-      errEl.textContent = data.error || "Error al crear vigilante";
+      errEl.textContent = data.error || t("error_crear_vigilante");
       errEl.hidden = false;
       return;
     }
 
     document.getElementById("modal-vigilante").hidden = true;
-    mostrarToast("Vigilante creado correctamente");
+    mostrarToast(t("vigilante_creado_correctamente"));
     loadEquipo();
   });
 
@@ -3112,7 +3341,7 @@
 
     if (!res.ok) {
       const data = await res.json();
-      errEl.textContent = data.error || "Error";
+      errEl.textContent = data.error || t("error_generico");
       errEl.hidden = false;
       return;
     }
@@ -3162,9 +3391,9 @@
         <div class="hero-card-avatar" style="background:${color}20;border-color:${color}55;color:${color}">${init2}</div>
         <div class="hero-card-info">
           <div class="hero-card-name">${esc(name)}</div>
-          <div class="hero-card-meta">${esc(acceso)} · ahora</div>
+          <div class="hero-card-meta">${esc(acceso)} · ${t('hero_ahora')}</div>
         </div>
-        <span class="badge ${bcls}">${estado}</span>`;
+        <span class="badge ${bcls}">${estadoLabel(estado === 'REVISIÓN' ? 'REVISION' : estado)}</span>`;
       feed.insertBefore(card, feed.firstChild);
       if (feed.children.length > 3) {
         const oldest = feed.lastElementChild;
@@ -3233,6 +3462,8 @@
       const d = await res.json();
       const nombreEl = document.getElementById('ob-inst-nombre');
       if (nombreEl) nombreEl.value = d.nombre || '';
+      const telefonoEl = document.getElementById('ob-inst-telefono');
+      if (telefonoEl) telefonoEl.value = d.telefono_contacto || '';
       const previewEl = document.getElementById('ob-inst-codigo-preview');
       if (previewEl) previewEl.textContent = d.codigo || previsualizarCodigo(d.nombre);
     }
@@ -3262,12 +3493,13 @@
     errEl.hidden = true;
     const body = {
       nombre: document.getElementById('ob-inst-nombre').value.trim(),
+      telefono_contacto: document.getElementById('ob-inst-telefono')?.value.trim() || '',
     };
     const res = await api(`/tenants/${state.tenantId || 1}`, { method: 'PATCH', body: JSON.stringify(body) });
     if (!res) return;
     if (!res.ok) {
       const d = await res.json();
-      errEl.textContent = d.error || 'Error al guardar';
+      errEl.textContent = d.error || t('error_al_guardar');
       errEl.hidden = false;
       return;
     }
@@ -3303,7 +3535,7 @@
       rol:              'vigilante',
     };
     if (!payload.correo || !payload.password) {
-      errEl.textContent = 'Correo y contraseña son obligatorios';
+      errEl.textContent = t('correo_pass_obligatorios');
       errEl.hidden = false;
       return;
     }
@@ -3311,12 +3543,12 @@
     if (!res) return;
     if (!res.ok) {
       const d = await res.json();
-      errEl.textContent = d.error || 'Error al crear vigilante';
+      errEl.textContent = d.error || t('error_crear_vigilante');
       errEl.hidden = false;
       return;
     }
     document.getElementById('onboarding-overlay').hidden = true;
-    mostrarToast('Vigilante creado. ¡Todo listo!', 'ok');
+    mostrarToast(t('vigilante_creado_todo_listo'), 'ok');
     navTo('dashboard');
   });
 
@@ -3332,15 +3564,15 @@
   }
 
   function formatTipoDestino(tipo) {
-    if (!tipo) return 'Casa';
+    if (!tipo) return t('tipo_destino_casa');
     switch (tipo.toLowerCase()) {
-      case 'casa': return 'Casa';
-      case 'departamento': return 'Depto.';
-      case 'edificio': return 'Edificio';
-      case 'oficina': return 'Oficina';
-      case 'local': return 'Local';
-      case 'bodega': return 'Bodega';
-      case 'lote': return 'Lote';
+      case 'casa': return t('tipo_destino_casa');
+      case 'departamento': return t('tipo_destino_departamento');
+      case 'edificio': return t('tipo_destino_edificio');
+      case 'oficina': return t('tipo_destino_oficina');
+      case 'local': return t('tipo_destino_local');
+      case 'bodega': return t('tipo_destino_bodega');
+      case 'lote': return t('tipo_destino_lote');
       default: return tipo.charAt(0).toUpperCase() + tipo.slice(1);
     }
   }
@@ -3357,7 +3589,7 @@
 
     const res = await api('/destinos/');
     loadEl.hidden = true;
-    if (!res || !res.ok) { mostrarToast('Error al cargar destinos', 'err'); return; }
+    if (!res || !res.ok) { mostrarToast(t('error_cargar_destinos'), 'err'); return; }
 
     const items = await res.json();
     if (!items.length) { emptyEl.hidden = false; return; }
@@ -3369,7 +3601,7 @@
     // hacía más lento encontrar uno en calles grandes.
     const porCalle = new Map();
     for (const d of items) {
-      const calle = d.calle || 'Sin calle';
+      const calle = d.calle || t('sin_calle');
       if (!porCalle.has(calle)) porCalle.set(calle, new Map());
       const porTipo = porCalle.get(calle);
       const tipo = d.tipo || 'casa';
@@ -3523,7 +3755,7 @@
       }),
     });
     if (!res || !res.ok) {
-      mostrarToast('No se pudo guardar el contacto', 'err');
+      mostrarToast(t('no_pudo_guardar_contacto'), 'err');
       return;
     }
     const actualizado = await res.json();
@@ -3537,9 +3769,9 @@
 
   async function deleteDestino(id) {
     const ok = await confirmarAccion({
-      titulo: '¿Eliminar este destino?',
-      texto: 'Los residentes ya enlazados a esta casa no se eliminan, pero el destino dejará de estar disponible para nuevos registros.',
-      textoBoton: 'Eliminar',
+      titulo: t('confirmar_eliminar_destino'),
+      texto: t('confirmar_eliminar_destino_texto'),
+      textoBoton: t('delete'),
     });
     if (!ok) return;
     const res = await api(`/destinos/${id}`, { method: 'DELETE' });
@@ -3548,7 +3780,7 @@
       if (!document.getElementById('dest-rows').children.length)
         document.getElementById('dest-empty').hidden = false;
     } else {
-      mostrarToast('No se pudo eliminar el destino', 'err');
+      mostrarToast(t('no_pudo_eliminar_destino'), 'err');
     }
   }
 
@@ -3639,13 +3871,13 @@
     const destinos = [...destinosChips];
 
     if (!calle) {
-      errEl.textContent = 'Ingresa el nombre de la calle o bloque';
+      errEl.textContent = t('ingresa_nombre_calle_bloque');
       errEl.hidden = false;
       return;
     }
 
     if (!destinos.length) {
-      errEl.textContent = 'Agrega al menos un número o identificador';
+      errEl.textContent = t('agrega_numero_identificador');
       errEl.hidden = false;
       return;
     }
@@ -3657,7 +3889,7 @@
 
     if (!res || !res.ok) {
       const d = await res.json();
-      errEl.textContent = d.error || 'Error al crear destinos';
+      errEl.textContent = d.error || t('error_crear_destinos');
       errEl.hidden = false;
       return;
     }
@@ -3665,7 +3897,7 @@
     document.getElementById('destino-form').reset();
     destinosChips = [];
     renderChips();
-    mostrarToast('Destinos creados correctamente', 'ok');
+    mostrarToast(t('destinos_creados_ok'), 'ok');
     loadDestinos();
   });
 
@@ -3699,8 +3931,8 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (res && res.ok) mostrarToast('Centro habitacional actualizado', 'ok');
-    else mostrarToast('Error al guardar', 'err');
+    if (res && res.ok) mostrarToast(t('centro_actualizado_toast'), 'ok');
+    else mostrarToast(t('error_al_guardar'), 'err');
   });
 
   document.getElementById('btn-copiar-codigo')?.addEventListener('click', () => {
@@ -3710,10 +3942,10 @@
       const txt = document.getElementById('btn-copiar-codigo-texto');
       if (txt) {
         const orig = txt.textContent;
-        txt.textContent = '¡Copiado!';
+        txt.textContent = t('copiado_exclamacion');
         setTimeout(() => { txt.textContent = orig; }, 2000);
       }
-      mostrarToast('Código copiado al portapapeles', 'ok');
+      mostrarToast(t('codigo_copiado_portapapeles'), 'ok');
     }
   });
 
@@ -3723,20 +3955,16 @@
   let residentesSeleccion = new Set();
   let residentesFiltroDestino = null;
 
-  const TIPO_DESTINO_LABEL = { casa: 'Casa', edificio: 'Edificio' };
-
   function residentesAgruparPor() {
     return document.getElementById('resa-agrupar')?.value || 'destino';
   }
 
-  const ROL_MEMBRESIA_LABEL = { residente: 'Residentes', invitado_frecuente: 'Invitados frecuentes' };
-
   function residentesClaveGrupo(m, criterio) {
-    if (criterio === 'calle') return m.destino_calle || 'Sin calle registrada';
-    if (criterio === 'tipo') return TIPO_DESTINO_LABEL[m.destino_tipo] || 'Sin tipo';
-    if (criterio === 'rol') return ROL_MEMBRESIA_LABEL[m.rol] || ROL_MEMBRESIA_LABEL.residente;
+    if (criterio === 'calle') return m.destino_calle || t('sin_calle_registrada');
+    if (criterio === 'tipo') return ({ casa: t('tipo_destino_casa'), edificio: t('tipo_destino_edificio') })[m.destino_tipo] || t('sin_tipo');
+    if (criterio === 'rol') return ({ residente: t('residentes_label'), invitado_frecuente: t('invitados_frecuentes_label') })[m.rol] || t('residentes_label');
     if (criterio === 'ninguno') return null;
-    return m.casa_destino || 'Sin destino';
+    return m.casa_destino || t('sin_destino');
   }
 
   function actualizarToolbarSeleccion() {
@@ -3785,13 +4013,13 @@
   }
 
   function residenteRowHtml(m) {
-    const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
+    const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || t('sin_nombre');
     const inicial = (m.nombre || 'R')[0].toUpperCase();
     const avatarHtml = m.foto_cara_url
       ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
       : `<div class="res-avatar">${inicial}</div>`;
 
-    const contacto = m.telefono ? `${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : 'Residente activo');
+    const contacto = m.telefono ? `${esc(m.telefono)}` : (m.curp ? `CURP: ${esc(m.curp)}` : t('residente_activo_label'));
     const fechaAlta = m.created_at ? fmtDateShort(m.created_at) : '—';
     const checked = residentesSeleccion.has(m.id) ? 'checked' : '';
     // Un invitado frecuente (Rol=invitado_frecuente) lo da de alta un
@@ -3799,7 +4027,7 @@
     // sin este badge, se veía en esta lista exactamente igual que un
     // residente real dado de alta y aprobado por el propio centro.
     const badgeInvitadoFrecuente = m.rol === 'invitado_frecuente'
-      ? `<span class="badge badge--revision" style="font-size:10px;padding:2px 8px;margin-left:6px;vertical-align:1px">Invitado frecuente</span>`
+      ? `<span class="badge badge--revision" style="font-size:10px;padding:2px 8px;margin-left:6px;vertical-align:1px">${t('invitado_frecuente_badge')}</span>`
       : '';
 
     return `
@@ -3812,16 +4040,16 @@
         </div>
         <div class="res-dest-col">
           <span class="badge badge--aprobado" style="font-size:12px;padding:4px 10px;font-weight:600">
-             ${esc(m.casa_destino || 'Sin casa')}
+             ${esc(m.casa_destino || t('sin_casa'))}
           </span>
         </div>
         <div class="res-date-col">
-          <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Alta</div>
+          <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">${t('alta_label')}</div>
           <div style="font-size:12.5px;color:var(--text-2);font-weight:500">${fechaAlta}</div>
         </div>
         <div class="res-action-col">
           <button type="button" class="btn-cancel" style="padding:6px 12px;font-size:12px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:4px">
-            Ver detalle
+            ${t('ver_detalle_label')}
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
           </button>
         </div>
@@ -3837,7 +4065,7 @@
     const chipEl = document.getElementById('resa-filtro-chip');
     if (chipEl) {
       chipEl.hidden = !residentesFiltroDestino;
-      chipEl.querySelector('span').textContent = `Filtrando por: ${residentesFiltroDestino || ''}`;
+      chipEl.querySelector('span').textContent = `${t('filtrando_por')} ${residentesFiltroDestino || ''}`;
     }
 
     const base = residentesFiltroDestino
@@ -3899,15 +4127,15 @@
     const ids = [...residentesSeleccion];
     if (!ids.length) return;
     const ok = await confirmarAccion({
-      titulo: `¿Revocar a ${ids.length} residente${ids.length !== 1 ? 's' : ''}?`,
-      texto: 'Ya no podrán entrar por PIN ni reconocimiento facial. Esto no borra su cuenta de Kigo, solo su acceso a este centro.',
-      textoBoton: 'Revocar',
+      titulo: STRINGS[lang].confirmar_revocar_n(ids.length),
+      texto: t('revocar_acceso_texto'),
+      textoBoton: t('revocar_button'),
     });
     if (!ok) return;
 
     const res = await api('/membresias/revocar', { method: 'POST', body: JSON.stringify({ ids }) });
     if (!res || !res.ok) {
-      mostrarToast('No se pudo revocar. Intenta de nuevo.', 'err');
+      mostrarToast(t('no_pudo_revocar_reintentar'), 'err');
       return;
     }
     await loadResidentesActivos();
@@ -3921,7 +4149,7 @@
     if (!modal || !body) return;
 
     const esPendiente = (m.status === 'pendiente');
-    const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || 'Sin nombre';
+    const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || t('sin_nombre');
     const inicial = (m.nombre || 'R')[0].toUpperCase();
     // data-foto + .evidencia-card, no onclick inline: app.js entero corre
     // dentro del IIFE de arranque y abrirLightbox nunca se expuso a
@@ -3930,7 +4158,7 @@
     // -- el listener delegado en document ya existe para .evidencia-card,
     // se reusa tal cual en vez de duplicar el mecanismo.
     const avatarHtml = m.foto_cara_url
-      ? `<div class="res-avatar res-avatar--lg evidencia-card" tabindex="0" role="button" style="cursor:pointer" data-foto="${esc(m.foto_cara_url)}" data-foto-label="Rostro de ${esc(nombreCompleto)}"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+      ? `<div class="res-avatar res-avatar--lg evidencia-card" tabindex="0" role="button" style="cursor:pointer" data-foto="${esc(m.foto_cara_url)}" data-foto-label="${t('rostro_de_label')} ${esc(nombreCompleto)}"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
       : `<div class="res-avatar res-avatar--lg">${inicial}</div>`;
 
     const tieneRostro = m.tiene_rostro;
@@ -3942,9 +4170,9 @@
         <div>
           <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px">${esc(nombreCompleto)}</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}">${esc(m.casa_destino || 'Sin casa asignada')}</span>
-            <span class="badge" style="text-transform:capitalize">${esc(m.rol || 'Residente')}</span>
-            <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--green'}">${esPendiente ? 'Solicitud pendiente' : 'Activo'}</span>
+            <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}">${esc(m.casa_destino || t('sin_casa_asignada'))}</span>
+            <span class="badge" style="text-transform:capitalize">${esc(m.rol || t('residente_singular'))}</span>
+            <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--green'}">${esPendiente ? t('solicitud_pendiente_badge') : t('activo_badge')}</span>
           </div>
         </div>
       </div>
@@ -3953,7 +4181,7 @@
         <div>
           <div class="res-modal-grid">
             <div class="res-modal-field">
-              <div class="res-modal-field-label">Teléfono</div>
+              <div class="res-modal-field-label">${t('telefono_label')}</div>
               <div class="res-modal-field-value">${m.telefono ? esc(m.telefono) : '—'}</div>
             </div>
             <div class="res-modal-field">
@@ -3961,11 +4189,11 @@
               <div class="res-modal-field-value mono-value" style="font-size:12px">${m.curp ? esc(m.curp) : '—'}</div>
             </div>
             <div class="res-modal-field">
-              <div class="res-modal-field-label">Destino / Casa</div>
+              <div class="res-modal-field-label">${t('destino_casa_label')}</div>
               <div class="res-modal-field-value">${esc(m.casa_destino || '—')}</div>
             </div>
             <div class="res-modal-field">
-              <div class="res-modal-field-label">${esPendiente ? 'Solicitado el' : 'Miembro desde'}</div>
+              <div class="res-modal-field-label">${esPendiente ? t('solicitado_el_label') : t('miembro_desde_label')}</div>
               <div class="res-modal-field-value">${m.created_at ? fmtDateShort(m.created_at) : '—'}</div>
             </div>
           </div>
@@ -3974,10 +4202,10 @@
         ${m.foto_ine_url ? `
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">
-              Documento de Identidad (INE)
+              ${t('documento_identidad_ine_label')}
             </div>
-            <div class="evidencia-card" tabindex="0" role="button" style="display:block;width:100%" data-foto="${esc(m.foto_ine_url)}" data-foto-label="INE de ${esc(nombreCompleto)}">
-              <img src="${esc(m.foto_ine_url)}" alt="Documento INE" style="display:block;width:100%;height:130px;object-fit:cover">
+            <div class="evidencia-card" tabindex="0" role="button" style="display:block;width:100%" data-foto="${esc(m.foto_ine_url)}" data-foto-label="${t('ine_de_label')} ${esc(nombreCompleto)}">
+              <img src="${esc(m.foto_ine_url)}" alt="${t('documento_ine_alt')}" style="display:block;width:100%;height:130px;object-fit:cover">
             </div>
           </div>
         ` : ''}
@@ -3985,7 +4213,7 @@
 
       <div style="margin-top:20px">
         <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">
-          Métodos de acceso e identidad
+          ${t('metodos_acceso_identidad_label')}
         </div>
 
         <!-- A todo el ancho del modal, no en media columna: ícono+título+
@@ -3998,12 +4226,12 @@
               <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">👤</span>
                 <div>
-                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">Reconocimiento Facial IA</div>
-                  <div style="font-size:11.5px;color:var(--text-3)">Validación biométrica instantánea en kioskos</div>
+                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">${t('reconocimiento_facial_ia_label')}</div>
+                  <div style="font-size:11.5px;color:var(--text-3)">${t('reconocimiento_facial_ia_desc')}</div>
                 </div>
               </div>
               <span class="badge ${tieneRostro ? 'badge--aprobado' : 'badge--rechazado'}" style="flex-shrink:0">
-                ${tieneRostro ? 'Enrolado' : 'Sin rostro'}
+                ${tieneRostro ? t('enrolado_label') : t('sin_rostro_label')}
               </span>
             </div>
 
@@ -4011,12 +4239,12 @@
               <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">🔢</span>
                 <div>
-                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">PIN de acceso</div>
-                  <div style="font-size:11.5px;color:var(--text-3)">Código numérico para teclado en caseta</div>
+                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">${t('pin_de_acceso_label')}</div>
+                  <div style="font-size:11.5px;color:var(--text-3)">${t('pin_de_acceso_desc')}</div>
                 </div>
               </div>
               <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}" style="flex-shrink:0">
-                ${tienePin ? 'Configurado' : 'Sin PIN'}
+                ${tienePin ? t('configurado_label') : t('sin_pin_label')}
               </span>
             </div>
 
@@ -4024,12 +4252,12 @@
               <div style="display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:18px">📱</span>
                 <div>
-                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">App Kigo (QR Dinámico)</div>
-                  <div style="font-size:11.5px;color:var(--text-3)">Acceso con escáner de código QR móvil</div>
+                  <div style="font-size:13.5px;font-weight:600;color:var(--text)">${t('app_kigo_qr_label')}</div>
+                  <div style="font-size:11.5px;color:var(--text-3)">${t('app_kigo_qr_desc')}</div>
                 </div>
               </div>
               <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}" style="flex-shrink:0">
-                ${esPendiente ? 'Pendiente aprobación' : 'Activo'}
+                ${esPendiente ? t('pendiente_aprobacion_label') : t('activo_badge')}
               </span>
             </div>
           </div>
@@ -4038,19 +4266,19 @@
       <div class="modal-actions" style="justify-content:space-between;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         ${esPendiente ? `
           <div style="display:flex;gap:8px">
-            <button type="button" class="btn-primary" id="res-modal-aprobar-btn" style="padding:8px 16px;font-weight:600">Aprobar solicitud</button>
-            <button type="button" class="btn-ghost" id="res-modal-rechazar-btn" style="color:var(--danger,#e55);padding:8px 12px">Rechazar</button>
+            <button type="button" class="btn-primary" id="res-modal-aprobar-btn" style="padding:8px 16px;font-weight:600">${t('aprobar_solicitud_button')}</button>
+            <button type="button" class="btn-ghost" id="res-modal-rechazar-btn" style="color:var(--danger,#e55);padding:8px 12px">${t('rechazar')}</button>
           </div>
         ` : `
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="btn-cancel" id="res-modal-ver-visitas">
               <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:middle;margin-right:4px"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
-              Ver entradas de este residente
+              ${t('ver_entradas_residente_button')}
             </button>
-            <button type="button" class="btn-ghost" id="res-modal-revocar-btn" style="color:var(--danger,#e55)">Revocar acceso</button>
+            <button type="button" class="btn-ghost" id="res-modal-revocar-btn" style="color:var(--danger,#e55)">${t('revocar_acceso_button')}</button>
           </div>
         `}
-        <button type="button" class="btn-cancel" id="res-modal-cerrar-btn">Cerrar</button>
+        <button type="button" class="btn-cancel" id="res-modal-cerrar-btn">${t('cerrar_button')}</button>
       </div>
     `;
 
