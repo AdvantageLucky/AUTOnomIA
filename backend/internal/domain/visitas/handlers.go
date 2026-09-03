@@ -219,12 +219,15 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		}
 	}
 
+	curpVisitante := strings.ToUpper(strings.TrimSpace(req.Curp))
+	embeddingVisitante := parsearEmbedding(req.EmbeddingRostro)
+
 	v := &Visita{
 		TenantID:         tenantID,
 		Titular:          titular,
 		TipoVisitante:    req.TipoVisitante,
 		TipoDocumento:    tipoDocumento,
-		Curp:             strings.ToUpper(strings.TrimSpace(req.Curp)),
+		Curp:             curpVisitante,
 		FotoDocumentoURL: fotoDocumentoURL,
 		NitidezIneScore:  req.NitidezIneScore,
 		CalidadIne:       req.CalidadIne,
@@ -237,7 +240,24 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		Estado:           EstadoPendiente,
 		KioskoID:         uint(kioskoID),
 		ClientID:         ClientIDPtr(req.ClientID),
-		EmbeddingRostro:  parsearEmbedding(req.EmbeddingRostro),
+		EmbeddingRostro:  embeddingVisitante,
+	}
+
+	// Alguien que YA es residente pero entra por el flujo de visitante (a
+	// pie, sin PIN a la mano, sin QR) no debe tratarse como un desconocido:
+	// se cruza su CURP/rostro contra los residentes activos del tenant y, si
+	// coincide, se autopasa igual que si hubiera entrado por su propio
+	// PIN/rostro -- ver BuscarPersonaPorIdentidad para el porqué completo.
+	reconocido, err := repoCtx.BuscarPersonaPorIdentidad(tenantID, curpVisitante, []float64(embeddingVisitante), cfg.UmbralSimilitudCara)
+	if err != nil {
+		log.Printf("BuscarPersonaPorIdentidad tenant %d: %v", tenantID, err)
+	}
+	if reconocido != nil {
+		v.PersonaID = &reconocido.PersonaID
+		v.AutorizadoPorPersonaID = &reconocido.PersonaID
+		v.Estado = EstadoAprobado
+		v.AutorizadoPorTipo = AutorizadorPropio
+		v.AutorizadoPorNombre = "Acceso propio (identidad reconocida en registro de visitante: " + reconocido.Motivo + ")"
 	}
 
 	if err := repoCtx.Create(v); err != nil {
@@ -246,6 +266,14 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, toVisitaResponse(*v))
+
+	if reconocido != nil {
+		// Igual que el login de residente: el análisis de patrones corre
+		// solo para nutrir el resumen/score del dashboard, nunca para
+		// decidir el Estado -- eso ya se decidió arriba por identidad.
+		go AnalizarYGuardarInformativo(h.repo, tenantID, *v, h.llmURL)
+		return
+	}
 
 	// Análisis asíncrono
 	visitaCopy := *v

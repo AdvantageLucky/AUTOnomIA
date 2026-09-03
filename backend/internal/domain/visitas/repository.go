@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"kigo-autonomia-backend/internal/domain/kiosko"
+	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 
 	"gorm.io/gorm"
@@ -385,6 +386,95 @@ func (r *Repository) HistorialPorRostro(embedding []float64, umbralPct int) ([]V
 		}
 	}
 	return coincidencias, nil
+}
+
+// candidatoIdentidadFila es el destino intermedio del join en
+// BuscarPersonaPorIdentidad -- mismo motivo que candidatoKioskoFila en
+// persona/repository.go: GORM necesita un tipo con nombre para resolver el
+// esquema de Embedding (residente.FloatArray); falla sobre un struct
+// anónimo declarado inline.
+type candidatoIdentidadFila struct {
+	PersonaID       uint
+	Nombre          string
+	ApellidoPaterno string
+	CasaDestino     string
+	DestinoID       *uint
+	Curp            string
+	Embedding       residente.FloatArray `gorm:"type:float[]"`
+}
+
+// BuscarPersonaPorIdentidad cruza los datos de identidad de un visitante
+// recién registrado (CURP de su INE, embedding de su rostro) contra los
+// residentes activos del tenant -- ver el comentario en RegisterVisita
+// (handlers.go) sobre por qué hace falta: alguien que YA es residente pero
+// entra por el flujo de visitante (a pie, sin PIN a la mano, sin QR) se
+// trataba como un desconocido total, porque este cruce nunca se hacía --
+// RegisterVisita solo comparaba contra visitas anteriores del propio
+// visitante (HistorialDeVisitante), nunca contra Persona/Membresia.
+//
+// CURP es la señal fuerte: si coincide exactamente, es la misma persona sin
+// más que discutir (una INE no se falsifica sola). El rostro es la señal de
+// respaldo, con el mismo umbral que usa el login de residente
+// (kiosko_configs.umbral_similitud_cara) -- por coherencia: no tendría
+// sentido que el kiosko reconozca esta cara al hacer login y no aquí.
+//
+// Duplica el join de persona.Repository.FindActivasPorTenant en vez de
+// importar ese paquete: mismo criterio anti-ciclo documentado en
+// similitudCoseno (matching.go).
+func (r *Repository) BuscarPersonaPorIdentidad(tenantID uint, curp string, embedding []float64, umbralSimilitud float64) (*PersonaReconocida, error) {
+	if curp == "" && len(embedding) == 0 {
+		return nil, nil
+	}
+
+	var filas []candidatoIdentidadFila
+	err := r.db.Table("membresias").
+		Select("membresias.persona_id AS persona_id, personas.nombre AS nombre, personas.apellido_paterno AS apellido_paterno, membresias.casa_destino AS casa_destino, membresias.destino_id AS destino_id, personas.curp AS curp, personas.embedding AS embedding").
+		Joins("JOIN personas ON personas.id = membresias.persona_id").
+		Where("membresias.tenant_id = ? AND membresias.status = ?", tenantID, residente.ResidenteStatusActivo).
+		Where("membresias.deleted_at IS NULL AND personas.deleted_at IS NULL").
+		Scan(&filas).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if curp != "" {
+		for _, f := range filas {
+			if f.Curp != "" && f.Curp == curp {
+				return &PersonaReconocida{
+					PersonaID:   f.PersonaID,
+					Nombre:      strings.TrimSpace(f.Nombre + " " + f.ApellidoPaterno),
+					CasaDestino: f.CasaDestino,
+					DestinoID:   f.DestinoID,
+					Motivo:      "CURP coincide con un residente activo",
+				}, nil
+			}
+		}
+	}
+
+	if len(embedding) == 0 {
+		return nil, nil
+	}
+
+	var mejor *candidatoIdentidadFila
+	mejorScore := -1.0
+	for i := range filas {
+		score := similitudCoseno([]float64(filas[i].Embedding), embedding)
+		if score > mejorScore {
+			mejorScore = score
+			mejor = &filas[i]
+		}
+	}
+	if mejor == nil || mejorScore < umbralSimilitud {
+		return nil, nil
+	}
+
+	return &PersonaReconocida{
+		PersonaID:   mejor.PersonaID,
+		Nombre:      strings.TrimSpace(mejor.Nombre + " " + mejor.ApellidoPaterno),
+		CasaDestino: mejor.CasaDestino,
+		DestinoID:   mejor.DestinoID,
+		Motivo:      fmt.Sprintf("rostro coincide con un residente activo (%.0f%%)", mejorScore*100),
+	}, nil
 }
 
 // HistorialDeVisitante liga esta visita con sus antecedentes por PersonaID

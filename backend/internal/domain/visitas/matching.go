@@ -35,3 +35,17 @@ func similitudCoseno(a, b []float64) float64 {
 
 	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
 }
+
+// PersonaReconocida es el resultado de cruzar un visitante recién
+// registrado contra los residentes activos del tenant -- ver
+// Repository.BuscarPersonaPorIdentidad.
+type PersonaReconocida struct {
+	PersonaID   uint
+	Nombre      string
+	CasaDestino string
+	DestinoID   *uint
+	// Motivo describe con qué dato coincidió (CURP o rostro, con su score) --
+	// se guarda en AutorizadoPorNombre para que la bitácora del admin explique
+	// por qué se autopasó a alguien que entró como "visitante".
+	Motivo string
+}
