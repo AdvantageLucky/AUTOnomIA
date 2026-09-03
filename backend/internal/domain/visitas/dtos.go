@@ -86,6 +86,11 @@ type VisitaResponse struct {
 	// aparte para no mezclar "lo que se leyó ahora" con "lo que ya
 	// sabíamos de antes". Solo aplica a TipoResidente.
 	PersonaCurp string `json:"persona_curp,omitempty"`
+	// PersonaID expone la correlación fuerte de identidad al dashboard --
+	// sin esto, "historial de esta persona" solo podía cruzar por CURP
+	// exacto o por nombre, más débil que lo que el propio análisis de IA
+	// ya usa internamente (ver HistorialPorPersonaID).
+	PersonaID *uint `json:"persona_id,omitempty"`
 }
 
 // VisitaListItemResponse DTO reducido para el listado del dashboard (omite CURP y clave_lector)
@@ -155,6 +160,7 @@ func toVisitaResponse(v Visita) VisitaResponse {
 		AutorizadoPorCorreo: v.AutorizadoPorCorreo,
 		AutorizadoPorRol:    v.AutorizadoPorRol,
 		CreatedAt:           v.CreatedAt,
+		PersonaID:           v.PersonaID,
 	}
 	aplicarAnalisisIA(&resp.ResumenIA, &resp.ScoreIA, v)
 	return resp
