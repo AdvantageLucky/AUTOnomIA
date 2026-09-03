@@ -246,44 +246,55 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
     final safe = MediaQuery.paddingOf(context);
 
     return Positioned.fill(
-      child: Stack(
-        children: [
+      // Material propio, sin pintar nada: estas pantallas cuelgan el asistente
+      // como HERMANO del Scaffold dentro de un Stack, no como hijo, así que su
+      // texto se quedaba sin ancestro Material y Flutter le pintaba encima el
+      // subrayado amarillo doble de "texto sin estilo" (se veía bajo
+      // "Asistente IA" en registro y residentes). El widget se diseñó para
+      // soltarse en cualquier Stack, así que el arreglo va aquí y no en cada
+      // vista.
+      child: Material(
+        type: MaterialType.transparency,
+        child: Stack(
+          children: [
           // Mascota + etiqueta: solo indica estado (inactiva/escuchando/
           // procesando/hablando), no responde a toques -- la interacción
           // real vive en los dos botones de abajo. La etiqueta va ARRIBA de
           // la mascota (no debajo): abajo es donde vive el contenido propio
           // de cada pantalla, y ahí se reportó solapamiento. FittedBox
           // evita que "Asistente IA" desborde en pantallas angostas.
-          Positioned(
-            top: widget.topDelBorde + safe.top,
-            right: widget.rightDelBorde,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (widget.mostrarEtiqueta) ...[
-                  const FittedBox(fit: BoxFit.scaleDown, child: EtiquetaAsistente()),
-                  const SizedBox(height: 6),
+            Positioned(
+              top: widget.topDelBorde + safe.top,
+              right: widget.rightDelBorde,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (widget.mostrarEtiqueta) ...[
+                    const FittedBox(
+                        fit: BoxFit.scaleDown, child: EtiquetaAsistente()),
+                    const SizedBox(height: 6),
+                  ],
+                  _buildMascotaConHalo(),
                 ],
-                _buildMascotaConHalo(),
-              ],
+              ),
             ),
-          ),
 
           // Vigilante (ayuda/emergencia) abajo a la IZQUIERDA, micrófono
           // (hablar) abajo a la DERECHA -- esquinas opuestas, no un cluster:
           // así ninguno tapa al otro y cada uno queda solo, fácil de ubicar
           // de un vistazo.
-          Positioned(
-            bottom: widget.bottomDelBorde + safe.bottom,
-            left: widget.leftDelBorde,
-            child: _buildBotonVigilante(telefonoContacto, offline),
-          ),
-          Positioned(
-            bottom: widget.bottomDelBorde + safe.bottom,
-            right: widget.rightDelBorde,
-            child: _buildBotonMicrofono(offline, telefonoContacto),
-          ),
-        ],
+            Positioned(
+              bottom: widget.bottomDelBorde + safe.bottom,
+              left: widget.leftDelBorde,
+              child: _buildBotonVigilante(telefonoContacto, offline),
+            ),
+            Positioned(
+              bottom: widget.bottomDelBorde + safe.bottom,
+              right: widget.rightDelBorde,
+              child: _buildBotonMicrofono(offline, telefonoContacto),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -522,7 +522,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         width: double.infinity,
-        height: 76,
+        height: _altoBotonPrincipal,
         color: KigoDesign.bgDark,
         child: Stack(
           alignment: Alignment.center,
@@ -538,7 +538,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               style: TextStyle(
                 fontFamily: 'Unbounded',
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 32,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -548,12 +548,17 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     );
   }
 
+  /// Alto del CTA de abajo. Lo comparten el botón normal y su estado
+  /// "procesando": si sólo cambiara uno, el botón se encogería a media
+  /// captura.
+  static const double _altoBotonPrincipal = 150;
+
   Widget _buildMainButton(String text) {
     return Presionable(
       onTap: _continueProcess,
       child: Container(
         width: double.infinity,
-        height: 76,
+        height: _altoBotonPrincipal,
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
           color: KigoDesign.brand,
@@ -569,43 +574,55 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Todo el contenido escala con el botón: pasó de 76 a 150 de
+            // alto (x2), así que icono, textos y separaciones van al doble.
+            // Con los tamaños viejos el texto quedaba flotando chiquito en
+            // una caja del doble de grande.
             const Icon(
               Icons.camera_alt_rounded,
               color: Colors.white,
-              size: 28,
+              size: 56,
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 28),
             Flexible(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    text,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
+              // La caja es de alto fijo, así que el texto no puede empujarla:
+              // le toca a él caber. Sólo entra en acción con un texto más
+              // largo que los de hoy (otro idioma, otro paso del alta).
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 40,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    AppLocalizations.t(context, 'continue_press_text'),
-                    style: const TextStyle(
-                      color: Color(0xFFFFE3DC),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 4),
+                    Text(
+                      AppLocalizations.t(context, 'continue_press_text'),
+                      style: const TextStyle(
+                        color: Color(0xFFFFE3DC),
+                        fontSize: 26,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 10),
+            // La flecha también, al doble: acompaña al texto.
+            const SizedBox(width: 20),
             const Icon(
               Icons.arrow_forward_ios_rounded,
               color: Colors.white,
-              size: 18,
+              size: 36,
             ),
           ],
         ),

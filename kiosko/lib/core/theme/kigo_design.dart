@@ -58,6 +58,23 @@ abstract final class KigoDesign {
   /// inferior -- confirmado por screenshot que sin esto el CTA queda tapado.
   static const clearanceBotonesFlotantes = 110.0;
 
+  /// Geometría de esos botones, por separado, para quien necesite anclarse a
+  /// ellos con precisión en vez de reservar el bloque completo.
+  static const ladoBotonAccion = 64.0;
+  static const offsetBotonesFlotantes = 20.0;
+
+  /// El equivalente de arriba: alto que ocupa el bloque de la mascota
+  /// (`BotonAsistenteFlotante` con etiqueta) contado desde el techo de la
+  /// pantalla -- 24 de offset del borde + 16 de la etiqueta "Asistente IA" +
+  /// 6 de separación + [ladoAsistente], más margen. El contenido que va
+  /// pegado al techo y ocupa todo el ancho tiene que empezar por debajo: el
+  /// badge de comunidad del escáner QR se estaba metiendo bajo la mascota.
+  ///
+  /// Va justo: la caja de la mascota termina en 122 (24 + 16 + 6 + 76) y esto
+  /// deja 2px sobre ella -- 8 sobre el dibujo, que no llega al borde de su
+  /// caja. Es a propósito, el badge tiene que quedar lo más pegado posible.
+  static const clearanceAsistenteArriba = 124.0;
+
   // ── Radius ─────────────────────────────────────────────────────────────────
   static const radius   = 10.0;
   static const radiusSm = 6.0;

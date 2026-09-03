@@ -335,58 +335,65 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       children: [
         Scaffold(
           backgroundColor: context.kBg,
+          // Pantalla FIJA, sin scroll: quien está aquí espera una respuesta,
+          // no navega. Con SingleChildScrollView el visitante arrastraba la
+          // vista hacia arriba y el StepIndicator se le metía debajo de la
+          // mascota (que vive en el Stack, fuera del scroll) mientras la
+          // tarjeta se le iba de pantalla.
           body: SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                // El sello de confianza (último elemento cuando hay score)
-                // queda detrás del micrófono/vigilante si se scrollea hasta
-                // el fondo, sin esta reserva extra.
-                //
-                // top: 150 -- BotonAsistenteFlotante en esta pantalla usa
-                // topDelBorde: 40 CON mostrarEtiqueta: true (mascota + label
-                // "Asistente IA" arriba, ~98px de alto total), así que el
-                // conjunto ocupa hasta y≈138. Con top: 40 el StepIndicator
-                // arrancaba en el mismo y que la mascota -- confirmado con
-                // tester.getRect: StepIndicator=(42,40,758,84) vs mascota
-                // x=[682,758], solape real de 76x44px. topDelBorde se deja
-                // igual (40) porque ahí es donde debe verse la mascota; es el
-                // contenido el que necesita bajar para no meterse debajo.
-                padding: EdgeInsets.only(
-                  left: 42,
-                  right: 42,
-                  top: 150,
-                  bottom: 40 + KigoDesign.clearanceBotonesFlotantes,
-                ),
-                child: Column(
-                  children: [
-                    StepIndicator(
-                      currentStep: widget.totalSteps - 1,
-                      totalSteps: widget.totalSteps,
-                    ),
-                    const SizedBox(height: 42),
-                    if (_submitError != null)
-                      _buildErrorState()
-                    else ...[
-                      _buildEstadoHeader(),
-                      const SizedBox(height: 38),
-                      _buildResumenCard(),
-                      if (_scoreIa != null) ...[
-                        const SizedBox(height: 16),
-                        _buildSelloConfianza(),
+            child: Padding(
+              // top: clearanceAsistenteArriba deja el bloque de la mascota
+              // (etiqueta "Asistente IA" + dibujo, con topDelBorde: 24)
+              // COMPLETO por encima del StepIndicator, igual que en el resto
+              // del registro (motivo/casa destino), en vez de a su misma
+              // altura.
+              padding: const EdgeInsets.only(
+                left: 42,
+                right: 42,
+                top: KigoDesign.clearanceAsistenteArriba,
+                bottom: 24 + KigoDesign.clearanceBotonesFlotantes,
+              ),
+              child: LayoutBuilder(
+                builder: (context, restricciones) => FittedBox(
+                  // Sin scroll hay que garantizar que TODO entre. En el panel
+                  // del kiosko no hace nada (scaleDown solo achica); en
+                  // pantallas más cortas encoge el conjunto en bloque, que es
+                  // preferible a recortar la tarjeta o el sello de confianza.
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width: restricciones.maxWidth,
+                    child: Column(
+                      children: [
+                        StepIndicator(
+                          currentStep: widget.totalSteps - 1,
+                          totalSteps: widget.totalSteps,
+                        ),
+                        const SizedBox(height: 28),
+                        if (_submitError != null)
+                          _buildErrorState()
+                        else ...[
+                          _buildEstadoHeader(),
+                          const SizedBox(height: 24),
+                          _buildResumenCard(),
+                          if (_scoreIa != null) ...[
+                            const SizedBox(height: 16),
+                            _buildSelloConfianza(),
+                          ],
+                        ],
                       ],
-                    ],
-                  ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ),
         BotonAsistenteFlotante(
-          // Coincide con el padding real de esta pantalla (top: 40,
-          // right: 42) -- esta pantalla SÍ usa SafeArea, igual que
-          // WelcomeView/ConfirmarPlacaView.
-          topDelBorde: 40,
+          // topDelBorde: 24 es el offset con el que está calculado
+          // KigoDesign.clearanceAsistenteArriba, el padding superior del
+          // contenido -- moverlo aquí sin mover allá los vuelve a solapar.
+          topDelBorde: 24,
           rightDelBorde: 42,
           mostrarEtiqueta: true,
           onRespuestaLibre: (_) {},
@@ -445,8 +452,8 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
       return Column(
         children: [
           const SizedBox(
-            width: 90,
-            height: 90,
+            width: 72,
+            height: 72,
             child: LoadingIndicator(
               indicatorType: Indicator.circleStrokeSpin,
               colors: [KigoDesign.brand],
@@ -455,7 +462,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
               pathBackgroundColor: Colors.transparent,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Text(
             _isSubmitting
                 ? AppLocalizations.t(context, 'enviando_solicitud')
@@ -467,7 +474,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             AppLocalizations.t(context, 'esperando_aprobacion_subtitle'),
             style: TextStyle(
@@ -564,7 +571,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
       decoration: BoxDecoration(
         color: context.kSurfaceCard,
         borderRadius: BorderRadius.circular(24),
@@ -577,13 +584,13 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             child: data.pathFotoRostro != null
                 ? Image.file(
                     File(data.pathFotoRostro!),
-                    width: 140,
-                    height: 140,
+                    width: 116,
+                    height: 116,
                     fit: BoxFit.cover,
                   )
                 : Container(
-                    width: 140,
-                    height: 140,
+                    width: 116,
+                    height: 116,
                     color: context.kSurface2,
                     child: Icon(
                       Icons.person_outline,
@@ -592,7 +599,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
                     ),
                   ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             // Sin INE no hay nombre: se muestra la placa, que es como el
             // vigilante va a identificar esta visita.
@@ -606,7 +613,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           _buildDato(
             Icons.access_time_rounded,
             AppLocalizations.t(context, 'hora_solicitud_label'),
@@ -684,7 +691,7 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
   Widget _buildDato(IconData icon, String label, String valor) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(top: 12),
       child: Row(
         children: [
           Icon(icon, color: KigoDesign.brand, size: 22),
