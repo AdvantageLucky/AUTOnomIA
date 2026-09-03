@@ -260,6 +260,32 @@
       revocar_button: "Revocar",
       no_pudo_revocar_reintentar: "No se pudo revocar. Intenta de nuevo.",
       // __NEW_I18N_ES_MARKER__
+      // --- fix modal residente: claves faltantes ---
+      activo_badge: "Activo",
+      app_kigo_qr_desc: "Invitaciones y QR de acceso propio",
+      app_kigo_qr_label: "App Kigo / QR",
+      aprobar_solicitud_button: "Aprobar solicitud",
+      configurado_label: "Configurado",
+      destino_casa_label: "Destino / Casa",
+      documento_identidad_ine_label: "Documento de identidad (INE)",
+      documento_ine_alt: "Documento INE",
+      enrolado_label: "Enrolado",
+      ine_de_label: "INE de",
+      metodos_acceso_identidad_label: "Métodos de acceso e identidad",
+      miembro_desde_label: "Miembro desde",
+      pendiente_aprobacion_label: "Pendiente de aprobación",
+      pin_de_acceso_desc: "PIN numérico para entrar sin la app",
+      pin_de_acceso_label: "PIN de acceso",
+      reconocimiento_facial_ia_desc: "Reconocimiento 1:N en el kiosko",
+      reconocimiento_facial_ia_label: "Reconocimiento facial (IA)",
+      revocar_acceso_button: "Revocar acceso",
+      rostro_de_label: "Rostro de",
+      sin_casa_asignada: "Sin casa asignada",
+      sin_pin_label: "Sin PIN",
+      sin_rostro_label: "Sin rostro",
+      solicitado_el_label: "Solicitado el",
+      solicitud_pendiente_badge: "Solicitud pendiente",
+      ver_entradas_residente_button: "Ver entradas",
       // --- i18n dashboard: segunda pasada (completado) ---
       abre_la_app_en_el_dispositivo_del_kiosko_activacion: "Abre la app en el dispositivo del kiosko — mostrará un código de activación. Escríbelo aquí.",
       ajusta_los_parametros_basicos: "Ajusta los parámetros básicos. Puedes cambiarlos después en la sección Kioskos → Configuración.",
@@ -719,6 +745,32 @@
       revocar_button: "Revoke",
       no_pudo_revocar_reintentar: "Could not revoke access. Try again.",
       // __NEW_I18N_EN_MARKER__
+      // --- fix modal residente: claves faltantes ---
+      activo_badge: "Active",
+      app_kigo_qr_desc: "Invitations and own access QR",
+      app_kigo_qr_label: "Kigo App / QR",
+      aprobar_solicitud_button: "Approve request",
+      configurado_label: "Set",
+      destino_casa_label: "Destination / House",
+      documento_identidad_ine_label: "ID document (INE)",
+      documento_ine_alt: "ID document",
+      enrolado_label: "Enrolled",
+      ine_de_label: "ID of",
+      metodos_acceso_identidad_label: "Access & identity methods",
+      miembro_desde_label: "Member since",
+      pendiente_aprobacion_label: "Pending approval",
+      pin_de_acceso_desc: "Numeric PIN to enter without the app",
+      pin_de_acceso_label: "Access PIN",
+      reconocimiento_facial_ia_desc: "1:N recognition at the kiosk",
+      reconocimiento_facial_ia_label: "Facial recognition (AI)",
+      revocar_acceso_button: "Revoke access",
+      rostro_de_label: "Face of",
+      sin_casa_asignada: "No house assigned",
+      sin_pin_label: "No PIN",
+      sin_rostro_label: "No face",
+      solicitado_el_label: "Requested on",
+      solicitud_pendiente_badge: "Pending request",
+      ver_entradas_residente_button: "View entries",
       // --- i18n dashboard: segunda pasada (completado) ---
       abre_la_app_en_el_dispositivo_del_kiosko_activacion: "Open the app on the kiosk device — it will show an activation code. Type it here.",
       ajusta_los_parametros_basicos: "Adjust the basic settings. You can change them later from the Kiosks → Settings section.",
@@ -4572,7 +4624,7 @@
           <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px">${esc(nombreCompleto)}</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--aprobado'}">${esc(m.casa_destino || t('sin_casa_asignada'))}</span>
-            <span class="badge" style="text-transform:capitalize">${esc(m.rol || t('residente_singular'))}</span>
+            <span class="badge" style="text-transform:capitalize">${esc(m.rol || t('autorizador_residente'))}</span>
             <span class="badge ${esPendiente ? 'badge--pendiente' : 'badge--green'}">${esPendiente ? t('solicitud_pendiente_badge') : t('activo_badge')}</span>
           </div>
         </div>
@@ -4582,7 +4634,7 @@
         <div>
           <div class="res-modal-grid">
             <div class="res-modal-field">
-              <div class="res-modal-field-label">${t('telefono_label')}</div>
+              <div class="res-modal-field-label">${t('telefono')}</div>
               <div class="res-modal-field-value">${m.telefono ? esc(m.telefono) : '—'}</div>
             </div>
             <div class="res-modal-field">
@@ -4682,7 +4734,7 @@
             <button type="button" class="btn-ghost" id="res-modal-revocar-btn" style="color:var(--danger,#e55)">${t('revocar_acceso_button')}</button>
           </div>
         `}
-        <button type="button" class="btn-cancel" id="res-modal-cerrar-btn">${t('cerrar_button')}</button>
+        <button type="button" class="btn-cancel" id="res-modal-cerrar-btn">${t('cerrar')}</button>
       </div>
     `;
 
