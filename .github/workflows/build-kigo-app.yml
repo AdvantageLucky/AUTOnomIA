@@ -6,14 +6,13 @@ name: Build kigo-app APK
 # algo. Firma con la keystore de debug (no hay Play Store de por medio,
 # es distribución directa para FEPRO).
 #
-# runs-on: ubuntu-latest es una máquina nueva en cada corrida -- sin el
-# paso de abajo, Android genera un keystore de debug ALEATORIO distinto
-# en cada build, y quien ya tenía instalado un build anterior no puede
-# instalar el nuevo encima ("app no instalada, conflicto de paquete").
-# Se usa siempre el mismo keystore fijo (.github/keystores/debug.keystore,
-# con los valores convencionales storepass/keypass "android" y alias
-# "androiddebugkey" que Gradle ya asume por default) para que todos los
-# builds de kigo-app-latest compartan la misma firma.
+# La firma sale de android/debug.keystore, referenciado explícitamente en
+# app/build.gradle.kts -- no del default implícito de AGP
+# (~/.android/debug.keystore), que en runs-on: ubuntu-latest (máquina
+# nueva cada vez) resultó no ser el archivo que este workflow copiaba
+# ahí (quedaba en otra ruta, y AGP generaba uno aleatorio propio). Con la
+# ruta explícita en el .kts, cualquier máquina que compile firma siempre
+# igual sin importar dónde busque AGP por default.
 on:
   push:
     branches: [dev]
@@ -34,11 +33,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-
-      - name: Usar keystore de debug fijo (misma firma en cada build)
-        run: |
-          mkdir -p ~/.android
-          cp .github/keystores/debug.keystore ~/.android/debug.keystore
 
       - name: Instalar dependencias
         working-directory: kigo-app

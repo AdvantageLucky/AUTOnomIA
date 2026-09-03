@@ -31,6 +31,24 @@ android {
         versionName = flutter.versionName
     }
 
+    // Se fija el debug signingConfig a un keystore commiteado en el repo
+    // (android/debug.keystore) en vez de dejar el default implícito de AGP
+    // (~/.android/debug.keystore del home de quien compile). Sin esto, la
+    // build de release en CI (runs-on: ubuntu-latest, máquina nueva cada
+    // vez) quedaba firmada con una llave distinta en cada corrida, y quien
+    // ya tenía instalado un build anterior no podía instalar el siguiente
+    // encima ("app no instalada, conflicto de paquete"). Con el keystore
+    // explícito, cualquier máquina que compile (CI o local) firma siempre
+    // igual.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("../debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
