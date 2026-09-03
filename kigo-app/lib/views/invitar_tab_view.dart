@@ -401,23 +401,21 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 14),
-                DropdownButtonFormField<int>(
-                  value: destinoValido,
-                  decoration: InputDecoration(labelText: AppLocalizations.t(context, 'casa_destino_label')),
-                  items: destinos.isEmpty
-                      ? [
-                          DropdownMenuItem<int>(
-                            value: null,
-                            enabled: false,
-                            child: Text(AppLocalizations.t(context, 'sin_casas_registradas')),
-                          ),
-                        ]
-                      : destinos
-                          .map((d) => DropdownMenuItem<int>(value: d.id, child: Text(d.nombre)))
-                          .toList(),
-                  onChanged: destinos.isEmpty
-                      ? null
-                      : (val) => setState(() => _destinoIdSeleccionado = val),
+                // Solo puedes invitar a tu propia casa -- el backend ya lo exige
+                // (CrearInvitacion rechaza cualquier otro destino_id), así que
+                // mostrar esto como un dropdown daba a entender que había otras
+                // casas entre las que elegir cuando nunca las hubo.
+                TextFormField(
+                  key: ValueKey(destinoValido),
+                  initialValue: destinos.isEmpty
+                      ? AppLocalizations.t(context, 'sin_casas_registradas')
+                      : destinos.firstWhere((d) => d.id == destinoValido, orElse: () => destinos.first).nombre,
+                  readOnly: true,
+                  enabled: false,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.t(context, 'casa_destino_label'),
+                    suffixIcon: const Icon(Icons.home_outlined, size: 20),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Text(AppLocalizations.t(context, 'motivo_opcional'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),

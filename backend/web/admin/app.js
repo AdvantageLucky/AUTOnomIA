@@ -302,6 +302,11 @@
       horario_de_operacion: "Horario de Operación",
       hoy_option: "Hoy",
       ultimos_30_dias: "Últimos 30 días",
+      regenerar_pin_button: "Regenerar",
+      regenerar_pin_confirmar_titulo: "¿Regenerar PIN?",
+      regenerar_pin_confirmar_texto: "El PIN anterior deja de funcionar de inmediato. Vas a necesitar comunicarle el nuevo código al residente.",
+      regenerar_pin_ok_toast: "PIN regenerado",
+      regenerar_pin_error_toast: "No se pudo regenerar el PIN",
       ine_identificacion_obligatoria: "INE / Identificación obligatoria",
       las_casas_o_edificios_se_agregan_despues: "Las casas o edificios se agregan después, desde Instalación — para arrancar solo necesitas un kiosko activo. Abre la app en el dispositivo, mostrará un código, y actívalo aquí.",
       lo_hare_despues: "Lo haré después →",
@@ -756,6 +761,11 @@
       horario_de_operacion: "Operating Hours",
       hoy_option: "Today",
       ultimos_30_dias: "Last 30 days",
+      regenerar_pin_button: "Regenerate",
+      regenerar_pin_confirmar_titulo: "Regenerate PIN?",
+      regenerar_pin_confirmar_texto: "The old PIN stops working immediately. You'll need to tell the resident their new code.",
+      regenerar_pin_ok_toast: "PIN regenerated",
+      regenerar_pin_error_toast: "Could not regenerate the PIN",
       ine_identificacion_obligatoria: "ID / INE required",
       las_casas_o_edificios_se_agregan_despues: "Houses or buildings are added later, from Facility — to get started you only need one active kiosk. Open the app on the device, it will show a code, and activate it here.",
       lo_hare_despues: "I'll do it later →",
@@ -4634,9 +4644,12 @@
                   <div style="font-size:11.5px;color:var(--text-3)">${t('pin_de_acceso_desc')}</div>
                 </div>
               </div>
-              <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}" style="flex-shrink:0">
-                ${tienePin ? t('configurado_label') : t('sin_pin_label')}
-              </span>
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                <span class="badge ${tienePin ? 'badge--aprobado' : 'badge--rechazado'}" id="res-modal-pin-badge">
+                  ${tienePin ? t('configurado_label') : t('sin_pin_label')}
+                </span>
+                ${!esPendiente ? `<button type="button" class="btn-ghost" id="res-modal-regenerar-pin-btn" style="padding:4px 8px;font-size:11.5px">${t('regenerar_pin_button')}</button>` : ''}
+              </div>
             </div>
 
             <div style="flex:1 1 220px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
@@ -4727,6 +4740,26 @@
         await loadResidentesActivos();
       } else {
         mostrarToast('No se pudo revocar', 'err');
+      }
+    });
+
+    document.getElementById('res-modal-regenerar-pin-btn')?.addEventListener('click', async () => {
+      const ok = await confirmarAccion({
+        titulo: t('regenerar_pin_confirmar_titulo'),
+        texto: t('regenerar_pin_confirmar_texto'),
+        textoBoton: t('regenerar_pin_button'),
+      });
+      if (!ok) return;
+      const res = await api(`/membresias/${m.id}/regenerar-pin`, { method: 'POST' });
+      if (res && res.ok) {
+        const data = await res.json();
+        const badge = document.getElementById('res-modal-pin-badge');
+        // Se queda visible en el badge (no en un toast de 5s) porque el
+        // admin necesita tiempo para copiarlo o dictarlo al residente.
+        if (badge) badge.textContent = data.pin_codigo;
+        mostrarToast(t('regenerar_pin_ok_toast'), 'ok');
+      } else {
+        mostrarToast(t('regenerar_pin_error_toast'), 'err');
       }
     });
 
