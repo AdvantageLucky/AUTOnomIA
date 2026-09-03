@@ -542,6 +542,16 @@ func (r *Repository) HistorialDeVisitante(v Visita, umbralFacialPct int, fuentes
 		for _, vh := range porIdentidad {
 			historial = append(historial, vh)
 		}
+		// Un reset (residente o admin, ver HistorialReset) solo tiene efecto
+		// cuando la identidad correlacionada es una Persona real -- un
+		// visitante sin cuenta no tiene PersonaID contra qué buscar un reset.
+		if v.PersonaID != nil {
+			var err error
+			historial, err = r.aplicarResetHistorial(v.TenantID, *v.PersonaID, v.CasaDestino, historial)
+			if err != nil {
+				return nil, err
+			}
+		}
 		sort.Slice(historial, func(i, j int) bool {
 			return historial[i].CreatedAt.After(historial[j].CreatedAt)
 		})

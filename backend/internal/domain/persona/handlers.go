@@ -709,6 +709,39 @@ func (h *Handler) ListarContactosFrecuentes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"contactos": list})
 }
 
+// ResetHistorialContacto deja que un residente "olvide" la confianza
+// acumulada con un contacto -- SOLO para su propia casa: un residente no
+// puede tocar cómo esa identidad es vista en el resto del centro
+// habitacional, ni en ningún otro tenant al que también pertenezca. El
+// admin sí puede hacerlo globalmente, ver visitas.Handler.ResetHistorialPersona.
+func (h *Handler) ResetHistorialContacto(c *gin.Context) {
+	miPersonaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	contactoID64, err := strconv.ParseUint(c.Param("personaId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	miMembresia, err := h.membresiaRepo.FindByPersonaAndTenant(miPersonaID, tenantID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no perteneces a este centro habitacional"})
+		return
+	}
+
+	if err := h.visitaRepo.CrearReset(tenantID, uint(contactoID64), miMembresia.CasaDestino, &miPersonaID, nil); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
+}
+
 // CrearInvitadoFrecuente le da a alguien acceso recurrente por
 // reconocimiento facial a la propia casa de la Persona autenticada --
 // crea una Membresia con Rol=RolInvitadoFrecuente, activa de inmediato

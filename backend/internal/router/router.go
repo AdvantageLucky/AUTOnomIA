@@ -268,6 +268,8 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 		d.GET("/reportes", visitaHandler.ListarReportes)
 		d.GET("/:id", visitaHandler.GetVisitaByID)
 		d.PATCH("/:id/estado", visitaHandler.ActualizarEstado)
+		d.GET("/personas/:personaId/historial", visitaHandler.HistorialCorrelacionado)
+		d.POST("/personas/:personaId/resetear-historial", visitaHandler.ResetHistorialPersona)
 	}
 
 	// SSE stream — admin de cualquier rol puede suscribirse
@@ -480,6 +482,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.DELETE("/invitaciones/:id", personaHandler.RevocarInvitacion)
 		p.GET("/invitaciones/recibidas", personaHandler.ListarInvitacionesRecibidas)
 		p.GET("/invitaciones/contactos", personaHandler.ListarContactosFrecuentes)
+		p.POST("/contactos/:personaId/resetear-historial", personaHandler.ResetHistorialContacto)
 		p.POST("/invitados-frecuentes", personaHandler.CrearInvitadoFrecuente)
 		p.GET("/invitados-frecuentes", personaHandler.ListarInvitadosFrecuentes)
 		p.DELETE("/invitados-frecuentes/:id", personaHandler.RevocarInvitadoFrecuente)
