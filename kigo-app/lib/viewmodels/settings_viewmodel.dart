@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsViewModel extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.dark;
+  // Sigue el tema del sistema (día/noche) mientras el usuario no elija uno
+  // a mano en Ajustes -- antes arrancaba fijo en oscuro sin importar el
+  // modo del teléfono, incluso en la primerísima pantalla de onboarding.
+  ThemeMode _themeMode = ThemeMode.system;
   Locale _currentLocale = const Locale('es');
   String _userName = 'Iván';
 
@@ -22,9 +25,15 @@ class SettingsViewModel extends ChangeNotifier {
     final languageCode = prefs.getString('language_code') ?? 'es';
     _currentLocale = Locale(languageCode);
 
-    // Cargar tema
-    final isDark = prefs.getBool('is_dark_mode') ?? true;
-    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    // Cargar tema -- si nunca se tocó el switch de Ajustes, no hay
+    // preferencia explícita que respetar: se sigue el modo del sistema. Solo
+    // una vez que el usuario elige a mano queda fijo en claro/oscuro.
+    if (prefs.containsKey('is_dark_mode')) {
+      final isDark = prefs.getBool('is_dark_mode')!;
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    } else {
+      _themeMode = ThemeMode.system;
+    }
 
     // Cargar nombre de usuario
     _userName = prefs.getString('user_name') ?? 'Iván';
