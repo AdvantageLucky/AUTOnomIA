@@ -2288,7 +2288,35 @@ textarea { resize: vertical; }
   .search-wrap { min-width: unset; }
   .curp-search-row { flex-direction: column; align-items: stretch; }
   .modal-actions { flex-direction: column-reverse; }
-  .btn-cancel, .btn-primary, .btn-danger { width: 100%; text-align: center; }
+  .btn-cancel, .btn-primary, .btn-danger, .btn-aprobar, .btn-rechazar { width: 100%; text-align: center; }
+
+  /* .sol-card y .acceso-card son flex-row con justify-content:space-between
+     y sin wrap -- en ~360px de ancho el bloque de acciones (que no se
+     encoge, flex-shrink:0) se apretaba contra el texto en vez de acomodarse,
+     dejando botones cortados o encimados. Se apilan en columna y las
+     acciones pasan a ancho completo, igual que ya se hace arriba con
+     .modal-actions. */
+  .sol-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .sol-card-actions {
+    width: 100%;
+  }
+  .sol-card-actions .btn-aprobar,
+  .sol-card-actions .btn-rechazar {
+    flex: 1;
+  }
+
+  .acceso-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .acceso-actions {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

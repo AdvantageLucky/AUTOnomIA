@@ -1179,7 +1179,7 @@
     if (screen !== "detalle") state.detalleAbiertoId = null;
 
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".nav-btn, .mobile-nav-btn").forEach(b => b.classList.remove("active"));
 
     const screenEl = document.getElementById(`screen-${screen}`);
     if (screenEl) { screenEl.hidden = false; screenEl.classList.add("active"); }
