@@ -1739,6 +1739,15 @@ textarea { resize: vertical; }
    no hizo nada". */
 #lightbox { z-index: 300; }
 
+/* Mismo problema que el lightbox de arriba, pero con #modal-confirmar:
+   confirmarAccion() se usa para confirmar acciones destructivas (revocar
+   acceso, rechazar solicitud) disparadas DESDE un modal ya abierto (detalle
+   de residente/solicitud) -- con el mismo z-index:200 y apareciendo antes
+   en el DOM que esos modales, el diálogo de confirmación se pintaba
+   detrás: parecía que el botón "Revocar" no hacía nada hasta cerrar el
+   modal de detalle. */
+#modal-confirmar { z-index: 300; }
+
 @keyframes modal-bg-in { from { opacity: 0; } to { opacity: 1; } }
 
 .modal-box {
