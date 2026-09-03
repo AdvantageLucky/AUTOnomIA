@@ -47,9 +47,15 @@ class _StepEscanearIneState extends State<StepEscanearIne> {
     super.initState();
     // Pedir el permiso durante la animación de transición desde el paso
     // anterior (OTP) hace que el diálogo del sistema se pierda o el
-    // request se quede colgado en algunos Android -- se espera al primer
-    // frame ya asentado, mismo criterio que el consentimiento del kiosko.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _pedirPermisoEIniciar());
+    // request se quede colgado en algunos Android -- un solo
+    // addPostFrameCallback (~16ms) no alcanza a cubrir la animación de
+    // cierre del teclado numérico del OTP (~250-300ms), que StepOtp ya
+    // dispara antes de navegar aquí pero cuya cola puede seguir corriendo.
+    // Mismo margen que el que ya se usa más abajo tras conceder el permiso
+    // (antes de abrir la cámara), por la misma razón.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 300), _pedirPermisoEIniciar);
+    });
   }
 
   Future<void> _pedirPermisoEIniciar() async {
