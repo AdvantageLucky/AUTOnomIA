@@ -32,6 +32,17 @@ class _StepOtpState extends State<StepOtp> {
     }
     setState(() => _errorLocal = null);
 
+    // Cierra el teclado ANTES de verificar, no después: si sigue abierto
+    // cuando onVerificado() monta la siguiente pantalla (StepEscanearIne,
+    // que pide permiso de cámara en su primer frame), la solicitud de
+    // permiso se dispara en plena animación de cierre de teclado / transición
+    // de Activity -- en algunos Android eso deja el Future de
+    // Permission.camera.request() colgado para siempre (ver
+    // camera_permission_servicio.dart). Cerrarlo aquí, antes del await al
+    // backend, le da a esa animación todo el tiempo de la llamada de red
+    // para terminar sin competir con nada.
+    FocusManager.instance.primaryFocus?.unfocus();
+
     final auth = context.read<AuthViewModel>();
     try {
       await auth.verificarOtp(codigo);
