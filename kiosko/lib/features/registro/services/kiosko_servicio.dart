@@ -39,6 +39,7 @@ class KioskoServicio {
   static const String _keyKioskoId = 'kiosko_id';
   static const String _keyClave = 'kiosko_clave';
   static const String _keyTelefonoContacto = 'kiosko_telefono_contacto';
+  static const String _keyConfigRespaldo = 'kiosko_config_respaldo';
 
   static final KioskoServicio _instance = KioskoServicio._internal();
   factory KioskoServicio() => _instance;
@@ -244,9 +245,44 @@ class KioskoServicio {
         await _storage.write(
             key: _keyTelefonoContacto, value: _ultimaConfig.telefonoContacto);
       }
+      await _respaldarConfig(response.body);
       return _ultimaConfig;
     }
     throw Exception('Error al obtener config (${response.statusCode})');
+  }
+
+  /// Guarda el JSON crudo de la última config buena.
+  ///
+  /// Se respalda entera y no campo por campo (el teléfono ya tenía su propia
+  /// clave, ver [_keyTelefonoContacto]) porque el problema es el mismo para
+  /// todos: si el GET falla, KioskoConfigNotifier se queda en
+  /// [KioskoConfig.defaults] y ahí `mensaje_bienvenida` es cadena vacía, que
+  /// es justo lo que el escáner QR interpreta como "no hay pastilla que
+  /// mostrar". El kiosko se veía sin nombre de fraccionamiento hasta el
+  /// siguiente arranque con red.
+  ///
+  /// Falla en silencio: un respaldo perdido no puede tumbar el arranque.
+  Future<void> _respaldarConfig(String json) async {
+    try {
+      await _storage.write(key: _keyConfigRespaldo, value: json);
+    } catch (_) {}
+  }
+
+  /// Última config conocida en disco, o null si nunca hubo una buena (kiosko
+  /// recién activado que todavía no ha logrado un solo GET).
+  ///
+  /// El SSE no sirve para recuperarse de esto: el backend solo emite cuando
+  /// el admin guarda cambios, no manda una foto del estado al conectarse, así
+  /// que un kiosko que arrancó sin red se queda con los defaults hasta que
+  /// alguien toca la config en el dashboard.
+  Future<KioskoConfig?> configRespaldo() async {
+    try {
+      final json = await _storage.read(key: _keyConfigRespaldo);
+      if (json == null || json.isEmpty) return null;
+      return KioskoConfig.fromJson(jsonDecode(json) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Último teléfono de contacto conocido, persistido en el arranque
@@ -345,9 +381,16 @@ class KioskoServicio {
             .forEach((line) {
           if (line.startsWith('data: ')) {
             try {
+              final cuerpo = line.substring(6);
               final cfg = KioskoConfig.fromJson(
-                  jsonDecode(line.substring(6)) as Map<String, dynamic>);
+                  jsonDecode(cuerpo) as Map<String, dynamic>);
               _ultimaConfig = cfg;
+              // Tambien se respalda lo que llega por aqui: si no, un cambio
+              // hecho en el dashboard se perderia en el siguiente arranque
+              // sin red y el kiosko volveria al mensaje viejo. Sin await: el
+              // callback del stream es sincrono y _respaldarConfig ya se
+              // traga sus propios errores.
+              _respaldarConfig(cuerpo);
               onConfig(cfg);
             } catch (e) {
               debugPrint('SSE config parse error: $e');
