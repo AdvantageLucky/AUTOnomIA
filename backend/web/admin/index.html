@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>AUTOnomIA · Panel de administración</title>
+		<title data-i18n="title_panel_admin">AUTOnomIA · Panel de administración</title>
 		<link rel="icon" type="image/png" href="./favicon.png">
 		<link rel="stylesheet" href="./styles.css">
 		<script src="https://accounts.google.com/gsi/client" async></script>
@@ -119,7 +119,7 @@
 
 						<div class="fine-print">
 							<span data-i18n="already_account">¿Ya tienes cuenta?</span>
-							<button type="button" class="link-btn" id="reg-go-login-btn" data-i18n="login_btn">Iniciar sesión</button>
+							<button type="button" class="link-btn" id="reg-go-login-btn" data-i18n="iniciar_sesion">Iniciar sesión</button>
 						</div>
 					</div>
 
@@ -170,22 +170,22 @@
 					<div class="hero-top">
 						<div class="hero-live-pill">
 							<span class="hero-dot"></span>
-							En vivo · kigo check-in
+							<span data-i18n="en_vivo_label">En vivo</span> · kigo check-in
 						</div>
 						<div class="hero-anim-stats">
 							<div class="has-item">
 								<div class="has-val" id="has-visitas">0</div>
-								<div class="has-label">visitas hoy</div>
+								<div class="has-label" data-i18n="visitas_hoy_stat_lower">visitas hoy</div>
 							</div>
 							<div class="has-sep"></div>
 							<div class="has-item">
 								<div class="has-val has-val--green" id="has-aprobadas">0</div>
-								<div class="has-label">aprobadas</div>
+								<div class="has-label" data-i18n="aprobadas_stat_lower">aprobadas</div>
 							</div>
 							<div class="has-sep"></div>
 							<div class="has-item">
 								<div class="has-val has-val--amber" id="has-pendientes">0</div>
-								<div class="has-label">pendientes</div>
+								<div class="has-label" data-i18n="pendientes_stat_lower">pendientes</div>
 							</div>
 						</div>
 					</div>
@@ -219,21 +219,21 @@
 					<div class="ob-icon">
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
 					</div>
-					<div class="ob-title">Configura tu centro habitacional</div>
-					<div class="ob-sub">Define cómo se llama tu comunidad o edificio. Esto aparecerá en la app del residente.</div>
+					<div class="ob-title" data-i18n="configura_tu_centro_habitacional">Configura tu centro habitacional</div>
+					<div class="ob-sub" data-i18n="define_como_se_llama_tu_comunidad">Define cómo se llama tu comunidad o edificio. Esto aparecerá en la app del residente.</div>
 					<form id="ob-inst-form">
 						<div class="form-group">
-							<label>Nombre</label>
+							<label data-i18n="name">Nombre</label>
 							<input id="ob-inst-nombre" type="text" required placeholder="Ej. Residencial Las Palmas">
-							<div class="form-hint">Tu código público será: <strong id="ob-inst-codigo-preview">—</strong>. Los residentes lo usan para unirse desde la app.</div>
+							<div class="form-hint"><span data-i18n="tu_codigo_publico_sera">Tu código público será: </span><strong id="ob-inst-codigo-preview">—</strong><span data-i18n="residentes_lo_usan_para_unirse">. Los residentes lo usan para unirse desde la app.</span></div>
 						</div>
 						<div class="form-group">
-							<label>Teléfono de contacto</label>
+							<label data-i18n="telefono_de_contacto">Teléfono de contacto</label>
 							<input id="ob-inst-telefono" type="tel" placeholder="2221234567">
-							<div class="form-hint">Número del vigilante/admin para el botón "Llamar al administrador" del kiosko -- funciona aunque el kiosko no tenga internet.</div>
+							<div class="form-hint" data-i18n="numero_vigilante_admin_boton_llamar_kiosko">Número del vigilante/admin para el botón "Llamar al administrador" del kiosko -- funciona aunque el kiosko no tenga internet.</div>
 						</div>
 						<div id="ob-inst-error" class="form-error" hidden></div>
-						<button type="submit" class="btn-primary btn-block">Siguiente →</button>
+						<button type="submit" class="btn-primary btn-block" data-i18n="siguiente_flecha">Siguiente →</button>
 					</form>
 				</div>
 
@@ -242,10 +242,10 @@
 					<div class="ob-icon">
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M9 21h6M12 17v4"/></svg>
 					</div>
-					<div class="ob-title">Activa tu primer kiosko</div>
-					<div class="ob-sub">Las casas o edificios se agregan después, desde Instalación — para arrancar solo necesitas un kiosko activo. Abre la app en el dispositivo, mostrará un código, y actívalo aquí.</div>
-					<button type="button" class="btn-primary btn-block" id="ob-kiosko-activar" style="margin-top:16px">Activar kiosko</button>
-					<button type="button" class="btn-cancel btn-block" id="ob-kiosko-saltar" style="margin-top:12px">Lo haré después →</button>
+					<div class="ob-title" data-i18n="activa_tu_primer_kiosko">Activa tu primer kiosko</div>
+					<div class="ob-sub" data-i18n="las_casas_o_edificios_se_agregan_despues">Las casas o edificios se agregan después, desde Instalación — para arrancar solo necesitas un kiosko activo. Abre la app en el dispositivo, mostrará un código, y actívalo aquí.</div>
+					<button type="button" class="btn-primary btn-block" id="ob-kiosko-activar" style="margin-top:16px" data-i18n="activar_kiosko">Activar kiosko</button>
+					<button type="button" class="btn-cancel btn-block" id="ob-kiosko-saltar" style="margin-top:12px" data-i18n="lo_hare_despues">Lo haré después →</button>
 				</div>
 
 				<!-- Paso 3: Agregar vigilante (opcional) -->
@@ -253,19 +253,19 @@
 					<div class="ob-icon">
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M19 8v6m-3-3h6"/></svg>
 					</div>
-					<div class="ob-title">Agrega a tu equipo</div>
-					<div class="ob-sub">Crea una cuenta de vigilante para monitorear solicitudes. Puedes hacerlo después desde la sección Kioskos → Equipo.</div>
+					<div class="ob-title" data-i18n="agrega_a_tu_equipo">Agrega a tu equipo</div>
+					<div class="ob-sub" data-i18n="crea_una_cuenta_de_vigilante">Crea una cuenta de vigilante para monitorear solicitudes. Puedes hacerlo después desde la sección Kioskos → Equipo.</div>
 					<div class="form-group">
-						<label>Correo</label>
+						<label data-i18n="email">Correo</label>
 						<input id="ob-vig-correo" type="email" placeholder="vigilante@ejemplo.com">
 					</div>
 					<div class="form-group">
-						<label>Contraseña</label>
+						<label data-i18n="password">Contraseña</label>
 						<input id="ob-vig-password" type="password" placeholder="••••••••" minlength="6">
 					</div>
 					<div id="ob-vig-error" class="form-error" hidden></div>
-					<button class="btn-primary btn-block" id="ob-vig-crear">Crear vigilante</button>
-					<button class="btn-ghost btn-block" id="ob-vig-saltar" style="margin-top:8px">Saltar por ahora →</button>
+					<button class="btn-primary btn-block" id="ob-vig-crear" data-i18n="crear_vigilante">Crear vigilante</button>
+					<button class="btn-ghost btn-block" id="ob-vig-saltar" style="margin-top:8px" data-i18n="saltar_por_ahora">Saltar por ahora →</button>
 				</div>
 			</div>
 		</div>
@@ -304,23 +304,23 @@
 				</div>
 				<div class="pd-body">
 					<div class="pd-row">
-						<span>Apariencia</span>
+						<span data-i18n="pref_theme">Apariencia</span>
 						<button class="pref-toggle" id="pd-btn-theme">
 							<svg id="pd-icon-theme-dark" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M15.5 11A7 7 0 1 1 7 2.5 5.5 5.5 0 0 0 15.5 11z"/></svg>
 							<svg id="pd-icon-theme-light" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" hidden><circle cx="9" cy="9" r="3.5"/><line x1="9" y1="1" x2="9" y2="3"/><line x1="9" y1="15" x2="9" y2="17"/><line x1="1" y1="9" x2="3" y2="9"/><line x1="15" y1="9" x2="17" y2="9"/></svg>
-							<span id="pd-label-theme">Oscuro</span>
+							<span id="pd-label-theme" data-i18n="tema_oscuro_corto">Oscuro</span>
 						</button>
 					</div>
 					<div class="pd-row">
-						<span>Idioma</span>
+						<span data-i18n="pref_lang">Idioma</span>
 						<button class="pref-toggle" id="pd-btn-lang">
 							<svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="7"/><line x1="9" y1="2" x2="9" y2="16"/><path d="M2 9h14"/></svg>
 							<span id="pd-label-lang">ES</span>
 						</button>
 					</div>
 					<hr class="pd-sep">
-					<button class="pd-link" id="pd-perfil-btn">Mi perfil</button>
-					<button class="pd-link pd-link--danger" id="pd-logout-btn">Cerrar sesión</button>
+					<button class="pd-link" id="pd-perfil-btn" data-i18n="mi_perfil">Mi perfil</button>
+					<button class="pd-link pd-link--danger" id="pd-logout-btn" data-i18n="cerrar_sesion">Cerrar sesión</button>
 				</div>
 			</div>
 
@@ -331,14 +331,14 @@
 				<section id="screen-dashboard" class="screen">
 					<div class="screen-header">
 						<div>
-							<div class="screen-title" id="dash-greeting">Hola</div>
+							<div class="screen-title" id="dash-greeting" data-i18n="hola_saludo">Hola</div>
 							<div class="screen-sub" data-i18n="dash_sub">Resumen de tu comunidad</div>
 						</div>
 					</div>
 
 					<div class="stat-strip">
 						<div class="stat-card stat-card--clickable" data-stat-nav="hoy" title="Ver entradas de hoy">
-							<div class="stat-label" data-i18n="stat_today">Entradas hoy</div>
+							<div class="stat-label" data-i18n="entradas_hoy">Entradas hoy</div>
 							<div class="stat-value" id="stat-hoy">—</div>
 						</div>
 						<div class="stat-card stat-card--accent stat-card--clickable" data-stat-nav="pendientes" title="Ver solicitudes por atender">
@@ -363,8 +363,8 @@
 									<svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="7"/><line x1="9" y1="5" x2="9" y2="9"/><circle cx="9" cy="12" r=".8" fill="currentColor" stroke="none"/></svg>
 								</div>
 								<div>
-									<div class="quick-title">Solicitudes pendientes</div>
-									<div class="quick-sub">Aprobar o rechazar accesos en espera</div>
+									<div class="quick-title" data-i18n="solicitudes_pendientes">Solicitudes pendientes</div>
+									<div class="quick-sub" data-i18n="aprobar_o_rechazar_accesos_en_espera">Aprobar o rechazar accesos en espera</div>
 								</div>
 							</button>
 							<button class="quick-card" data-nav="visitas">
@@ -372,35 +372,35 @@
 									<svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg>
 								</div>
 								<div>
-									<div class="quick-title">Ver bitácora completa</div>
-									<div class="quick-sub">Filtros por tipo: residente, invitado o sin app</div>
+									<div class="quick-title" data-i18n="ver_bitacora_completa">Ver bitácora completa</div>
+									<div class="quick-sub" data-i18n="filtros_por_tipo_residente_invitado_o_sin_app">Filtros por tipo: residente, invitado o sin app</div>
 								</div>
 							</button>
 						</div>
 
 						<div class="panel">
 							<div class="panel-header">
-								<div class="panel-title">Entradas recientes</div>
-								<button class="link-btn" data-nav="visitas">Ver todas ›</button>
+								<div class="panel-title" data-i18n="entradas_recientes">Entradas recientes</div>
+								<button class="link-btn" data-nav="visitas" data-i18n="see_all">Ver todas ›</button>
 							</div>
 							<div id="dash-recent-rows"></div>
 						</div>
 
 						<div class="panel panel-padded" id="dash-reporte-ia-panel" style="margin-top:20px">
 							<div class="panel-header" style="margin-bottom:10px">
-								<div class="panel-title">Resumen y Análisis de Actividad</div>
+								<div class="panel-title" data-i18n="resumen_y_analisis_de_actividad">Resumen y Análisis de Actividad</div>
 							</div>
 							<div id="dash-reporte-ia-loading" class="loading-state" hidden>
 								<div class="spinner"></div>
 							</div>
 							<div id="dash-reporte-ia-empty" class="empty-state" hidden>
-								<div class="empty-text">Sin actividad de accesos reciente para analizar.</div>
+								<div class="empty-text" data-i18n="sin_actividad_de_accesos_reciente_para_analizar">Sin actividad de accesos reciente para analizar.</div>
 							</div>
 							<div id="dash-reporte-ia-body" hidden>
 								<div class="row-sub" id="dash-reporte-ia-periodo" style="margin-bottom:10px"></div>
 								<div id="dash-reporte-ia-stats-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
 								<div id="dash-reporte-ia-texto" class="ia-summary-card" style="line-height:1.5; font-size:13px; color:var(--text-2); border: 1px solid var(--border); background: var(--bg-1);"></div>
-								<button class="link-btn" id="btn-ver-historial-reportes" style="margin-top:10px">Ver historial ›</button>
+								<button class="link-btn" id="btn-ver-historial-reportes" style="margin-top:10px" data-i18n="ver_historial">Ver historial ›</button>
 							</div>
 						</div>
 					</div>
@@ -421,28 +421,28 @@
 								<input id="vis-quick-search" type="text" placeholder="Buscar por nombre, CURP, clave, casa o placa…">
 							</div>
 							<select id="vis-filter-fecha" class="search-select">
-								<option value="">Cualquier fecha</option>
-								<option value="hoy">Hoy</option>
-								<option value="ayer">Ayer</option>
-								<option value="7d">Últimos 7 días</option>
-								<option value="30d">Últimos 30 días</option>
+								<option value="" data-i18n="cualquier_fecha">Cualquier fecha</option>
+								<option value="hoy" data-i18n="hoy_option">Hoy</option>
+								<option value="ayer" data-i18n="ayer_option">Ayer</option>
+								<option value="7d" data-i18n="stat_week">Últimos 7 días</option>
+								<option value="30d" data-i18n="ultimos_30_dias">Últimos 30 días</option>
 							</select>
 							<select id="vis-filter-tipo" class="search-select">
-								<option value="">Todos los tipos</option>
-								<option value="VISITANTE">Sin invitación (sin app)</option>
-								<option value="INVITADO">Con invitación QR</option>
-								<option value="RESIDENTE">Residente</option>
+								<option value="" data-i18n="all_tipos">Todos los tipos</option>
+								<option value="VISITANTE" data-i18n="sin_invitacion_sin_app">Sin invitación (sin app)</option>
+								<option value="INVITADO" data-i18n="con_invitacion_qr">Con invitación QR</option>
+								<option value="RESIDENTE" data-i18n="autorizador_residente">Residente</option>
 							</select>
 							<select id="vis-filter-estado" class="search-select">
 								<option value="" data-i18n="all_states">Todos los estados</option>
 								<option value="PENDIENTE" data-i18n="pendiente">Pendiente</option>
 								<option value="APROBADO" data-i18n="aprobado">Aprobado</option>
 								<option value="RECHAZADO" data-i18n="rechazado">Rechazado</option>
-								<option value="REVISION">Revisión</option>
+								<option value="REVISION" data-i18n="revision">Revisión</option>
 							</select>
 							<label class="filter-checkbox" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2);white-space:nowrap;cursor:pointer">
 								<input type="checkbox" id="vis-filter-intervenida">
-								Solo marcadas por IA
+								<span data-i18n="solo_marcadas_por_ia">Solo marcadas por IA</span>
 							</label>
 						</div>
 
@@ -455,7 +455,7 @@
 							<div id="vis-rows" hidden></div>
 							<div id="vis-empty" class="empty-state" hidden>
 								<div class="empty-icon"><svg width="22" height="22" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="4.5" r="1.7"/><line x1="8" y1="4.5" x2="16" y2="4.5"/><circle cx="4" cy="9" r="1.7"/><line x1="8" y1="9" x2="16" y2="9"/><circle cx="4" cy="13.5" r="1.7"/><line x1="8" y1="13.5" x2="16" y2="13.5"/></svg></div>
-								<div class="empty-title" data-i18n="vis_empty_title">Sin entradas registradas</div>
+								<div class="empty-title" data-i18n="sin_entradas_registradas">Sin entradas registradas</div>
 								<div class="empty-text" data-i18n="vis_empty_text">Cuando alguien ingrese o se registre en un kiosko, aparecerá aquí automáticamente.</div>
 							</div>
 							<div id="vis-error" class="empty-state" hidden>
@@ -484,7 +484,7 @@
 							<span data-i18n="nav_entradas">Entradas</span>
 						</button>
 						<div class="header-div"></div>
-						<div class="screen-title" data-i18n="detail_title">Detalle de entrada</div>
+						<div class="screen-title" data-i18n="detalle_de_entrada">Detalle de entrada</div>
 					</div>
 					<div class="screen-body screen-body--narrow" id="detalle-body"></div>
 				</section>
@@ -494,29 +494,29 @@
 					<div class="screen-header">
 						<div>
 							<div class="screen-title" data-i18n="sol_title">Solicitudes</div>
-							<div class="screen-sub" data-i18n="sol_sub">Accesos pendientes de aprobación</div>
+							<div class="screen-sub" data-i18n="accesos_pendientes_de_aprobacion">Accesos pendientes de aprobación</div>
 						</div>
 						<div class="sol-meta">
 							<span class="sol-badge" id="sol-count">—</span>
-							<span class="sol-update-label">Actualizado: <span id="sol-last-update">—</span></span>
+							<span class="sol-update-label"><span data-i18n="actualizado">Actualizado: </span><span id="sol-last-update">—</span></span>
 						</div>
 					</div>
 					<div class="screen-body">
 						<div id="sol-loading" class="loading-state" hidden>
 							<div class="spinner"></div>
-							<div class="loading-text">Cargando solicitudes…</div>
+							<div class="loading-text" data-i18n="cargando_solicitudes">Cargando solicitudes…</div>
 						</div>
 						<div id="sol-empty" class="empty-state" hidden>
 							<div class="empty-icon">
 								<svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><path d="M6 9l2 2 4-4"/></svg>
 							</div>
-							<div class="empty-title">Sin solicitudes pendientes</div>
-							<div class="empty-text">Todas las entradas han sido procesadas. Se actualiza cada 15 segundos.</div>
+							<div class="empty-title" data-i18n="sin_solicitudes">Sin solicitudes pendientes</div>
+							<div class="empty-text" data-i18n="todas_las_entradas_procesadas">Todas las entradas han sido procesadas. Se actualiza cada 15 segundos.</div>
 						</div>
 						<div id="sol-error" class="empty-state" hidden>
 							<div class="empty-icon empty-icon--err"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 4 L21 19 H3 Z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="16.6" r=".6" fill="currentColor" stroke="none"/></svg></div>
-							<div class="empty-title">Error al cargar</div>
-							<div class="empty-text">Revisa tu conexión e inténtalo de nuevo.</div>
+							<div class="empty-title" data-i18n="load_err_title">Error al cargar</div>
+							<div class="empty-text" data-i18n="load_err_text">Revisa tu conexión e inténtalo de nuevo.</div>
 						</div>
 						<div id="sol-rows"></div>
 					</div>
@@ -527,7 +527,7 @@
 					<div class="screen-header">
 						<div>
 							<div class="screen-title" data-i18n="res_title">Residentes</div>
-							<div class="screen-sub">Miembros del centro habitacional</div>
+							<div class="screen-sub" data-i18n="miembros_del_centro_habitacional">Miembros del centro habitacional</div>
 						</div>
 					</div>
 
@@ -542,11 +542,11 @@
 						<div class="screen-body">
 							<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
 								<select id="resa-agrupar" class="search-select">
-									<option value="destino">Agrupar por destino</option>
-									<option value="calle">Agrupar por calle</option>
-									<option value="tipo">Agrupar por tipo de destino</option>
-									<option value="rol">Agrupar por rol</option>
-									<option value="ninguno">Sin agrupar</option>
+									<option value="destino" data-i18n="agrupar_por_destino">Agrupar por destino</option>
+									<option value="calle" data-i18n="agrupar_por_calle">Agrupar por calle</option>
+									<option value="tipo" data-i18n="agrupar_por_tipo_de_destino">Agrupar por tipo de destino</option>
+									<option value="rol" data-i18n="agrupar_por_rol">Agrupar por rol</option>
+									<option value="ninguno" data-i18n="sin_agrupar">Sin agrupar</option>
 								</select>
 								<div id="resa-filtro-chip" class="badge badge--aprobado" style="display:inline-flex;align-items:center;gap:8px;font-size:12px;padding:5px 10px" hidden>
 									<span></span>
@@ -554,16 +554,16 @@
 								</div>
 								<div style="flex:1"></div>
 								<span id="resa-sel-count" style="font-size:12px;color:var(--text-2)" hidden></span>
-								<button type="button" id="resa-revocar-btn" class="btn-danger" style="padding:7px 14px;font-size:12px" hidden>Revocar seleccionados</button>
+								<button type="button" id="resa-revocar-btn" class="btn-danger" style="padding:7px 14px;font-size:12px" hidden data-i18n="revocar_seleccionados">Revocar seleccionados</button>
 							</div>
 							<div id="resa-loading" class="loading-state" hidden>
 								<div class="spinner"></div>
-								<div class="loading-text">Cargando residentes…</div>
+								<div class="loading-text" data-i18n="cargando_residentes">Cargando residentes…</div>
 							</div>
 							<div id="resa-empty" class="empty-state" hidden>
 								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
-								<div class="empty-title">Sin residentes activos</div>
-								<div class="empty-text">Cuando apruebes una solicitud, la persona aparecerá aquí.</div>
+								<div class="empty-title" data-i18n="sin_residentes_activos">Sin residentes activos</div>
+								<div class="empty-text" data-i18n="cuando_apruebes_una_solicitud_la_persona_aparecera">Cuando apruebes una solicitud, la persona aparecerá aquí.</div>
 							</div>
 							<div id="resa-rows"></div>
 						</div>
@@ -573,12 +573,12 @@
 						<div class="screen-body">
 							<div id="resp-loading" class="loading-state" hidden>
 								<div class="spinner"></div>
-								<div class="loading-text">Cargando solicitudes…</div>
+								<div class="loading-text" data-i18n="cargando_solicitudes">Cargando solicitudes…</div>
 							</div>
 							<div id="resp-empty" class="empty-state" hidden>
 								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
-								<div class="empty-title">Sin solicitudes pendientes</div>
-								<div class="empty-text">Cuando un habitante solicite unirse desde la app, aparecerá aquí para tu aprobación.</div>
+								<div class="empty-title" data-i18n="sin_solicitudes">Sin solicitudes pendientes</div>
+								<div class="empty-text" data-i18n="cuando_un_habitante_solicite_unirse">Cuando un habitante solicite unirse desde la app, aparecerá aquí para tu aprobación.</div>
 							</div>
 							<div id="resp-rows"></div>
 						</div>
@@ -590,15 +590,15 @@
 					<div class="screen-header">
 						<div>
 							<div class="screen-title" data-i18n="kio_title">Kioskos</div>
-							<div class="screen-sub">Puntos de acceso y su configuración</div>
+							<div class="screen-sub" data-i18n="puntos_de_acceso_y_su_configuracion">Puntos de acceso y su configuración</div>
 						</div>
 						<button class="btn-primary" id="btn-nuevo-acceso"><span class="plus">+</span>
-						Nuevo kiosko</button>
+						<span data-i18n="nuevo_kiosko_btn">Nuevo kiosko</span></button>
 					</div>
 
 					<div class="tab-bar">
 						<div class="tab-bar-inner">
-							<button class="tab-btn active" data-tab="kio-lista" data-i18n="tab_lista">Mis kioskos</button>
+							<button class="tab-btn active" data-tab="kio-lista" data-i18n="mis_kioskos">Mis kioskos</button>
 							<button class="tab-btn" data-tab="kio-equipo" data-i18n="tab_equipo">Equipo</button>
 						</div>
 					</div>
@@ -608,12 +608,12 @@
 						<div class="screen-body">
 							<div id="kio-loading" class="loading-state" hidden>
 								<div class="spinner"></div>
-								<div class="loading-text">Cargando kioskos…</div>
+								<div class="loading-text" data-i18n="cargando_kioskos">Cargando kioskos…</div>
 							</div>
 							<div id="kio-empty" class="empty-state" hidden>
 								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M9 21h6M12 17v4"/></svg></div>
-								<div class="empty-title">Sin kioskos registrados</div>
-								<div class="empty-text">Activa tu primer kiosko o punto de acceso para empezar a recibir visitantes.</div>
+								<div class="empty-title" data-i18n="sin_kioskos_registrados">Sin kioskos registrados</div>
+								<div class="empty-text" data-i18n="activa_tu_primer_kiosko_o_punto_de_acceso_para_emp">Activa tu primer kiosko o punto de acceso para empezar a recibir visitantes.</div>
 							</div>
 							<div id="accesos-list"></div>
 						</div>
@@ -623,17 +623,17 @@
 					<div id="kio-equipo" hidden>
 						<div class="screen-body">
 							<div class="tab-actions">
-								<button class="btn-primary" id="btn-nuevo-vigilante"><span class="plus">+</span>
+								<button class="btn-primary" id="btn-nuevo-vigilante"><span class="plus">+</span data-i18n="nuevo_vigilante">
 								Nuevo vigilante</button>
 							</div>
 							<div id="equipo-loading" class="loading-state" hidden>
 								<div class="spinner"></div>
-								<div class="loading-text">Cargando equipo…</div>
+								<div class="loading-text" data-i18n="cargando_equipo">Cargando equipo…</div>
 							</div>
 							<div id="equipo-empty" class="empty-state" hidden>
 								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="5.5" r="2.8"/><path d="M1 14c0-3.3 2.5-5.5 5-5.5s5 2.2 5 5.5"/><circle cx="13" cy="5.5" r="2.2"/><path d="M13 9c1.8.3 3.5 2 3.5 5"/></svg></div>
-								<div class="empty-title">Sin vigilantes registrados</div>
-								<div class="empty-text">Crea el primer vigilante para que pueda monitorear solicitudes en tiempo real.</div>
+								<div class="empty-title" data-i18n="sin_vigilantes_registrados">Sin vigilantes registrados</div>
+								<div class="empty-text" data-i18n="crea_el_primer_vigilante_para_que_pueda_monitorear">Crea el primer vigilante para que pueda monitorear solicitudes en tiempo real.</div>
 							</div>
 							<div id="equipo-rows"></div>
 						</div>
@@ -647,12 +647,12 @@
 							<div>
 								<button type="button" class="btn-cancel" id="cfg-btn-volver" style="padding:6px 12px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
 									<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13L5 8l5-5"/></svg>
-									Volver a Kioskos
+									<span data-i18n="volver_a_kioskos">Volver a Kioskos</span>
 								</button>
 							</div>
 							<div>
-								<div class="screen-title" id="cfg-header-title">Configuración de kiosko</div>
-								<div class="screen-sub" id="cfg-header-sub">Parámetros y reglas de acceso</div>
+								<div class="screen-title" id="cfg-header-title" data-i18n="configuracion_de_kiosko">Configuración de kiosko</div>
+								<div class="screen-sub" id="cfg-header-sub" data-i18n="parametros_y_reglas_de_acceso">Parámetros y reglas de acceso</div>
 							</div>
 						</div>
 					</div>
@@ -661,71 +661,71 @@
 						<div id="cfg-form-wrap" hidden>
 							<div class="tab-bar" style="margin-bottom:20px">
 								<div class="tab-bar-inner">
-									<button type="button" class="tab-btn active" data-cfg-tab="cfg-tab-general">General y Pantalla</button>
-									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-sin-invitacion">Sin Invitación</button>
-									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-con-invitacion">Pase QR (Invitación)</button>
-									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-hardware">Tiempos</button>
-									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-ia">Análisis de IA</button>
+									<button type="button" class="tab-btn active" data-cfg-tab="cfg-tab-general" data-i18n="general_y_pantalla">General y Pantalla</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-sin-invitacion" data-i18n="sin_invitacion_tab">Sin Invitación</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-con-invitacion" data-i18n="pase_qr_invitacion_tab">Pase QR (Invitación)</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-hardware" data-i18n="tiempos">Tiempos</button>
+									<button type="button" class="tab-btn" data-cfg-tab="cfg-tab-ia" data-i18n="analisis_de_ia_tab">Análisis de IA</button>
 								</div>
 							</div>
 
 							<!-- TAB 1: GENERAL -->
 							<div id="cfg-tab-general" class="cfg-tab-pane">
 								<div class="config-section">
-									<div class="config-section-title">Información del kiosko</div>
-									<div class="config-section-sub">Datos principales y tipo de acceso de este punto de control.</div>
+									<div class="config-section-title" data-i18n="informacion_del_kiosko">Información del kiosko</div>
+									<div class="config-section-sub" data-i18n="datos_principales_y_tipo_de_acceso_de_este_punto_d">Datos principales y tipo de acceso de este punto de control.</div>
 
 									<div class="form-group" style="margin-bottom:14px">
-										<label>Nombre del kiosko</label>
+										<label data-i18n="nombre_del_kiosko">Nombre del kiosko</label>
 										<input id="cfg-nombre" type="text" placeholder="Ej. Entrada Principal" class="search-select" style="width:100%" required>
 									</div>
 
 									<div class="toggle-row" style="margin-bottom:14px">
 										<div>
-											<div class="toggle-label">Tipo de kiosko</div>
-											<div class="toggle-sub">Define si admite peatones o vehículos</div>
+											<div class="toggle-label" data-i18n="tipo_de_kiosko">Tipo de kiosko</div>
+											<div class="toggle-sub" data-i18n="define_si_admite_peatones_o_vehiculos">Define si admite peatones o vehículos</div>
 										</div>
 										<select id="cfg-tipo" class="search-select" style="width:180px">
-											<option value="PEATONAL">Peatonal</option>
-											<option value="VEHICULAR">Vehicular</option>
+											<option value="PEATONAL" data-i18n="peatonal">Peatonal</option>
+											<option value="VEHICULAR" data-i18n="vehicular">Vehicular</option>
 										</select>
 									</div>
 
 									<div class="form-group">
-										<label>Ubicación / Referencia</label>
+										<label data-i18n="ubicacion_referencia">Ubicación / Referencia</label>
 										<input id="cfg-ubicacion" type="text" placeholder="Ej. Caseta Norte, Av. Central" class="search-select" style="width:100%">
 									</div>
 								</div>
 
 								<div class="config-section">
-									<div class="config-section-title">Apariencia y Bienvenida</div>
+									<div class="config-section-title" data-i18n="apariencia_y_bienvenida">Apariencia y Bienvenida</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Tema visual</div>
-											<div class="toggle-sub">Paleta de colores que verán los visitantes en el kiosko</div>
+											<div class="toggle-label" data-i18n="tema_visual">Tema visual</div>
+											<div class="toggle-sub" data-i18n="paleta_de_colores_que_veran_los_visitantes_en_el_k">Paleta de colores que verán los visitantes en el kiosko</div>
 										</div>
 										<select id="cfg-color" class="search-select">
-											<option value="oscuro">Oscuro</option>
-											<option value="claro">Claro</option>
+											<option value="oscuro" data-i18n="tema_oscuro_corto">Oscuro</option>
+											<option value="claro" data-i18n="tema_claro_corto">Claro</option>
 										</select>
 									</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Idioma de la interfaz</div>
-											<div class="toggle-sub">Idioma en que se muestran los textos del kiosko</div>
+											<div class="toggle-label" data-i18n="idioma_de_la_interfaz">Idioma de la interfaz</div>
+											<div class="toggle-sub" data-i18n="idioma_en_que_se_muestran_los_textos_del_kiosko">Idioma en que se muestran los textos del kiosko</div>
 										</div>
 										<select id="cfg-idioma" class="search-select">
-											<option value="es">Español</option>
-											<option value="en">Inglés</option>
+											<option value="es" data-i18n="espanol">Español</option>
+											<option value="en" data-i18n="ingles">Inglés</option>
 										</select>
 									</div>
 
 									<div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
 										<div>
-											<div class="toggle-label">Mensaje de bienvenida</div>
-											<div class="toggle-sub">Texto inicial en pantalla principal</div>
+											<div class="toggle-label" data-i18n="mensaje_de_bienvenida">Mensaje de bienvenida</div>
+											<div class="toggle-sub" data-i18n="texto_inicial_en_pantalla_principal">Texto inicial en pantalla principal</div>
 										</div>
 										<input id="cfg-mensaje" type="text" placeholder="Bienvenido al centro habitacional" style="width:100%">
 									</div>
@@ -735,9 +735,9 @@
 							<!-- TAB 2: SIN INVITACION -->
 							<div id="cfg-tab-sin-invitacion" class="cfg-tab-pane" hidden>
 								<div class="config-section">
-									<div class="config-section-title">Flujo Sin Invitación (Secuencia de Pasos)</div>
+									<div class="config-section-title" data-i18n="flujo_sin_invitacion_secuencia">Flujo Sin Invitación (Secuencia de Pasos)</div>
 									<div class="config-section-sub">
-										Define qué pasos son obligatorios y <strong>arrastra las tarjetas</strong> para elegir el orden exacto en que aparecerán en la pantalla del kiosko.
+										<span data-i18n="define_que_pasos_son_obligatorios_y">Define qué pasos son obligatorios y </span><strong data-i18n="arrastra_las_tarjetas">arrastra las tarjetas</strong><span data-i18n="para_elegir_el_orden_exacto"> para elegir el orden exacto en que aparecerán en la pantalla del kiosko.</span>
 									</div>
 
 									<div class="pipeline-container">
@@ -747,7 +747,7 @@
 									</div>
 
 									<div class="pipeline-preview-hint">
-										Nota: <strong>Orden de ejecución:</strong> El visitante completará los pasos de arriba hacia abajo. Los pasos desactivados se omitirán por completo. Un invitado con pase QR nunca ve el paso de Motivo -- quien lo invitó ya lo capturó al crear la invitación.
+										<span data-i18n="nota_dos_puntos">Nota: </span><strong data-i18n="orden_de_ejecucion">Orden de ejecución:</strong> <span data-i18n="el_visitante_completara_los_pasos">El visitante completará los pasos de arriba hacia abajo. Los pasos desactivados se omitirán por completo. Un invitado con pase QR nunca ve el paso de Motivo -- quien lo invitó ya lo capturó al crear la invitación.</span>
 									</div>
 								</div>
 
@@ -756,13 +756,13 @@
 							<!-- TAB 3: CON INVITACION -->
 							<div id="cfg-tab-con-invitacion" class="cfg-tab-pane" hidden>
 								<div class="config-section">
-									<div class="config-section-title">Verificaciones en Pase QR / PIN</div>
-									<div class="config-section-sub">Reglas de seguridad cuando una persona llega con invitación generada desde la app.</div>
+									<div class="config-section-title" data-i18n="verificaciones_en_pase_qr_pin">Verificaciones en Pase QR / PIN</div>
+									<div class="config-section-sub" data-i18n="reglas_de_seguridad_cuando_una_persona_llega_con_i">Reglas de seguridad cuando una persona llega con invitación generada desde la app.</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">INE / Identificación obligatoria</div>
-											<div class="toggle-sub">Exigir escaneo de credencial física aunque el pase QR sea válido</div>
+											<div class="toggle-label" data-i18n="ine_identificacion_obligatoria">INE / Identificación obligatoria</div>
+											<div class="toggle-sub" data-i18n="exigir_escaneo_de_credencial_fisica">Exigir escaneo de credencial física aunque el pase QR sea válido</div>
 										</div>
 										<label class="toggle-switch">
 											<input type="checkbox" id="cfg-ine-invitado">
@@ -772,8 +772,8 @@
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Foto de rostro de confirmación</div>
-											<div class="toggle-sub">Captura biométrica al validar el QR para bitácora</div>
+											<div class="toggle-label" data-i18n="foto_de_rostro_de_confirmacion">Foto de rostro de confirmación</div>
+											<div class="toggle-sub" data-i18n="captura_biometrica_al_validar_qr">Captura biométrica al validar el QR para bitácora</div>
 										</div>
 										<label class="toggle-switch">
 											<input type="checkbox" id="cfg-rostro-invitado">
@@ -783,8 +783,8 @@
 
 									<div class="toggle-row" id="cfg-row-placa-invitado">
 										<div>
-											<div class="toggle-label">Confirmación de placa vehicular</div>
-											<div class="toggle-sub">Registro de matrícula si el invitado ingresa en vehículo</div>
+											<div class="toggle-label" data-i18n="confirmacion_de_placa_vehicular">Confirmación de placa vehicular</div>
+											<div class="toggle-sub" data-i18n="registro_de_matricula_si_el_invitado_ingresa_en_ve">Registro de matrícula si el invitado ingresa en vehículo</div>
 										</div>
 										<label class="toggle-switch">
 											<input type="checkbox" id="cfg-placa-invitado">
@@ -798,40 +798,40 @@
 							<!-- TAB 4: HARDWARE Y TIEMPOS -->
 							<div id="cfg-tab-hardware" class="cfg-tab-pane" hidden>
 								<div class="config-section">
-									<div class="config-section-title">Tiempos y Pantalla de Éxito</div>
+									<div class="config-section-title" data-i18n="tiempos_y_pantalla_de_exito">Tiempos y Pantalla de Éxito</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Tiempo de autoregreso en éxito (seg)</div>
-											<div class="toggle-sub">Segundos que dura la pantalla de bienvenida/apertura antes de volver al inicio</div>
+											<div class="toggle-label" data-i18n="tiempo_de_autoregreso_en_exito_seg">Tiempo de autoregreso en éxito (seg)</div>
+											<div class="toggle-sub" data-i18n="segundos_que_dura_la_pantalla_de_bienvenidaapertur">Segundos que dura la pantalla de bienvenida/apertura antes de volver al inicio</div>
 										</div>
 										<input type="number" id="cfg-tiempo-exito" min="2" max="30" class="search-select" style="width:80px;text-align:right">
 									</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Tiempo de espera máximo (seg)</div>
-											<div class="toggle-sub">Segundos de inactividad antes de cancelar un registro incompleto</div>
+											<div class="toggle-label" data-i18n="tiempo_de_espera_maximo_seg">Tiempo de espera máximo (seg)</div>
+											<div class="toggle-sub" data-i18n="segundos_de_inactividad_antes_de_cancelar_un_regis">Segundos de inactividad antes de cancelar un registro incompleto</div>
 										</div>
 										<input type="number" id="cfg-tiempo-espera" min="10" max="600" class="search-select" style="width:80px;text-align:right">
 									</div>
 								</div>
 
 								<div class="config-section">
-									<div class="config-section-title">Horario de Operación</div>
+									<div class="config-section-title" data-i18n="horario_de_operacion">Horario de Operación</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Horario de inicio</div>
-											<div class="toggle-sub">Kiosko activo desde esta hora</div>
+											<div class="toggle-label" data-i18n="horario_de_inicio">Horario de inicio</div>
+											<div class="toggle-sub" data-i18n="kiosko_activo_desde_esta_hora">Kiosko activo desde esta hora</div>
 										</div>
 										<input type="time" id="cfg-horario-inicio" class="search-select">
 									</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Horario de cierre</div>
-											<div class="toggle-sub">Kiosko activo hasta esta hora</div>
+											<div class="toggle-label" data-i18n="horario_de_cierre">Horario de cierre</div>
+											<div class="toggle-sub" data-i18n="kiosko_activo_hasta_esta_hora">Kiosko activo hasta esta hora</div>
 										</div>
 										<input type="time" id="cfg-horario-fin" class="search-select">
 									</div>
@@ -841,13 +841,13 @@
 							<!-- TAB 5: ANÁLISIS DE IA -->
 							<div id="cfg-tab-ia" class="cfg-tab-pane" hidden>
 								<div class="config-section">
-									<div class="config-section-title">Score de Confianza y AutoPass</div>
-									<div class="config-section-sub">Cada entrada recibe un score de confianza de 0 a 100 según su historial, la evidencia capturada y las anomalías detectadas.</div>
+									<div class="config-section-title" data-i18n="score_de_confianza_y_autopass">Score de Confianza y AutoPass</div>
+									<div class="config-section-sub" data-i18n="cada_entrada_recibe_un_score">Cada entrada recibe un score de confianza de 0 a 100 según su historial, la evidencia capturada y las anomalías detectadas.</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Aprobación automática por IA (AutoPass)</div>
-											<div class="toggle-sub">Aprobar accesos recurrentes seguros sin intervención manual</div>
+											<div class="toggle-label" data-i18n="aprobacion_automatica_ia_autopass">Aprobación automática por IA (AutoPass)</div>
+											<div class="toggle-sub" data-i18n="aprobar_accesos_recurrentes_seguros_sin_intervenci">Aprobar accesos recurrentes seguros sin intervención manual</div>
 										</div>
 										<label class="toggle-switch">
 											<input type="checkbox" id="cfg-autopass">
@@ -857,28 +857,28 @@
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Confianza mínima para aprobar sola (%)</div>
-											<div class="toggle-sub">Con AutoPass encendido, se aprueba sola a partir de este porcentaje. Más alto = más estricto. Recomendado 80.</div>
+											<div class="toggle-label" data-i18n="confianza_minima_para_aprobar_sola">Confianza mínima para aprobar sola (%)</div>
+											<div class="toggle-sub" data-i18n="con_autopass_encendido">Con AutoPass encendido, se aprueba sola a partir de este porcentaje. Más alto = más estricto. Recomendado 80.</div>
 										</div>
 										<input type="number" id="cfg-umbral-autopass" min="50" max="100" class="search-select" style="width:80px;text-align:right">
 									</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Exigencia del reconocimiento facial (%)</div>
-											<div class="toggle-sub">Qué tanto se debe parecer la cara para que el kiosko dé por buena la identidad. Más alto = más estricto, más rechazos legítimos. Recomendado 85.</div>
+											<div class="toggle-label" data-i18n="exigencia_del_reconocimiento_facial">Exigencia del reconocimiento facial (%)</div>
+											<div class="toggle-sub" data-i18n="que_tanto_debe_parecer_la_cara">Qué tanto se debe parecer la cara para que el kiosko dé por buena la identidad. Más alto = más estricto, más rechazos legítimos. Recomendado 85.</div>
 										</div>
 										<input type="number" id="cfg-umbral-facial" min="50" max="99" class="search-select" style="width:80px;text-align:right">
 									</div>
 								</div>
 
 								<div class="config-section">
-									<div class="config-section-title">Visibilidad en el kiosko</div>
+									<div class="config-section-title" data-i18n="visibilidad_en_el_kiosko">Visibilidad en el kiosko</div>
 
 									<div class="toggle-row">
 										<div>
-											<div class="toggle-label">Mostrar análisis de IA en el kiosko</div>
-											<div class="toggle-sub">El visitante ve un sello "Verificado por IA" con el nivel de confianza; el vigilante puede tocarlo, meter su PIN de operador y ver el detalle completo (factores, recomendaciones)</div>
+											<div class="toggle-label" data-i18n="mostrar_analisis_de_ia_en_kiosko">Mostrar análisis de IA en el kiosko</div>
+											<div class="toggle-sub" data-i18n="el_visitante_ve_un_sello_verificado">El visitante ve un sello "Verificado por IA" con el nivel de confianza; el vigilante puede tocarlo, meter su PIN de operador y ver el detalle completo (factores, recomendaciones)</div>
 										</div>
 										<label class="toggle-switch">
 											<input type="checkbox" id="cfg-score-ia-kiosko">
@@ -888,25 +888,25 @@
 								</div>
 
 								<div class="config-section">
-									<div class="config-section-title">Qué cuenta para el análisis</div>
-									<div class="config-section-sub">Qué evidencia se usa para ligar una visita con su historial (recurrencia, anomalías) y para el score -- no si se pide capturarla, eso está en las otras pestañas. Apaga una si el dato de prueba se repite entre personas distintas (mismo vehículo, mismo rostro o INE de prueba en una demo) y el análisis lo leería como "el mismo visitante recurrente" sin serlo.</div>
+									<div class="config-section-title" data-i18n="que_cuenta_para_el_analisis">Qué cuenta para el análisis</div>
+									<div class="config-section-sub" data-i18n="que_evidencia_se_usa_para_ligar">Qué evidencia se usa para ligar una visita con su historial (recurrencia, anomalías) y para el score -- no si se pide capturarla, eso está en las otras pestañas. Apaga una si el dato de prueba se repite entre personas distintas (mismo vehículo, mismo rostro o INE de prueba en una demo) y el análisis lo leería como "el mismo visitante recurrente" sin serlo.</div>
 
 									<div class="toggle-row">
-										<div class="toggle-label">Placa</div>
+										<div class="toggle-label" data-i18n="evidencia_placa">Placa</div>
 										<label class="toggle-switch">
 											<input type="checkbox" id="cfg-score-ia-placa">
 											<span class="toggle-slider"></span>
 										</label>
 									</div>
 									<div class="toggle-row">
-										<div class="toggle-label">Documento (CURP/INE)</div>
+										<div class="toggle-label" data-i18n="documento_curp_ine">Documento (CURP/INE)</div>
 										<label class="toggle-switch">
 											<input type="checkbox" id="cfg-score-ia-documento">
 											<span class="toggle-slider"></span>
 										</label>
 									</div>
 									<div class="toggle-row">
-										<div class="toggle-label">Rostro</div>
+										<div class="toggle-label" data-i18n="evidencia_rostro">Rostro</div>
 										<label class="toggle-switch">
 											<input type="checkbox" id="cfg-score-ia-rostro">
 											<span class="toggle-slider"></span>
@@ -916,16 +916,16 @@
 							</div>
 
 							<div id="cfg-error" class="form-error" hidden></div>
-							<div id="cfg-success" class="form-success" hidden>Configuración guardada.</div>
+							<div id="cfg-success" class="form-success" hidden data-i18n="configuracion_guardada">Configuración guardada.</div>
 							<div class="form-actions" style="margin-top:24px">
-								<button type="button" class="btn-primary" id="cfg-save-btn">Guardar configuración</button>
+								<button type="button" class="btn-primary" id="cfg-save-btn" data-i18n="guardar_configuracion">Guardar configuración</button>
 							</div>
 						</div>
 
 						<div id="cfg-idle" class="empty-state">
 							<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="3"/><path d="M9 1v2m0 12v2M1 9h2m12 0h2m-2.9-5.1-1.4 1.4M5.3 12.7l-1.4 1.4m0-11.2 1.4 1.4m7.4 7.4 1.4 1.4"/></svg></div>
-							<div class="empty-title">Selecciona un kiosko</div>
-							<div class="empty-text">Elige un acceso del menú de arriba para ver y editar su configuración.</div>
+							<div class="empty-title" data-i18n="selecciona_un_kiosko">Selecciona un kiosko</div>
+							<div class="empty-text" data-i18n="elige_un_acceso_del_menu_de_arriba_para_ver_y_edit">Elige un acceso del menú de arriba para ver y editar su configuración.</div>
 						</div>
 					</div>
 				</section>
@@ -951,16 +951,16 @@
 						<div class="screen-body">
 							<div class="tab-actions">
 								<button class="btn-primary" id="btn-nuevo-destino"><span class="plus">+</span>
-								Nuevo destino</button>
+								<span data-i18n="nuevo_destino_btn">Nuevo destino</span></button>
 							</div>
 							<div id="dest-loading" class="loading-state" hidden>
 								<div class="spinner"></div>
-								<div class="loading-text">Cargando destinos…</div>
+								<div class="loading-text" data-i18n="cargando_destinos">Cargando destinos…</div>
 							</div>
 							<div id="dest-empty" class="empty-state" hidden>
 								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg></div>
-								<div class="empty-title">Sin destinos registrados</div>
-								<div class="empty-text">Crea el primer destino para que los visitantes puedan indicar a dónde van.</div>
+								<div class="empty-title" data-i18n="sin_destinos_registrados">Sin destinos registrados</div>
+								<div class="empty-text" data-i18n="crea_el_primer_destino_para_que_los_visitantes_pue">Crea el primer destino para que los visitantes puedan indicar a dónde van.</div>
 							</div>
 							<div id="dest-rows"></div>
 						</div>
@@ -975,45 +975,45 @@
 								<div class="public-code-info">
 									<div class="public-code-badge">
 										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-										Código de vinculación para residentes
+										<span data-i18n="codigo_de_vinculacion_para_residentes">Código de vinculación para residentes</span>
 									</div>
 									<div class="public-code-value-wrap">
 										<span id="inst-codigo" class="public-code-value">—</span>
 									</div>
 									<div class="public-code-desc">
-										Comparte este código con los residentes para que puedan registrarse y vincular su casa desde la app <strong>Kigo</strong>.
+										<span data-i18n="comparte_este_codigo_con_los_residentes">Comparte este código con los residentes para que puedan registrarse y vincular su casa desde la app </span><strong>Kigo</strong>.
 									</div>
 								</div>
 								<button type="button" class="public-code-copy-btn" id="btn-copiar-codigo" title="Copiar código al portapapeles">
 									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-									<span id="btn-copiar-codigo-texto">Copiar</span>
+									<span id="btn-copiar-codigo-texto" data-i18n="copiar">Copiar</span>
 								</button>
 							</div>
 
 							<div class="panel panel-padded">
-								<div class="form-section-title" style="margin-top:0">Información del centro habitacional</div>
+								<div class="form-section-title" style="margin-top:0" data-i18n="informacion_del_centro_habitacional">Información del centro habitacional</div>
 								<form id="inst-config-form">
 									<div class="form-group">
-										<label>Nombre</label>
+										<label data-i18n="name">Nombre</label>
 										<input id="inst-nombre" type="text" placeholder="Ej. Residencial Las Palmas" required>
 									</div>
 									<div class="form-group">
-										<label>Dirección</label>
+										<label data-i18n="direccion">Dirección</label>
 										<input id="inst-direccion" type="text" placeholder="Calle, número, colonia">
 									</div>
 									<div class="form-group">
-										<label>Descripción</label>
+										<label data-i18n="descripcion">Descripción</label>
 										<textarea id="inst-descripcion" rows="3" placeholder="Descripción breve del centro…"></textarea>
 									</div>
 									<div class="form-group">
-										<label>Teléfono de contacto</label>
-										<div class="toggle-sub" style="margin-bottom:6px">Número del vigilante/admin para el botón "Llamar al administrador" de todos los kioskos de este centro -- funciona aunque el kiosko no tenga internet</div>
+										<label data-i18n="telefono_de_contacto">Teléfono de contacto</label>
+										<div class="toggle-sub" style="margin-bottom:6px" data-i18n="numero_vigilante_admin_boton_llamar_global">Número del vigilante/admin para el botón "Llamar al administrador" de todos los kioskos de este centro -- funciona aunque el kiosko no tenga internet</div>
 										<input id="inst-telefono-contacto" type="tel" placeholder="2221234567">
 									</div>
 									<div id="inst-config-error" class="form-error" hidden></div>
-									<div id="inst-config-ok" class="form-success" hidden>Configuración guardada.</div>
+									<div id="inst-config-ok" class="form-success" hidden data-i18n="configuracion_guardada">Configuración guardada.</div>
 									<div class="form-actions">
-										<button type="submit" class="btn-primary">Guardar cambios</button>
+										<button type="submit" class="btn-primary" data-i18n="save">Guardar cambios</button>
 									</div>
 								</form>
 							</div>
@@ -1147,75 +1147,75 @@
 
 				<!-- Paso 1: Código de dispositivo -->
 				<div id="nk-step-1">
-					<div class="modal-title">Activar kiosko</div>
-					<div class="modal-sub">Abre la app en el dispositivo del kiosko — mostrará un código de activación. Escríbelo aquí.</div>
+					<div class="modal-title" data-i18n="activar_kiosko">Activar kiosko</div>
+					<div class="modal-sub" data-i18n="abre_la_app_en_el_dispositivo_del_kiosko_activacion">Abre la app en el dispositivo del kiosko — mostrará un código de activación. Escríbelo aquí.</div>
 					<div class="form-group" style="margin-top:20px">
-						<label>Código del kiosko</label>
+						<label data-i18n="codigo_del_kiosko">Código del kiosko</label>
 						<input id="nk-code" placeholder="XXXX-XXXX" maxlength="9" autocomplete="off" style="font-family:monospace;font-size:22px;letter-spacing:5px;text-transform:uppercase;text-align:center">
 					</div>
 					<div id="nk-code-error" class="form-error" hidden></div>
 					<div class="modal-actions">
-						<button type="button" class="btn-cancel" id="nk-cancel-1">Cancelar</button>
-						<button type="button" class="btn-primary" id="nk-verificar">Verificar código</button>
+						<button type="button" class="btn-cancel" id="nk-cancel-1" data-i18n="cancel">Cancelar</button>
+						<button type="button" class="btn-primary" id="nk-verificar" data-i18n="verificar_codigo">Verificar código</button>
 					</div>
 				</div>
 
 				<!-- Paso 2: Datos del kiosko -->
 				<div id="nk-step-2" hidden>
-					<div class="modal-title">Configurar kiosko</div>
-					<div class="modal-sub">Código verificado. Define los datos de este punto de acceso.</div>
+					<div class="modal-title" data-i18n="configurar_kiosko_title">Configurar kiosko</div>
+					<div class="modal-sub" data-i18n="codigo_verificado_define_los_datos">Código verificado. Define los datos de este punto de acceso.</div>
 					<form id="nk-form" style="margin-top:16px">
 						<div class="form-group">
-							<label>Nombre del acceso</label>
+							<label data-i18n="nombre_del_acceso">Nombre del acceso</label>
 							<input id="nk-nombre" type="text" required placeholder="Entrada Principal">
 						</div>
 						<div class="form-group">
-							<label>Tipo</label>
+							<label data-i18n="tipo_label_generic">Tipo</label>
 							<select id="nk-tipo" style="width:100%">
-								<option value="PEATONAL">Peatonal</option>
-								<option value="VEHICULAR">Vehicular</option>
+								<option value="PEATONAL" data-i18n="peatonal">Peatonal</option>
+								<option value="VEHICULAR" data-i18n="vehicular">Vehicular</option>
 							</select>
 						</div>
 						<div class="form-group">
-							<label>Ubicación <span style="color:var(--text-3);font-weight:400">(opcional)</span></label>
+							<label><span data-i18n="ubicacion">Ubicación </span><span style="color:var(--text-3);font-weight:400" data-i18n="opcional_paren">(opcional)</span></label>
 							<input id="nk-ubicacion" type="text" placeholder="Calle Principal s/n">
 						</div>
 						<div id="nk-form-error" class="form-error" hidden></div>
 						<div class="modal-actions">
-							<button type="button" class="btn-cancel" id="nk-back-2">← Atrás</button>
-							<button type="submit" class="btn-primary">Crear kiosko</button>
+							<button type="button" class="btn-cancel" id="nk-back-2" data-i18n="atras_flecha">← Atrás</button>
+							<button type="submit" class="btn-primary" data-i18n="crear_kiosko">Crear kiosko</button>
 						</div>
 					</form>
 				</div>
 
 				<!-- Paso 3: Configuración inicial del kiosko -->
 				<div id="nk-step-3" hidden>
-					<div class="modal-title">Configurar kiosko</div>
-					<div class="modal-sub">Ajusta los parámetros básicos. Puedes cambiarlos después en la sección Kioskos → Configuración.</div>
+					<div class="modal-title" data-i18n="configurar_kiosko_title">Configurar kiosko</div>
+					<div class="modal-sub" data-i18n="ajusta_los_parametros_basicos">Ajusta los parámetros básicos. Puedes cambiarlos después en la sección Kioskos → Configuración.</div>
 					<div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
 						<div class="toggle-row">
 							<div>
-								<div class="toggle-label">Modo visual</div>
-								<div class="toggle-sub">Tema que verán los visitantes</div>
+								<div class="toggle-label" data-i18n="modo_visual">Modo visual</div>
+								<div class="toggle-sub" data-i18n="tema_que_veran_los_visitantes">Tema que verán los visitantes</div>
 							</div>
 							<select id="nk-cfg-color" class="search-select">
-								<option value="oscuro">Oscuro</option>
-								<option value="claro">Claro</option>
+								<option value="oscuro" data-i18n="tema_oscuro_corto">Oscuro</option>
+								<option value="claro" data-i18n="tema_claro_corto">Claro</option>
 							</select>
 						</div>
 						<div class="toggle-row">
 							<div>
-								<div class="toggle-label">Idioma</div>
+								<div class="toggle-label" data-i18n="pref_lang">Idioma</div>
 							</div>
 							<select id="nk-cfg-idioma" class="search-select">
-								<option value="es">Español</option>
-								<option value="en">Inglés</option>
+								<option value="es" data-i18n="espanol">Español</option>
+								<option value="en" data-i18n="ingles">Inglés</option>
 							</select>
 						</div>
 						<div class="toggle-row">
 							<div>
-								<div class="toggle-label">Auto-pass con IA</div>
-								<div class="toggle-sub">Aprobar automáticamente visitantes de confianza</div>
+								<div class="toggle-label" data-i18n="auto_pass_con_ia">Auto-pass con IA</div>
+								<div class="toggle-sub" data-i18n="aprobar_automaticamente_visitantes_de_confianza">Aprobar automáticamente visitantes de confianza</div>
 							</div>
 							<label class="toggle-switch">
 								<input type="checkbox" id="nk-cfg-autopass" checked>
@@ -1223,14 +1223,14 @@
 							</label>
 						</div>
 						<div style="margin-top:4px">
-							<label style="font-size:13px;color:var(--text-2);display:block;margin-bottom:6px">Mensaje de bienvenida <span style="color:var(--text-3)">(opcional)</span></label>
+							<label style="font-size:13px;color:var(--text-2);display:block;margin-bottom:6px"><span data-i18n="mensaje_de_bienvenida_2">Mensaje de bienvenida </span><span style="color:var(--text-3)" data-i18n="opcional_paren">(opcional)</span></label>
 							<input id="nk-cfg-mensaje" type="text" placeholder="Bienvenido a Residencial Las Palmas" style="width:100%;box-sizing:border-box">
 						</div>
 					</div>
 					<div id="nk-cfg-error" class="form-error" style="margin-top:12px" hidden></div>
 					<div class="modal-actions" style="margin-top:20px">
-						<button type="button" class="btn-cancel" id="nk-cfg-saltar">Omitir</button>
-						<button type="button" class="btn-primary" id="nk-cfg-guardar">Guardar y cerrar</button>
+						<button type="button" class="btn-cancel" id="nk-cfg-saltar" data-i18n="omitir">Omitir</button>
+						<button type="button" class="btn-primary" id="nk-cfg-guardar" data-i18n="guardar_y_cerrar">Guardar y cerrar</button>
 					</div>
 				</div>
 			</div>
@@ -1238,20 +1238,20 @@
 
 		<div id="modal-acceso" class="modal-overlay" hidden>
 			<div class="modal-box">
-				<div class="modal-title">Editar kiosko</div>
-				<div class="modal-sub">Actualiza el nombre, tipo o ubicación de este punto de acceso.</div>
+				<div class="modal-title" data-i18n="editar_kiosko">Editar kiosko</div>
+				<div class="modal-sub" data-i18n="actualiza_el_nombre_tipo_o_ubicacion_de_este_punto">Actualiza el nombre, tipo o ubicación de este punto de acceso.</div>
 				<form id="acceso-form" style="margin-top:16px">
-					<div class="form-group"><label>Nombre</label><input id="acceso-nombre" type="text" required placeholder="Entrada A"></div>
-					<div class="form-group"><label>Tipo</label>
+					<div class="form-group"><label data-i18n="name">Nombre</label><input id="acceso-nombre" type="text" required placeholder="Entrada A"></div>
+					<div class="form-group"><label data-i18n="tipo_label_generic">Tipo</label>
 					<select id="acceso-tipo" style="width:100%" required>
-						<option value="PEATONAL">Peatonal</option>
-						<option value="VEHICULAR">Vehicular</option>
+						<option value="PEATONAL" data-i18n="peatonal">Peatonal</option>
+						<option value="VEHICULAR" data-i18n="vehicular">Vehicular</option>
 					</select></div>
-					<div class="form-group"><label>Ubicación</label><input id="acceso-ubicacion" type="text" placeholder="Calle Principal"></div>
+					<div class="form-group"><label data-i18n="location">Ubicación</label><input id="acceso-ubicacion" type="text" placeholder="Calle Principal"></div>
 					<div id="acceso-form-error" class="form-error" hidden></div>
 					<div class="modal-actions">
-						<button type="button" class="btn-cancel" id="acceso-cancel">Cancelar</button>
-						<button type="submit" class="btn-primary">Guardar cambios</button>
+						<button type="button" class="btn-cancel" id="acceso-cancel" data-i18n="cancel">Cancelar</button>
+						<button type="submit" class="btn-primary" data-i18n="save">Guardar cambios</button>
 					</div>
 				</form>
 			</div>
@@ -1279,11 +1279,11 @@
 				<div class="modal-del-icon" id="confirmar-icon">
 					<svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="5" x2="14" y2="5"/><path d="M6 5V3.5h6V5"/><path d="M5 5l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5"/></svg>
 				</div>
-				<div class="modal-title" id="confirmar-titulo">¿Confirmar?</div>
+				<div class="modal-title" id="confirmar-titulo" data-i18n="confirmar_pregunta">¿Confirmar?</div>
 				<div class="modal-del-text" id="confirmar-texto"></div>
 				<div class="modal-actions">
-					<button type="button" class="btn-cancel" id="confirmar-cancelar">Cancelar</button>
-					<button type="button" class="btn-danger" id="confirmar-aceptar">Confirmar</button>
+					<button type="button" class="btn-cancel" id="confirmar-cancelar" data-i18n="cancel">Cancelar</button>
+					<button type="button" class="btn-danger" id="confirmar-aceptar" data-i18n="confirmar_button">Confirmar</button>
 				</div>
 			</div>
 		</div>
@@ -1294,25 +1294,25 @@
 		     para el listado completo/revocar. -->
 		<div id="modal-destino-detalle" class="modal-overlay" hidden>
 			<div class="modal-box">
-				<div class="modal-title" id="dd-titulo">Destino</div>
+				<div class="modal-title" id="dd-titulo" data-i18n="casa_destino">Destino</div>
 				<div class="modal-sub" id="dd-titular"></div>
 
 				<div style="margin-top:16px;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px">
 					<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-						<div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em">Contacto de referencia (sin verificar)</div>
-						<button type="button" class="btn-ghost" id="dd-editar-contacto" style="font-size:12px;padding:2px 6px">Editar</button>
+						<div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em" data-i18n="contacto_de_referencia_sin_verificar">Contacto de referencia (sin verificar)</div>
+						<button type="button" class="btn-ghost" id="dd-editar-contacto" style="font-size:12px;padding:2px 6px" data-i18n="editar">Editar</button>
 					</div>
 					<div id="dd-contacto-valor" style="font-size:13.5px;color:var(--text)"></div>
 				</div>
 
 				<div style="margin-top:16px">
-					<div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Residentes con teléfono verificado</div>
+					<div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px" data-i18n="residentes_con_telefono_verificado">Residentes con teléfono verificado</div>
 					<div id="dd-residentes-rows"></div>
 				</div>
 
 				<div class="modal-actions">
-					<button type="button" class="btn-cancel" id="dd-cerrar">Cerrar</button>
-					<button type="button" class="btn-primary" id="dd-ver-residentes">Ver en Residentes</button>
+					<button type="button" class="btn-cancel" id="dd-cerrar" data-i18n="cerrar">Cerrar</button>
+					<button type="button" class="btn-primary" id="dd-ver-residentes" data-i18n="ver_en_residentes">Ver en Residentes</button>
 				</div>
 			</div>
 		</div>
@@ -1322,14 +1322,14 @@
 		     nadie está enrolado ahí. No es una Persona verificada por OTP. -->
 		<div id="modal-contacto-destino" class="modal-overlay" hidden>
 			<div class="modal-box modal-box--sm">
-				<div class="modal-title">Contacto del destino</div>
-				<div class="modal-sub">Dato de referencia que tú capturas — no está verificado. Nunca se usa para notificar automáticamente, solo para que sepas a quién llamar.</div>
+				<div class="modal-title" data-i18n="contacto_del_destino">Contacto del destino</div>
+				<div class="modal-sub" data-i18n="dato_de_referencia_que_tu_capturas">Dato de referencia que tú capturas — no está verificado. Nunca se usa para notificar automáticamente, solo para que sepas a quién llamar.</div>
 				<form id="contacto-destino-form">
-					<div class="form-group"><label>Nombre (opcional)</label><input id="cd-nombre" type="text" placeholder="Ej. Sra. García"></div>
-					<div class="form-group"><label>Teléfono</label><input id="cd-telefono" type="tel" placeholder="Ej. 2221234567"></div>
+					<div class="form-group"><label data-i18n="nombre_opcional">Nombre (opcional)</label><input id="cd-nombre" type="text" placeholder="Ej. Sra. García"></div>
+					<div class="form-group"><label data-i18n="telefono">Teléfono</label><input id="cd-telefono" type="tel" placeholder="Ej. 2221234567"></div>
 					<div class="modal-actions">
-						<button type="button" class="btn-cancel" id="cd-cancel">Cancelar</button>
-						<button type="submit" class="btn-primary">Guardar</button>
+						<button type="button" class="btn-cancel" id="cd-cancel" data-i18n="cancel">Cancelar</button>
+						<button type="submit" class="btn-primary" data-i18n="guardar">Guardar</button>
 					</div>
 				</form>
 			</div>
@@ -1337,19 +1337,19 @@
 
 		<div id="modal-vigilante" class="modal-overlay" hidden>
 			<div class="modal-box">
-				<div class="modal-title">Nuevo vigilante</div>
-				<div class="modal-sub">El vigilante solo puede ver y gestionar solicitudes en tiempo real.</div>
+				<div class="modal-title" data-i18n="nuevo_vigilante">Nuevo vigilante</div>
+				<div class="modal-sub" data-i18n="el_vigilante_solo_puede_ver_y_gestionar_solicitude">El vigilante solo puede ver y gestionar solicitudes en tiempo real.</div>
 				<form id="vigilante-form">
 					<div class="form-grid-2">
-						<div class="form-group"><label>Nombre (opcional)</label><input id="vig-nombre" type="text" placeholder="Ej. Juan"></div>
-						<div class="form-group"><label>Apellido paterno (opcional)</label><input id="vig-paterno" type="text" placeholder="Ej. García"></div>
+						<div class="form-group"><label data-i18n="nombre_opcional">Nombre (opcional)</label><input id="vig-nombre" type="text" placeholder="Ej. Juan"></div>
+						<div class="form-group"><label data-i18n="apellido_paterno_opcional">Apellido paterno (opcional)</label><input id="vig-paterno" type="text" placeholder="Ej. García"></div>
 					</div>
-					<div class="form-group"><label>Correo electrónico</label><input id="vig-correo" type="email" required placeholder="vigilante@ejemplo.com"></div>
-					<div class="form-group"><label>Contraseña</label><input id="vig-password" type="password" required minlength="8" placeholder="Mínimo 8 caracteres"></div>
+					<div class="form-group"><label data-i18n="login_email">Correo electrónico</label><input id="vig-correo" type="email" required placeholder="vigilante@ejemplo.com"></div>
+					<div class="form-group"><label data-i18n="password">Contraseña</label><input id="vig-password" type="password" required minlength="8" placeholder="Mínimo 8 caracteres"></div>
 					<div id="vig-error" class="form-error" hidden></div>
 					<div class="modal-actions">
-						<button type="button" class="btn-cancel" id="vig-cancel">Cancelar</button>
-						<button type="submit" class="btn-primary">Crear vigilante</button>
+						<button type="button" class="btn-cancel" id="vig-cancel" data-i18n="cancel">Cancelar</button>
+						<button type="submit" class="btn-primary" data-i18n="crear_vigilante">Crear vigilante</button>
 					</div>
 				</form>
 			</div>
@@ -1357,36 +1357,36 @@
 
 		<div id="modal-destino" class="modal-overlay" hidden>
 			<div class="modal-box">
-				<div class="modal-title">Nuevos destinos</div>
-				<div class="modal-sub">Da de alta varios destinos de una calle a la vez. El tipo se aplica a lo que agregues a continuacion, asi que puedes mezclar casas y departamentos en el mismo alta.</div>
+				<div class="modal-title" data-i18n="nuevos_destinos">Nuevos destinos</div>
+				<div class="modal-sub" data-i18n="da_de_alta_varios_destinos">Da de alta varios destinos de una calle a la vez. El tipo se aplica a lo que agregues a continuacion, asi que puedes mezclar casas y departamentos en el mismo alta.</div>
 				<form id="destino-form">
-					<div class="form-group"><label>Calle / Bloque</label><input id="dest-calle" type="text" required placeholder="Ej. Calle Roble"></div>
+					<div class="form-group"><label data-i18n="calle_bloque">Calle / Bloque</label><input id="dest-calle" type="text" required placeholder="Ej. Calle Roble"></div>
 					<div class="form-group">
-						<label>Tipo</label>
+						<label data-i18n="tipo_label_generic">Tipo</label>
 						<select id="dest-tipo">
-							<option value="casa">Casa</option>
-							<option value="departamento">Departamento</option>
-							<option value="oficina">Oficina</option>
-							<option value="local">Local Comercial</option>
-							<option value="bodega">Bodega</option>
-							<option value="lote">Lote / Terreno</option>
-							<option value="otro">Otro</option>
+							<option value="casa" data-i18n="tipo_destino_casa">Casa</option>
+							<option value="departamento" data-i18n="departamento">Departamento</option>
+							<option value="oficina" data-i18n="tipo_destino_oficina">Oficina</option>
+							<option value="local" data-i18n="tipo_destino_local_comercial">Local Comercial</option>
+							<option value="bodega" data-i18n="tipo_destino_bodega">Bodega</option>
+							<option value="lote" data-i18n="tipo_destino_lote_terreno">Lote / Terreno</option>
+							<option value="otro" data-i18n="tipo_destino_otro">Otro</option>
 						</select>
 					</div>
 					<div class="form-group">
-						<label>Números o Identificadores <span style="font-weight:400;color:var(--text-2)">(se agregan con el tipo elegido arriba)</span></label>
+						<label><span data-i18n="numeros_o_identificadores">Números o Identificadores </span><span style="font-weight:400;color:var(--text-2)" data-i18n="se_agregan_con_el_tipo_elegido">(se agregan con el tipo elegido arriba)</span></label>
 						<div style="display:flex;gap:8px">
 							<input id="dest-numero-input" type="text" placeholder="Ej. 101" style="flex:1">
-							<button type="button" class="btn-cancel" id="dest-numero-add" style="padding:0 14px; font-weight:600">Añadir</button>
+							<button type="button" class="btn-cancel" id="dest-numero-add" style="padding:0 14px; font-weight:600" data-i18n="anadir">Añadir</button>
 						</div>
 						<div id="dest-chips-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; min-height: 36px; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; background: var(--bg-1);">
-							<div class="empty-text" style="margin:0;font-size:12.5px" id="dest-chips-empty">No has agregado ningún número</div>
+							<div class="empty-text" style="margin:0;font-size:12.5px" id="dest-chips-empty" data-i18n="no_has_agregado_ningun_numero">No has agregado ningún número</div>
 						</div>
 					</div>
 					<div id="dest-form-error" class="form-error" hidden></div>
 					<div class="modal-actions">
-						<button type="button" class="btn-cancel" id="dest-cancel">Cancelar</button>
-						<button type="submit" class="btn-primary">Crear destinos</button>
+						<button type="button" class="btn-cancel" id="dest-cancel" data-i18n="cancel">Cancelar</button>
+						<button type="submit" class="btn-primary" data-i18n="crear_destinos">Crear destinos</button>
 					</div>
 				</form>
 			</div>
@@ -1410,7 +1410,7 @@
 		<div id="modal-residente-detalle" class="modal-overlay" hidden>
 			<div class="modal-box modal-box--lg">
 				<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-					<div class="modal-title">Detalle del residente</div>
+					<div class="modal-title" data-i18n="detalle_del_residente">Detalle del residente</div>
 					<button type="button" class="btn-cancel" id="res-modal-close" style="padding:4px 10px;font-size:16px;border-radius:6px;cursor:pointer">✕</button>
 				</div>
 				<div id="res-modal-body"></div>
@@ -1420,22 +1420,22 @@
 		<div id="modal-historial-reportes" class="modal-overlay" hidden>
 			<div class="modal-box modal-box--md">
 				<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-					<div class="modal-title">Historial de reportes IA</div>
+					<div class="modal-title" data-i18n="historial_de_reportes_ia_title">Historial de reportes IA</div>
 					<button type="button" class="btn-cancel" id="historial-reportes-close" style="padding:4px 10px;font-size:16px;border-radius:6px;cursor:pointer">✕</button>
 				</div>
 				<div id="historial-reportes-loading" class="loading-state" hidden>
 					<div class="spinner"></div>
 				</div>
 				<div id="historial-reportes-empty" class="empty-state" hidden>
-					<div class="empty-text">No hay reportes en este rango.</div>
+					<div class="empty-text" data-i18n="no_hay_reportes_en_este_rango">No hay reportes en este rango.</div>
 				</div>
 				<div id="historial-reportes-rows"></div>
 				<div id="historial-reportes-pagination" class="pagination" hidden>
 					<div class="pagination-label" id="historial-reportes-page-label"></div>
 					<div class="pagination-controls">
-						<button class="btn-page" id="historial-reportes-prev">‹ Anterior</button>
+						<button class="btn-page" id="historial-reportes-prev" data-i18n="prev">‹ Anterior</button>
 						<div class="pagination-current" id="historial-reportes-page-current"></div>
-						<button class="btn-page" id="historial-reportes-next">Siguiente ›</button>
+						<button class="btn-page" id="historial-reportes-next" data-i18n="next">Siguiente ›</button>
 					</div>
 				</div>
 			</div>
