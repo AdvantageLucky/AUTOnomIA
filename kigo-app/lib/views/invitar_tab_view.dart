@@ -383,8 +383,16 @@ class _InvitarTabViewState extends State<InvitarTabView>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Solo puedes invitar a tu propia casa -- el backend ya lo exige
+                // (CrearInvitacion rechaza cualquier otro destino_id). Antes esto
+                // vivía como un campo más dentro del formulario (primero un
+                // TextFormField(enabled: false), luego un bloque de solo
+                // lectura) -- pero seguía leyéndose como un dato que hay que
+                // revisar entre varios, cuando en realidad es el contexto fijo
+                // de TODO el formulario. Va arriba, como título: "Invitar a
+                // {casa}" en vez de un genérico "Datos del invitado".
                 Text(
-                  AppLocalizations.t(context, 'datos_del_invitado'),
+                  '${AppLocalizations.t(context, 'invitar_a_prefix')} ${destinos.isEmpty ? AppLocalizations.t(context, 'sin_casas_registradas') : destinos.firstWhere((d) => d.id == destinoValido, orElse: () => destinos.first).nombre}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -399,45 +407,6 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   controller: _telefonoCtrl,
                   label: AppLocalizations.t(context, 'telefono_del_invitado'),
                   keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 14),
-                // Solo puedes invitar a tu propia casa -- el backend ya lo exige
-                // (CrearInvitacion rechaza cualquier otro destino_id). Antes esto
-                // era un TextFormField(enabled: false): seguía dibujándose como
-                // una caja de formulario deshabilitada (algo que parece que
-                // deberías poder tocar pero no puedes), en vez de leerse como lo
-                // que es -- un dato fijo, no una selección. Mismo lenguaje visual
-                // que las filas de "acceso facial" y "vence el" de abajo, sin
-                // ningún affordance interactivo (nada de Switch/InkWell).
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
-                    borderRadius: BorderRadius.circular(AppTheme.radius),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.home_outlined, color: AppTheme.primaryOrange, size: 22),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.t(context, 'casa_destino_label'),
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                            Text(
-                              destinos.isEmpty
-                                  ? AppLocalizations.t(context, 'sin_casas_registradas')
-                                  : destinos.firstWhere((d) => d.id == destinoValido, orElse: () => destinos.first).nombre,
-                              style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(height: 14),
                 Text(AppLocalizations.t(context, 'motivo_opcional'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
