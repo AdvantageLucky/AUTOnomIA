@@ -74,8 +74,8 @@ func (h *Handler) Reportar(c *gin.Context) {
 	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
 
 	tipo := strings.TrimSpace(c.PostForm("tipo"))
-	if tipo != TipoPinIncorrecto && tipo != TipoQrInvalido {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "tipo debe ser 'pin_incorrecto' o 'qr_invalido'"})
+	if tipo != TipoPinIncorrecto && tipo != TipoQrInvalido && tipo != TipoRostroNoReconocido {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tipo debe ser 'pin_incorrecto', 'qr_invalido' o 'rostro_no_reconocido'"})
 		return
 	}
 	detalle := strings.TrimSpace(c.PostForm("detalle"))
@@ -143,8 +143,11 @@ func (h *Handler) avisarAdmin(tenantID, kioskoID uint, tipo string) {
 		return
 	}
 	descripcion := "Intento de acceso con PIN incorrecto"
-	if tipo == TipoQrInvalido {
+	switch tipo {
+	case TipoQrInvalido:
 		descripcion = "Intento de acceso con código QR inválido"
+	case TipoRostroNoReconocido:
+		descripcion = "Intento de acceso por rostro no reconocido como residente"
 	}
 	asunto := "Evento de seguridad en kiosko"
 	cuerpo := fmt.Sprintf("%s en el kiosko #%d. Revisa el dashboard para ver la foto del intento.", descripcion, kioskoID)

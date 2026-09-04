@@ -289,15 +289,17 @@
       confianza_reseteada_ok: "Confianza restablecida",
       nav_seguridad: "Seguridad",
       seguridad_title: "Seguridad",
-      seguridad_sub: "Intentos de acceso fallidos (PIN incorrecto, QR inválido) con foto",
+      seguridad_sub: "Intentos de acceso fallidos (PIN incorrecto, QR inválido, rostro no reconocido) con foto",
       seguridad_filtro_todos: "Todos",
       seguridad_filtro_pin: "PIN incorrecto",
       seguridad_filtro_qr: "QR inválido",
+      seguridad_filtro_rostro: "Rostro no reconocido",
       seguridad_cargando: "Cargando eventos…",
       seguridad_sin_eventos: "Sin eventos de seguridad",
-      seguridad_sin_eventos_sub: "Los intentos fallidos de PIN o QR en los kioskos aparecerán aquí, con foto.",
+      seguridad_sin_eventos_sub: "Los intentos fallidos de PIN, QR o reconocimiento facial en los kioskos aparecerán aquí, con foto.",
       seguridad_tipo_pin: "PIN incorrecto",
       seguridad_tipo_qr: "QR inválido",
+      seguridad_tipo_rostro: "Rostro no reconocido",
       seguridad_sin_foto: "Sin foto",
       seguridad_mismo_rostro: n => `Mismo rostro · ${n + 1}ª vez`,
       seguridad_mismo_rostro_tooltip: "Este rostro ya generó otro(s) evento(s) de seguridad en este fraccionamiento",
@@ -3140,6 +3142,7 @@
   const SEGURIDAD_TIPO_LABEL = {
     pin_incorrecto: () => t("seguridad_tipo_pin"),
     qr_invalido: () => t("seguridad_tipo_qr"),
+    rostro_no_reconocido: () => t("seguridad_tipo_rostro"),
   };
 
   async function loadSeguridad() {

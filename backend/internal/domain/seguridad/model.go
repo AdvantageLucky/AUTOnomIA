@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	TipoPinIncorrecto = "pin_incorrecto"
-	TipoQrInvalido    = "qr_invalido"
+	TipoPinIncorrecto      = "pin_incorrecto"
+	TipoQrInvalido         = "qr_invalido"
+	TipoRostroNoReconocido = "rostro_no_reconocido"
 )
 
 // EventoSeguridad registra un intento de acceso fallido en el kiosko (PIN

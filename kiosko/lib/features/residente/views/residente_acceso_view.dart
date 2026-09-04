@@ -11,6 +11,7 @@ import 'package:kigo_kiosco/core/widgets/presionable.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:kigo_kiosco/core/services/camara_kiosko.dart';
+import 'package:kigo_kiosco/core/services/evidencia_seguridad_servicio.dart';
 import 'package:kigo_kiosco/core/widgets/vista_previa_camara.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kigo_kiosco/core/services/led_servicio.dart';
@@ -359,7 +360,19 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     final embedding = await _reconocimientoServicio.calcularEmbedding(pathFoto);
     if (embedding == null) return;
 
-    final resultado = await KioskoServicio().verificarRostroResidente(embedding);
+    Map<String, dynamic> resultado;
+    try {
+      resultado = await KioskoServicio().verificarRostroResidente(embedding);
+    } catch (e) {
+      // Solo el rechazo real (rostro que no coincide con ningún residente)
+      // cuenta como evento de seguridad -- un timeout/error de red no es un
+      // intento malicioso. Mismo criterio que ResidentPinViewModel.confirmar
+      // con 'PIN incorrecto'.
+      if (e.toString().contains('Rostro no reconocido')) {
+        unawaited(_reportarConEvidencia());
+      }
+      rethrow;
+    }
     final nombre = resultado['nombre'] as String?;
     final casaDestino = resultado['casa_destino'] as String?;
     final esInvitadoFrecuente = resultado['es_invitado_frecuente'] == true;
@@ -385,6 +398,20 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         ),
       );
     });
+  }
+
+  /// Toma una foto nueva en segundo plano (la cámara de esta pantalla sigue
+  /// activa/sin liberar en este punto, así que no se reusa la que ya se
+  /// tomó para el intento fallido -- EvidenciaSeguridadServicio ya tolera
+  /// "cámara ocupada" devolviendo evidencia nula sin romper el flujo) y
+  /// reporta el rechazo -- mismo patrón que ResidentPinViewModel.
+  Future<void> _reportarConEvidencia() async {
+    final evidencia = await EvidenciaSeguridadServicio.capturar();
+    await KioskoServicio().reportarEventoSeguridad(
+      tipo: 'rostro_no_reconocido',
+      pathFoto: evidencia.pathFoto,
+      embedding: evidencia.embedding,
+    );
   }
 
   @override
