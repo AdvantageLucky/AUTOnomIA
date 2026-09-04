@@ -456,12 +456,20 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       children: [
         const MarcaBadge(lado: 54),
         const SizedBox(width: 18),
-        Text(
-          AppLocalizations.t(context, 'kigo_label'),
-          style: TextStyle(
-            color: context.kTextPrimary,
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
+        // En una pantalla más angosta que el panel el nombre desbordaba la
+        // fila; encoge parejo con el logo en vez de recortarse.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              AppLocalizations.t(context, 'kigo_label'),
+              style: TextStyle(
+                color: context.kTextPrimary,
+                fontSize: 34,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       ],
@@ -495,10 +503,17 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
     );
   }
 
+  /// Alto mínimo del CTA de abajo. Lo comparten el botón normal y su estado
+  /// "procesando" para que no cambie de tamaño a media captura.
+  static const double _altoBotonPrincipal = 76;
+
   Widget _buildBotonCargando() {
     return Container(
       width: double.infinity,
-      height: 76,
+      // Alto mínimo, no fijo: en una pantalla angosta la etiqueta salta de
+      // renglón y con `height` el texto desbordaba el botón por abajo.
+      constraints: const BoxConstraints(minHeight: _altoBotonPrincipal),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: KigoDesign.brand.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(20),
@@ -530,8 +545,8 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       onTap: _continuarProceso,
       child: Container(
         width: double.infinity,
-        height: 76,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        constraints: const BoxConstraints(minHeight: _altoBotonPrincipal),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
           color: KigoDesign.brand,
           borderRadius: BorderRadius.circular(20),
@@ -595,7 +610,8 @@ class _VehicularRegisterViewState extends State<VehicularRegisterView> {
       onTap: viewModel.previousStep,
       child: Container(
         width: double.infinity,
-        height: 62,
+        constraints: const BoxConstraints(minHeight: 62),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: context.kSurface2,
           borderRadius: BorderRadius.circular(18),

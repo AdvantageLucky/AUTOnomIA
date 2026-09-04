@@ -3,7 +3,13 @@
 // scroll) y la tarjeta con la foto se iba de la vista. Aquí se fija que la
 // pantalla NO scrollea, que la mascota queda por encima del indicador de
 // pasos -- como en el resto del registro -- y que todo entra sin arrastrar.
+//
+// Y lo que se reportó después: el contenido iba anclado al techo, así que en
+// cuanto la pantalla era más alta que el bloque, todo quedaba apelotonado
+// arriba con medio panel vacío abajo; y en una pantalla más ancha la tarjeta
+// se estiraba de extremo a extremo.
 import 'package:flutter/material.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/models/kiosko_config.dart';
@@ -114,16 +120,63 @@ void main() {
     expect(ultimoDato.bottom, lessThan(1280 - 110));
   });
 
-  testWidgets('en una pantalla corta encoge en bloque en vez de recortar',
+  testWidgets('el contenido se reparte el panel, no se apelotona arriba',
       (tester) async {
+    await _montar(tester, const Size(800, 1280));
+
+    final indicador = tester.getRect(find.byType(StepIndicator));
+    final ultimoDato = tester.getRect(find.text('Entrega de paquetería'));
+
+    // El bloque de estado + tarjeta va centrado en lo que queda bajo el
+    // indicador: antes iba anclado al techo y dejaba medio panel vacío
+    // abajo -- se veía como si la pantalla se hubiera descuadrado.
+    //
+    // El bloque arranca en el spinner y termina en el borde de la tarjeta
+    // (el último dato más los 22 de padding de la tarjeta).
+    final areaArriba = indicador.bottom + 28;
+    final areaAbajo = 1280 - 24 - KigoDesign.clearanceBotonesFlotantes;
+    final huecoArriba =
+        tester.getRect(find.byType(LoadingIndicator)).top - areaArriba;
+    final huecoAbajo = areaAbajo - (ultimoDato.bottom + 22);
+    expect(
+      (huecoArriba - huecoAbajo).abs(),
+      lessThan(40),
+      reason: 'el aire de arriba y el de abajo tienen que parecerse',
+    );
+    expect(huecoArriba, greaterThan(0));
+  });
+
+  testWidgets('en una pantalla corta encoge el bloque, no el indicador',
+      (tester) async {
+    await _montar(tester, const Size(800, 1280));
+    final tituloEnPanel = tester.getRect(find.text('Visitante')).height;
+
     await _montar(tester, const Size(800, 820));
     expect(tester.takeException(), isNull);
 
+    // El indicador de pasos cabe siempre: se queda arriba y del ancho
+    // completo, como en el resto del registro.
     final indicador = tester.getRect(find.byType(StepIndicator));
-    expect(indicador.width, lessThan(716),
+    expect(indicador.width, moreOrLessEquals(716, epsilon: 0.5));
+    expect(indicador.top,
+        moreOrLessEquals(KigoDesign.clearanceAsistenteArriba, epsilon: 0.5));
+
+    // Lo que encoge es el bloque de estado + tarjeta, entero.
+    expect(tester.getRect(find.text('Visitante')).height,
+        lessThan(tituloEnPanel),
         reason: 'aquí sí tiene que entrar el scaleDown');
 
     final ultimoDato = tester.getRect(find.text('Entrega de paquetería'));
     expect(ultimoDato.bottom, lessThan(820));
+  });
+
+  testWidgets('en una pantalla ancha la tarjeta no se estira de extremo a extremo',
+      (tester) async {
+    await _montar(tester, const Size(1200, 1280));
+
+    // 1200 - 84 de padding serían 1116 de tarjeta: los datos quedarían
+    // perdidos en una tira. Se queda en el ancho de contenido del panel.
+    expect(tester.getRect(find.byType(StepIndicator)).width,
+        moreOrLessEquals(716, epsilon: 0.5));
   });
 }

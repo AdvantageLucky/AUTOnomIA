@@ -97,13 +97,21 @@ class _OperatorExitPinViewState extends State<OperatorExitPinView> {
 
         const Icon(Icons.lock_outline_rounded, color: KigoDesign.brand, size: 24),
         const SizedBox(width: 10),
-        Text(
-          AppLocalizations.t(context, 'modo_operador'),
-          style: TextStyle(
-            color: context.kTextPrimary,
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 2,
+        // El título es lo único que puede crecer aquí (candado y botones son
+        // fijos): sin esto desbordaba la fila en pantallas angostas.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              AppLocalizations.t(context, 'modo_operador'),
+              style: TextStyle(
+                color: context.kTextPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2,
+              ),
+            ),
           ),
         ),
 

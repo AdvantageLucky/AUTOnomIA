@@ -85,36 +85,42 @@ Future<bool> mostrarConsentimientoCamara(BuildContext context) async {
                     spacing: 24,
                     runSpacing: 12,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              detenerTimer();
-                              Navigator.pop(context, true);
-                            },
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-                              minimumSize: const Size(150, 64),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
-                            child: Text(
-                              AppLocalizations.t(context, 'aceptar_button'),
-                              style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 22),
-                            ),
-                          ),
-                          if (!timerDetenido) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '($segundosRestantes)',
-                              style: const TextStyle(
-                                color: KigoDesign.brand,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                      // El botón trae medida de kiosko (150x64 mínimo, más
+                      // la cuenta regresiva al lado): en un lienzo angosto
+                      // no cabía. Encoge parejo en vez de desbordar.
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                detenerTimer();
+                                Navigator.pop(context, true);
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                                minimumSize: const Size(150, 64),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: Text(
+                                AppLocalizations.t(context, 'aceptar_button'),
+                                style: const TextStyle(color: KigoDesign.brand, fontWeight: FontWeight.bold, fontSize: 22),
                               ),
                             ),
+                            if (!timerDetenido) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '($segundosRestantes)',
+                                style: const TextStyle(
+                                  color: KigoDesign.brand,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                       TextButton(
                         onPressed: () {

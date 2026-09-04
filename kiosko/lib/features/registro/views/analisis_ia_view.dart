@@ -80,7 +80,14 @@ class AnalisisIaView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Text(etiqueta, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w800)),
+                // Flexible: "Confianza media" cabe de sobra en el panel, pero
+                // en una pantalla angosta la etiqueta desbordaba la fila.
+                Flexible(
+                  child: Text(
+                    etiqueta,
+                    style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                ),
               ],
             ),
             if (resumen != null && resumen!.isNotEmpty) ...[

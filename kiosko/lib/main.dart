@@ -12,6 +12,7 @@ import 'package:kigo_kiosco/core/routing/observador_rutas.dart';
 import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/services/local_cache_db.dart';
 import 'package:kigo_kiosco/core/services/sync_worker.dart';
+import 'package:kigo_kiosco/core/widgets/lienzo_adaptable.dart';
 import 'package:kigo_kiosco/core/widgets/marca_badge.dart';
 import 'package:kigo_kiosco/core/widgets/pantalla_error.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
@@ -257,7 +258,11 @@ class _KigoAppState extends State<KigoApp> with WidgetsBindingObserver {
           theme: esClaro ? KigoDesign.lightTheme : KigoDesign.darkTheme,
           navigatorKey: navegadorKigo,
           navigatorObservers: [observadorDeRutas],
-          builder: (context, child) => child ?? const SizedBox.shrink(),
+          // Todo lo que dibuja la app —rutas, diálogos, overlays— pasa por
+          // aquí, así que es el único punto donde hay que adaptar el diseño
+          // a la pantalla real del equipo.
+          builder: (context, child) =>
+              LienzoAdaptable(child: child ?? const SizedBox.shrink()),
           home: Builder(builder: (context) {
             if (cfg.cargando) return const _SplashScreen();
             if (cfg.necesitaActivacion) {
