@@ -838,6 +838,7 @@ func (h *Handler) CrearInvitadoFrecuente(c *gin.Context) {
 		Status:                      residente.ResidenteStatusActivo,
 		Rol:                         residente.RolInvitadoFrecuente,
 		PermiteReconocimientoFacial: true,
+		CreadaPorPersonaID:          &personaID,
 	}
 	if err := h.membresiaRepo.Create(nueva); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -955,6 +956,17 @@ func (h *Handler) EliminarInvitacionRecibida(c *gin.Context) {
 		return
 	}
 
+	// Se lee antes de ocultarla para saber si además enroló a quien la
+	// recibió como invitado frecuente -- si es así, "eliminarla" debe
+	// también sacarlo del acceso recurrente, no solo esconder la tarjeta de
+	// la invitación (eso confundía: seguía viéndose como enrolado en "Mi
+	// QR"/Ajustes aunque ya hubiera "eliminado" la invitación).
+	inv, err := h.invitacionRepo.FindByID(uint(id))
+	if err != nil || inv.PersonaInvitadaID == nil || *inv.PersonaInvitadaID != personaID {
+		c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no encontrada"})
+		return
+	}
+
 	if err := h.invitacionRepo.OcultarParaInvitado(uint(id), personaID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no encontrada"})
@@ -963,6 +975,15 @@ func (h *Handler) EliminarInvitacionRecibida(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	if inv.PermiteReconocimientoFacial {
+		if m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, inv.TenantID); err == nil && m.Rol == residente.RolInvitadoFrecuente {
+			if _, err := h.membresiaRepo.RevocarPorTenant(inv.TenantID, []uint{m.ID}); err != nil {
+				log.Printf("EliminarInvitacionRecibida: error revocando membresía de invitado frecuente %d: %v", m.ID, err)
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "invitacion eliminada"})
 }
 

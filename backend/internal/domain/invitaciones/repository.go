@@ -21,6 +21,18 @@ func (r *Repository) Create(inv *Invitacion) error {
 	return r.db.Create(inv).Error
 }
 
+// FindByID busca una invitación por su ID sin más filtro -- lo usa
+// EliminarInvitacionRecibida para saber si la invitación que se está
+// ocultando además enroló a quien la recibió, antes de decidir si también
+// hay que revocar esa membresía.
+func (r *Repository) FindByID(id uint) (*Invitacion, error) {
+	var inv Invitacion
+	if err := r.db.First(&inv, id).Error; err != nil {
+		return nil, err
+	}
+	return &inv, nil
+}
+
 // FindByToken busca una invitacion activa por su token
 // Devuelve ErrInvitacionNoValida si está revocada, expirada o agotada.
 func (r *Repository) FindByToken(token string) (*Invitacion, error) {

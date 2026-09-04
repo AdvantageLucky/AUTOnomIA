@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -143,4 +145,47 @@ func TestCrearInvitacion_ResidenteRealSiPuedeInvitar(t *testing.T) {
 	if count != 1 {
 		t.Errorf("esperaba 1 invitación creada, got %d", count)
 	}
+}
+
+// Caso reportado: el invitado frecuente "eliminaba" la invitación con la
+// que lo enrolaron desde "Recibidas", pero su membresía (el acceso
+// recurrente en sí) seguía activa -- en Ajustes/Mi QR seguía viéndose como
+// enrolado en ese centro. Eliminar esa invitación en particular debe
+// también revocar el acceso que ella otorgó.
+func TestEliminarInvitacionRecibida_RevocaMembresiaDeInvitadoFrecuente(t *testing.T) {
+	h, db, residenteReal, invitadoFrecuente := setupInvitadoFrecuenteTest(t)
+
+	invitadoID := invitadoFrecuente.ID
+	inv := &invitaciones.Invitacion{
+		TenantID: 1, Token: "tok-enrolamiento", Titular: "Beto", ResidenteID: residenteReal.ID, DestinoID: 1,
+		PersonaInvitadaID: &invitadoID, PermiteReconocimientoFacial: true,
+	}
+	if err := db.Create(inv).Error; err != nil {
+		t.Fatalf("no se pudo crear la invitación: %v", err)
+	}
+
+	router := gin.New()
+	router.DELETE("/personas/me/invitaciones/recibidas/:id", func(c *gin.Context) {
+		c.Set(ctxkeys.PersonaID, invitadoFrecuente.ID)
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkeys.PersonaID, invitadoFrecuente.ID))
+		h.EliminarInvitacionRecibida(c)
+	})
+
+	req := httptest.NewRequest(http.MethodDelete, "/personas/me/invitaciones/recibidas/"+itoa(inv.ID), nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var m residente.Membresia
+	err := db.Where("persona_id = ? AND tenant_id = ?", invitadoFrecuente.ID, 1).First(&m).Error
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		t.Errorf("esperaba que la membresía de invitado frecuente quedara revocada (soft-delete), got err=%v, m=%+v", err, m)
+	}
+}
+
+func itoa(id uint) string {
+	return strconv.FormatUint(uint64(id), 10)
 }
