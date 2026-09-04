@@ -139,9 +139,10 @@ class _InvitarTabViewState extends State<InvitarTabView>
     await prefs.setStringList(_keyMotivosCustom, _motivosCustom);
   }
 
-  /// Menú contextual de un solo motivo personalizado, anclado a donde se
-  /// mantuvo presionado -- solo "Eliminar". Los frecuentes nunca llaman a
-  /// esto (ver el onLongPress condicional en el build de la lista).
+  /// Menú contextual de un motivo personalizado, anclado a donde se tocó --
+  /// "Seleccionar" (reemplaza al tap directo que sí tienen los frecuentes) y
+  /// "Eliminar". Los frecuentes nunca llaman a esto, se seleccionan con un
+  /// tap normal (ver el onTap condicional en _filaMotivo).
   Future<void> _menuMotivo(BuildContext context, Offset posicionGlobal, String motivo) async {
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final opcion = await showMenu<String>(
@@ -152,18 +153,32 @@ class _InvitarTabViewState extends State<InvitarTabView>
       ),
       items: [
         PopupMenuItem(
+          value: 'seleccionar',
+          child: Row(
+            children: [
+              const Icon(Icons.check_rounded, color: AppTheme.primaryOrange, size: 18),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.t(context, 'seleccionar_motivo_btn')),
+            ],
+          ),
+        ),
+        PopupMenuItem(
           value: 'eliminar',
           child: Row(
             children: [
               const Icon(Icons.delete_outline_rounded, color: AppTheme.error, size: 18),
               const SizedBox(width: 8),
-              Text(AppLocalizations.t(context, 'eliminar_motivo_btn'), style: const TextStyle(color: AppTheme.error)),
+              Text(AppLocalizations.t(context, 'eliminar_btn'), style: const TextStyle(color: AppTheme.error)),
             ],
           ),
         ),
       ],
     );
-    if (opcion == 'eliminar') await _eliminarMotivoCustom(motivo);
+    if (opcion == 'eliminar') {
+      await _eliminarMotivoCustom(motivo);
+    } else if (opcion == 'seleccionar') {
+      setState(() => _motivoSeleccionado = _motivoSeleccionado == motivo ? null : motivo);
+    }
   }
 
   Widget _filaMotivo(BuildContext context, String motivo, {required bool esCustom}) {
@@ -172,9 +187,13 @@ class _InvitarTabViewState extends State<InvitarTabView>
     return Column(
       children: [
         GestureDetector(
-          onLongPressStart: esCustom ? (details) => _menuMotivo(context, details.globalPosition, motivo) : null,
+          // Un motivo personalizado abre el menú (Seleccionar/Eliminar) en
+          // vez de seleccionarse directo -- necesita la posición exacta del
+          // toque para anclar el menú, así que usa onTapUp en vez del onTap
+          // de InkWell.
+          onTapUp: esCustom ? (details) => _menuMotivo(context, details.globalPosition, motivo) : null,
           child: InkWell(
-            onTap: () => setState(() => _motivoSeleccionado = seleccionado ? null : motivo),
+            onTap: esCustom ? null : () => setState(() => _motivoSeleccionado = seleccionado ? null : motivo),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
@@ -398,6 +417,34 @@ class _InvitarTabViewState extends State<InvitarTabView>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.t(context, 'revoke_invitation_error'))),
+      );
+    }
+  }
+
+  Future<void> _eliminarRecibida(int id) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.t(ctx, 'eliminar_recibida_titulo')),
+        content: Text(AppLocalizations.t(ctx, 'eliminar_recibida_contenido')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(ctx, 'cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(AppLocalizations.t(ctx, 'eliminar_btn')),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+
+    try {
+      await context.read<InvitationViewModel>().eliminarRecibida(id);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.t(context, 'eliminar_recibida_error'))),
       );
     }
   }
@@ -1039,6 +1086,12 @@ class _InvitarTabViewState extends State<InvitarTabView>
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                color: AppTheme.textDimmed,
+                tooltip: AppLocalizations.t(context, 'eliminar_btn'),
+                onPressed: () => _eliminarRecibida(inv.id),
               ),
               const Icon(Icons.chevron_right_rounded, color: AppTheme.textDimmed),
             ],
