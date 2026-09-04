@@ -107,43 +107,6 @@ func TestReportarYListar_PinIncorrecto_AparaceEnElListado(t *testing.T) {
 	}
 }
 
-// TestReportarYListar_RostroNoReconocido_AparaceEnElListado cubre el tercer
-// tipo de evento (reconocimiento facial de residente fallido) -- antes solo
-// pin_incorrecto y qr_invalido pasaban la validación del handler.
-func TestReportarYListar_RostroNoReconocido_AparaceEnElListado(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db := setupTestDB(t)
-	h := NewHandler(NewRepository(db), "/tmp", nil, nil)
-
-	router := gin.New()
-	router.POST("/kioskos/:id/eventos-seguridad/", func(c *gin.Context) {
-		injectTestCtx(c, ctxkeys.TenantID, uint(1))
-		injectTestCtx(c, ctxkeys.KioskoID, uint(1))
-		h.Reportar(c)
-	})
-	router.GET("/eventos-seguridad/", func(c *gin.Context) {
-		injectTestCtx(c, ctxkeys.TenantID, uint(1))
-		h.Listar(c)
-	})
-
-	body := strings.NewReader("tipo=" + TipoRostroNoReconocido)
-	req := httptest.NewRequest(http.MethodPost, "/kioskos/1/eventos-seguridad/", body)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
-	}
-
-	reqList := httptest.NewRequest(http.MethodGet, "/eventos-seguridad/?tipo="+TipoRostroNoReconocido, nil)
-	wList := httptest.NewRecorder()
-	router.ServeHTTP(wList, reqList)
-	bodyStr := wList.Body.String()
-	if !strings.Contains(bodyStr, `"total":1`) {
-		t.Errorf("esperaba total=1 filtrando por rostro_no_reconocido, got %s", bodyStr)
-	}
-}
-
 // Caso reportado: se quiere poder correlacionar si el mismo rostro ya
 // generó otro evento de seguridad antes (ej. la misma persona fallando el
 // PIN varias veces, o probando PIN y luego un QR inválido). Dos embeddings
