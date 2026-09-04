@@ -21,7 +21,11 @@ enum _EstadoAsistente { inactivo, escuchando, procesando, hablando }
 /// Lado de los botones de acción (micrófono, vigilante) — deliberadamente
 /// más chico que la mascota (`KigoDesign.ladoAsistente`): son controles de
 /// esquina, no el protagonista visual de la pantalla.
-const double _ladoBotonAccion = 64;
+///
+/// Era un 64 propio, copia del de `KigoDesign`: dos números para la misma
+/// medida, y las pantallas se anclaban al de allá mientras el círculo lo
+/// dibujaba éste. Ahora hay uno solo.
+const double _ladoBotonAccion = KigoDesign.ladoBotonAccion;
 
 /// Posiciona la mascota (arriba a la derecha, alineada con el header propio
 /// de cada pantalla), el botón de vigilante (abajo a la IZQUIERDA) y el de
@@ -55,6 +59,14 @@ const double _ladoBotonAccion = 64;
 /// [mostrarEtiqueta] pone "Asistente IA" ARRIBA de la mascota (no debajo):
 /// abajo es donde vive el contenido propio de cada pantalla, y ahí se
 /// reportó que la etiqueta se solapaba con otros componentes.
+///
+/// [lado] es la caja de la mascota. Por defecto la de siempre
+/// ([KigoDesign.ladoAsistente]), que es a la que están calibradas las
+/// pantallas que se anclan a ella (`residente_acceso_view` centra el dibujo
+/// contra su logo, el escáner QR cuelga su pastilla de
+/// [KigoDesign.clearanceAsistenteArriba]). Se pasa distinto sólo donde el
+/// diseño pide otro peso -- crecerla en la constante la crecería en las
+/// cinco pantallas y descuadraría esas calibraciones.
 class BotonAsistenteFlotante extends StatefulWidget {
   final String? tipoCampo;
   final void Function(String respuesta) onRespuestaLibre;
@@ -65,6 +77,7 @@ class BotonAsistenteFlotante extends StatefulWidget {
   final double bottomDelBorde;
   final AsistenteController? controlador;
   final bool mostrarEtiqueta;
+  final double lado;
 
   const BotonAsistenteFlotante({
     super.key,
@@ -77,6 +90,7 @@ class BotonAsistenteFlotante extends StatefulWidget {
     this.bottomDelBorde = 20,
     this.controlador,
     this.mostrarEtiqueta = false,
+    this.lado = KigoDesign.ladoAsistente,
   });
 
   @override
@@ -311,8 +325,8 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
           opacity: activo ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 150),
           child: Container(
-            width: KigoDesign.ladoAsistente * (0.9 + 0.1 * crecimiento),
-            height: KigoDesign.ladoAsistente * (0.9 + 0.1 * crecimiento),
+            width: widget.lado * (0.9 + 0.1 * crecimiento),
+            height: widget.lado * (0.9 + 0.1 * crecimiento),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -339,15 +353,15 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
         estado: estadoMascota,
         pulseValue: _pulseCtrl.value,
         rotValue: _rotCtrl.value,
-        lado: KigoDesign.ladoAsistente * 0.84,
+        lado: widget.lado * 0.84,
       ),
     );
   }
 
   Widget _buildMascotaConHalo() {
     return SizedBox(
-      width: KigoDesign.ladoAsistente,
-      height: KigoDesign.ladoAsistente,
+      width: widget.lado,
+      height: widget.lado,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -379,7 +393,7 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
                 shape: BoxShape.circle,
                 border: Border.all(color: context.kBorder, width: 1.5),
               ),
-              child: Icon(Icons.support_agent_rounded, color: context.kTextPrimary, size: 30),
+              child: Icon(Icons.support_agent_rounded, color: context.kTextPrimary, size: 39),
             ),
             const SizedBox(height: 4),
             // El ícono solo no bastaba: sin un label visible permanente
@@ -418,7 +432,7 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
             color: KigoDesign.brand.withValues(alpha: 0.35),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.mic_off_rounded, color: Colors.white, size: 28),
+          child: const Icon(Icons.mic_off_rounded, color: Colors.white, size: 37),
         ),
       );
     }
@@ -473,7 +487,7 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
               child: Icon(
                 escuchando ? Icons.mic_rounded : Icons.mic_none_rounded,
                 color: Colors.white,
-                size: 28,
+                size: 37,
               ),
             ),
           ),

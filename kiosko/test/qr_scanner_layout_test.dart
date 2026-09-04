@@ -5,9 +5,13 @@
 // invariantes: nada invade el recuadro, nada desborda, y el anillo se dibuja
 // justo en el hueco que el layout reservó (no en otro lado).
 //
-// La geometría se toma de rectRecuadroQr, la misma que usa la pantalla: si
-// la prueba la recalculara por su cuenta volvería a validar contra una copia
-// que puede irse quedando atrás.
+// La geometría se mide sobre la pantalla montada (`claveRecuadroQr` marca el
+// hueco del encuadre en el árbol): si la prueba la recalculara por su cuenta
+// volvería a validar contra una copia que puede irse quedando atrás. Desde que
+// el recuadro cuelga de la pastilla del mensaje ni siquiera se puede -- su
+// posición depende de cuántos renglones ocupa el mensaje con la fuente que
+// esté cargada.
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -25,6 +29,10 @@ import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 import 'package:kigo_kiosco/features/welcome/viewmodels/qr_scanner_viewmodel.dart';
 import 'package:kigo_kiosco/features/welcome/views/qr_scanner_view.dart';
+
+/// El hueco del encuadre tal como quedó en la pantalla montada.
+Rect recuadroDe(WidgetTester tester) =>
+    tester.getRect(find.byKey(claveRecuadroQr));
 
 const mensajeCorto = 'Bienvenido a Residencial Las Palmas';
 /// Un nombre corto: con el largo, la fuente cuadrada de los tests llena el
@@ -46,6 +54,16 @@ class _NotifierFake extends KioskoConfigNotifier {
   @override
   KioskoConfig get config =>
       KioskoConfig.fromJson({'mensaje_bienvenida': mensaje});
+}
+
+/// La fuente cuadrada de los tests no mide lo mismo que la real, y las
+/// separaciones de 10px del panel están calculadas contra Manrope: con la
+/// falsa el bloque de abajo sale 23px más corto y los huecos no dan.
+Future<void> _cargarFuenteReal() async {
+  final bytes = File('assets/fonts/Manrope-Variable.ttf').readAsBytesSync();
+  await (FontLoader('Manrope')
+        ..addFont(Future.value(ByteData.view(bytes.buffer))))
+      .load();
 }
 
 /// Monta la pantalla con un solo cuadro: el diálogo de consentimiento se pide
@@ -98,7 +116,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
-      final recuadro = rectRecuadroQr(size);
+      final recuadro = recuadroDe(tester);
 
       final marca = tester.getRect(find.text('AUTOnomIA'));
       final mensaje = tester.getRect(find.text(mensajeCorto));
@@ -135,7 +153,7 @@ void main() {
       // Sigue sin invadir el recuadro.
       expect(
         tester.getRect(find.text(mensajeLargo)).bottom,
-        lessThanOrEqualTo(rectRecuadroQr(size).top),
+        lessThanOrEqualTo(recuadroDe(tester).top),
       );
     });
 
@@ -148,7 +166,7 @@ void main() {
         (tester) async {
       await _montar(tester, size, mensajeCorto);
 
-      final recuadro = rectRecuadroQr(size);
+      final recuadro = recuadroDe(tester);
       final overlay = tester
           .renderObjectList<RenderCustomPaint>(find.byType(CustomPaint))
           .firstWhere(
@@ -176,23 +194,30 @@ void main() {
   // 236px de alto con el texto partido en tres renglones, y el bloque no
   // cabía -- el FittedBox lo encogía al 93%, así que ni siquiera llegaba a
   // ocupar el ancho disponible.
-  testWidgets('el CTA mide 750x100 en el panel', (tester) async {
+  //
+  // Con la fuente real: la fuente cuadrada de los tests parte el subtítulo en
+  // dos renglones y estira el bloque, y con eso entraría el FittedBox y el
+  // CTA saldría encogido. Con Manrope el bloque mide los 215 que caben en su
+  // franja.
+  testWidgets('el CTA mide 750x110 en el panel', (tester) async {
+    await _cargarFuenteReal();
+
     const panel = Size(800, 1280);
-    await _montar(tester, panel, mensajeCorto);
+    await _montar(tester, panel, mensajeCorto, tema: KigoDesign.darkTheme);
 
     final texto = find.text('No tengo la app AUTOnomIA o código QR');
     final boton = tester.getRect(
       find.ancestor(of: texto, matching: find.byType(AnimatedContainer)).first,
     );
 
-    // Las medidas pedidas para el panel: 750 x 100 clavados. Que el ancho dé
+    // Las medidas pedidas para el panel: 750 x 110 clavados. Que el ancho dé
     // exacto es además lo que prueba que el FittedBox de la franja no está
     // encogiendo el bloque.
     expect(boton.width, moreOrLessEquals(750, epsilon: 0.5));
-    expect(boton.height, moreOrLessEquals(100, epsilon: 0.5));
+    expect(boton.height, moreOrLessEquals(110, epsilon: 0.5));
 
-    // Y el texto entra dentro de esos 100 sin que la red del FittedBox
-    // interior tenga que achicarlo: dos renglones, no tres.
+    // Y el texto entra dentro de esos 110 sin que la red del FittedBox
+    // interior tenga que achicarlo: como mucho dos renglones.
     final parrafo = tester.renderObject<RenderParagraph>(texto);
     final unRenglon = parrafo.getMaxIntrinsicHeight(double.infinity);
     expect(parrafo.size.height, lessThanOrEqualTo(unRenglon * 2 + 1));
@@ -206,42 +231,96 @@ void main() {
     expect(sub.bottom, lessThan(boton.top));
     // El aire de abajo ya no es el bloque de 110 reservado a ojo, sino el
     // borde real de los botones flotantes -- se comprueba en su propia
-    // prueba, aquí basta con que no los toque.
+    // prueba, aquí basta con que no los toque. Contra la huella completa del
+    // botón (círculo + etiqueta "AYUDA"), que es lo que el CTA se estaba
+    // comiendo.
     expect(
       boton.bottom,
       lessThan(panel.height -
           KigoDesign.offsetBotonesFlotantes -
-          KigoDesign.ladoBotonAccion),
+          KigoDesign.altoBotonAccionConEtiqueta),
     );
   });
 
-  // El CTA se cuelga del piso: 10px exactos por encima del micrófono y el
-  // vigilante. Antes el bloque iba centrado en su franja y quedaban 230px
-  // muertos ahí abajo.
-  testWidgets('el CTA queda 10px sobre los botones flotantes', (tester) async {
-    const panel = Size(800, 1280);
-    await _montar(tester, panel, mensajeCorto);
+  // La cadena de arriba a abajo, con las separaciones exactas: 20 de la
+  // pastilla al recuadro, 10 del recuadro al bloque de textos + CTA. Antes el
+  // bloque colgaba del piso y
+  // dejaba 143px muertos bajo el recuadro; y del otro lado, con el recuadro
+  // clavado a una fracción fija, quedaban otros 145 muertos entre la pastilla
+  // y el encuadre -- el mensaje del panel entra en un renglón y la franja de
+  // arriba estaba dimensionada para tres.
+  //
+  // Con la fuente real: la cuadrada de los tests deja el bloque 23px más
+  // corto y los huecos no serían los del panel.
+  testWidgets('pastilla a 20 del recuadro, y el recuadro a 10 de los textos',
+      (tester) async {
+    await _cargarFuenteReal();
 
+    const panel = Size(800, 1280);
+    await _montar(tester, panel, mensajePanel, tema: KigoDesign.darkTheme);
+
+    final recuadro = recuadroDe(tester);
+    final badge = tester.getRect(find.byType(ComunidadBadge));
+    final hint = tester.getRect(find.text('Apunta al código QR'));
     final boton = tester.getRect(find.ancestor(
       of: find.text('No tengo la app AUTOnomIA o código QR'),
       matching: find.byType(AnimatedContainer),
     ).first);
 
-    final topFlotantes = panel.height -
-        KigoDesign.offsetBotonesFlotantes -
-        KigoDesign.ladoBotonAccion;
+    // El recuadro cuelga de la pastilla, con el doble de aire que abajo: la
+    // pastilla tiene borde y relleno propios y a 10 se le pegaba encima.
+    expect(recuadro.top - badge.bottom, moreOrLessEquals(20, epsilon: 0.5));
 
-    expect(topFlotantes - boton.bottom, moreOrLessEquals(10, epsilon: 0.5));
+    // Y el bloque cuelga del recuadro, igual de pegado.
+    expect(hint.top - recuadro.bottom, moreOrLessEquals(10, epsilon: 0.5));
+
+    // Lo que sobra queda abajo: el CTA ya no se apoya en los botones
+    // flotantes, pero tampoco los toca. La huella se mide sobre el widget, no
+    // sobre la constante -- el círculo del vigilante lleva la etiqueta
+    // "AYUDA" debajo y contar sólo el círculo es lo que una vez los encimó.
+    final flotante = tester.getRect(
+      find.ancestor(of: find.text('AYUDA'), matching: find.byType(Column)).first,
+    );
+    expect(flotante.height,
+        moreOrLessEquals(KigoDesign.altoBotonAccionConEtiqueta, epsilon: 0.5));
+    expect(flotante.top - boton.bottom, greaterThanOrEqualTo(10));
   });
 
-  // La pastilla se lleva el espacio que liberó bajar el recuadro. Iba a ~125
-  // de alto; el hueco de la franja de arriba da para 264.
+  // El bloque de abajo sube lo mismo que el recuadro: es lo que se pidió --
+  // subir el encuadre, sus textos y el CTA, no sólo el encuadre. Si alguien
+  // vuelve a colgar el bloque del piso, esto lo caza.
+  testWidgets('el bloque de abajo sube con el recuadro', (tester) async {
+    await _cargarFuenteReal();
+
+    const panel = Size(800, 1280);
+    await _montar(tester, panel, mensajePanel, tema: KigoDesign.darkTheme);
+
+    final recuadro = recuadroDe(tester);
+    final boton = tester.getRect(find.ancestor(
+      of: find.text('No tengo la app AUTOnomIA o código QR'),
+      matching: find.byType(AnimatedContainer),
+    ).first);
+
+    // Con el mensaje del panel en un renglón el recuadro sube bien por encima
+    // del tope viejo (428) -- la pastilla mide 127 y no 264.
+    expect(recuadro.top, lessThan(320));
+
+    // Y el CTA termina antes de la mitad de abajo del panel: el aire que
+    // liberó la franja de arriba se lo quedó el piso, no un hueco entre el
+    // encuadre y su texto.
+    expect(boton.bottom, lessThan(panel.height - 130));
+  });
+
+  // La pastilla va a x3 y de ancho completo. Con la fuente cuadrada de los
+  // tests el mensaje del panel se parte en varios renglones y pasa de 180 de
+  // alto: la franja se estira para dárselos en vez de que el FittedBox la
+  // encoja.
   testWidgets('la pastilla aprovecha la franja de arriba', (tester) async {
     const panel = Size(800, 1280);
     await _montar(tester, panel, mensajePanel);
 
     final badge = tester.getRect(find.byType(ComunidadBadge));
-    final recuadro = rectRecuadroQr(panel);
+    final recuadro = recuadroDe(tester);
 
     expect(badge.height, greaterThan(180));
 
@@ -252,7 +331,7 @@ void main() {
   });
 
   // No como fracción del ancho: en un lienzo mayor sigue midiendo lo pedido.
-  testWidgets('el CTA mide 750x100 también en un lienzo mayor',
+  testWidgets('el CTA mide 750x110 también en un lienzo mayor',
       (tester) async {
     await _montar(tester, const Size(1080, 1920), mensajeCorto);
 
@@ -262,22 +341,22 @@ void main() {
     ).first);
 
     expect(boton.width, moreOrLessEquals(750, epsilon: 0.5));
-    expect(boton.height, moreOrLessEquals(100, epsilon: 0.5));
+    expect(boton.height, moreOrLessEquals(110, epsilon: 0.5));
   });
 
   // Las dos medidas pedidas son absolutas, no fracciones del lienzo: salían
   // bien sólo si el panel medía exactamente 800 de ancho, y en cualquier otro
   // parecía que el cambio no se había aplicado.
-  testWidgets('el recuadro mide 430x430 aunque el lienzo sea mayor',
+  testWidgets('el recuadro mide 503x503 aunque el lienzo sea mayor',
       (tester) async {
     for (final lienzo in const [Size(800, 1280), Size(1080, 1920)]) {
       final r = rectRecuadroQr(lienzo);
-      expect(r.width, moreOrLessEquals(430, epsilon: 0.01), reason: '$lienzo');
-      expect(r.height, moreOrLessEquals(430, epsilon: 0.01), reason: '$lienzo');
+      expect(r.width, moreOrLessEquals(503, epsilon: 0.01), reason: '$lienzo');
+      expect(r.height, moreOrLessEquals(503, epsilon: 0.01), reason: '$lienzo');
     }
 
     // Y en un lienzo donde no quepan, sigue mandando la fracción.
-    expect(rectRecuadroQr(const Size(600, 960)).width, lessThan(430));
+    expect(rectRecuadroQr(const Size(600, 960)).width, lessThan(503));
   });
 
   // La pastilla llevaba un Center que la encogía hasta abrazar su texto: su
@@ -339,10 +418,7 @@ void main() {
   // fuente real -- para fijar que entra de largo, en un solo renglon.
   testWidgets('el mensaje del panel entra en un renglon con la fuente real',
       (tester) async {
-    final bytes = File('assets/fonts/Manrope-Variable.ttf').readAsBytesSync();
-    await (FontLoader('Manrope')
-          ..addFont(Future.value(ByteData.view(bytes.buffer))))
-        .load();
+    await _cargarFuenteReal();
 
     const panel = Size(800, 1280);
     await _montar(tester, panel, mensajePanel, tema: KigoDesign.darkTheme);

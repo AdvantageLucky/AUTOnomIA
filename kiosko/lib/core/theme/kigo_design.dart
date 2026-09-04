@@ -49,19 +49,38 @@ abstract final class KigoDesign {
   // Un kiosko se opera de pie y a brazo extendido, sin la precision de un
   // telefono en la mano: 44 (el minimo tactil de movil, que es lo que tenia
   // antes) queda tapado por la yema del dedo y no se ve si respondio.
-  static const ladoAsistente = 76.0;
+  //
+  // 76 tampoco alcanzaba: al lado del recuadro QR y de la pastilla de
+  // bienvenida la mascota se leia como un adorno y no como el asistente. 96
+  // es lo mas que crece sin comerse el aire que la separa de la pastilla --
+  // ese hueco esta fijado entre 16 y 32 en qr_scanner_layout_test.dart.
+  static const ladoAsistente = 96.0;
 
   /// Espacio que hay que reservar abajo a la derecha para no quedar debajo
   /// de los botones de micrófono/vigilante de `BotonAsistenteFlotante`
-  /// (64 de lado + 20 de offset del borde + margen). Cualquier pantalla con
-  /// contenido de ancho completo o anclado abajo debe sumarlo a su padding
+  /// ([ladoBotonAccion] + 20 de offset del borde + margen). Cualquier pantalla
+  /// con contenido de ancho completo o anclado abajo debe sumarlo a su padding
   /// inferior -- confirmado por screenshot que sin esto el CTA queda tapado.
-  static const clearanceBotonesFlotantes = 110.0;
+  static const clearanceBotonesFlotantes = 130.0;
 
   /// Geometría de esos botones, por separado, para quien necesite anclarse a
   /// ellos con precisión en vez de reservar el bloque completo.
-  static const ladoBotonAccion = 64.0;
+  ///
+  /// 64 era el mínimo táctil de móvil y en el panel se veía como un ícono de
+  /// barra de estado, no como un botón para tocar de pie. 84 lo sube a ~1.4cm
+  /// en el panel de 10" sin que el par (uno en cada esquina de abajo) se
+  /// acerque siquiera a tocarse: en el lienzo más angosto que se prueba (320)
+  /// siguen quedando 120px de aire entre ellos.
+  static const ladoBotonAccion = 84.0;
   static const offsetBotonesFlotantes = 20.0;
+
+  /// Huella vertical real de esos botones: el círculo de [ladoBotonAccion] no
+  /// es todo: el del vigilante lleva 4 de aire y la etiqueta "AYUDA" (16 de
+  /// alto) debajo. Quien se ancle a ellos tiene que reservar esto y no el
+  /// lado del círculo -- midiendo con la fuente real, el CTA del escáner QR
+  /// se anclaba a 10px del círculo y eso lo dejaba 10px metido dentro de la
+  /// etiqueta.
+  static const altoBotonAccionConEtiqueta = ladoBotonAccion + 4 + 16;
 
   /// El equivalente de arriba: alto que ocupa el bloque de la mascota
   /// (`BotonAsistenteFlotante` con etiqueta) contado desde el techo de la
@@ -70,10 +89,11 @@ abstract final class KigoDesign {
   /// pegado al techo y ocupa todo el ancho tiene que empezar por debajo: el
   /// badge de comunidad del escáner QR se estaba metiendo bajo la mascota.
   ///
-  /// Va justo: la caja de la mascota termina en 122 (24 + 16 + 6 + 76) y esto
-  /// deja 2px sobre ella -- 8 sobre el dibujo, que no llega al borde de su
-  /// caja. Es a propósito, el badge tiene que quedar lo más pegado posible.
-  static const clearanceAsistenteArriba = 124.0;
+  /// Va justo: la caja de la mascota termina en 142 (24 + 16 + 6 +
+  /// [ladoAsistente]) y esto deja 2px sobre ella -- 10 sobre el dibujo, que no
+  /// llega al borde de su caja. Es a propósito, el badge tiene que quedar lo
+  /// más pegado posible.
+  static const clearanceAsistenteArriba = 144.0;
 
   // ── Radius ─────────────────────────────────────────────────────────────────
   static const radius   = 10.0;
