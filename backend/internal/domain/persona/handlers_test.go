@@ -279,3 +279,19 @@ func TestListarCompanerosCasa_TenantIDInvalido(t *testing.T) {
 		t.Fatalf("esperaba 400, got %d: %s", w.Code, w.Body.String())
 	}
 }
+
+// Caso reportado: una Persona enrolada como pendiente (todavia no aprobada
+// por el admin) veia un PIN en la respuesta, aunque ese PIN no sirve para
+// nada hasta que la membresia quede activa (FindActivasPorTenant filtra por
+// status, ver kiosko_login_handler.go).
+func TestPinVisible(t *testing.T) {
+	if got := pinVisible(residente.ResidenteStatusActivo, "12345"); got != "12345" {
+		t.Errorf("esperaba el PIN visible para status activo, got %q", got)
+	}
+	if got := pinVisible(residente.ResidenteStatusPendiente, "12345"); got != "" {
+		t.Errorf("esperaba PIN vacio para status pendiente, got %q", got)
+	}
+	if got := pinVisible(residente.ResidenteStatusRechazado, "12345"); got != "" {
+		t.Errorf("esperaba PIN vacio para status rechazado, got %q", got)
+	}
+}

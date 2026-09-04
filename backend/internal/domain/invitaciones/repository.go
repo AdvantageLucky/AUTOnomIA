@@ -99,10 +99,27 @@ func (r *Repository) RevocarByIDAndPersonaCreadora(id, personaID uint) error {
 func (r *Repository) FindByPersonaInvitada(personaID uint) ([]Invitacion, error) {
 	var list []Invitacion
 	err := r.db.
-		Where("persona_invitada_id = ? AND conteo_usos = 0 AND (expires_at IS NULL OR expires_at > ?)", personaID, time.Now()).
+		Where("persona_invitada_id = ? AND conteo_usos = 0 AND (expires_at IS NULL OR expires_at > ?) AND oculta_para_invitado = false", personaID, time.Now()).
 		Order("created_at DESC").
 		Find(&list).Error
 	return list, err
+}
+
+// OcultarParaInvitado quita una invitación de la lista de "recibidas" de
+// quien la recibió, sin tocar la fila que ve quien la creó -- comprueba que
+// personaID sea justo el destinatario, para que nadie pueda ocultarle a
+// otro una invitación que no es suya.
+func (r *Repository) OcultarParaInvitado(id, personaID uint) error {
+	result := r.db.Model(&Invitacion{}).
+		Where("id = ? AND persona_invitada_id = ?", id, personaID).
+		Update("oculta_para_invitado", true)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // FindActivaByPersonaInvitadaAndTenant busca si una Persona tiene una

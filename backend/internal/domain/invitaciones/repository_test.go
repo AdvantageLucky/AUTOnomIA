@@ -53,3 +53,61 @@ func TestFindActivasNoExpiradasByTenant(t *testing.T) {
 		t.Errorf("faltan tokens esperados en %+v", tokens)
 	}
 }
+
+// Caso reportado: quien recibe una invitación no tenía forma de quitarla de
+// su propia lista sin afectar a quien la creó.
+func TestOcultarParaInvitado(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	personaID := uint(1)
+	inv := &Invitacion{TenantID: 1, Token: "para-ocultar", Titular: "A", ResidenteID: 1, DestinoID: 1, PersonaInvitadaID: &personaID}
+	if err := db.Create(inv).Error; err != nil {
+		t.Fatalf("no se pudo crear la invitacion: %v", err)
+	}
+
+	lista, err := repo.FindByPersonaInvitada(personaID)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(lista) != 1 {
+		t.Fatalf("esperaba 1 invitacion antes de ocultar, got %d", len(lista))
+	}
+
+	if err := repo.OcultarParaInvitado(inv.ID, personaID); err != nil {
+		t.Fatalf("no esperaba error al ocultar, got %v", err)
+	}
+
+	lista, err = repo.FindByPersonaInvitada(personaID)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(lista) != 0 {
+		t.Errorf("esperaba 0 invitaciones tras ocultar, got %d", len(lista))
+	}
+}
+
+// Nadie mas que el propio invitado puede ocultarsela.
+func TestOcultarParaInvitado_OtraPersonaNoPuede(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	personaID := uint(1)
+	inv := &Invitacion{TenantID: 1, Token: "de-otro", Titular: "A", ResidenteID: 1, DestinoID: 1, PersonaInvitadaID: &personaID}
+	if err := db.Create(inv).Error; err != nil {
+		t.Fatalf("no se pudo crear la invitacion: %v", err)
+	}
+
+	err := repo.OcultarParaInvitado(inv.ID, uint(2))
+	if err == nil {
+		t.Fatal("esperaba error al intentar ocultar la invitacion de otra persona")
+	}
+
+	lista, err := repo.FindByPersonaInvitada(personaID)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(lista) != 1 {
+		t.Errorf("la invitacion no debio ocultarse, got %d", len(lista))
+	}
+}
