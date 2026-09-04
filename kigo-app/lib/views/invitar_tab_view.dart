@@ -59,6 +59,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
     'pinche', 'maricon', 'imbecil', 'idiota', 'estupido', 'estupida',
   };
 
+  // Un motivo hecho solo de símbolos (p.ej. "#/(!\"//#") no tiene ninguna
+  // palabra que comparar contra _palabrasProhibidas, así que _contieneGroseria
+  // lo dejaba pasar -- se exige que tenga al menos una letra de verdad.
+  bool _sinLetras(String texto) => !RegExp(r'[a-zA-ZÀ-ÿ]').hasMatch(texto);
+
   bool _contieneGroseria(String texto) {
     final sinAcentos = texto
         .toLowerCase()
@@ -119,7 +124,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
     final limpio = nuevo?.trim() ?? '';
     if (limpio.isEmpty || !mounted) return;
 
-    if (_contieneGroseria(limpio)) {
+    if (_sinLetras(limpio) || _contieneGroseria(limpio)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.t(context, 'motivo_lenguaje_no_permitido'))),
       );
@@ -190,7 +195,12 @@ class _InvitarTabViewState extends State<InvitarTabView>
           // Un motivo personalizado abre el menú (Seleccionar/Eliminar) en
           // vez de seleccionarse directo -- necesita la posición exacta del
           // toque para anclar el menú, así que usa onTapUp en vez del onTap
-          // de InkWell.
+          // de InkWell. behavior: opaque es necesario porque, sin él, un
+          // GestureDetector con hijo solo recibe el toque si cae justo
+          // sobre algo "pintado" (el ícono o las letras del texto) -- el
+          // relleno y los espacios vacíos de la fila (la mayor parte del
+          // área tocable) no contaban como toque y el menú casi nunca abría.
+          behavior: esCustom ? HitTestBehavior.opaque : null,
           onTapUp: esCustom ? (details) => _menuMotivo(context, details.globalPosition, motivo) : null,
           child: InkWell(
             onTap: esCustom ? null : () => setState(() => _motivoSeleccionado = seleccionado ? null : motivo),
@@ -1066,7 +1076,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   color: AppTheme.primaryOrange.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.mail_outline_rounded, color: AppTheme.primaryOrange, size: 22),
+                child: Icon(
+                  inv.permiteReconocimientoFacial ? Icons.face_retouching_natural : Icons.mail_outline_rounded,
+                  color: AppTheme.primaryOrange,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -1084,6 +1098,20 @@ class _InvitarTabViewState extends State<InvitarTabView>
                           : AppLocalizations.t(context, 'invitacion_pendiente'),
                       style: const TextStyle(fontSize: 12, color: AppTheme.textDimmed, fontWeight: FontWeight.w600),
                     ),
+                    if (inv.permiteReconocimientoFacial) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.success.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          AppLocalizations.t(context, 'te_enrolo_badge'),
+                          style: const TextStyle(color: AppTheme.success, fontSize: 10.5, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
