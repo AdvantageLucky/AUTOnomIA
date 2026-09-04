@@ -943,9 +943,10 @@ func (h *Handler) ListarInvitacionesRecibidas(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// EliminarInvitacionRecibida quita una invitación de "recibidas" para quien
-// la recibió -- no la revoca ni la borra para quien la creó, que sigue
-// viéndola en "mis invitaciones" (ver invitaciones.Repository.OcultarParaInvitado).
+// EliminarInvitacionRecibida revoca una invitación desde el lado de quien la
+// recibió: su QR/token deja de ser válido en el kiosko y quien la creó deja
+// de verla como vigente en "mis invitaciones" -- mismo efecto que si el
+// creador la hubiera revocado él mismo (ver RevocarByIDAndPersonaInvitada).
 func (h *Handler) EliminarInvitacionRecibida(c *gin.Context) {
 	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
 
@@ -956,18 +957,22 @@ func (h *Handler) EliminarInvitacionRecibida(c *gin.Context) {
 		return
 	}
 
-	// Se lee antes de ocultarla para saber si además enroló a quien la
+	// Se lee antes de revocarla para saber si además enroló a quien la
 	// recibió como invitado frecuente -- si es así, "eliminarla" debe
-	// también sacarlo del acceso recurrente, no solo esconder la tarjeta de
-	// la invitación (eso confundía: seguía viéndose como enrolado en "Mi
-	// QR"/Ajustes aunque ya hubiera "eliminado" la invitación).
+	// también sacarlo del acceso recurrente, no solo invalidar el token.
 	inv, err := h.invitacionRepo.FindByID(uint(id))
 	if err != nil || inv.PersonaInvitadaID == nil || *inv.PersonaInvitadaID != personaID {
 		c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no encontrada"})
 		return
 	}
 
-	if err := h.invitacionRepo.OcultarParaInvitado(uint(id), personaID); err != nil {
+	// Antes esto solo llamaba OcultarParaInvitado: la tarjeta desaparecía
+	// de "Recibidas" pero el token seguía siendo válido en el kiosko
+	// (mientras no expirara ni agotara MaxUsos) -- "eliminar" una
+	// invitación que recibiste debe invalidar tu acceso real, no solo la
+	// notificación. Quien la creó deja de verla como vigente también,
+	// igual que si él mismo la hubiera revocado.
+	if err := h.invitacionRepo.RevocarByIDAndPersonaInvitada(uint(id), personaID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no encontrada"})
 			return
