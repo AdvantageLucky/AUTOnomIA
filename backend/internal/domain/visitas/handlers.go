@@ -786,6 +786,35 @@ func (h *Handler) ResetHistorialPorCURP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
 }
 
+// ResetHistorialPorRostro (admin) es el equivalente a ResetHistorialPorCURP
+// para un visitante sin ningún dato de identidad más que su cara --
+// [visitaId] es cualquier visita de ese cluster (la que se le mostró al
+// admin como representante en "Identidades y confianza"); el backend
+// resuelve su embedding y lo usa como clave del reset.
+func (h *Handler) ResetHistorialPorRostro(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	visitaID64, err := strconv.ParseUint(c.Param("visitaId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de visita inválido"})
+		return
+	}
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	v, err := repoCtx.FindByIDAndTenantID(uint(visitaID64), tenantID)
+	if err != nil || len(v.EmbeddingRostro) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "visita sin rostro identificable"})
+		return
+	}
+
+	if err := repoCtx.CrearResetPorRostro(tenantID, v.EmbeddingRostro, "", nil, &adminID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
+}
+
 // ListarIdentidades (admin) es la pantalla "Identidades y confianza" --
 // todas las identidades con historial en el tenant, para verlas y
 // resetearlas sin tener que llegar ahí desde el detalle de una visita en

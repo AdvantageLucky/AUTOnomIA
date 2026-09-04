@@ -173,6 +173,19 @@ func (r *Repository) FindByIDAndAdminID(id, adminID uint) (*Visita, error) {
 	return &v, nil
 }
 
+// FindByIDAndTenantID busca una visita acotada directo por tenant_id (no
+// por el join de admin/kioskos que usa FindByIDAndAdminID) -- la usa
+// ResetHistorialPorRostro para resolver el embedding de la visita
+// representativa de un cluster de "Identidades y confianza", que también
+// se calcula por tenant, no por admin.
+func (r *Repository) FindByIDAndTenantID(id, tenantID uint) (*Visita, error) {
+	var v Visita
+	if err := r.db.Where("id = ? AND tenant_id = ?", id, tenantID).First(&v).Error; err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
 func (r *Repository) FindByCurpAndAdminID(curp string, adminID uint) ([]Visita, error) {
 	var list []Visita
 	if err := r.joinVisitasDeAdmin(adminID).
@@ -571,6 +584,17 @@ func (r *Repository) HistorialDeVisitante(v Visita, umbralFacialPct int, fuentes
 		if v.Curp != "" {
 			var err error
 			historial, err = r.aplicarResetHistorialPorCURP(v.TenantID, v.Curp, v.CasaDestino, historial)
+			if err != nil {
+				return nil, err
+			}
+		}
+		// Solo-rostro: ni Persona ni CURP, la única vía es la cara -- mismo
+		// caso que agregarIdentidades excluye del listado por no tener ID
+		// estable; el reset por rostro es justamente lo que lo vuelve
+		// resoluble sin inventar una identidad persistida.
+		if v.PersonaID == nil && v.Curp == "" && len(v.EmbeddingRostro) > 0 {
+			var err error
+			historial, err = r.aplicarResetHistorialPorRostro(v.TenantID, v.EmbeddingRostro, umbralFacialPct, v.CasaDestino, historial)
 			if err != nil {
 				return nil, err
 			}

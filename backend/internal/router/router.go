@@ -291,6 +291,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 		d.POST("/personas/:personaId/resetear-historial", visitaHandler.ResetHistorialPersona)
 		d.GET("/curp/:curp/historial", visitaHandler.HistorialPorCURPHandler)
 		d.POST("/curp/:curp/resetear-historial", visitaHandler.ResetHistorialPorCURP)
+		d.POST("/rostro/:visitaId/resetear-historial", visitaHandler.ResetHistorialPorRostro)
 		d.GET("/identidades", visitaHandler.ListarIdentidades)
 	}
 
@@ -521,6 +522,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.GET("/invitaciones/contactos", personaHandler.ListarContactosFrecuentes)
 		p.POST("/contactos/:personaId/resetear-historial", personaHandler.ResetHistorialContacto)
 		p.POST("/contactos/curp/:curp/resetear-historial", personaHandler.ResetHistorialContactoPorCURP)
+		p.POST("/contactos/rostro/:visitaId/resetear-historial", personaHandler.ResetHistorialContactoPorRostro)
 		p.GET("/identidades-mi-casa", personaHandler.ListarIdentidadesMiCasa)
 		p.POST("/invitados-frecuentes", personaHandler.CrearInvitadoFrecuente)
 		p.GET("/invitados-frecuentes", personaHandler.ListarInvitadosFrecuentes)

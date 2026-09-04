@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"kigo-autonomia-backend/internal/domain/residente"
 )
 
 // HistorialReset marca que la confianza acumulada con una identidad
@@ -25,8 +27,12 @@ type HistorialReset struct {
 	// Curp ancla el reset a un visitante identificado solo por su INE (sin
 	// cuenta, sin invitación) -- mutuamente excluyente con PersonaID: un
 	// reset trae uno de los dos, nunca ambos, nunca ninguno.
-	Curp              string    `gorm:"column:curp;not null;default:''"`
-	CasaDestino       string    `gorm:"column:casa_destino;not null;default:''"`
+	Curp string `gorm:"column:curp;not null;default:''"`
+	// EmbeddingRostro ancla el reset a un visitante sin cuenta, sin CURP y
+	// sin invitación -- lo único que lo identifica es su rostro. Mutuamente
+	// excluyente con PersonaID/Curp igual que ellos entre sí.
+	EmbeddingRostro   residente.FloatArray `gorm:"column:embedding_rostro;type:float[]"`
+	CasaDestino       string               `gorm:"column:casa_destino;not null;default:''"`
 	ResetAt           time.Time `gorm:"column:reset_at;not null"`
 	ResetPorPersonaID *uint     `gorm:"column:reset_por_persona_id"`
 	ResetPorAdminID   *uint     `gorm:"column:reset_por_admin_id"`
@@ -52,6 +58,16 @@ func (r *Repository) CrearReset(tenantID, personaID uint, casaDestino string, re
 func (r *Repository) CrearResetPorCURP(tenantID uint, curp, casaDestino string, resetPorPersonaID, resetPorAdminID *uint) error {
 	return r.db.Create(&HistorialReset{
 		TenantID: tenantID, Curp: strings.TrimSpace(curp), CasaDestino: strings.TrimSpace(casaDestino),
+		ResetAt: time.Now(), ResetPorPersonaID: resetPorPersonaID, ResetPorAdminID: resetPorAdminID,
+	}).Error
+}
+
+// CrearResetPorRostro es el equivalente a CrearReset/CrearResetPorCURP para
+// un visitante sin ningún dato de identidad más que su cara -- ver
+// aplicarResetHistorialPorRostro.
+func (r *Repository) CrearResetPorRostro(tenantID uint, embedding []float64, casaDestino string, resetPorPersonaID, resetPorAdminID *uint) error {
+	return r.db.Create(&HistorialReset{
+		TenantID: tenantID, EmbeddingRostro: residente.FloatArray(embedding), CasaDestino: strings.TrimSpace(casaDestino),
 		ResetAt: time.Now(), ResetPorPersonaID: resetPorPersonaID, ResetPorAdminID: resetPorAdminID,
 	}).Error
 }
@@ -118,6 +134,31 @@ func (r *Repository) aplicarResetHistorialPorCURP(tenantID uint, curp, casaDesti
 	if err := r.db.Where("tenant_id = ? AND curp = ?", tenantID, curp).
 		Find(&resets).Error; err != nil {
 		return nil, err
+	}
+	corteGlobal, corteCasa := cortesDeResets(resets, casaDestino)
+	return aplicarCortes(historial, corteGlobal, corteCasa, casaDestino), nil
+}
+
+// aplicarResetHistorialPorRostro es el equivalente a aplicarResetHistorial
+// para un visitante sin Persona ni CURP -- ver CrearResetPorRostro. A
+// diferencia de los otros dos, no hay clave exacta que comparar: se acepta
+// el reset cuya cara coincide con [embedding] por encima de [umbralPct],
+// mismo criterio (y mismo umbral) que el resto del reconocimiento facial.
+func (r *Repository) aplicarResetHistorialPorRostro(tenantID uint, embedding []float64, umbralPct int, casaDestino string, historial []Visita) ([]Visita, error) {
+	if len(embedding) == 0 {
+		return historial, nil
+	}
+	var candidatos []HistorialReset
+	if err := r.db.Where("tenant_id = ? AND embedding_rostro IS NOT NULL", tenantID).
+		Find(&candidatos).Error; err != nil {
+		return nil, err
+	}
+	umbral := float64(umbralPct) / 100
+	var resets []HistorialReset
+	for _, c := range candidatos {
+		if similitudCoseno(c.EmbeddingRostro, embedding) >= umbral {
+			resets = append(resets, c)
+		}
 	}
 	corteGlobal, corteCasa := cortesDeResets(resets, casaDestino)
 	return aplicarCortes(historial, corteGlobal, corteCasa, casaDestino), nil

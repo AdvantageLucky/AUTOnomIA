@@ -224,6 +224,52 @@ func TestEliminarInvitacionRecibida_InvalidaElToken(t *testing.T) {
 	}
 }
 
+// Caso reportado: al "Quitar" a alguien de invitados frecuentes, la
+// invitación con la que se le dio acceso (el QR/link original) seguía
+// vigente -- volvía a entrar (o se re-enrolaba) usándola de nuevo. Había
+// que ir a eliminar esa invitación aparte para de verdad cortarle el acceso.
+func TestRevocarInvitadoFrecuente_RevocaTambienLaInvitacionDeEnrolamiento(t *testing.T) {
+	h, db, residenteReal, invitadoFrecuente := setupInvitadoFrecuenteTest(t)
+
+	var membresia residente.Membresia
+	if err := db.Where("persona_id = ? AND tenant_id = ?", invitadoFrecuente.ID, 1).First(&membresia).Error; err != nil {
+		t.Fatalf("no se encontró la membresía de invitado frecuente: %v", err)
+	}
+
+	invitadoID := invitadoFrecuente.ID
+	inv := &invitaciones.Invitacion{
+		TenantID: 1, Token: "tok-enrolamiento", Titular: "Beto", ResidenteID: residenteReal.ID, DestinoID: 1,
+		PersonaInvitadaID: &invitadoID, PermiteReconocimientoFacial: true,
+	}
+	if err := db.Create(inv).Error; err != nil {
+		t.Fatalf("no se pudo crear la invitación: %v", err)
+	}
+
+	router := gin.New()
+	router.DELETE("/personas/me/invitados-frecuentes/:id", func(c *gin.Context) {
+		injectTestCtx(c, ctxkeys.PersonaID, residenteReal.ID)
+		h.RevocarInvitadoFrecuente(c)
+	})
+
+	req := httptest.NewRequest(http.MethodDelete, "/personas/me/invitados-frecuentes/"+itoa(membresia.ID)+"?tenant_id=1", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	invitacionRepo := invitaciones.NewRepository(db)
+	if _, err := invitacionRepo.FindByToken("tok-enrolamiento"); !errors.Is(err, invitaciones.ErrInvitacionNoValida) {
+		t.Errorf("esperaba que la invitación de enrolamiento quedara invalidada, got err=%v", err)
+	}
+}
+
+func injectTestCtx(c *gin.Context, key string, val any) {
+	c.Set(key, val)
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), key, val))
+}
+
 func itoa(id uint) string {
 	return strconv.FormatUint(uint64(id), 10)
 }

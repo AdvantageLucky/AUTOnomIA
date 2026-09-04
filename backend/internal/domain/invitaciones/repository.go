@@ -121,6 +121,20 @@ func (r *Repository) RevocarByIDAndPersonaInvitada(id, personaID uint) error {
 	return nil
 }
 
+// RevocarEnrolamientosPorPersonaYTenant revoca (soft-delete) todas las
+// invitaciones con reconocimiento facial que dieron acceso frecuente a esta
+// Persona en este tenant -- la usa RevocarInvitadoFrecuente: quitarle el
+// acceso frecuente a alguien no debe dejar su QR/link original todavía
+// vigente, o volvería a entrar (o a re-enrolarse) usándolo de nuevo. Es el
+// espejo de RevocarByIDAndPersonaInvitada: aquí se revoca por el lado del
+// residente que enroló, no por el invitado que se autoexcluye.
+func (r *Repository) RevocarEnrolamientosPorPersonaYTenant(tenantID, personaID uint) (int64, error) {
+	result := r.db.
+		Where("tenant_id = ? AND persona_invitada_id = ? AND permite_reconocimiento_facial = ?", tenantID, personaID, true).
+		Delete(&Invitacion{})
+	return result.RowsAffected, result.Error
+}
+
 // FindByPersonaInvitada lista las invitaciones activas (no revocadas, no
 // expiradas, no agotadas) dirigidas a una Persona — usado por kigo-app para
 // mostrar "invitaciones recibidas" sin importar el tenant.
