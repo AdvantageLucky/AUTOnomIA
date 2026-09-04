@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
+import '../models/identidad_resumen_model.dart';
 import '../models/visita_historial_model.dart';
 import '../theme/app_theme.dart';
+import '../utils/fechas.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/identidades_confianza_viewmodel.dart';
 import '../viewmodels/pending_visits_viewmodel.dart';
 import '../viewmodels/visit_history_viewmodel.dart';
 import '../widgets/solicitud_acceso_card.dart';
@@ -30,7 +33,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
@@ -65,11 +68,43 @@ class _SolicitudesViewState extends State<SolicitudesView>
     }
   }
 
+  Future<void> _resetearConfianza(int tenantId, IdentidadResumenModel identidad) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.t(ctx, 'resetear_confianza_titulo')),
+        content: Text(AppLocalizations.t(ctx, 'resetear_confianza_contenido')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(ctx, 'cancel'))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(AppLocalizations.t(ctx, 'resetear_confianza_btn')),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+
+    try {
+      await context.read<IdentidadesConfianzaViewModel>().resetear(tenantId, identidad);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.t(context, 'confianza_reseteada_ok'))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.t(context, 'no_pudo_resetear_confianza'))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
     final pendingVM = context.watch<PendingVisitsViewModel>();
     final historyVM = context.watch<VisitHistoryViewModel>();
+    final confianzaVM = context.watch<IdentidadesConfianzaViewModel>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final tenantId = auth.centroActivo?.tenantId;
@@ -79,6 +114,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         pendingVM.cargar(tenantId);
         historyVM.cargar(tenantId);
+        confianzaVM.cargar(tenantId);
       });
     }
 
@@ -99,6 +135,12 @@ class _SolicitudesViewState extends State<SolicitudesView>
           ),
           child: TabBar(
             controller: _tabController,
+            // Antes de agregar la 3a pestaña ("Confianza") esto no era
+            // desplazable y las tres etiquetas (con el badge de Pendientes)
+            // ya no caben en un teléfono angosto -- isScrollable evita el
+            // overflow sin tener que acortar los nombres de las pestañas.
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             indicator: BoxDecoration(
               color: AppTheme.primaryOrange,
               borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -107,6 +149,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
             labelColor: Colors.white,
             unselectedLabelColor: isDark ? AppTheme.textGrey : AppTheme.textDimmed,
             labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 16),
             dividerColor: Colors.transparent,
             tabs: [
               Tab(
@@ -136,6 +179,7 @@ class _SolicitudesViewState extends State<SolicitudesView>
                 ),
               ),
               Tab(text: AppLocalizations.t(context, 'tab_historial')),
+              Tab(text: AppLocalizations.t(context, 'tab_confianza')),
             ],
           ),
         ),
@@ -159,6 +203,14 @@ class _SolicitudesViewState extends State<SolicitudesView>
                   await historyVM.cargar(tenantId);
                 },
                 child: _buildHistorialList(context, tenantId, historyVM, isDark),
+              ),
+
+              // 3. CONFIANZA
+              RefreshIndicator(
+                onRefresh: () async {
+                  await confianzaVM.cargar(tenantId);
+                },
+                child: _buildConfianzaList(context, tenantId, confianzaVM, isDark),
               ),
             ],
           ),
@@ -361,6 +413,148 @@ class _SolicitudesViewState extends State<SolicitudesView>
       itemBuilder: (context, i) {
         final v = vm.visitas[i];
         return _HistorialCard(visita: v, isDark: isDark);
+      },
+    );
+  }
+
+  static const Map<String, String> _tipoVisitanteKeys = {
+    'RESIDENTE': 'identidad_tipo_residente',
+    'INVITADO': 'identidad_tipo_invitado',
+    'VISITANTE': 'identidad_tipo_visitante',
+  };
+
+  Widget _buildConfianzaList(
+    BuildContext context,
+    int tenantId,
+    IdentidadesConfianzaViewModel vm,
+    bool isDark,
+  ) {
+    if (vm.isLoading && vm.identidades.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (vm.soloResidentes) {
+      return _buildSoloResidentesState(context);
+    }
+    if (vm.error != null && vm.identidades.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded, size: 48, color: AppTheme.textGrey),
+              const SizedBox(height: 12),
+              Text(vm.error!, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.textDimmed)),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => vm.cargar(tenantId),
+                icon: const Icon(Icons.refresh),
+                label: Text(AppLocalizations.t(context, 'retry')),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (vm.identidades.isEmpty) {
+      return ListView(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 80, left: 24, right: 24),
+            child: Column(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: (isDark ? AppTheme.surface2Dark : AppTheme.surface2Light),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.groups_outlined, size: 38, color: AppTheme.textGrey),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.t(context, 'identidades_sin_datos'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  AppLocalizations.t(context, 'identidades_sin_datos_sub'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppTheme.textDimmed, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      itemCount: vm.identidades.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final id = vm.identidades[i];
+        final tipoKey = _tipoVisitanteKeys[id.tipoVisitante];
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
+            borderRadius: BorderRadius.circular(AppTheme.radius),
+            border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            id.nombre.isNotEmpty ? id.nombre : AppLocalizations.t(context, 'identidad_sin_nombre'),
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (tipoKey != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryOrange.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              AppLocalizations.t(context, tipoKey),
+                              style: const TextStyle(color: AppTheme.primaryOrange, fontSize: 10.5, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${id.totalVisitas} ${id.totalVisitas == 1 ? AppLocalizations.t(context, 'identidad_visita_singular') : AppLocalizations.t(context, 'identidad_visitas_plural')}'
+                      ' · ${fechaCortaLocal(id.ultimaVisita)}',
+                      style: const TextStyle(color: AppTheme.textDimmed, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => _resetearConfianza(tenantId, id),
+                child: Text(
+                  AppLocalizations.t(context, 'resetear_confianza_btn'),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }

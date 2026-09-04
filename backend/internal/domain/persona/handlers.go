@@ -782,6 +782,73 @@ func (h *Handler) ResetHistorialContacto(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
 }
 
+// ResetHistorialContactoPorCURP es el equivalente a ResetHistorialContacto
+// para un visitante sin cuenta -- su historial se agrupa por CURP, no por
+// PersonaID (ver visitas.HistorialDeVisitante).
+func (h *Handler) ResetHistorialContactoPorCURP(c *gin.Context) {
+	miPersonaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	curp := strings.TrimSpace(c.Param("curp"))
+	if curp == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "CURP inválido"})
+		return
+	}
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	miMembresia, err := h.membresiaRepo.FindByPersonaAndTenant(miPersonaID, tenantID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no perteneces a este centro habitacional"})
+		return
+	}
+	if miMembresia.Status != residente.ResidenteStatusActivo || miMembresia.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
+		return
+	}
+
+	if err := h.visitaRepo.CrearResetPorCURP(tenantID, curp, miMembresia.CasaDestino, &miPersonaID, nil); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
+}
+
+// ListarIdentidadesMiCasa es el equivalente a visitas.Handler.ListarIdentidades
+// para un residente -- solo la gente que ha visitado SU casa, para poder
+// resetearles la confianza sin tener que llegar ahí desde una visita en
+// particular en "Solicitudes".
+func (h *Handler) ListarIdentidadesMiCasa(c *gin.Context) {
+	miPersonaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	miMembresia, err := h.membresiaRepo.FindByPersonaAndTenant(miPersonaID, tenantID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no perteneces a este centro habitacional"})
+		return
+	}
+	if miMembresia.Status != residente.ResidenteStatusActivo || miMembresia.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
+		return
+	}
+
+	list, err := h.visitaRepo.ListarIdentidadesConScorePorCasa(tenantID, miMembresia.CasaDestino)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"identidades": list, "total": len(list)})
+}
+
 // CrearInvitadoFrecuente le da a alguien acceso recurrente por
 // reconocimiento facial a la propia casa de la Persona autenticada --
 // crea una Membresia con Rol=RolInvitadoFrecuente, activa de inmediato

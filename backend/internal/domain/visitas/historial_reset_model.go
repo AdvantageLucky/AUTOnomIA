@@ -20,8 +20,12 @@ import (
 // del centro habitacional.
 type HistorialReset struct {
 	gorm.Model
-	TenantID          uint      `gorm:"column:tenant_id;not null;index"`
-	PersonaID         uint      `gorm:"column:persona_id;not null;index"`
+	TenantID    uint   `gorm:"column:tenant_id;not null;index"`
+	PersonaID   uint   `gorm:"column:persona_id;not null;index"`
+	// Curp ancla el reset a un visitante identificado solo por su INE (sin
+	// cuenta, sin invitación) -- mutuamente excluyente con PersonaID: un
+	// reset trae uno de los dos, nunca ambos, nunca ninguno.
+	Curp              string    `gorm:"column:curp;not null;default:''"`
 	CasaDestino       string    `gorm:"column:casa_destino;not null;default:''"`
 	ResetAt           time.Time `gorm:"column:reset_at;not null"`
 	ResetPorPersonaID *uint     `gorm:"column:reset_por_persona_id"`
@@ -30,15 +34,61 @@ type HistorialReset struct {
 
 func (HistorialReset) TableName() string { return "historial_resets" }
 
-// CrearReset registra un nuevo reset -- no borra ni modifica ninguna
-// Visita existente, solo agrega un punto de corte que el análisis futuro
-// respeta (ver aplicarResetHistorial). Exactamente uno de
-// resetPorPersonaID/resetPorAdminID debe venir no-nil, según quién lo pide.
+// CrearReset registra un nuevo reset anclado a una Persona real -- no borra
+// ni modifica ninguna Visita existente, solo agrega un punto de corte que
+// el análisis futuro respeta (ver aplicarResetHistorial). Exactamente uno
+// de resetPorPersonaID/resetPorAdminID debe venir no-nil, según quién lo pide.
 func (r *Repository) CrearReset(tenantID, personaID uint, casaDestino string, resetPorPersonaID, resetPorAdminID *uint) error {
 	return r.db.Create(&HistorialReset{
 		TenantID: tenantID, PersonaID: personaID, CasaDestino: strings.TrimSpace(casaDestino),
 		ResetAt: time.Now(), ResetPorPersonaID: resetPorPersonaID, ResetPorAdminID: resetPorAdminID,
 	}).Error
+}
+
+// CrearResetPorCURP es el equivalente a CrearReset para un visitante sin
+// Persona -- su historial se agrupa por CURP (ver HistorialPorCURP), así
+// que el reset también tiene que anclarse ahí en vez de a un PersonaID que
+// no existe.
+func (r *Repository) CrearResetPorCURP(tenantID uint, curp, casaDestino string, resetPorPersonaID, resetPorAdminID *uint) error {
+	return r.db.Create(&HistorialReset{
+		TenantID: tenantID, Curp: strings.TrimSpace(curp), CasaDestino: strings.TrimSpace(casaDestino),
+		ResetAt: time.Now(), ResetPorPersonaID: resetPorPersonaID, ResetPorAdminID: resetPorAdminID,
+	}).Error
+}
+
+// cortesDeResets calcula, de una lista de resets ya aplicables a una misma
+// identidad, el punto de corte global (admin, cualquier casa) y el punto de
+// corte de una casa en particular (residente, "solo lo mío") -- compartido
+// entre aplicarResetHistorial y aplicarResetHistorialPorCURP para no
+// duplicar la lógica de qué corte gana cuando hay varios resets.
+func cortesDeResets(resets []HistorialReset, casaDestino string) (corteGlobal, corteCasa time.Time) {
+	for _, reset := range resets {
+		if reset.CasaDestino == "" {
+			if reset.ResetAt.After(corteGlobal) {
+				corteGlobal = reset.ResetAt
+			}
+		} else if strings.EqualFold(reset.CasaDestino, casaDestino) && reset.ResetAt.After(corteCasa) {
+			corteCasa = reset.ResetAt
+		}
+	}
+	return corteGlobal, corteCasa
+}
+
+func aplicarCortes(historial []Visita, corteGlobal, corteCasa time.Time, casaDestino string) []Visita {
+	if corteGlobal.IsZero() && corteCasa.IsZero() {
+		return historial
+	}
+	filtrado := historial[:0]
+	for _, vh := range historial {
+		if !corteGlobal.IsZero() && !vh.CreatedAt.After(corteGlobal) {
+			continue
+		}
+		if !corteCasa.IsZero() && strings.EqualFold(vh.CasaDestino, casaDestino) && !vh.CreatedAt.After(corteCasa) {
+			continue
+		}
+		filtrado = append(filtrado, vh)
+	}
+	return filtrado
 }
 
 // aplicarResetHistorial descarta del historial las visitas que un reset
@@ -54,33 +104,21 @@ func (r *Repository) aplicarResetHistorial(tenantID, personaID uint, casaDestino
 		Find(&resets).Error; err != nil {
 		return nil, err
 	}
-	if len(resets) == 0 {
+	corteGlobal, corteCasa := cortesDeResets(resets, casaDestino)
+	return aplicarCortes(historial, corteGlobal, corteCasa, casaDestino), nil
+}
+
+// aplicarResetHistorialPorCURP es el equivalente a aplicarResetHistorial
+// para un visitante sin Persona -- ver CrearResetPorCURP.
+func (r *Repository) aplicarResetHistorialPorCURP(tenantID uint, curp, casaDestino string, historial []Visita) ([]Visita, error) {
+	if curp == "" {
 		return historial, nil
 	}
-
-	var corteGlobal, corteCasa time.Time
-	for _, reset := range resets {
-		if reset.CasaDestino == "" {
-			if reset.ResetAt.After(corteGlobal) {
-				corteGlobal = reset.ResetAt
-			}
-		} else if strings.EqualFold(reset.CasaDestino, casaDestino) && reset.ResetAt.After(corteCasa) {
-			corteCasa = reset.ResetAt
-		}
+	var resets []HistorialReset
+	if err := r.db.Where("tenant_id = ? AND curp = ?", tenantID, curp).
+		Find(&resets).Error; err != nil {
+		return nil, err
 	}
-	if corteGlobal.IsZero() && corteCasa.IsZero() {
-		return historial, nil
-	}
-
-	filtrado := historial[:0]
-	for _, vh := range historial {
-		if !corteGlobal.IsZero() && !vh.CreatedAt.After(corteGlobal) {
-			continue
-		}
-		if !corteCasa.IsZero() && strings.EqualFold(vh.CasaDestino, casaDestino) && !vh.CreatedAt.After(corteCasa) {
-			continue
-		}
-		filtrado = append(filtrado, vh)
-	}
-	return filtrado, nil
+	corteGlobal, corteCasa := cortesDeResets(resets, casaDestino)
+	return aplicarCortes(historial, corteGlobal, corteCasa, casaDestino), nil
 }

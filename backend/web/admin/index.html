@@ -692,7 +692,7 @@
 					</div>
 				</section>
 
-				<!-- SEGURIDAD (intentos fallidos de PIN/QR con foto) -->
+				<!-- SEGURIDAD (intentos fallidos de PIN/QR con foto + identidades y confianza) -->
 				<section id="screen-seguridad" class="screen" hidden>
 					<div class="screen-header">
 						<div>
@@ -703,26 +703,54 @@
 
 					<div class="tab-bar">
 						<div class="tab-bar-inner">
-							<button class="tab-btn active" data-seguridad-filtro="" data-i18n="seguridad_filtro_todos">Todos</button>
-							<button class="tab-btn" data-seguridad-filtro="pin_incorrecto" data-i18n="seguridad_filtro_pin">PIN incorrecto</button>
-							<button class="tab-btn" data-seguridad-filtro="qr_invalido" data-i18n="seguridad_filtro_qr">QR inválido</button>
+							<button class="tab-btn active" data-tab="seg-intentos" data-i18n="tab_intentos_fallidos">Intentos fallidos</button>
+							<button class="tab-btn" data-tab="seg-identidades" data-i18n="tab_identidades_confianza">Identidades y confianza</button>
 						</div>
 					</div>
 
-					<div class="screen-body">
-						<div id="seguridad-loading" class="loading-state" hidden>
-							<div class="spinner"></div>
-							<div class="loading-text" data-i18n="seguridad_cargando">Cargando eventos…</div>
+					<div id="seg-intentos">
+						<div class="tab-bar">
+							<div class="tab-bar-inner">
+								<button class="tab-btn active" data-seguridad-filtro="" data-i18n="seguridad_filtro_todos">Todos</button>
+								<button class="tab-btn" data-seguridad-filtro="pin_incorrecto" data-i18n="seguridad_filtro_pin">PIN incorrecto</button>
+								<button class="tab-btn" data-seguridad-filtro="qr_invalido" data-i18n="seguridad_filtro_qr">QR inválido</button>
+							</div>
 						</div>
-						<div id="seguridad-empty" class="empty-state" hidden>
-							<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"/></svg></div>
-							<div class="empty-title" data-i18n="seguridad_sin_eventos">Sin eventos de seguridad</div>
-							<div class="empty-text" data-i18n="seguridad_sin_eventos_sub">Los intentos fallidos de PIN o QR en los kioskos aparecerán aquí, con foto.</div>
+
+						<div class="screen-body">
+							<div id="seguridad-loading" class="loading-state" hidden>
+								<div class="spinner"></div>
+								<div class="loading-text" data-i18n="seguridad_cargando">Cargando eventos…</div>
+							</div>
+							<div id="seguridad-empty" class="empty-state" hidden>
+								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"/></svg></div>
+								<div class="empty-title" data-i18n="seguridad_sin_eventos">Sin eventos de seguridad</div>
+								<div class="empty-text" data-i18n="seguridad_sin_eventos_sub">Los intentos fallidos de PIN o QR en los kioskos aparecerán aquí, con foto.</div>
+							</div>
+							<div id="seguridad-error" class="empty-state" hidden>
+								<div class="empty-title" data-i18n="load_err_title">Error al cargar</div>
+							</div>
+							<div id="seguridad-rows"></div>
 						</div>
-						<div id="seguridad-error" class="empty-state" hidden>
-							<div class="empty-title" data-i18n="load_err_title">Error al cargar</div>
+					</div>
+
+					<div id="seg-identidades" hidden>
+						<div class="screen-body">
+							<div class="screen-sub" style="margin-bottom:14px" data-i18n="identidades_sub">Todas las identidades con historial en tu centro habitacional -- residentes, visitantes con INE, e invitados por QR. Resetear su confianza descarta su historial anterior sin borrar la evidencia.</div>
+							<div id="identidades-loading" class="loading-state" hidden>
+								<div class="spinner"></div>
+								<div class="loading-text" data-i18n="identidades_cargando">Cargando identidades…</div>
+							</div>
+							<div id="identidades-empty" class="empty-state" hidden>
+								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></div>
+								<div class="empty-title" data-i18n="identidades_sin_datos">Sin identidades todavía</div>
+								<div class="empty-text" data-i18n="identidades_sin_datos_sub">Cuando alguien registre una visita, aparecerá aquí.</div>
+							</div>
+							<div id="identidades-error" class="empty-state" hidden>
+								<div class="empty-title" data-i18n="load_err_title">Error al cargar</div>
+							</div>
+							<div id="identidades-rows"></div>
 						</div>
-						<div id="seguridad-rows"></div>
 					</div>
 				</section>
 
@@ -1497,6 +1525,7 @@
 		     app.js con la visita completa, porque el listado no trae las fotos. -->
 		<div id="modal-solicitud" class="modal-overlay" hidden></div>
 		<div id="modal-ayuda" class="modal-overlay" hidden></div>
+		<div id="modal-identidad" class="modal-overlay" hidden></div>
 
 		<!-- Visor de fotos a tamano real, compartido por el detalle de entrada y
 		     el de solicitud. -->

@@ -302,6 +302,18 @@
       seguridad_mismo_rostro: n => `Mismo rostro · ${n + 1}ª vez`,
       seguridad_mismo_rostro_tooltip: "Este rostro ya generó otro(s) evento(s) de seguridad en este fraccionamiento",
       seguridad_evento_sse: "Intento de acceso fallido en un kiosko",
+      tab_intentos_fallidos: "Intentos fallidos",
+      tab_identidades_confianza: "Identidades y confianza",
+      identidades_sub: "Todas las identidades con historial en tu centro habitacional -- residentes, visitantes con INE, e invitados por QR. Resetear su confianza descarta su historial anterior sin borrar la evidencia.",
+      identidades_cargando: "Cargando identidades…",
+      identidades_sin_datos: "Sin identidades todavía",
+      identidades_sin_datos_sub: "Cuando alguien registre una visita, aparecerá aquí.",
+      identidad_tipo_residente: "Residente",
+      identidad_tipo_invitado: "Invitado por QR",
+      identidad_tipo_visitante: "Visitante",
+      identidad_sin_nombre: "Sin nombre",
+      identidad_visitas_label: n => `${n} visita${n !== 1 ? "s" : ""}`,
+      resetear_confianza_identidad_texto: nombre => `Se olvida todo el historial anterior de ${nombre} para el cálculo de confianza -- su próxima visita se evalúa desde cero. Esto no borra el historial, solo deja de contar para el análisis.`,
       // __NEW_I18N_ES_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Activo",
@@ -815,6 +827,18 @@
       resetear_confianza_texto: "Forgets their entire prior history for the trust calculation -- their next visit is evaluated from scratch, as if it were the first time. This does not delete the history, it just stops counting for the analysis.",
       no_pudo_resetear_confianza: "Could not reset trust. Try again.",
       confianza_reseteada_ok: "Trust reset",
+      tab_intentos_fallidos: "Failed attempts",
+      tab_identidades_confianza: "Identities and trust",
+      identidades_sub: "Every identity with history in your community -- residents, visitors with ID, and QR-invited guests. Resetting their trust discards their prior history without deleting the evidence.",
+      identidades_cargando: "Loading identities…",
+      identidades_sin_datos: "No identities yet",
+      identidades_sin_datos_sub: "Once someone registers a visit, they'll show up here.",
+      identidad_tipo_residente: "Resident",
+      identidad_tipo_invitado: "QR-invited guest",
+      identidad_tipo_visitante: "Visitor",
+      identidad_sin_nombre: "No name",
+      identidad_visitas_label: n => `${n} visit${n !== 1 ? "s" : ""}`,
+      resetear_confianza_identidad_texto: nombre => `Forgets ${nombre}'s entire prior history for the trust calculation -- their next visit is evaluated from scratch. This does not delete the history, it just stops counting for the analysis.`,
       // __NEW_I18N_EN_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Active",
@@ -3166,12 +3190,170 @@
     </div>`;
   }
 
-  document.querySelectorAll('#screen-seguridad .tab-btn').forEach(btn => {
+  // Acotado a [data-seguridad-filtro] (no ".tab-btn" a secas): "Seguridad"
+  // ahora tiene dos niveles de pestañas anidados (Intentos fallidos /
+  // Identidades y confianza arriba, Todos/PIN/QR adentro de la primera) --
+  // con el selector genérico, un click en el nivel de arriba también
+  // disparaba este handler del filtro interno.
+  document.querySelectorAll('#screen-seguridad [data-seguridad-filtro]').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#screen-seguridad .tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('#screen-seguridad [data-seguridad-filtro]').forEach(b => b.classList.toggle('active', b === btn));
       state.seguridadFiltro = btn.dataset.seguridadFiltro;
       loadSeguridad();
     });
+  });
+
+  /* ─── Seguridad: pestaña "Identidades y confianza" ──────────────────── */
+  // Acotado a "> .tab-bar" (hijo directo de #screen-seguridad): el mismo
+  // motivo que el fix de arriba -- este selector no debe tocar el tab-bar
+  // anidado de Todos/PIN/QR, que vive un nivel más adentro.
+  document.querySelectorAll('#screen-seguridad > .tab-bar [data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('#screen-seguridad > .tab-bar [data-tab]').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('seg-intentos').hidden = tab !== 'seg-intentos';
+      document.getElementById('seg-identidades').hidden = tab !== 'seg-identidades';
+      if (tab === 'seg-identidades') loadIdentidades();
+    });
+  });
+
+  const IDENTIDAD_TIPO_LABEL = {
+    RESIDENTE: () => t("identidad_tipo_residente"),
+    INVITADO:  () => t("identidad_tipo_invitado"),
+    VISITANTE: () => t("identidad_tipo_visitante"),
+  };
+
+  function showIdentidadesState(s) {
+    ["loading", "empty", "error", "rows"].forEach(x => {
+      const el = document.getElementById(`identidades-${x}`);
+      if (el) el.hidden = x !== s;
+    });
+  }
+
+  let identidadesCache = new Map();
+
+  async function loadIdentidades() {
+    showIdentidadesState("loading");
+    const res = await api("/visitas/identidades");
+    if (!res || !res.ok) { showIdentidadesState("error"); return; }
+
+    let identidades = [];
+    try {
+      const d = await res.json();
+      identidades = d.identidades || [];
+    } catch (e) { console.error(e); showIdentidadesState("error"); return; }
+
+    if (identidades.length === 0) { showIdentidadesState("empty"); return; }
+
+    identidadesCache = new Map(identidades.map(id => [id.persona_id ? `p${id.persona_id}` : `c${id.curp}`, id]));
+
+    const container = document.getElementById("identidades-rows");
+    container.innerHTML = identidades.map((id, i) => renderIdentidadRow(id, i)).join("");
+    container.querySelectorAll("[data-identidad-detalle]").forEach(card => {
+      card.addEventListener("click", () => abrirIdentidadDetalle(card.dataset.identidadDetalle));
+    });
+    container.querySelectorAll("[data-identidad-resetear]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        resetearIdentidad(btn.dataset.identidadResetear);
+      });
+    });
+    showIdentidadesState("rows");
+  }
+
+  function renderIdentidadRow(id, i) {
+    const key = id.persona_id ? `p${id.persona_id}` : `c${id.curp}`;
+    const tipoLabel = (IDENTIDAD_TIPO_LABEL[id.tipo_visitante] || (() => id.tipo_visitante))();
+    return `<div class="sol-card" style="animation-delay:${i * 40}ms" data-identidad-detalle="${esc(key)}" role="button" tabindex="0">
+      <div class="sol-card-left">
+        <div class="feed-dot"></div>
+        <div>
+          <div class="row-name">${esc(id.nombre || t("identidad_sin_nombre"))} <span class="badge badge--aprobado">${esc(tipoLabel)}</span></div>
+          <div class="row-sub">${t("identidad_visitas_label")(id.total_visitas)} · ${esc(id.tipo_documento || "—")} · ${fmtDate(id.ultima_visita)}</div>
+        </div>
+      </div>
+      <div class="sol-card-actions">
+        <button class="btn-cancel" data-identidad-resetear="${esc(key)}">${t("resetear_confianza_btn")}</button>
+      </div>
+    </div>`;
+  }
+
+  async function resetearIdentidad(key) {
+    const id = identidadesCache.get(key);
+    if (!id) return;
+    const ok = await confirmarAccion({
+      titulo: t("resetear_confianza_titulo"),
+      texto: t("resetear_confianza_identidad_texto")(id.nombre || t("identidad_sin_nombre")),
+      textoBoton: t("resetear_confianza_btn"),
+    });
+    if (!ok) return;
+
+    const url = id.persona_id
+      ? `/visitas/personas/${id.persona_id}/resetear-historial`
+      : `/visitas/curp/${encodeURIComponent(id.curp)}/resetear-historial`;
+    const res = await api(url, { method: "POST" });
+    if (!res || !res.ok) { mostrarToast(t("no_pudo_resetear_confianza"), "err"); return; }
+    mostrarToast(t("confianza_reseteada_ok"), "ok");
+    loadIdentidades();
+  }
+
+  async function abrirIdentidadDetalle(key) {
+    const id = identidadesCache.get(key);
+    const modal = document.getElementById("modal-identidad");
+    if (!modal || !id) return;
+
+    const tipoLabel = (IDENTIDAD_TIPO_LABEL[id.tipo_visitante] || (() => id.tipo_visitante))();
+    modal.innerHTML = `<div class="modal-box">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px">
+        <div>
+          <div class="badge badge--aprobado" style="margin-bottom:8px;display:inline-block">${esc(tipoLabel)}</div>
+          <div class="modal-title">${esc(id.nombre || t("identidad_sin_nombre"))}</div>
+          <div class="modal-sub">${t("identidad_visitas_label")(id.total_visitas)}</div>
+        </div>
+        <button type="button" class="btn-cancel" data-cerrar-identidad style="padding:4px 10px;font-size:16px;border-radius:6px;cursor:pointer">&#10005;</button>
+      </div>
+      <div class="expediente-timeline" id="identidad-timeline" style="margin-top:14px">
+        <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
+      </div>
+    </div>`;
+    modal.hidden = false;
+    modal.querySelectorAll("[data-cerrar-identidad]").forEach(btn => {
+      btn.addEventListener("click", () => { modal.hidden = true; });
+    });
+
+    const url = id.persona_id
+      ? `/visitas/personas/${id.persona_id}/historial`
+      : `/visitas/curp/${encodeURIComponent(id.curp)}/historial`;
+    const res = await api(url);
+    const timeline = document.getElementById("identidad-timeline");
+    if (!timeline) return;
+    if (!res || !res.ok) { timeline.innerHTML = renderExpEmpty(t("historial_no_disponible")); return; }
+    const data = await res.json();
+    const visitas = (data.visitas || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    if (visitas.length === 0) {
+      timeline.innerHTML = renderExpEmpty(t("primera_visita_registrada"));
+      return;
+    }
+    timeline.innerHTML = visitas.map((v, i) => {
+      const acceso = state.accesosById.get(v.kiosko_id);
+      const accNombre = acceso ? esc(acceso.nombre) : `Kiosko #${v.kiosko_id}`;
+      const meta = [accNombre, v.casa_destino ? esc(v.casa_destino) : null].filter(Boolean).join(" · ");
+      return `<div class="exp-row" style="animation-delay:${i * 25}ms">
+        <div class="exp-marker"><div class="exp-dot"></div></div>
+        <div class="exp-info">
+          <div class="exp-nombre">${esc(v.titular)}</div>
+          <div class="exp-meta">${meta}</div>
+        </div>
+        <div class="exp-right">
+          <span class="badge ${ESTADO_BADGE[v.estado] || ""}">${estadoLabel(v.estado)}</span>
+          <span class="exp-date">${fmtDate(v.created_at)}</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  document.getElementById("modal-identidad")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-identidad") e.target.hidden = true;
   });
 
   async function loadSolicitudes() {

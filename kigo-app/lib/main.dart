@@ -8,6 +8,7 @@ import 'services/deep_link_servicio.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/companeros_casa_viewmodel.dart';
+import 'viewmodels/identidades_confianza_viewmodel.dart';
 import 'viewmodels/invitation_viewmodel.dart';
 import 'viewmodels/pending_visits_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
@@ -34,6 +35,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PendingVisitsViewModel()),
         ChangeNotifierProvider(create: (_) => VisitHistoryViewModel()),
         ChangeNotifierProvider(create: (_) => CompanerosCasaViewModel()),
+        ChangeNotifierProvider(create: (_) => IdentidadesConfianzaViewModel()),
       ],
       child: const MyApp(),
     ),

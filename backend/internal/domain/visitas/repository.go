@@ -556,12 +556,21 @@ func (r *Repository) HistorialDeVisitante(v Visita, umbralFacialPct int, fuentes
 		for _, vh := range porIdentidad {
 			historial = append(historial, vh)
 		}
-		// Un reset (residente o admin, ver HistorialReset) solo tiene efecto
-		// cuando la identidad correlacionada es una Persona real -- un
-		// visitante sin cuenta no tiene PersonaID contra qué buscar un reset.
+		// Un reset (residente o admin, ver HistorialReset) se busca por
+		// PersonaID cuando la identidad correlacionada es una Persona real,
+		// y también por CURP cuando el visitante no tiene cuenta -- antes
+		// esta segunda vía no existía y un visitante identificado solo por
+		// su INE no tenía forma de "olvidarse".
 		if v.PersonaID != nil {
 			var err error
 			historial, err = r.aplicarResetHistorial(v.TenantID, *v.PersonaID, v.CasaDestino, historial)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if v.Curp != "" {
+			var err error
+			historial, err = r.aplicarResetHistorialPorCURP(v.TenantID, v.Curp, v.CasaDestino, historial)
 			if err != nil {
 				return nil, err
 			}
