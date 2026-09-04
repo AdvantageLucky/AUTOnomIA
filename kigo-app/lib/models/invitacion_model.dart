@@ -21,6 +21,11 @@ class InvitacionModel {
   /// teléfono del invitado (ver invitar_tab_view._replicarInvitacion).
   final String? telefono;
 
+  /// Distingue el pase con el que se le dio acceso frecuente por rostro a
+  /// alguien (sigue viéndose aquí aunque también aparezca en la sección
+  /// compacta de "Invitados frecuentes") de una invitación normal.
+  final bool permiteReconocimientoFacial;
+
   InvitacionModel({
     required this.id,
     required this.tipo,
@@ -34,6 +39,7 @@ class InvitacionModel {
     this.motivo = '',
     this.token,
     this.telefono,
+    this.permiteReconocimientoFacial = false,
   });
 
   bool get vigente =>
@@ -55,6 +61,7 @@ class InvitacionModel {
       motivo: json['motivo'] as String? ?? '',
       token: json['token'] as String?,
       telefono: json['telefono'] as String?,
+      permiteReconocimientoFacial: json['permite_reconocimiento_facial'] as bool? ?? false,
     );
   }
 }
