@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../models/invitacion_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/fechas.dart';
 
 /// Detalle de una invitación que ME hicieron ("Recibidas") -- antes la fila
 /// no era tocable y no había ninguna pantalla que explicara "cómo entro con
@@ -78,7 +79,7 @@ class _InvitacionRecibidaDetalleViewState extends State<InvitacionRecibidaDetall
             if (inv.expiresAt != null) ...[
               const SizedBox(height: 4),
               Text(
-                '${AppLocalizations.t(context, 'vence_prefix')} ${inv.expiresAt!.day}/${inv.expiresAt!.month}/${inv.expiresAt!.year}',
+                '${AppLocalizations.t(context, 'vence_prefix')} ${fechaCortaLocal(inv.expiresAt!)}',
                 style: TextStyle(color: isDark ? AppTheme.textGrey : AppTheme.textDimmed, fontSize: 13),
               ),
             ],

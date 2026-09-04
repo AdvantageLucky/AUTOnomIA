@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/invitacion_model.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
+import '../utils/fechas.dart';
 
 /// Detalle de una invitación que YO creé ("Mis invitaciones") -- antes la
 /// fila no era tocable y no había forma de volver a ver el QR/link de una
@@ -94,12 +95,12 @@ class InvitacionCreadaDetalleView extends StatelessWidget {
             const SizedBox(height: 24),
             _buildCampo(context, AppLocalizations.t(context, 'destino_label'), '#${inv.destinoId}', isDark),
             _buildCampo(context, AppLocalizations.t(context, 'creada_el_label'),
-                '${inv.createdAt.day}/${inv.createdAt.month}/${inv.createdAt.year}', isDark),
+                fechaCortaLocal(inv.createdAt), isDark),
             if (inv.expiresAt != null)
               _buildCampo(
                 context,
                 AppLocalizations.t(context, 'vence_prefix'),
-                '${inv.expiresAt!.day}/${inv.expiresAt!.month}/${inv.expiresAt!.year}',
+                fechaCortaLocal(inv.expiresAt!),
                 isDark,
               ),
             if (inv.maxUsos != null)
