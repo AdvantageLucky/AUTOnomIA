@@ -59,6 +59,11 @@ type InvitacionResponse struct {
 	ExpiresAt  *time.Time     `json:"expires_at"`
 	RevokedAt  *time.Time     `json:"revoked_at,omitempty"`
 	CreatedAt  time.Time      `json:"created_at"`
+	// Telefono no vive en Invitacion (solo el enlace a la Persona invitada,
+	// ver PersonaInvitadaID) -- lo rellena quien llama a ToInvitacionResponse
+	// cuando le hace falta (ver ListarInvitaciones), no toInvitacionResponse
+	// mismo, para no acoplar esta conversion a una consulta de Persona.
+	Telefono string `json:"telefono,omitempty"`
 }
 
 // ValidarInvitacionResponse DTO de respuesta que el kiosko recibe al validar un token

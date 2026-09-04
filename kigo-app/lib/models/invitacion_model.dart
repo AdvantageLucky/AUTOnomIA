@@ -9,10 +9,17 @@ class InvitacionModel {
   final DateTime? expiresAt;
   final DateTime? revokedAt;
   final DateTime createdAt;
+  final String motivo;
 
   /// Solo viaja en la creación y en el listado propio del creador — nunca
   /// en lo que ve el kiosko ni ningún tercero.
   final String? token;
+
+  /// Tampoco viaja en lo que ve el kiosko/tercero -- lo resuelve el
+  /// backend (ListarInvitaciones) solo para el listado del propio creador,
+  /// para poder "replicar" esta invitación sin volver a teclear el
+  /// teléfono del invitado (ver invitar_tab_view._replicarInvitacion).
+  final String? telefono;
 
   InvitacionModel({
     required this.id,
@@ -24,7 +31,9 @@ class InvitacionModel {
     this.expiresAt,
     this.revokedAt,
     required this.createdAt,
+    this.motivo = '',
     this.token,
+    this.telefono,
   });
 
   bool get vigente =>
@@ -43,7 +52,9 @@ class InvitacionModel {
       expiresAt: json['expires_at'] != null ? DateTime.parse(json['expires_at'] as String) : null,
       revokedAt: json['revoked_at'] != null ? DateTime.parse(json['revoked_at'] as String) : null,
       createdAt: DateTime.parse(json['created_at'] as String),
+      motivo: json['motivo'] as String? ?? '',
       token: json['token'] as String?,
+      telefono: json['telefono'] as String?,
     );
   }
 }

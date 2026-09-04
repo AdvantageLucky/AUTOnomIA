@@ -31,6 +31,10 @@ type Invitacion struct {
 	// tiene sentido preguntarle "a qué viene" si quien lo invitó ya lo sabe.
 	// Viaja a la Visita al consumir la invitación (ver UsarInvitacion).
 	Motivo string `gorm:"not null;default:''"`
+	// OcultaParaInvitado: quien recibe la invitación la "elimina" de su
+	// propia lista sin afectar al que la creó, que sigue viéndola en "mis
+	// invitaciones" -- ver Repository.OcultarParaInvitado.
+	OcultaParaInvitado bool `gorm:"column:oculta_para_invitado;not null;default:false"`
 }
 
 func (Invitacion) TableName() string { return "invitaciones" }

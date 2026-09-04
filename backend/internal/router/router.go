@@ -498,6 +498,7 @@ func registerPersonaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config
 		p.GET("/invitaciones", personaHandler.ListarInvitaciones)
 		p.DELETE("/invitaciones/:id", personaHandler.RevocarInvitacion)
 		p.GET("/invitaciones/recibidas", personaHandler.ListarInvitacionesRecibidas)
+		p.DELETE("/invitaciones/recibidas/:id", personaHandler.EliminarInvitacionRecibida)
 		p.GET("/invitaciones/contactos", personaHandler.ListarContactosFrecuentes)
 		p.POST("/contactos/:personaId/resetear-historial", personaHandler.ResetHistorialContacto)
 		p.POST("/invitados-frecuentes", personaHandler.CrearInvitadoFrecuente)
