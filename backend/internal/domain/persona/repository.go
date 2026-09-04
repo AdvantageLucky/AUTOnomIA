@@ -76,6 +76,28 @@ func (r *Repository) FindByID(id uint) (*Persona, error) {
 	return &p, nil
 }
 
+// FindTelefonosByIDs resuelve el teléfono de varias Personas de una sola
+// consulta -- lo usa ListarInvitaciones para poder "replicar" una invitación
+// pasada sin volver a teclear el teléfono del invitado (Invitacion no lo
+// guarda directo, solo el enlace a la Persona invitada).
+func (r *Repository) FindTelefonosByIDs(ids []uint) (map[uint]string, error) {
+	m := map[uint]string{}
+	if len(ids) == 0 {
+		return m, nil
+	}
+	var filas []struct {
+		ID       uint
+		Telefono string
+	}
+	if err := r.db.Model(&Persona{}).Select("id", "telefono").Where("id IN ?", ids).Scan(&filas).Error; err != nil {
+		return nil, err
+	}
+	for _, f := range filas {
+		m[f.ID] = f.Telefono
+	}
+	return m, nil
+}
+
 func (r *Repository) FindByTelefono(telefono string) (*Persona, error) {
 	var p Persona
 	if err := r.db.Where("telefono = ?", telefono).First(&p).Error; err != nil {

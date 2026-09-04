@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
+import '../models/invitacion_model.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 import '../utils/fechas.dart';
@@ -93,20 +94,43 @@ class _InvitarTabViewState extends State<InvitarTabView>
     );
     final limpio = nuevo?.trim() ?? '';
     if (limpio.isEmpty || !mounted) return;
+    await _seleccionarMotivo(limpio);
+  }
 
+  /// Selecciona un motivo, agregándolo a la lista de motivos propios si no
+  /// estaba ahí -- lo usan tanto el diálogo de "agregar motivo" como
+  /// replicar una invitación pasada con un motivo que ya no aparece entre
+  /// los frecuentes ni los guardados.
+  Future<void> _seleccionarMotivo(String motivo) async {
     // Ni duplicar un motivo frecuente ya existente ni uno personalizado que
     // ya se había agregado antes -- comparación sin distinguir mayúsculas,
     // para que "paquete" y "Paquete" cuenten como el mismo.
     final yaExiste = [..._motivosFrecuentes, ..._motivosCustom]
-        .any((m) => m.toLowerCase() == limpio.toLowerCase());
+        .any((m) => m.toLowerCase() == motivo.toLowerCase());
 
     setState(() {
-      _motivoSeleccionado = limpio;
-      if (!yaExiste) _motivosCustom = [..._motivosCustom, limpio];
+      _motivoSeleccionado = motivo;
+      if (!yaExiste) _motivosCustom = [..._motivosCustom, motivo];
     });
     if (!yaExiste) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_keyMotivosCustom, _motivosCustom);
+    }
+  }
+
+  /// Rellena el formulario con los datos de una invitación anterior --
+  /// nombre, teléfono (si el invitado ya tenía cuenta cuando se resolvió),
+  /// destino y motivo. El vencimiento NO se copia: replicar una invitación
+  /// de hace tiempo con esa misma fecha de vencimiento la crearía ya
+  /// caducada o a punto de estarlo.
+  Future<void> _replicarInvitacion(InvitacionModel inv) async {
+    _nombreCtrl.text = inv.titular;
+    _telefonoCtrl.text = inv.telefono ?? '';
+    setState(() => _destinoIdSeleccionado = inv.destinoId);
+    if (inv.motivo.isNotEmpty) {
+      await _seleccionarMotivo(inv.motivo);
+    } else {
+      setState(() => _motivoSeleccionado = null);
     }
   }
 
@@ -283,8 +307,10 @@ class _InvitarTabViewState extends State<InvitarTabView>
       _destinoIdSeleccionado = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         vm.cargarDestinos(tenantId);
+        // "Invitar de nuevo" ahora se arma desde vm.invitaciones (cada
+        // invitación pasada, con su propio motivo) -- cargarContactos()
+        // quedó sin usar aquí, ver _replicarInvitacion.
         vm.cargarInvitaciones();
-        vm.cargarContactos();
         vm.cargarInvitadosFrecuentes(tenantId);
       });
     }
@@ -425,30 +451,67 @@ class _InvitarTabViewState extends State<InvitarTabView>
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       children: [
-        if (vm.contactos.isNotEmpty) ...[
+        if (vm.invitaciones.isNotEmpty) ...[
           Text(
             AppLocalizations.t(context, 'invitar_de_nuevo'),
             style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: vm.contactos.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, i) {
-                final contacto = vm.contactos[i];
-                return ActionChip(
-                  avatar: const Icon(Icons.person_outline, size: 16),
-                  label: Text(contacto.nombre.isNotEmpty ? contacto.nombre : contacto.telefono),
-                  onPressed: () => setState(() {
-                    _nombreCtrl.text = contacto.nombre;
-                    _telefonoCtrl.text = contacto.telefono;
-                    _destinoIdSeleccionado = contacto.destinoId;
-                  }),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+            ),
+            // Cada invitación pasada por separado (no una por persona
+            // deduplicada) para que el motivo y el destino que se usaron
+            // ESA vez sean los que se replican -- no solo nombre/teléfono.
+            // Limitado a las 6 más recientes: ya viene ordenado por fecha
+            // desde el backend, y esta lista es un atajo, no un historial
+            // completo (ese vive en la pestaña "Mis invitaciones").
+            child: Column(
+              children: vm.invitaciones.take(6).toList().asMap().entries.map((entry) {
+                final i = entry.key;
+                final inv = entry.value;
+                return Column(
+                  children: [
+                    if (i > 0) Divider(height: 1, color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+                    InkWell(
+                      onTap: () => _replicarInvitacion(inv),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.replay_rounded, color: AppTheme.primaryOrange, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    inv.titular,
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    [
+                                      _nombreDestinoSeleccionado(context, vm, inv.destinoId),
+                                      if (inv.motivo.isNotEmpty) inv.motivo,
+                                      fechaCortaLocal(inv.createdAt),
+                                    ].join(' · '),
+                                    style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 );
-              },
+              }).toList(),
             ),
           ),
           const SizedBox(height: 16),
