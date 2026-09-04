@@ -66,8 +66,14 @@ class AppLocalizations {
       'verificar_con_kigo_btn': 'Verificar con Kigo',
       'bienvenida_titulo': 'Tu acceso, sin filas',
       'bienvenida_subtitulo': 'Comparte tu QR, recibe invitados y entra a tu comunidad sin esperar en la caseta.',
-      'ya_vivo_aqui_btn': 'Ya vivo aquí',
-      'soy_nuevo_aqui_btn': 'Soy nuevo aquí',
+      // Antes decía "Ya vivo aquí"/"Soy nuevo aquí" -- presuponía que
+      // kigo-app es solo para residentes de un centro habitacional, pero la
+      // identidad de Persona (teléfono+OTP) es independiente de pertenecer
+      // a uno: unirse a un centro es un paso posterior desde Ajustes, no
+      // parte de este flujo. El texto no debe presuponer para qué va a usar
+      // la app quien la abre por primera vez.
+      'ya_vivo_aqui_btn': 'Iniciar sesión',
+      'soy_nuevo_aqui_btn': 'Crear cuenta',
       'consentimiento_identidad_titulo': 'Antes de continuar',
       'consentimiento_identidad_cuerpo':
           'Vamos a tomar una foto de tu identificación oficial y una foto de tu rostro para verificar quién eres. '
@@ -395,8 +401,8 @@ class AppLocalizations {
       'verificar_con_kigo_btn': 'Verify with Kigo',
       'bienvenida_titulo': 'Your access, no lines',
       'bienvenida_subtitulo': 'Share your QR, receive guests, and get into your community without waiting at the gate.',
-      'ya_vivo_aqui_btn': 'I already live here',
-      'soy_nuevo_aqui_btn': "I'm new here",
+      'ya_vivo_aqui_btn': 'Log in',
+      'soy_nuevo_aqui_btn': 'Create account',
       'consentimiento_identidad_titulo': 'Before you continue',
       'consentimiento_identidad_cuerpo':
           "We're going to take a photo of your official ID and a photo of your face to verify who you are. "

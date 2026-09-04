@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_theme.dart';
-import 'barrera_acceso_animada.dart';
+import 'credencial_acceso_animada.dart';
 
 /// Primera pantalla real que ve cualquiera que entra sin sesión guardada --
 /// antes de esto, el flujo saltaba directo a un formulario de teléfono sin
@@ -25,7 +25,7 @@ class StepBienvenida extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Spacer(flex: 3),
-          const BarreraAccesoAnimada(),
+          const CredencialAccesoAnimada(),
           const SizedBox(height: 28),
           Text(
             AppLocalizations.t(context, 'bienvenida_titulo'),
