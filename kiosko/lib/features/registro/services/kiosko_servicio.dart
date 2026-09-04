@@ -381,6 +381,34 @@ class KioskoServicio {
     } catch (_) {}
   }
 
+  /// Reporta un intento de acceso fallido (PIN incorrecto, QR inválido) para
+  /// la pestaña "Seguridad" del dashboard -- best-effort a propósito: un
+  /// fallo de red al reportar no debe interrumpir ni retrasar la pantalla de
+  /// error que ya está viendo el visitante/residente en el kiosko.
+  Future<void> reportarEventoSeguridad({
+    required String tipo,
+    String? detalle,
+  }) async {
+    try {
+      await _ensureLogin();
+      final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/eventos-seguridad');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $_sessionToken'
+        ..fields['tipo'] = tipo
+        ..fields['detalle'] = detalle ?? '';
+
+      final streamed = await request.send().timeout(const Duration(seconds: 8));
+      if (streamed.statusCode == 401 &&
+          await _reLogin() == _ReLoginResultado.exito) {
+        final reintento = http.MultipartRequest('POST', uri)
+          ..headers['Authorization'] = 'Bearer $_sessionToken'
+          ..fields['tipo'] = tipo
+          ..fields['detalle'] = detalle ?? '';
+        await reintento.send().timeout(const Duration(seconds: 8));
+      }
+    } catch (_) {}
+  }
+
   /// Generación del loop SSE vivo. Cada llamada a [escucharConfigStream]
   /// incrementa el contador y el loop anterior se apaga al verlo cambiado.
   ///

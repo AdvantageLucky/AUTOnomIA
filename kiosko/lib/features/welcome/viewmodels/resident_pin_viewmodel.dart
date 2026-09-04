@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 
@@ -87,6 +89,12 @@ class ResidentPinViewModel extends ChangeNotifier {
       _pin = '';
       _errorMsg = e.toString().replaceFirst('Exception: ', '');
       _estado = PinEstado.error;
+      // Solo el rechazo real de credenciales cuenta como evento de
+      // seguridad -- un timeout/error de red no es un intento malicioso, y
+      // reportarlo como tal ensuciaría la pestaña "Seguridad" del dashboard.
+      if (_errorMsg == 'PIN incorrecto') {
+        unawaited(KioskoServicio().reportarEventoSeguridad(tipo: 'pin_incorrecto'));
+      }
       notifyListeners();
       return false;
     }
