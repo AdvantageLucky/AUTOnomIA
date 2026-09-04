@@ -239,14 +239,20 @@ class SettingsView extends StatelessWidget {
                   color: AppTheme.primaryOrange.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                 ),
-                child: const Icon(Icons.apartment_rounded, color: AppTheme.primaryOrange, size: 22),
+                child: Icon(
+                  membresia.esResidente ? Icons.apartment_rounded : Icons.face_retouching_natural,
+                  color: AppTheme.primaryOrange,
+                  size: 22,
+                ),
               ),
               title: Text(
                 membresia.centroNombre,
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
               subtitle: Text(
-                '${AppLocalizations.t(context, 'casa_destino_prefix')} ${membresia.casaDestino}',
+                membresia.esResidente
+                    ? '${AppLocalizations.t(context, 'casa_destino_prefix')} ${membresia.casaDestino}'
+                    : AppLocalizations.t(context, 'invitado_frecuente_detalle'),
                 style: TextStyle(
                   fontSize: 12,
                   color: isDark ? AppTheme.textGrey : AppTheme.textDimmed,
@@ -255,48 +261,54 @@ class SettingsView extends StatelessWidget {
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.success.withOpacity(0.12),
+                  color: (membresia.esResidente ? AppTheme.success : AppTheme.blue).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  AppLocalizations.t(context, 'activo_label'),
-                  style: const TextStyle(
-                    color: AppTheme.success,
+                  AppLocalizations.t(context, membresia.esResidente ? 'activo_label' : 'invitado_frecuente_label'),
+                  style: TextStyle(
+                    color: membresia.esResidente ? AppTheme.success : AppTheme.blue,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ),
-            Divider(height: 1, color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.blue.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                ),
-                child: const Icon(Icons.people_alt_rounded, color: AppTheme.blue, size: 22),
-              ),
-              title: Text(
-                AppLocalizations.t(context, 'companeros_de_casa_title'),
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-              subtitle: Text(
-                AppLocalizations.t(context, 'ver_companeros_detalle'),
-                style: const TextStyle(fontSize: 12, color: AppTheme.textDimmed),
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textDimmed),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CompanerosCasaView(tenantId: membresia.tenantId),
+            // Un invitado frecuente no vive aquí -- no tiene compañeros de
+            // casa que gestionar (el backend ya se lo bloquea, ver
+            // ListarCompanerosCasa). Mostrar el enlace igual solo llevaría a
+            // un error confuso.
+            if (membresia.esResidente) ...[
+              Divider(height: 1, color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.blue.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                   ),
-                );
-              },
-            ),
+                  child: const Icon(Icons.people_alt_rounded, color: AppTheme.blue, size: 22),
+                ),
+                title: Text(
+                  AppLocalizations.t(context, 'companeros_de_casa_title'),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                subtitle: Text(
+                  AppLocalizations.t(context, 'ver_companeros_detalle'),
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textDimmed),
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textDimmed),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CompanerosCasaView(tenantId: membresia.tenantId),
+                    ),
+                  );
+                },
+              ),
+            ],
             Divider(height: 1, color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
           ],
           ListTile(

@@ -98,6 +98,10 @@ class InvitacionRecibidaModel {
   final String nombreInvita;
   final DateTime? expiresAt;
   final DateTime createdAt;
+  // true cuando esta invitación es la que enroló a quien la recibe como
+  // invitado frecuente (entra por rostro/QR de ahí en adelante) -- distinta
+  // de un pase normal de un solo uso.
+  final bool permiteReconocimientoFacial;
 
   InvitacionRecibidaModel({
     required this.id,
@@ -107,6 +111,7 @@ class InvitacionRecibidaModel {
     required this.nombreInvita,
     this.expiresAt,
     required this.createdAt,
+    this.permiteReconocimientoFacial = false,
   });
 
   factory InvitacionRecibidaModel.fromJson(Map<String, dynamic> json) {
@@ -118,6 +123,7 @@ class InvitacionRecibidaModel {
       nombreInvita: json['nombre_invita'] as String? ?? '',
       expiresAt: json['expires_at'] != null ? DateTime.parse(json['expires_at'] as String) : null,
       createdAt: DateTime.parse(json['created_at'] as String),
+      permiteReconocimientoFacial: json['permite_reconocimiento_facial'] as bool? ?? false,
     );
   }
 }

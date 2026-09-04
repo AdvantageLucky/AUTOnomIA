@@ -167,6 +167,37 @@ class _SolicitudesViewState extends State<SolicitudesView>
     );
   }
 
+  // Un invitado frecuente (entra por rostro/QR, sin membresía de residente)
+  // nunca va a poder ver solicitudes ni historial -- mostrarle un ícono de
+  // "sin conexión" y un botón "Reintentar" sugiere una falla pasajera que
+  // NUNCA se va a arreglar reintentando. Este estado no tiene botón de
+  // reintentar a propósito.
+  Widget _buildSoloResidentesState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.home_work_outlined, size: 48, color: AppTheme.textGrey),
+            const SizedBox(height: 12),
+            Text(
+              AppLocalizations.t(context, 'solo_residentes_titulo'),
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              AppLocalizations.t(context, 'solo_residentes_detalle'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.textDimmed),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPendientesList(
     BuildContext context,
     int tenantId,
@@ -175,6 +206,9 @@ class _SolicitudesViewState extends State<SolicitudesView>
   ) {
     if (vm.isLoading && vm.visitas.isEmpty) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (vm.soloResidentes) {
+      return _buildSoloResidentesState(context);
     }
     if (vm.error != null) {
       return Center(
@@ -259,6 +293,9 @@ class _SolicitudesViewState extends State<SolicitudesView>
   ) {
     if (vm.isLoading && vm.visitas.isEmpty) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (vm.soloResidentes) {
+      return _buildSoloResidentesState(context);
     }
     if (vm.error != null) {
       return Center(
