@@ -89,19 +89,25 @@ type InvitacionRecibidaResponse struct {
 	NombreInvita string         `json:"nombre_invita"`
 	ExpiresAt    *time.Time     `json:"expires_at"`
 	CreatedAt    time.Time      `json:"created_at"`
+	// PermiteReconocimientoFacial distingue un pase de un solo uso de la
+	// invitación con la que a quien la recibe lo enrolan como invitado
+	// frecuente (entra por rostro/QR de ahí en adelante, sin volver a pedir
+	// invitación) -- el invitado necesita saber cuál es cuál.
+	PermiteReconocimientoFacial bool `json:"permite_reconocimiento_facial"`
 }
 
 // ToInvitacionRecibidaResponse expone el mapeo a otros paquetes — el
 // dominio persona arma la lista de invitaciones recibidas.
 func ToInvitacionRecibidaResponse(inv *Invitacion, casaDestino, nombreInvita string) InvitacionRecibidaResponse {
 	return InvitacionRecibidaResponse{
-		ID:           inv.ID,
-		Tipo:         inv.Tipo,
-		Titular:      inv.Titular,
-		CasaDestino:  casaDestino,
-		NombreInvita: nombreInvita,
-		ExpiresAt:    inv.ExpiresAt,
-		CreatedAt:    inv.CreatedAt,
+		ID:                          inv.ID,
+		Tipo:                        inv.Tipo,
+		Titular:                     inv.Titular,
+		CasaDestino:                 casaDestino,
+		NombreInvita:                nombreInvita,
+		ExpiresAt:                   inv.ExpiresAt,
+		CreatedAt:                   inv.CreatedAt,
+		PermiteReconocimientoFacial: inv.PermiteReconocimientoFacial,
 	}
 }
 

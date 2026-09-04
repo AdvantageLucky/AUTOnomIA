@@ -1418,6 +1418,7 @@ func (h *Handler) ListarMisMembresias(c *gin.Context) {
 			CentroNombre: nombreCentro,
 			CasaDestino:  m.CasaDestino,
 			Status:       m.Status,
+			Rol:          m.Rol,
 			Pin:          pinVisible(m.Status, m.Rol, m.PinCodigo),
 		})
 	}
