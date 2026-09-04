@@ -18,6 +18,9 @@ import 'package:kigo_kiosco/features/registro/services/resolucion_qr_offline.dar
 
 class DeviceNotActivatedException implements Exception {}
 
+/// Resultado de un intento de re-login silencioso -- ver KioskoServicio._reLogin.
+enum _ReLoginResultado { exito, rechazado, errorDeRed }
+
 /// Token de invitación inválido, expirado, agotado o ya consumido. Tipado
 /// aparte (en vez de un Exception genérico) para que SyncWorker pueda
 /// distinguirlo de un fallo de red al reproducir un registro offline — este
@@ -128,10 +131,22 @@ class KioskoServicio {
   }
 
   // Intenta re-autenticarse silenciosamente con la clave almacenada.
-  // Devuelve true si el nuevo token fue obtenido y guardado.
-  Future<bool> _reLogin() async {
+  //
+  // Devuelve un resultado de tres estados, no un bool: un timeout/error de
+  // red durante el intento (justo lo esperable cuando la conexión sigue
+  // inestable recién vuelta de un corte) es indistinguible de "la clave ya
+  // no sirve" si solo se mira true/false, y los dos llamadores de esta
+  // función (obtenerConfig, _sseLoop) borraban la sesión completa
+  // (cerrarSesion) ante cualquier falla -- un kiosko que perdía intenet
+  // justo en el instante del re-login quedaba desactivado para siempre,
+  // exigiendo reactivación manual (RFC 8628) aunque la red volviera segundos
+  // después. Solo un rechazo real del servidor (login inválido) debe borrar
+  // la sesión.
+  Future<_ReLoginResultado> _reLogin() async {
     final claveKiosko = await _storage.read(key: _keyClave);
-    if (claveKiosko == null || _kioskoId == null) return false;
+    if (claveKiosko == null || _kioskoId == null) {
+      return _ReLoginResultado.rechazado;
+    }
 
     try {
       final response = await http.post(
@@ -145,10 +160,17 @@ class KioskoServicio {
         final newToken = body['token'] as String;
         await _storage.write(key: _keyToken, value: newToken);
         _sessionToken = newToken;
-        return true;
+        return _ReLoginResultado.exito;
       }
-    } catch (_) {}
-    return false;
+      // El servidor respondió y rechazó la credencial -- esto sí es un
+      // rechazo real (p.ej. el admin eliminó el kiosko), no un problema de
+      // red.
+      return _ReLoginResultado.rechazado;
+    } catch (e) {
+      return _esFalloDeRed(e)
+          ? _ReLoginResultado.errorDeRed
+          : _ReLoginResultado.rechazado;
+    }
   }
 
   Future<void> guardarSesion(String token, int kioskoId, {String? claveKiosko}) async {
@@ -230,14 +252,21 @@ class KioskoServicio {
 
     if (response.statusCode == 401) {
       _sessionToken = null;
-      if (await _reLogin()) {
+      final resultado = await _reLogin();
+      if (resultado == _ReLoginResultado.exito) {
         response = await http.get(
           Uri.parse('$_baseUrl/kioskos/$_kioskoId/config/mia'),
           headers: {'Authorization': 'Bearer $_sessionToken'},
         ).timeout(timeoutConfigPorIntento);
-      } else {
+      } else if (resultado == _ReLoginResultado.rechazado) {
         await cerrarSesion();
         throw DeviceNotActivatedException();
+      } else {
+        // errorDeRed: la sesión sigue siendo válida, solo no se pudo
+        // renovar el token porque la red seguía caída. No hay que borrar
+        // nada -- KioskoConfigNotifier.inicializar() ya cae a la config de
+        // respaldo en disco ante esta excepción.
+        throw Exception('re-login falló por red, sesión conservada');
       }
     }
 
@@ -315,12 +344,16 @@ class KioskoServicio {
 
       if (response.statusCode == 401) {
         _sessionToken = null;
-        if (await _reLogin()) {
+        if (await _reLogin() == _ReLoginResultado.exito) {
           await http.post(
             Uri.parse('$_baseUrl/kioskos/$_kioskoId/ping'),
             headers: {'Authorization': 'Bearer $_sessionToken'},
           ).timeout(const Duration(seconds: 8));
         }
+        // rechazado o errorDeRed: no se hace nada más aquí a propósito --
+        // ping() ya falla en silencio (ver doc arriba) y el próximo ciclo de
+        // 30s ya lo resuelve solo si la red vuelve; forzar cerrarSesion
+        // desde aquí sería el mismo bug que en obtenerConfig/_sseLoop.
       }
     } catch (_) {}
   }
@@ -338,7 +371,8 @@ class KioskoServicio {
         headers: {'Authorization': 'Bearer $_sessionToken'},
       ).timeout(const Duration(seconds: 8));
 
-      if (response.statusCode == 401 && await _reLogin()) {
+      if (response.statusCode == 401 &&
+          await _reLogin() == _ReLoginResultado.exito) {
         await http.post(
           Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistencia-urgente/'),
           headers: {'Authorization': 'Bearer $_sessionToken'},
@@ -406,11 +440,19 @@ class KioskoServicio {
 
         if (response.statusCode == 401) {
           _sessionToken = null;
-          final relogueado = await _reLogin();
-          if (!relogueado) {
+          final resultado = await _reLogin();
+          if (resultado == _ReLoginResultado.rechazado) {
             await cerrarSesion();
             onRevocado?.call();
             return;
+          }
+          if (resultado == _ReLoginResultado.errorDeRed) {
+            // La red seguía caída justo en el instante del re-login: no es
+            // un rechazo del servidor, la sesión se conserva y el loop
+            // reintenta como cualquier otro corte transitorio (mismo
+            // manejo que el catch de abajo).
+            await Future.delayed(const Duration(seconds: 5));
+            continue;
           }
           await Future.delayed(const Duration(seconds: 1));
           continue;
@@ -1059,7 +1101,7 @@ class KioskoServicio {
 
       if (response.statusCode == 401) {
         _sessionToken = null;
-        if (await _reLogin()) {
+        if (await _reLogin() == _ReLoginResultado.exito) {
           response = await http.get(
             Uri.parse('$_baseUrl/kioskos/$_kioskoId/destinos/'),
             headers: {'Authorization': 'Bearer $_sessionToken'},
@@ -1102,7 +1144,7 @@ class KioskoServicio {
 
       if (response.statusCode == 401) {
         _sessionToken = null;
-        if (await _reLogin()) {
+        if (await _reLogin() == _ReLoginResultado.exito) {
           response = await http.post(
             Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistente/preguntar'),
             headers: {
@@ -1138,7 +1180,7 @@ class KioskoServicio {
 
       if (response.statusCode == 401) {
         _sessionToken = null;
-        if (await _reLogin()) {
+        if (await _reLogin() == _ReLoginResultado.exito) {
           response = await http.post(
             Uri.parse('$_baseUrl/kioskos/$_kioskoId/asistente/extraer-campo'),
             headers: {
@@ -1266,7 +1308,7 @@ class KioskoServicio {
 
     if (response.statusCode == 401) {
       _sessionToken = null;
-      if (await _reLogin()) {
+      if (await _reLogin() == _ReLoginResultado.exito) {
         response = await http.get(
           Uri.parse('$_baseUrl/kioskos/$_kioskoId/sync/snapshot'),
           headers: {'Authorization': 'Bearer $_sessionToken'},
@@ -1310,14 +1352,10 @@ class KioskoServicio {
     String? motivo,
   }) async {
     final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/visitas/');
-    // Sin INE capturada, lo que respalda la visita es la placa: en un acceso
-    // vehicular es el único identificador que se toma (ADR-0024).
-    final tipoDocumento = pathFotoIne != null ? 'INE' : 'PLACA';
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $_sessionToken'
       ..fields['titular'] = titular
       ..fields['tipo_visitante'] = tipoVisitante
-      ..fields['tipo_documento'] = tipoDocumento
       ..fields['curp'] = curp
       ..fields['casa_destino'] = casaDestino
       ..fields['motivo'] = motivo ?? ''
@@ -1329,6 +1367,15 @@ class KioskoServicio {
     }
     if (calidadIne != null) {
       request.fields['calidad_ine'] = calidadIne;
+    }
+
+    // Solo se declara explícitamente cuando sí hay INE -- para el resto de
+    // los casos (placa capturada, o reconocido solo por rostro en un
+    // kiosko peatonal donde nunca hay placa) el backend ya decide el
+    // fallback correcto (ROSTRO > PLACA > SIN_DOCUMENTO) a partir de lo que
+    // realmente se envió, sin que el kiosko tenga que adivinarlo.
+    if (pathFotoIne != null) {
+      request.fields['tipo_documento'] = 'INE';
     }
 
     // La huella facial, no la foto: es lo que permite reconocer a este
@@ -1374,8 +1421,8 @@ class KioskoServicio {
 
     if (response.statusCode == 401 && !reintento) {
       _sessionToken = null;
-      final relogueado = await _reLogin();
-      if (relogueado) {
+      final resultado = await _reLogin();
+      if (resultado == _ReLoginResultado.exito) {
         return _enviarRegistro(
           titular: titular, curp: curp,
           casaDestino: casaDestino, placa: placa,
@@ -1385,6 +1432,13 @@ class KioskoServicio {
           reintento: true,
           clientId: clientId,
         );
+      }
+      if (resultado == _ReLoginResultado.errorDeRed) {
+        // Sesión conservada -- solo fue un corte de red durante el
+        // re-login, no un rechazo del servidor. SyncWorker reintentará este
+        // mismo client_id en el siguiente ciclo (ver comentario de la
+        // sección de arriba: estos métodos no reencolan solos).
+        throw Exception('re-login falló por red, sesión conservada');
       }
       await cerrarSesion();
       throw DeviceNotActivatedException();

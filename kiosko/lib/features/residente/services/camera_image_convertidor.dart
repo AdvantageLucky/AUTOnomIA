@@ -1,3 +1,4 @@
+import 'dart:typed_data' show Uint8List;
 import 'dart:ui' show Size;
 
 import 'package:camera/camera.dart';
@@ -32,8 +33,17 @@ InputImage? convertirFrameAInputImage(CameraImage frame) {
   final rotacion = InputImageRotationValue.fromRawValue(grados) ?? InputImageRotation.rotation0deg;
 
   final plane = frame.planes.first;
+  // Copia defensiva: CameraX puede reciclar/cerrar el ImageProxy nativo
+  // apenas termina la porción síncrona de este callback, sin esperar a que
+  // el cruce async hacia ML Kit (canal de plataforma) termine de leer
+  // `plane.bytes`. En hardware más rápido que el F10 (p.ej. esta tablet) esa
+  // carrera se pierde seguido y el buffer ya está liberado cuando ML Kit
+  // nativo intenta leerlo -- de ahí el NullPointerException nativo. Copiar
+  // aquí, de forma síncrona, deja un buffer propio que no depende del ciclo
+  // de vida del frame original.
+  final bytes = Uint8List.fromList(plane.bytes);
   return InputImage.fromBytes(
-    bytes: plane.bytes,
+    bytes: bytes,
     metadata: InputImageMetadata(
       size: Size(frame.width.toDouble(), frame.height.toDouble()),
       rotation: rotacion,

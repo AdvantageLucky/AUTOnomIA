@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kigo_kiosco/core/notifiers/kiosko_config_notifier.dart';
 import 'package:kigo_kiosco/core/routing/registro_router.dart';
+import 'package:kigo_kiosco/core/services/connectivity_service.dart';
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'package:kigo_kiosco/core/widgets/boton_asistente_flotante.dart';
 import 'package:kigo_kiosco/core/widgets/marca_badge.dart';
@@ -257,6 +258,14 @@ class _WelcomeViewState extends State<WelcomeView>
 
   Widget _buildBotones(BuildContext context) {
     final options = widget.viewModel.options;
+    // El registro de visitante sin invitación (INE + rostro) necesita
+    // backend en vivo: valida contra el catálogo de residentes/invitaciones
+    // del tenant y decide autopase con datos que no existen en el caché
+    // offline. A diferencia del QR (que sí puede validar contra la cola
+    // local), aquí no hay nada sensato que hacer sin red -- mejor
+    // deshabilitar el botón que dejar que el visitante llene todo el flujo
+    // para enterarse hasta el final que no se pudo registrar.
+    final offline = context.watch<ConnectivityService>().isOffline;
     return Row(
       children: [
         Expanded(
@@ -264,56 +273,71 @@ class _WelcomeViewState extends State<WelcomeView>
                 AppLocalizations.t(context, options[0].titleKey))),
         const SizedBox(width: 20),
         Expanded(
-            child: _buildBoton(context, options[1].id, options[1].icon,
-                AppLocalizations.t(context, options[1].titleKey))),
+            child: _buildBoton(
+          context,
+          options[1].id,
+          options[1].icon,
+          AppLocalizations.t(context, options[1].titleKey),
+          deshabilitado: options[1].id == 'visitante' && offline,
+        )),
       ],
     );
   }
 
   Widget _buildBoton(
-      BuildContext context, String id, IconData icono, String label) {
+      BuildContext context, String id, IconData icono, String label,
+      {bool deshabilitado = false}) {
     const orange = KigoDesign.brand;
     const orangeLight = KigoDesign.brandHover;
     final gray = context.kSurface2;
 
-    final bool presionado = _presionadoId == id;
+    final bool presionado = !deshabilitado && _presionadoId == id;
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => _presionadoId = id),
-      onTapUp: (_) {
-        setState(() => _presionadoId = null);
-        widget.viewModel.selectOption(id);
-        final navigator = Navigator.of(context);
-        final config = context.read<KioskoConfigNotifier>().config;
-        Future.delayed(const Duration(milliseconds: 160), () {
-          if (id == 'visitante') {
-            // El QR ya se ofrece en la pantalla principal del kiosko — llegar
-            // aquí significa que la visita no trae ninguno, así que se salta
-            // directo al registro sin invitación.
-            navigator.push(MaterialPageRoute(
-              builder: (_) => RegistroRouter.paraVisitante(config),
-            ));
-          } else if (id == 'residente') {
-            navigator.push(MaterialPageRoute(
-              builder: (_) => const ResidenteAccesoView(),
-            ));
-          } else {
-            navigator.push(
-                MaterialPageRoute(builder: (_) => const TouchRegisterView()));
-          }
-        });
-      },
-      onTapCancel: () => setState(() => _presionadoId = null),
+      onTapDown: deshabilitado
+          ? null
+          : (_) => setState(() => _presionadoId = id),
+      onTapUp: deshabilitado
+          ? null
+          : (_) {
+              setState(() => _presionadoId = null);
+              widget.viewModel.selectOption(id);
+              final navigator = Navigator.of(context);
+              final config = context.read<KioskoConfigNotifier>().config;
+              Future.delayed(const Duration(milliseconds: 160), () {
+                if (id == 'visitante') {
+                  // El QR ya se ofrece en la pantalla principal del kiosko — llegar
+                  // aquí significa que la visita no trae ninguno, así que se salta
+                  // directo al registro sin invitación.
+                  navigator.push(MaterialPageRoute(
+                    builder: (_) => RegistroRouter.paraVisitante(config),
+                  ));
+                } else if (id == 'residente') {
+                  navigator.push(MaterialPageRoute(
+                    builder: (_) => const ResidenteAccesoView(),
+                  ));
+                } else {
+                  navigator.push(MaterialPageRoute(
+                      builder: (_) => const TouchRegisterView()));
+                }
+              });
+            },
+      onTapCancel: deshabilitado
+          ? null
+          : () => setState(() => _presionadoId = null),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         height: 160,
         decoration: BoxDecoration(
-          color: presionado ? orangeLight : gray,
+          color: deshabilitado
+              ? context.kSurface2.withValues(alpha: 0.5)
+              : (presionado ? orangeLight : gray),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color:
-                presionado ? orangeLight : orange.withValues(alpha: 0.25),
+            color: deshabilitado
+                ? context.kBorder
+                : (presionado ? orangeLight : orange.withValues(alpha: 0.25)),
             width: 1.5,
           ),
           boxShadow: presionado
@@ -329,13 +353,20 @@ class _WelcomeViewState extends State<WelcomeView>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icono,
-                color: presionado ? Colors.white : orange, size: 72),
+            Icon(
+              icono,
+              color: deshabilitado
+                  ? context.kTextTertiary
+                  : (presionado ? Colors.white : orange),
+              size: 72,
+            ),
             const SizedBox(height: 14),
             Text(
               label,
               style: TextStyle(
-                color: presionado ? Colors.white : context.kTextPrimary,
+                color: deshabilitado
+                    ? context.kTextTertiary
+                    : (presionado ? Colors.white : context.kTextPrimary),
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1,
