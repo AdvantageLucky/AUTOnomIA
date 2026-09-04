@@ -76,7 +76,11 @@ type KioskoConfig struct {
 	// Score de confianza minimo (0-100) para que una entrada se apruebe sola.
 	// Sustituye al contador de aprobaciones consecutivas.
 	UmbralAutopassPct   int     `gorm:"column:umbral_autopass_pct;not null;default:80"`
-	UmbralSimilitudCara float64 `gorm:"not null;default:0.70"` // similitud mínima para reconocimiento facial
+	// Alineado con UmbralFacialPct (85%): la misma clase de comparacion
+	// (similitud de rostro) no debe tener una barra mas laja para la
+	// decision de mayor consecuencia (auto-pasar como residente) que para
+	// la de menor consecuencia (contar como visitante recurrente).
+	UmbralSimilitudCara float64 `gorm:"not null;default:0.85"` // similitud mínima para reconocimiento facial
 
 	// Nuevos campos de UI configurable
 	TiempoExitoSeg int `gorm:"not null;default:5"`
