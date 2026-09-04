@@ -37,9 +37,14 @@ class IdentidadesConfianzaViewModel extends ChangeNotifier {
   }
 
   Future<void> resetear(int tenantId, IdentidadResumenModel identidad) async {
-    final url = identidad.personaId != null
-        ? '/personas/contactos/${identidad.personaId}/resetear-historial?tenant_id=$tenantId'
-        : '/personas/contactos/curp/${Uri.encodeComponent(identidad.curp ?? '')}/resetear-historial?tenant_id=$tenantId';
+    final String url;
+    if (identidad.personaId != null) {
+      url = '/personas/me/contactos/${identidad.personaId}/resetear-historial?tenant_id=$tenantId';
+    } else if (identidad.curp != null && identidad.curp!.isNotEmpty) {
+      url = '/personas/me/contactos/curp/${Uri.encodeComponent(identidad.curp!)}/resetear-historial?tenant_id=$tenantId';
+    } else {
+      url = '/personas/me/contactos/rostro/${identidad.visitaRepresentativaId}/resetear-historial?tenant_id=$tenantId';
+    }
     try {
       await ApiService().post(url, {}, auth: true);
       _identidades.removeWhere((i) => i.key == identidad.key);

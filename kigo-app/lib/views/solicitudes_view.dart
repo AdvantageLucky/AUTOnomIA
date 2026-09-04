@@ -423,6 +423,13 @@ class _SolicitudesViewState extends State<SolicitudesView>
     'VISITANTE': 'identidad_tipo_visitante',
   };
 
+  /// Verde/ámbar/rojo según el score de confianza de la última visita.
+  Color _colorScore(int pct) {
+    if (pct >= 70) return Colors.green;
+    if (pct >= 40) return Colors.amber.shade800;
+    return Colors.red;
+  }
+
   Widget _buildConfianzaList(
     BuildContext context,
     int tenantId,
@@ -505,7 +512,17 @@ class _SolicitudesViewState extends State<SolicitudesView>
             border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
+                backgroundImage: (id.fotoUrl != null && id.fotoUrl!.isNotEmpty) ? NetworkImage(id.fotoUrl!) : null,
+                child: (id.fotoUrl == null || id.fotoUrl!.isEmpty)
+                    ? const Icon(Icons.person_outline, color: AppTheme.textGrey)
+                    : null,
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,7 +531,9 @@ class _SolicitudesViewState extends State<SolicitudesView>
                       children: [
                         Expanded(
                           child: Text(
-                            id.nombre.isNotEmpty ? id.nombre : AppLocalizations.t(context, 'identidad_sin_nombre'),
+                            id.sinIdentificar
+                                ? AppLocalizations.t(context, 'identidad_sin_identificar')
+                                : id.nombre,
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -530,6 +549,20 @@ class _SolicitudesViewState extends State<SolicitudesView>
                             child: Text(
                               AppLocalizations.t(context, tipoKey),
                               style: const TextStyle(color: AppTheme.primaryOrange, fontSize: 10.5, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                        if (id.scorePct != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _colorScore(id.scorePct!).withOpacity(0.14),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${id.scorePct}%',
+                              style: TextStyle(color: _colorScore(id.scorePct!), fontSize: 10.5, fontWeight: FontWeight.w700),
                             ),
                           ),
                         ],
