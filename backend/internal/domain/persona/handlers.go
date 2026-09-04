@@ -688,9 +688,28 @@ func (h *Handler) ListarInvitaciones(c *gin.Context) {
 		return
 	}
 
+	// El teléfono no vive en Invitacion, solo en la Persona invitada -- se
+	// resuelve en un solo query batch (no uno por invitación) para que
+	// kigo-app pueda "replicar" una invitación pasada sin tener que
+	// volver a teclear el teléfono del invitado.
+	idsInvitados := make([]uint, 0, len(list))
+	for _, inv := range list {
+		if inv.PersonaInvitadaID != nil {
+			idsInvitados = append(idsInvitados, *inv.PersonaInvitadaID)
+		}
+	}
+	telefonos, err := h.repo.FindTelefonosByIDs(idsInvitados)
+	if err != nil {
+		log.Printf("ListarInvitaciones: error resolviendo telefonos: %v", err)
+		telefonos = map[uint]string{}
+	}
+
 	resp := make([]invitaciones.InvitacionResponse, len(list))
 	for i, inv := range list {
 		resp[i] = invitaciones.ToInvitacionResponse(&inv, true)
+		if inv.PersonaInvitadaID != nil {
+			resp[i].Telefono = telefonos[*inv.PersonaInvitadaID]
+		}
 	}
 	c.JSON(http.StatusOK, resp)
 }

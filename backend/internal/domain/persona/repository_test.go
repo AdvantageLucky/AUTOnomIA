@@ -111,3 +111,38 @@ func TestFindActivasPorTenant(t *testing.T) {
 		t.Errorf("esperaba embedding [1.0, 0.5, 0.0], got %+v", c.Embedding)
 	}
 }
+
+func TestFindTelefonosByIDs(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	p1 := &Persona{Telefono: "+525511111111"}
+	p2 := &Persona{Telefono: "+525522222222"}
+	if err := repo.Create(p1); err != nil {
+		t.Fatalf("no se pudo crear p1: %v", err)
+	}
+	if err := repo.Create(p2); err != nil {
+		t.Fatalf("no se pudo crear p2: %v", err)
+	}
+
+	m, err := repo.FindTelefonosByIDs([]uint{p1.ID, p2.ID})
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if m[p1.ID] != "+525511111111" || m[p2.ID] != "+525522222222" {
+		t.Errorf("mapa de telefonos incorrecto: %+v", m)
+	}
+}
+
+func TestFindTelefonosByIDs_VacioSinConsultar(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+
+	m, err := repo.FindTelefonosByIDs(nil)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(m) != 0 {
+		t.Errorf("esperaba mapa vacio, got %+v", m)
+	}
+}
