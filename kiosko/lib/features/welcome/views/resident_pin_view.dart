@@ -110,28 +110,37 @@ class _ResidentPinViewState extends State<ResidentPinView> {
 
         const MarcaBadge(lado: 48),
         const SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.t(context, 'kigo_label'),
-              style: TextStyle(
-                color: context.kTextPrimary,
-                fontSize: 29,
-                fontWeight: FontWeight.w800,
-              ),
+        // Lo único elástico de la fila: en una pantalla más angosta que el
+        // panel el bloque de marca la desbordaba. Encoge parejo en vez de
+        // recortar el nombre a medias (mismo trato que en WelcomeView).
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.t(context, 'kigo_label'),
+                  style: TextStyle(
+                    color: context.kTextPrimary,
+                    fontSize: 29,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  AppLocalizations.t(context, 'self_checkin_label'),
+                  style: TextStyle(
+                    color: context.kTextSecondary,
+                    fontSize: 14,
+                    letterSpacing: 4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              AppLocalizations.t(context, 'self_checkin_label'),
-              style: TextStyle(
-                color: context.kTextSecondary,
-                fontSize: 14,
-                letterSpacing: 4,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
 
         const Spacer(),

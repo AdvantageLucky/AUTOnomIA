@@ -83,28 +83,36 @@ class _ResidentWelcomeViewState extends State<ResidentWelcomeView> {
       children: [
         const MarcaBadge(lado: 48),
         const SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.t(context, 'kigo_label'),
-              style: TextStyle(
-                color: context.kTextPrimary,
-                fontSize: 29,
-                fontWeight: FontWeight.w800,
-              ),
+        // Encoge parejo en pantallas más angostas que el panel, en vez de
+        // desbordar la fila (mismo trato que en WelcomeView).
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.t(context, 'kigo_label'),
+                  style: TextStyle(
+                    color: context.kTextPrimary,
+                    fontSize: 29,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  AppLocalizations.t(context, 'self_checkin_label'),
+                  style: TextStyle(
+                    color: context.kTextSecondary,
+                    fontSize: 14,
+                    letterSpacing: 4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              AppLocalizations.t(context, 'self_checkin_label'),
-              style: TextStyle(
-                color: context.kTextSecondary,
-                fontSize: 14,
-                letterSpacing: 4,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );

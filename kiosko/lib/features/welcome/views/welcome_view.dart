@@ -400,22 +400,32 @@ class _WelcomeViewState extends State<WelcomeView>
         const Spacer(),
         const MarcaBadge(lado: 48),
         const SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(AppLocalizations.t(context, 'kigo_label'),
-                style: TextStyle(
-                    color: context.kTextPrimary,
-                    fontSize: 29,
-                    fontWeight: FontWeight.w800)),
-            const SizedBox(height: 2),
-            Text(AppLocalizations.t(context, 'self_checkin_label'),
-                style: TextStyle(
-                    color: context.kTextSecondary,
-                    fontSize: 14,
-                    letterSpacing: 4,
-                    fontWeight: FontWeight.w500)),
-          ],
+        // El bloque de marca es lo único de esta fila que puede crecer (los
+        // dos botones de 44 y el logo son fijos): en una pantalla más
+        // angosta que el panel desbordaba la fila entera. Encoge parejo en
+        // vez de recortar el nombre a medias.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(AppLocalizations.t(context, 'kigo_label'),
+                    style: TextStyle(
+                        color: context.kTextPrimary,
+                        fontSize: 29,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(AppLocalizations.t(context, 'self_checkin_label'),
+                    style: TextStyle(
+                        color: context.kTextSecondary,
+                        fontSize: 14,
+                        letterSpacing: 4,
+                        fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
         ),
         const Spacer(),
         // El botón del asistente ya no vive aquí -- flota sobre toda la

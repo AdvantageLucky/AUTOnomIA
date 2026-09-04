@@ -1,6 +1,7 @@
 import 'package:kigo_kiosco/core/theme/kigo_design.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:provider/provider.dart';
@@ -162,9 +163,18 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
 
       if (!mounted) return;
 
+      // toLocal() porque las dos rutas que alimentan este campo no traen la
+      // misma zona. Online, created_at viene del backend, que corre en UTC y
+      // serializa con la Z: DateTime.tryParse devuelve un DateTime con
+      // isUtc = true y TimeOfDay.fromDateTime -- que lee .hour tal cual, sin
+      // convertir -- pintaba la hora UTC. Una solicitud de las 21:25 se
+      // mostraba como "3:25" en una tablet cuyo propio reloj marcaba 9:25 pm.
+      // Offline la respuesta se sintetiza aqui mismo con DateTime.now(), que
+      // ya es local y para la que esto no hace nada. Normalizar al entrar
+      // deja el campo con una sola zona sin importar por donde llego.
       final creadoEn = DateTime.tryParse(
         respuesta['created_at'] as String? ?? '',
-      );
+      )?.toLocal();
 
       setState(() {
         _visitaId = respuesta['id'] as int?;
@@ -329,6 +339,10 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
     );
   }
 
+  /// Ancho máximo del bloque de contenido: el que tiene en el panel de
+  /// referencia (800 menos los 42 de padding de cada lado).
+  static const double _anchoMaximoContenido = 716;
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -354,37 +368,69 @@ class _ResumenSolicitudViewState extends State<ResumenSolicitudView> {
                 bottom: 24 + KigoDesign.clearanceBotonesFlotantes,
               ),
               child: LayoutBuilder(
-                builder: (context, restricciones) => FittedBox(
-                  // Sin scroll hay que garantizar que TODO entre. En el panel
-                  // del kiosko no hace nada (scaleDown solo achica); en
-                  // pantallas más cortas encoge el conjunto en bloque, que es
-                  // preferible a recortar la tarjeta o el sello de confianza.
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: restricciones.maxWidth,
-                    child: Column(
-                      children: [
-                        StepIndicator(
-                          currentStep: widget.totalSteps - 1,
-                          totalSteps: widget.totalSteps,
-                        ),
-                        const SizedBox(height: 28),
-                        if (_submitError != null)
-                          _buildErrorState()
-                        else ...[
-                          _buildEstadoHeader(),
-                          const SizedBox(height: 24),
-                          _buildResumenCard(),
-                          if (_scoreIa != null) ...[
-                            const SizedBox(height: 16),
-                            _buildSelloConfianza(),
-                          ],
+                builder: (context, restricciones) {
+                  // El bloque no se estira más allá del ancho de contenido
+                  // del panel: en una pantalla más ancha, una tarjeta de
+                  // extremo a extremo deja los datos perdidos en una tira
+                  // en vez de leerse de un vistazo.
+                  final ancho = math.min(
+                    restricciones.maxWidth,
+                    _anchoMaximoContenido,
+                  );
+                  return Center(
+                    child: SizedBox(
+                      width: ancho,
+                      child: Column(
+                        children: [
+                          // El indicador se queda pegado arriba, justo debajo
+                          // de la mascota: es la referencia de "en qué paso
+                          // voy" y no debe moverse de pantalla a pantalla.
+                          StepIndicator(
+                            currentStep: widget.totalSteps - 1,
+                            totalSteps: widget.totalSteps,
+                          ),
+                          const SizedBox(height: 28),
+                          Expanded(
+                            // El resto se centra en lo que sobra. Antes iba
+                            // anclado arriba y en cuanto la pantalla era más
+                            // alta que el contenido, todo quedaba apelotonado
+                            // contra el techo con medio panel vacío abajo.
+                            child: Center(
+                              child: FittedBox(
+                                // Sin scroll hay que garantizar que TODO
+                                // entre. En el panel no hace nada (scaleDown
+                                // solo achica); en una pantalla más corta
+                                // encoge este bloque -- ya no el indicador,
+                                // que cabe siempre -- en vez de recortar la
+                                // tarjeta o el sello de confianza.
+                                fit: BoxFit.scaleDown,
+                                child: SizedBox(
+                                  width: ancho,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_submitError != null)
+                                        _buildErrorState()
+                                      else ...[
+                                        _buildEstadoHeader(),
+                                        const SizedBox(height: 24),
+                                        _buildResumenCard(),
+                                        if (_scoreIa != null) ...[
+                                          const SizedBox(height: 16),
+                                          _buildSelloConfianza(),
+                                        ],
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ),

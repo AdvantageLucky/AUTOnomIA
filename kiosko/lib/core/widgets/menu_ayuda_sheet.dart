@@ -43,40 +43,47 @@ class _MenuAyudaSheet extends StatelessWidget {
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.all(12),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
+        // Material y no una `BoxDecoration`: la hoja se abre con fondo
+        // transparente, así que los ListTile no encontraban superficie
+        // donde pintar y el framework avisaba en cada apertura ("background
+        // color or ink splashes may be invisible").
+        child: Material(
           color: context.kSurface1,
           borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hayTelefono)
-              ListTile(
-                leading: const Icon(Icons.call_rounded, color: KigoDesign.brand),
-                title: Text(AppLocalizations.t(context, 'menu_ayuda_llamar_admin'), style: TextStyle(color: context.kTextPrimary)),
-                subtitle: Text(telefonoContacto, style: TextStyle(color: context.kTextSecondary)),
-                onTap: () => _llamar(context),
-              ),
-            if (onFaq != null)
-              ListTile(
-                leading: const Icon(Icons.help_outline_rounded, color: KigoDesign.brand),
-                title: Text(AppLocalizations.t(context, 'menu_ayuda_preguntas_frecuentes'), style: TextStyle(color: context.kTextPrimary)),
-                onTap: () {
-                  Navigator.pop(context);
-                  onFaq!();
-                },
-              ),
-            if (!hayTelefono && onFaq == null)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  AppLocalizations.t(context, 'menu_ayuda_sin_opciones'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: context.kTextSecondary),
-                ),
-              ),
-          ],
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (hayTelefono)
+                  ListTile(
+                    leading: const Icon(Icons.call_rounded, color: KigoDesign.brand),
+                    title: Text(AppLocalizations.t(context, 'menu_ayuda_llamar_admin'), style: TextStyle(color: context.kTextPrimary)),
+                    subtitle: Text(telefonoContacto, style: TextStyle(color: context.kTextSecondary)),
+                    onTap: () => _llamar(context),
+                  ),
+                if (onFaq != null)
+                  ListTile(
+                    leading: const Icon(Icons.help_outline_rounded, color: KigoDesign.brand),
+                    title: Text(AppLocalizations.t(context, 'menu_ayuda_preguntas_frecuentes'), style: TextStyle(color: context.kTextPrimary)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      onFaq!();
+                    },
+                  ),
+                if (!hayTelefono && onFaq == null)
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      AppLocalizations.t(context, 'menu_ayuda_sin_opciones'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: context.kTextSecondary),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

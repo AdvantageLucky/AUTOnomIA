@@ -402,28 +402,36 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
         const Spacer(),
         const MarcaBadge(lado: 48),
         const SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.t(context, 'kigo_label'),
-              style: TextStyle(
-                color: context.kTextPrimary,
-                fontSize: 29,
-                fontWeight: FontWeight.w800,
-              ),
+        // Encoge parejo en una pantalla más angosta que el panel, en vez de
+        // desbordar la fila (mismo trato que en WelcomeView).
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.t(context, 'kigo_label'),
+                  style: TextStyle(
+                    color: context.kTextPrimary,
+                    fontSize: 29,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  AppLocalizations.t(context, 'self_checkin_label'),
+                  style: TextStyle(
+                    color: context.kTextSecondary,
+                    fontSize: 14,
+                    letterSpacing: 4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              AppLocalizations.t(context, 'self_checkin_label'),
-              style: TextStyle(
-                color: context.kTextSecondary,
-                fontSize: 14,
-                letterSpacing: 4,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
         const Spacer(),
         const SizedBox(width: 44),
@@ -621,12 +629,17 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
               size: 20,
             ),
             const SizedBox(width: 8),
-            Text(
-              AppLocalizations.t(context, 'acceder_por_pin'),
-              style: const TextStyle(
-                color: KigoDesign.brand,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+            // La pastilla se ajusta al texto (mainAxisSize.min): sin esto la
+            // etiqueta la desbordaba en una pantalla angosta en vez de
+            // saltar de renglón.
+            Flexible(
+              child: Text(
+                AppLocalizations.t(context, 'acceder_por_pin'),
+                style: const TextStyle(
+                  color: KigoDesign.brand,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

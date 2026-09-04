@@ -79,37 +79,42 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
           color: context.kSurface1,
           borderRadius: BorderRadius.circular(KigoDesign.radiusLg),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _solicitada ? Icons.check_circle_rounded : Icons.support_agent_rounded,
-                  color: _solicitada ? KigoDesign.success : KigoDesign.brand,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    AppLocalizations.t(context, 'asistencia_urgente_title'),
-                    style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.w800),
+        // La hoja no puede pasar de 9/16 de la pantalla: en una corta el
+        // bloque de QR + teléfono no cabía y desbordaba por abajo. Scrollea
+        // en vez de recortarse; en el panel entra completo y no se mueve.
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    _solicitada ? Icons.check_circle_rounded : Icons.support_agent_rounded,
+                    color: _solicitada ? KigoDesign.success : KigoDesign.brand,
+                    size: 28,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _textoEstado(),
-              style: TextStyle(color: context.kTextSecondary, fontSize: 15),
-            ),
-            const SizedBox(height: 20),
-            if (widget.offline)
-              _buildQrYTelefono(hayTelefono)
-            else
-              _buildSolicitarOnline(),
-          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.t(context, 'asistencia_urgente_title'),
+                      style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _textoEstado(),
+                style: TextStyle(color: context.kTextSecondary, fontSize: 15),
+              ),
+              const SizedBox(height: 20),
+              if (widget.offline)
+                _buildQrYTelefono(hayTelefono)
+              else
+                _buildSolicitarOnline(),
+            ],
+          ),
         ),
       ),
     );
@@ -155,9 +160,13 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
               else ...[
                 const Icon(Icons.campaign_rounded, color: Colors.white, size: 24),
                 const SizedBox(width: 10),
-                Text(
-                  AppLocalizations.t(context, 'asistencia_urgente_solicitar'),
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                // Flexible: en una pantalla angosta la etiqueta desbordaba
+                // el botón en vez de saltar de renglón.
+                Flexible(
+                  child: Text(
+                    AppLocalizations.t(context, 'asistencia_urgente_solicitar'),
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
                 ),
               ],
             ],
@@ -213,9 +222,13 @@ class _AsistenciaUrgenteSheetState extends State<_AsistenciaUrgenteSheet> {
             children: [
               Icon(Icons.call_rounded, color: context.kTextPrimary, size: 22),
               const SizedBox(width: 12),
-              SelectableText(
-                widget.telefonoContacto,
-                style: TextStyle(color: context.kTextPrimary, fontSize: 22, fontWeight: FontWeight.w800),
+              // El teléfono es dato del centro y puede venir con extensión:
+              // sin holgura desbordaba la tarjeta en pantallas angostas.
+              Flexible(
+                child: SelectableText(
+                  widget.telefonoContacto,
+                  style: TextStyle(color: context.kTextPrimary, fontSize: 22, fontWeight: FontWeight.w800),
+                ),
               ),
             ],
           ),

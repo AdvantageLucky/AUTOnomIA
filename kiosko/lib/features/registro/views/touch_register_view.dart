@@ -481,12 +481,20 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       children: [
         const MarcaBadge(lado: 54),
         const SizedBox(width: 18),
-        Text(
-          AppLocalizations.t(context, 'kigo_label'),
-          style: TextStyle(
-            color: context.kTextPrimary,
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
+        // En una pantalla más angosta que el panel el nombre desbordaba la
+        // fila; encoge parejo con el logo en vez de recortarse.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              AppLocalizations.t(context, 'kigo_label'),
+              style: TextStyle(
+                color: context.kTextPrimary,
+                fontSize: 34,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       ],
