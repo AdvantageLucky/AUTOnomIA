@@ -416,6 +416,15 @@
 							<div class="screen-sub" id="vis-subtitle" data-i18n="vis_sub">Bitácora de registros</div>
 						</div>
 					</div>
+
+					<div class="tab-bar">
+						<div class="tab-bar-inner">
+							<button class="tab-btn active" data-tab="vis-entradas" data-i18n="tab_entradas">Entradas</button>
+							<button class="tab-btn" data-tab="vis-salidas" data-i18n="tab_salidas">Salidas</button>
+						</div>
+					</div>
+
+					<div id="vis-entradas">
 					<div class="screen-body">
 						<div class="search-row">
 							<div class="search-wrap">
@@ -474,6 +483,26 @@
 									<button class="btn-page" id="vis-next" data-i18n="next">Siguiente ›</button>
 								</div>
 							</div>
+						</div>
+					</div>
+					</div>
+
+					<div id="vis-salidas" hidden>
+						<div class="screen-body">
+							<div class="screen-sub" style="margin-bottom:14px" data-i18n="salidas_sub">Registros del kiosko de salida -- tap + foto de rostro, sin identidad resuelta.</div>
+							<div id="salidas-loading" class="loading-state" hidden>
+								<div class="spinner"></div>
+								<div class="loading-text" data-i18n="salidas_cargando">Cargando salidas…</div>
+							</div>
+							<div id="salidas-empty" class="empty-state" hidden>
+								<div class="empty-icon"><svg width="22" height="22" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3 H3 V15 H6"/><path d="M8 9 H16 M12 5 L16 9 L12 13"/></svg></div>
+								<div class="empty-title" data-i18n="salidas_sin_datos">Sin salidas registradas</div>
+								<div class="empty-text" data-i18n="salidas_sin_datos_sub">Cuando alguien registre su salida en el kiosko de salida, aparecerá aquí.</div>
+							</div>
+							<div id="salidas-error" class="empty-state" hidden>
+								<div class="empty-title" data-i18n="load_err_title">Error al cargar</div>
+							</div>
+							<div id="salidas-rows"></div>
 						</div>
 					</div>
 				</section>
