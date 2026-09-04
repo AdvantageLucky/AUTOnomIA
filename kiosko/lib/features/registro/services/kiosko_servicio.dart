@@ -385,26 +385,43 @@ class KioskoServicio {
   /// la pestaña "Seguridad" del dashboard -- best-effort a propósito: un
   /// fallo de red al reportar no debe interrumpir ni retrasar la pantalla de
   /// error que ya está viendo el visitante/residente en el kiosko.
+  ///
+  /// [pathFoto] y [embedding] son opcionales: los llena
+  /// EvidenciaSeguridadServicio.capturar() cuando pudo tomar la foto en
+  /// segundo plano, pero un evento sin evidencia también es válido (mejor
+  /// registrar el tipo y la hora sin foto que no registrar nada).
   Future<void> reportarEventoSeguridad({
     required String tipo,
     String? detalle,
+    String? pathFoto,
+    List<double>? embedding,
   }) async {
-    try {
-      await _ensureLogin();
-      final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/eventos-seguridad');
+    Future<http.MultipartRequest> construirRequest(Uri uri) async {
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $_sessionToken'
         ..fields['tipo'] = tipo
         ..fields['detalle'] = detalle ?? '';
+      if (embedding != null && embedding.isNotEmpty) {
+        request.fields['embedding_rostro'] = jsonEncode(embedding);
+      }
+      if (pathFoto != null && File(pathFoto).existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'foto', pathFoto,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+      }
+      return request;
+    }
 
-      final streamed = await request.send().timeout(const Duration(seconds: 8));
+    try {
+      await _ensureLogin();
+      final uri = Uri.parse('$_baseUrl/kioskos/$_kioskoId/eventos-seguridad');
+      final streamed = await (await construirRequest(uri)).send().timeout(const Duration(seconds: 8));
       if (streamed.statusCode == 401 &&
           await _reLogin() == _ReLoginResultado.exito) {
-        final reintento = http.MultipartRequest('POST', uri)
-          ..headers['Authorization'] = 'Bearer $_sessionToken'
-          ..fields['tipo'] = tipo
-          ..fields['detalle'] = detalle ?? '';
-        await reintento.send().timeout(const Duration(seconds: 8));
+        await (await construirRequest(uri)).send().timeout(const Duration(seconds: 8));
       }
     } catch (_) {}
   }

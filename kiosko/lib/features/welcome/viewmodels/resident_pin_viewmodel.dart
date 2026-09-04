@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:kigo_kiosco/core/services/evidencia_seguridad_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 
 enum PinEstado { ingresando, cargando, error }
@@ -93,10 +94,21 @@ class ResidentPinViewModel extends ChangeNotifier {
       // seguridad -- un timeout/error de red no es un intento malicioso, y
       // reportarlo como tal ensuciaría la pestaña "Seguridad" del dashboard.
       if (_errorMsg == 'PIN incorrecto') {
-        unawaited(KioskoServicio().reportarEventoSeguridad(tipo: 'pin_incorrecto'));
+        unawaited(_reportarConEvidencia());
       }
       notifyListeners();
       return false;
     }
+  }
+
+  /// Toma la foto en segundo plano y recién entonces reporta -- no bloquea
+  /// el error que ya se le mostró al residente en pantalla.
+  Future<void> _reportarConEvidencia() async {
+    final evidencia = await EvidenciaSeguridadServicio.capturar();
+    await KioskoServicio().reportarEventoSeguridad(
+      tipo: 'pin_incorrecto',
+      pathFoto: evidencia.pathFoto,
+      embedding: evidencia.embedding,
+    );
   }
 }

@@ -2,8 +2,10 @@ package seguridad
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -102,5 +104,66 @@ func TestReportarYListar_PinIncorrecto_AparaceEnElListado(t *testing.T) {
 	}
 	if !strings.Contains(bodyStr, `"detalle":"Casa 1"`) {
 		t.Errorf("esperaba detalle='Casa 1', got %s", bodyStr)
+	}
+}
+
+// Caso reportado: se quiere poder correlacionar si el mismo rostro ya
+// generó otro evento de seguridad antes (ej. la misma persona fallando el
+// PIN varias veces, o probando PIN y luego un QR inválido). Dos embeddings
+// casi idénticos deben contar como el mismo rostro; uno muy distinto no.
+func TestReportar_CorrelacionaPorRostro(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupTestDB(t)
+	h := NewHandler(NewRepository(db), "/tmp", nil, nil)
+
+	router := gin.New()
+	router.POST("/kioskos/:id/eventos-seguridad/", func(c *gin.Context) {
+		injectTestCtx(c, ctxkeys.TenantID, uint(1))
+		injectTestCtx(c, ctxkeys.KioskoID, uint(1))
+		h.Reportar(c)
+	})
+
+	embeddingA, _ := json.Marshal([]float64{1, 0, 0, 0})
+	embeddingCasiIgual, _ := json.Marshal([]float64{0.99, 0.01, 0, 0})
+	embeddingDistinto, _ := json.Marshal([]float64{0, 0, 0, 1})
+
+	postEvento := func(embeddingJSON []byte) *httptest.ResponseRecorder {
+		form := url.Values{}
+		form.Set("tipo", TipoPinIncorrecto)
+		form.Set("embedding_rostro", string(embeddingJSON))
+		req := httptest.NewRequest(http.MethodPost, "/kioskos/1/eventos-seguridad/", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		return w
+	}
+
+	if w := postEvento(embeddingA); w.Code != http.StatusOK {
+		t.Fatalf("primer evento: esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var eventos []EventoSeguridad
+	db.Find(&eventos)
+	if len(eventos) != 1 || eventos[0].IntentosPrevios != 0 {
+		t.Fatalf("primer evento no debería correlacionar con nada, got %+v", eventos)
+	}
+
+	if w := postEvento(embeddingCasiIgual); w.Code != http.StatusOK {
+		t.Fatalf("segundo evento: esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+	if w := postEvento(embeddingDistinto); w.Code != http.StatusOK {
+		t.Fatalf("tercer evento: esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	eventos = nil
+	db.Order("id").Find(&eventos)
+	if len(eventos) != 3 {
+		t.Fatalf("esperaba 3 eventos guardados, got %d", len(eventos))
+	}
+	if eventos[1].IntentosPrevios != 1 {
+		t.Errorf("el rostro casi igual debía correlacionar con el primero (1 previo), got %d", eventos[1].IntentosPrevios)
+	}
+	if eventos[2].IntentosPrevios != 0 {
+		t.Errorf("el rostro distinto no debía correlacionar con nada, got %d", eventos[2].IntentosPrevios)
 	}
 }
