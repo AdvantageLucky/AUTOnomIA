@@ -126,6 +126,12 @@
       nav_instalacion: "Centro",
       tab_activos: "Activos",
       tab_solicitudes: "Solicitudes",
+      tab_enrolamientos: "Enrolamientos",
+      enrolamientos_sub: "Personas con acceso frecuente por rostro/QR que un residente dio de alta -- no son residentes, entran sin invitación cada vez.",
+      cargando_enrolamientos: "Cargando enrolamientos…",
+      sin_enrolamientos: "Sin enrolamientos",
+      sin_enrolamientos_detalle: "Cuando un residente le dé acceso frecuente por rostro a alguien, aparecerá aquí.",
+      enrolado_por_label: "Enrolado por",
       tab_equipo: "Equipo",
       tab_destinos: "Destinos",
       tab_config: "Configuración",
@@ -644,6 +650,12 @@
       nav_instalacion: "Complex",
       tab_activos: "Active",
       tab_solicitudes: "Requests",
+      tab_enrolamientos: "Enrolled guests",
+      enrolamientos_sub: "People with frequent face/QR access that a resident set up -- not residents themselves, they get in without an invitation each time.",
+      cargando_enrolamientos: "Loading enrolled guests…",
+      sin_enrolamientos: "No enrolled guests",
+      sin_enrolamientos_detalle: "When a resident gives someone frequent face access, they'll show up here.",
+      enrolado_por_label: "Enrolled by",
       tab_equipo: "Staff",
       tab_destinos: "Destinations",
       tab_config: "Settings",
@@ -1934,8 +1946,9 @@
     btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
       switchTab('screen-residentes', tab,
-        tab === 'res-activos'     ? loadResidentesActivos :
-        tab === 'res-solicitudes' ? loadResidentesPendientes : null
+        tab === 'res-activos'        ? loadResidentesActivos :
+        tab === 'res-solicitudes'    ? loadResidentesPendientes :
+        tab === 'res-enrolamientos'  ? loadEnrolamientos : null
       );
     });
   });
@@ -4785,6 +4798,7 @@
   let residentesActivosCache = [];
   let residentesSeleccion = new Set();
   let residentesFiltroDestino = null;
+  let enrolamientosCache = [];
 
   function residentesAgruparPor() {
     return document.getElementById('resa-agrupar')?.value || 'destino';
@@ -4974,6 +4988,92 @@
 
   let residentesPendientesCache = [];
 
+  // ─── Enrolamientos: invitados frecuentes (Rol=invitado_frecuente) de
+  // CUALQUIER casa del centro -- distinto de "Activos" (que junta residentes
+  // e invitados frecuentes mezclados, agrupables por destino). Reusa el
+  // mismo endpoint /membresias/ y el mismo modal de detalle/revocar que
+  // Activos -- lo único propio de esta pestaña es el filtro por rol y el
+  // campo "enrolado por".
+  async function loadEnrolamientos() {
+    const loadEl  = document.getElementById('rese-loading');
+    const emptyEl = document.getElementById('rese-empty');
+    const rowsEl  = document.getElementById('rese-rows');
+    if (!rowsEl) return;
+
+    rowsEl.innerHTML = '';
+    if (emptyEl) emptyEl.hidden = true;
+    if (loadEl)  loadEl.hidden = false;
+
+    const res = await api('/membresias/');
+    if (loadEl) loadEl.hidden = true;
+
+    if (!res || !res.ok) {
+      rowsEl.innerHTML = `<div class="empty-state"><div class="empty-title">${t("load_err_title")}</div></div>`;
+      return;
+    }
+
+    let todas = [];
+    try {
+      const d = await res.json();
+      todas = Array.isArray(d) ? d : (d.membresias || []);
+    } catch (e) { console.error(e); }
+
+    enrolamientosCache = todas.filter(m => m.rol === 'invitado_frecuente');
+
+    if (!enrolamientosCache.length) {
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
+    if (emptyEl) emptyEl.hidden = true;
+
+    rowsEl.innerHTML = enrolamientosCache.map(enrolamientoRowHtml).join('');
+    rowsEl.querySelectorAll('[data-enrolamiento-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = Number(el.dataset.enrolamientoId);
+        const m = enrolamientosCache.find(x => x.id === id);
+        if (m) showResidenteModal(m);
+      });
+    });
+  }
+
+  function enrolamientoRowHtml(m) {
+    const nombreCompleto = `${m.nombre || ''} ${m.apellido_paterno || ''} ${m.apellido_materno || ''}`.trim() || t('sin_nombre');
+    const inicial = (m.nombre || 'I')[0].toUpperCase();
+    const avatarHtml = m.foto_cara_url
+      ? `<div class="res-avatar"><img src="${esc(m.foto_cara_url)}" alt="${esc(nombreCompleto)}" onerror="this.parentElement.innerHTML='${inicial}'"></div>`
+      : `<div class="res-avatar">${inicial}</div>`;
+    const contacto = m.telefono ? esc(m.telefono) : t('residente_activo_label');
+    const fechaAlta = m.created_at ? fmtDateShort(m.created_at) : '—';
+
+    return `
+      <div class="res-row" data-enrolamiento-id="${m.id}" style="cursor:pointer">
+        ${avatarHtml}
+        <div class="res-info-main">
+          <div class="res-name">${esc(nombreCompleto)}</div>
+          <div class="res-sub">${contacto}</div>
+        </div>
+        <div class="res-dest-col">
+          <span class="badge badge--aprobado" style="font-size:12px;padding:4px 10px;font-weight:600">
+             ${esc(m.casa_destino || t('sin_casa'))}
+          </span>
+        </div>
+        <div class="res-dest-col">
+          <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">${t('enrolado_por_label')}</div>
+          <div style="font-size:12.5px;color:var(--text-2);font-weight:500">${m.enrolado_por_nombre ? esc(m.enrolado_por_nombre) : '—'}</div>
+        </div>
+        <div class="res-date-col">
+          <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">${t('alta_label')}</div>
+          <div style="font-size:12.5px;color:var(--text-2);font-weight:500">${fechaAlta}</div>
+        </div>
+        <div class="res-action-col">
+          <button type="button" class="btn-cancel" style="padding:6px 12px;font-size:12px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+            ${t('ver_detalle_label')}
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }
+
   function showResidenteModal(m) {
     const modal = document.getElementById('modal-residente-detalle');
     const body = document.getElementById('res-modal-body');
@@ -5027,6 +5127,11 @@
               <div class="res-modal-field-label">${esPendiente ? t('solicitado_el_label') : t('miembro_desde_label')}</div>
               <div class="res-modal-field-value">${m.created_at ? fmtDateShort(m.created_at) : '—'}</div>
             </div>
+            ${m.rol === 'invitado_frecuente' ? `
+            <div class="res-modal-field">
+              <div class="res-modal-field-label">${t('enrolado_por_label')}</div>
+              <div class="res-modal-field-value">${m.enrolado_por_nombre ? esc(m.enrolado_por_nombre) : '—'}</div>
+            </div>` : ''}
           </div>
         </div>
 
@@ -5167,7 +5272,10 @@
       if (res && res.ok) {
         modal.hidden = true;
         mostrarToast('Acceso revocado', 'ok');
-        await loadResidentesActivos();
+        // El modal es el mismo para "Activos" y "Enrolamientos" -- se
+        // refrescan las dos listas en vez de adivinar cuál lo abrió, para
+        // que ninguna se quede mostrando la fila ya revocada.
+        await Promise.all([loadResidentesActivos(), loadEnrolamientos()]);
       } else {
         mostrarToast('No se pudo revocar', 'err');
       }

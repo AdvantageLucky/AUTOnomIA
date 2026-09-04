@@ -186,6 +186,11 @@ type MembresiaActivaConPersona struct {
 	// alta él mismo, sin pasar por la aprobación del admin.
 	Rol       string    `json:"rol"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at"`
+	// EnroladoPorNombre solo viene lleno para un invitado frecuente -- el
+	// residente que lo dio de alta (ver Membresia.CreadaPorPersonaID). Vacío
+	// para una membresía de residente real (la aprobó el admin, no otra
+	// Persona).
+	EnroladoPorNombre string `json:"enrolado_por_nombre" gorm:"column:enrolado_por_nombre"`
 	// Datos del Destino resuelto (join opcional -- nil/"" en membresías
 	// viejas cuyo casa_destino no matcheó ningún Destino real, ver
 	// migración 000064). La UI agrupa/ordena por estos cuando existen y
@@ -204,9 +209,11 @@ func (r *MembresiaRepository) FindActivasPorTenant(tenantID uint) ([]MembresiaAc
 			"(personas.embedding IS NOT NULL) as tiene_rostro, "+
 			"(membresias.pin != '') as tiene_pin, "+
 			"membresias.casa_destino as casa_destino, membresias.status as status, membresias.rol as rol, membresias.created_at as created_at, "+
-			"membresias.destino_id as destino_id, destinos.calle as destino_calle, destinos.tipo as destino_tipo").
+			"membresias.destino_id as destino_id, destinos.calle as destino_calle, destinos.tipo as destino_tipo, "+
+			"TRIM(COALESCE(enrolador.nombre, '') || ' ' || COALESCE(enrolador.apellido_paterno, '')) as enrolado_por_nombre").
 		Joins("JOIN personas ON personas.id = membresias.persona_id").
 		Joins("LEFT JOIN destinos ON destinos.id = membresias.destino_id").
+		Joins("LEFT JOIN personas AS enrolador ON enrolador.id = membresias.creada_por_persona_id").
 		Where("membresias.tenant_id = ? AND membresias.status = ? AND membresias.deleted_at IS NULL", tenantID, ResidenteStatusActivo).
 		Order("membresias.created_at DESC").
 		Scan(&list).Error

@@ -53,6 +53,11 @@ type Membresia struct {
 	// RolInvitadoFrecuente arriba. Default 'residente' para no romper filas
 	// existentes.
 	Rol string `gorm:"not null;default:'residente'"`
+	// CreadaPorPersonaID solo se llena para un invitado frecuente -- el
+	// residente que lo dio de alta (ver persona.Handler.CrearInvitadoFrecuente).
+	// Una membresía de residente real la aprueba el admin, no otra Persona,
+	// así que se queda en nil.
+	CreadaPorPersonaID *uint `gorm:"column:creada_por_persona_id;index"`
 }
 
 func (Membresia) TableName() string { return "membresias" }
