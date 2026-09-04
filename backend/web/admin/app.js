@@ -300,6 +300,13 @@
       seguridad_tipo_pin: "PIN incorrecto",
       seguridad_tipo_qr: "QR inválido",
       seguridad_tipo_rostro: "Rostro no reconocido",
+      tab_entradas: "Entradas",
+      tab_salidas: "Salidas",
+      salidas_sub: "Registros del kiosko de salida -- tap + foto de rostro, sin identidad resuelta.",
+      salidas_cargando: "Cargando salidas…",
+      salidas_sin_datos: "Sin salidas registradas",
+      salidas_sin_datos_sub: "Cuando alguien registre su salida en el kiosko de salida, aparecerá aquí.",
+      salidas_sin_foto: "Sin foto",
       seguridad_sin_foto: "Sin foto",
       seguridad_mismo_rostro: n => `Mismo rostro · ${n + 1}ª vez`,
       seguridad_mismo_rostro_tooltip: "Este rostro ya generó otro(s) evento(s) de seguridad en este fraccionamiento",
@@ -3205,6 +3212,66 @@
       loadSeguridad();
     });
   });
+
+  /* ─── Entradas: pestaña "Salidas" (bitácora del kiosko de salida) ────── */
+  // Mismo patrón que el tab-bar anidado de Seguridad: acotado a "> .tab-bar"
+  // (hijo directo de #screen-visitas) para no chocar con otros selectores.
+  document.querySelectorAll('#screen-visitas > .tab-bar [data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('#screen-visitas > .tab-bar [data-tab]').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('vis-entradas').hidden = tab !== 'vis-entradas';
+      document.getElementById('vis-salidas').hidden = tab !== 'vis-salidas';
+      if (tab === 'vis-salidas') loadSalidas();
+    });
+  });
+
+  function showSalidasState(s) {
+    ["loading", "empty", "error"].forEach(x => {
+      const el = document.getElementById(`salidas-${x}`);
+      if (el) el.hidden = x !== s;
+    });
+    const rows = document.getElementById("salidas-rows");
+    if (rows) rows.hidden = s !== "rows";
+  }
+
+  async function loadSalidas() {
+    showSalidasState("loading");
+    const res = await api("/salidas/");
+    if (!res || !res.ok) { showSalidasState("error"); return; }
+
+    let salidas = [];
+    try {
+      const d = await res.json();
+      salidas = d.salidas || [];
+    } catch (e) { console.error(e); showSalidasState("error"); return; }
+
+    if (salidas.length === 0) { showSalidasState("empty"); return; }
+
+    const container = document.getElementById("salidas-rows");
+    if (!container) return;
+    container.innerHTML = salidas.map((s, i) => renderSalidaRow(s, i)).join("");
+    showSalidasState("rows");
+  }
+
+  function renderSalidaRow(s, i) {
+    const foto = s.foto_url
+      ? `<div class="evidencia-card" style="max-width:180px" tabindex="0" role="button" data-foto="${esc(s.foto_url)}" data-foto-label="${esc(s.kiosko_nombre || '')}">
+          <div class="evidencia-marco"><img class="evidencia-img" src="${esc(s.foto_url)}" alt="${esc(s.kiosko_nombre || '')}" loading="lazy"></div>
+          <div class="evidencia-pie"><span>${t("ver_completa")}</span></div>
+        </div>`
+      : `<div class="empty-text" style="font-size:12px">${t("salidas_sin_foto")}</div>`;
+    return `<div class="sol-card" style="animation-delay:${i * 40}ms;align-items:center">
+      <div class="sol-card-left">
+        <div class="feed-dot"></div>
+        <div>
+          <div class="row-name">${esc(s.kiosko_nombre || `Kiosko #${s.kiosko_id}`)}</div>
+          <div class="row-sub">${fmtDate(s.created_at)}</div>
+        </div>
+      </div>
+      ${foto}
+    </div>`;
+  }
 
   /* ─── Seguridad: pestaña "Identidades y confianza" ──────────────────── */
   // Acotado a "> .tab-bar" (hijo directo de #screen-seguridad): el mismo
