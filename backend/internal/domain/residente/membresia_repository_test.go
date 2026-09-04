@@ -72,6 +72,48 @@ func TestFindActivasPorTenant(t *testing.T) {
 	}
 }
 
+// Caso reportado: el dashboard no sabía quién había enrolado a un invitado
+// frecuente -- CreadaPorPersonaID se llena solo para esas membresías.
+func TestFindActivasPorTenant_EnroladoPorNombre(t *testing.T) {
+	db := setupMembresiaTestDB(t)
+	repo := NewMembresiaRepository(db)
+
+	residente := testPersona{Nombre: "Ana", ApellidoPaterno: "Ruiz", Telefono: "+525500000001"}
+	db.Create(&residente)
+	db.Create(&Membresia{PersonaID: residente.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo, Rol: RolResidente})
+
+	invitado := testPersona{Nombre: "Beto", ApellidoPaterno: "Soto", Telefono: "+525500000002"}
+	db.Create(&invitado)
+	residenteID := residente.ID
+	db.Create(&Membresia{
+		PersonaID: invitado.ID, TenantID: 1, CasaDestino: "Casa 1", Status: ResidenteStatusActivo,
+		Rol: RolInvitadoFrecuente, CreadaPorPersonaID: &residenteID,
+	})
+
+	list, err := repo.FindActivasPorTenant(1)
+	if err != nil {
+		t.Fatalf("no esperaba error, got %v", err)
+	}
+	if len(list) != 2 {
+		t.Fatalf("esperaba 2 membresías, got %d", len(list))
+	}
+
+	var residenteFila, invitadoFila *MembresiaActivaConPersona
+	for i := range list {
+		if list[i].Rol == RolInvitadoFrecuente {
+			invitadoFila = &list[i]
+		} else {
+			residenteFila = &list[i]
+		}
+	}
+	if invitadoFila == nil || invitadoFila.EnroladoPorNombre != "Ana Ruiz" {
+		t.Errorf("esperaba EnroladoPorNombre 'Ana Ruiz' para el invitado frecuente, got %+v", invitadoFila)
+	}
+	if residenteFila == nil || residenteFila.EnroladoPorNombre != "" {
+		t.Errorf("esperaba EnroladoPorNombre vacío para el residente real, got %+v", residenteFila)
+	}
+}
+
 // TestRevocarPorTenant_NoAfectaOtroTenant es el caso de seguridad que
 // importa: un admin del tenant 1 nunca debe poder revocar (ni por error de
 // id, ni por lote) una membresía que pertenece al tenant 2.

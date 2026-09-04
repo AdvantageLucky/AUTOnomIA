@@ -537,6 +537,7 @@
 						<div class="tab-bar-inner">
 							<button class="tab-btn active" data-tab="res-activos" data-i18n="tab_activos">Activos</button>
 							<button class="tab-btn" data-tab="res-solicitudes"><span data-i18n="tab_solicitudes">Solicitudes</span> <span class="nav-badge" id="tab-badge-res-sol-tab" hidden>0</span></button>
+							<button class="tab-btn" data-tab="res-enrolamientos" data-i18n="tab_enrolamientos">Enrolamientos</button>
 						</div>
 					</div>
 
@@ -583,6 +584,22 @@
 								<div class="empty-text" data-i18n="cuando_un_habitante_solicite_unirse">Cuando un habitante solicite unirse desde la app, aparecerá aquí para tu aprobación.</div>
 							</div>
 							<div id="resp-rows"></div>
+						</div>
+					</div>
+
+					<div id="res-enrolamientos" hidden>
+						<div class="screen-body">
+							<div class="screen-sub" style="margin-bottom:14px" data-i18n="enrolamientos_sub">Personas con acceso frecuente por rostro/QR que un residente dio de alta -- no son residentes, entran sin invitación cada vez.</div>
+							<div id="rese-loading" class="loading-state" hidden>
+								<div class="spinner"></div>
+								<div class="loading-text" data-i18n="cargando_enrolamientos">Cargando enrolamientos…</div>
+							</div>
+							<div id="rese-empty" class="empty-state" hidden>
+								<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3.5"/><path d="M2 16c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
+								<div class="empty-title" data-i18n="sin_enrolamientos">Sin enrolamientos</div>
+								<div class="empty-text" data-i18n="sin_enrolamientos_detalle">Cuando un residente le dé acceso frecuente por rostro a alguien, aparecerá aquí.</div>
+							</div>
+							<div id="rese-rows"></div>
 						</div>
 					</div>
 				</section>
