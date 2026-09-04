@@ -49,11 +49,32 @@
 
     let auth;
     try {
-      auth = await kigo.auth.init();
+      // El SDK de Kigo espera que la app nativa inyecte window.kigoBridge
+      // al abrir esta página en su WebView; si nunca aparece, kigo.auth.init()
+      // se queda reintentando hasta 2 minutos (ver vendor/kigo-sdk.umd.js,
+      // timeout:12e4) antes de fallar -- eso se ve como "no funciona"
+      // (cuelgue largo) más que como un error. Se acota a 10s propios para
+      // no dejar al usuario viendo el spinner ese tiempo, y el mensaje
+      // distingue "el puente nunca llegó" de otro tipo de falla, para poder
+      // diagnosticar con soporte de Kigo si el problema es de registro/
+      // configuración de su lado.
+      const puenteListoATiempo = () => new Promise((resolve) => {
+        setTimeout(() => resolve(typeof window.kigoBridge !== "undefined"), 10000);
+      });
+      auth = await Promise.race([
+        kigo.auth.init(),
+        puenteListoATiempo().then((listo) => {
+          if (!listo) throw new Error("BRIDGE_NO_DETECTADO");
+          throw new Error("BRIDGE_TIMEOUT_LOCAL");
+        }),
+      ]);
     } catch (err) {
+      const sinPuente = err?.message === "BRIDGE_NO_DETECTADO";
       mostrar({
         mensaje: "No se pudo verificar tu sesión de Kigo.",
-        secundario: "Abre esta página desde Kigo Parkimovil e inténtalo de nuevo.",
+        secundario: sinPuente
+          ? "Kigo Parkimovil no conectó esta página con su app (window.kigoBridge nunca apareció). Repórtalo a soporte de Kigo con este dato."
+          : "Abre esta página desde Kigo Parkimovil e inténtalo de nuevo.",
         error: true,
       });
       return;
