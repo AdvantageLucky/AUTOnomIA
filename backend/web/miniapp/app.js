@@ -93,7 +93,16 @@
       botonTexto: "Descargar AUTOnomIA",
       onBoton: () => {
         const url = window.__KIGO_APP_RELEASE_URL__;
-        if (!url) return;
+        if (!url) {
+          // Antes esto no hacía nada visible -- un botón "muerto" es
+          // indistinguible de "la mini-app no funciona" para quien la usa.
+          mostrar({
+            mensaje: "No se pudo abrir la descarga.",
+            secundario: "Vuelve a intentarlo en unos minutos.",
+            error: true,
+          });
+          return;
+        }
         if (typeof kigo.navigation?.openExternal === "function") {
           kigo.navigation.openExternal({ url }).catch(() => {
             window.open(url, "_blank");
