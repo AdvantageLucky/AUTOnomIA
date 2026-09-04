@@ -402,19 +402,41 @@ class _InvitarTabViewState extends State<InvitarTabView>
                 ),
                 const SizedBox(height: 14),
                 // Solo puedes invitar a tu propia casa -- el backend ya lo exige
-                // (CrearInvitacion rechaza cualquier otro destino_id), así que
-                // mostrar esto como un dropdown daba a entender que había otras
-                // casas entre las que elegir cuando nunca las hubo.
-                TextFormField(
-                  key: ValueKey(destinoValido),
-                  initialValue: destinos.isEmpty
-                      ? AppLocalizations.t(context, 'sin_casas_registradas')
-                      : destinos.firstWhere((d) => d.id == destinoValido, orElse: () => destinos.first).nombre,
-                  readOnly: true,
-                  enabled: false,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.t(context, 'casa_destino_label'),
-                    suffixIcon: const Icon(Icons.home_outlined, size: 20),
+                // (CrearInvitacion rechaza cualquier otro destino_id). Antes esto
+                // era un TextFormField(enabled: false): seguía dibujándose como
+                // una caja de formulario deshabilitada (algo que parece que
+                // deberías poder tocar pero no puedes), en vez de leerse como lo
+                // que es -- un dato fijo, no una selección. Mismo lenguaje visual
+                // que las filas de "acceso facial" y "vence el" de abajo, sin
+                // ningún affordance interactivo (nada de Switch/InkWell).
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.home_outlined, color: AppTheme.primaryOrange, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.t(context, 'casa_destino_label'),
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                            Text(
+                              destinos.isEmpty
+                                  ? AppLocalizations.t(context, 'sin_casas_registradas')
+                                  : destinos.firstWhere((d) => d.id == destinoValido, orElse: () => destinos.first).nombre,
+                              style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 14),
