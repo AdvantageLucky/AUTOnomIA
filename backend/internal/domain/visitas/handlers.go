@@ -258,6 +258,13 @@ func (h *Handler) RegisterVisita(c *gin.Context) {
 		v.Estado = EstadoAprobado
 		v.AutorizadoPorTipo = AutorizadorPropio
 		v.AutorizadoPorNombre = "Acceso propio (identidad reconocida en registro de visitante: " + reconocido.Motivo + ")"
+		// "VISITANTE" era el único titular posible sin INE ni placa -- ahora
+		// que se resolvió quién es de verdad, mostrar su nombre real en vez
+		// del genérico. Si el titular ya traía algo más específico (de la
+		// placa o de un INE sí leído), se respeta eso en vez de pisarlo.
+		if v.Titular == "VISITANTE" && reconocido.Nombre != "" {
+			v.Titular = strings.ToUpper(reconocido.Nombre)
+		}
 	}
 
 	if err := repoCtx.Create(v); err != nil {

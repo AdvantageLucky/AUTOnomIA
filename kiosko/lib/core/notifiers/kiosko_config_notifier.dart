@@ -81,6 +81,12 @@ class KioskoConfigNotifier extends ChangeNotifier {
       }
       _cargando = false;
       notifyListeners();
+      // Sin esto, un arranque en frío sin red dejaba el heartbeat sin
+      // arrancar nunca: el kiosko sigue operando (con la config de respaldo
+      // de arriba), pero /kioskos/:id/ping jamás se vuelve a llamar, así que
+      // el dashboard admin lo marca "desconectado" para siempre aunque la
+      // red vuelva -- nada en este código lo reintentaba.
+      _iniciarHeartbeat();
       _servicio.escucharConfigStream(
         (cfg) {
           _config = cfg;

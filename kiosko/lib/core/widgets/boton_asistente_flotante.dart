@@ -368,15 +368,34 @@ class _BotonAsistenteFlotanteState extends State<BotonAsistenteFlotante> with Ti
           offline: offline,
           onSolicitar: () => _kiosko.solicitarAsistenciaUrgente(),
         ),
-        child: Container(
-          width: _ladoBotonAccion,
-          height: _ladoBotonAccion,
-          decoration: BoxDecoration(
-            color: context.kSurfaceCard,
-            shape: BoxShape.circle,
-            border: Border.all(color: context.kBorder, width: 1.5),
-          ),
-          child: Icon(Icons.support_agent_rounded, color: context.kTextPrimary, size: 30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: _ladoBotonAccion,
+              height: _ladoBotonAccion,
+              decoration: BoxDecoration(
+                color: context.kSurfaceCard,
+                shape: BoxShape.circle,
+                border: Border.all(color: context.kBorder, width: 1.5),
+              ),
+              child: Icon(Icons.support_agent_rounded, color: context.kTextPrimary, size: 30),
+            ),
+            const SizedBox(height: 4),
+            // El ícono solo no bastaba: sin un label visible permanente
+            // (el Tooltip de arriba solo se ve con hover/long-press, que en
+            // una pantalla táctil de kiosko nadie hace), el botón no se
+            // reconocía como "pide ayuda aquí".
+            Text(
+              'AYUDA',
+              style: TextStyle(
+                color: context.kTextPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
