@@ -98,9 +98,15 @@ type FactorScore struct {
 // evaluarEntrada recorre todos los aspectos de la visita y devuelve el score,
 // los factores que lo componen y que hacer al respecto.
 //
-// historial ya viene sin la visita actual y ordenado de mas reciente a mas
-// antiguo (ver AnalizarVisita).
-func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada EvidenciaEsperada, fuentes ScoreIaFuentes) {
+// historialCompleto y propio ya vienen sin la visita actual y ordenados de
+// mas reciente a mas antiguo (ver AnalizarVisita). historialCompleto es
+// cross-casa (cualquier destino del fraccionamiento) y solo se usa para
+// cambio_modalidad, que necesita saber si esta identidad fue alguna vez
+// residente/invitada en CUALQUIER lado; propio ya viene acotado al mismo
+// destino de v y es lo que alimenta racha_limpia -- sc.VecesVisitado
+// (usado por el factor "recurrencia") ya se calculo sobre propio en
+// AnalizarVisita, antes de llamar aqui.
+func evaluarEntrada(sc *ScoreContexto, v Visita, historialCompleto []Visita, propio []Visita, esperada EvidenciaEsperada, fuentes ScoreIaFuentes) {
 	var factores []FactorScore
 	suma := scoreBase
 
@@ -129,7 +135,7 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 		add("recurrencia", "Visitante recurrente", detalle, visitasContadas*puntosPorVisita, FactorPositivo)
 	}
 
-	if rachaLimpia(historial) {
+	if rachaLimpia(propio) {
 		add("racha_limpia", "Racha de entradas aprobadas",
 			fmt.Sprintf("Sus ultimas %d entradas fueron aprobadas sin incidencias.", rachaLimpiaMinima),
 			12, FactorPositivo)
@@ -255,7 +261,7 @@ func evaluarEntrada(sc *ScoreContexto, v Visita, historial []Visita, esperada Ev
 	// autopase como hasta ahora.
 	if v.TipoVisitante == TipoSinInvitacion {
 		var huboResidente, huboInvitado bool
-		for _, h := range historial {
+		for _, h := range historialCompleto {
 			switch h.TipoVisitante {
 			case TipoResidente:
 				huboResidente = true

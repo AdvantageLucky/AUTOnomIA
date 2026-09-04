@@ -196,6 +196,36 @@ func (sc ScoreContexto) AScoreIA() ScoreIA {
 	}
 }
 
+// mismoDestino compara el destino de dos visitas -- por DestinoID cuando
+// ambas lo tienen resuelto (evita el problema de "DEPTO 11" vs "Depto 11"
+// como strings distintos), cayendo al texto normalizado si a cualquiera de
+// las dos le falta el ID (registros viejos sin backfill).
+func mismoDestino(a, b Visita) bool {
+	if a.DestinoID != nil && b.DestinoID != nil {
+		return *a.DestinoID == *b.DestinoID
+	}
+	return strings.EqualFold(strings.TrimSpace(a.CasaDestino), strings.TrimSpace(b.CasaDestino))
+}
+
+// historialMismoDestino filtra el historial (cross-casa, ver
+// Repository.HistorialDeVisitante) a solo las visitas hacia el MISMO destino
+// que la visita nueva. Existe porque la confianza que alguien se ganó
+// visitando su propia casa (como residente) no dice nada de si es confiable
+// tocando la puerta de un destino ajeno -- sin este filtro, "visitante
+// recurrente" y "racha de entradas aprobadas" contaban entradas a CUALQUIER
+// casa del fraccionamiento como si fueran entradas a la casa que se está
+// evaluando ahora, dejando entrar con alta confianza a un destino con el que
+// esta identidad nunca tuvo relación.
+func historialMismoDestino(historial []Visita, nueva Visita) []Visita {
+	filtrado := make([]Visita, 0, len(historial))
+	for _, v := range historial {
+		if mismoDestino(v, nueva) {
+			filtrado = append(filtrado, v)
+		}
+	}
+	return filtrado
+}
+
 // AnalizarVisita compara la visita nueva contra el historial y devuelve el
 // ScoreContexto, ya con el score de confianza y sus factores calculados.
 // historial debe estar ordenado de más reciente a más antiguo.
@@ -209,19 +239,30 @@ func (sc ScoreContexto) AScoreIA() ScoreIA {
 // historial ya viene resuelto según esas mismas fuentes (ver
 // Repository.HistorialDeVisitante), así que aquí solo hace falta acotar la
 // comparación de placa, que es el único factor con un cálculo propio.
+//
+// Las señales NEGATIVAS (rechazo previo, cambio de modalidad, placa
+// distinta, horario inusual) se evalúan contra el historial COMPLETO
+// (cualquier casa del fraccionamiento): un rechazo o una placa que no
+// cuadra en otro destino sigue siendo una alerta real aquí. Las señales
+// POSITIVAS de recurrencia (VecesVisitado/UltimaVisita, que alimentan los
+// factores "recurrencia" y "racha_limpia" en evaluarEntrada) se acotan al
+// mismo destino -- ver historialMismoDestino.
 func AnalizarVisita(historial []Visita, nueva Visita, esperada EvidenciaEsperada, fuentes ScoreIaFuentes) ScoreContexto {
+	propio := historialMismoDestino(historial, nueva)
 	sc := ScoreContexto{
-		VecesVisitado: len(historial),
+		VecesVisitado: len(propio),
 		OCRSospechoso: validarOCR(nueva.Curp),
 	}
 
-	if len(historial) == 0 {
-		evaluarEntrada(&sc, nueva, historial, esperada, fuentes)
-		return sc
+	if len(propio) > 0 {
+		ultima := propio[0].CreatedAt
+		sc.UltimaVisita = &ultima
 	}
 
-	ultima := historial[0].CreatedAt
-	sc.UltimaVisita = &ultima
+	if len(historial) == 0 {
+		evaluarEntrada(&sc, nueva, historial, propio, esperada, fuentes)
+		return sc
+	}
 
 	// Si la visita no trae CURP, el historial vino agrupado por placa y todas las
 	// matrículas son la misma por construcción: comparar no diría nada (ADR-0024).
@@ -238,7 +279,12 @@ func AnalizarVisita(historial []Visita, nueva Visita, esperada EvidenciaEsperada
 
 	sc.HorarioInusual = horarioInusual(historial, nueva.CreatedAt)
 
-	evaluarEntrada(&sc, nueva, historial, esperada, fuentes)
+	// cambio_modalidad necesita ver el historial completo (revisa si esta
+	// identidad ENTRÓ ALGUNA VEZ como residente o invitado, sin importar en
+	// qué casa) -- evaluarEntrada recibe el historial completo aparte para
+	// ese único chequeo; racha_limpia y placa_coincide, en cambio, usan
+	// sc.VecesVisitado/propio (mismo destino).
+	evaluarEntrada(&sc, nueva, historial, propio, esperada, fuentes)
 
 	// Confiable se conserva porque el dashboard ya pintaba una insignia con
 	// él, pero ahora deriva del score en vez de un contador suelto.

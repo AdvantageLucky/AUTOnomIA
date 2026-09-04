@@ -188,6 +188,90 @@ func TestAnalizarVisita_HorarioInusual_MedianocheWrap(t *testing.T) {
 	}
 }
 
+// Caso reportado: alguien con buen historial en SU casa (como residente)
+// entra por el flujo de visitante hacia un destino DISTINTO -- la confianza
+// que se ganó en su propia casa no debe contar para un destino con el que
+// nunca tuvo relación. Sin el filtro por destino, "recurrencia" y
+// "racha_limpia" contaban ese historial ajeno y el visitante llegaba con
+// alta confianza a una puerta que nunca había tocado.
+func TestAnalizarVisita_RecurrenciaNoCruzaDestino(t *testing.T) {
+	historial := []Visita{
+		{CasaDestino: "DEPTO 11", Estado: EstadoAprobado},
+		{CasaDestino: "DEPTO 11", Estado: EstadoAprobado},
+		{CasaDestino: "DEPTO 11", Estado: EstadoAprobado},
+	}
+	nueva := Visita{CasaDestino: "DEPTO 12", Curp: "GARJ900101HMCRNA01"}
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
+
+	if sc.VecesVisitado != 0 {
+		t.Errorf("historial de otro destino no debe contar como VecesVisitado, got %d", sc.VecesVisitado)
+	}
+	for _, f := range sc.Factores {
+		if f.Clave == "recurrencia" || f.Clave == "racha_limpia" {
+			t.Errorf("no debe aparecer el factor %q con historial de un destino distinto", f.Clave)
+		}
+	}
+}
+
+// El mismo caso pero SÍ hacia el mismo destino: la recurrencia debe seguir
+// contando con normalidad.
+func TestAnalizarVisita_RecurrenciaCuentaMismoDestino(t *testing.T) {
+	historial := []Visita{
+		{CasaDestino: "Depto 11", Estado: EstadoAprobado},
+		{CasaDestino: "Depto 11", Estado: EstadoAprobado},
+		{CasaDestino: "Depto 11", Estado: EstadoAprobado},
+	}
+	// Mayúsculas distintas a propósito: debe comparar sin distinguir caso.
+	nueva := Visita{CasaDestino: "DEPTO 11", Curp: "GARJ900101HMCRNA01"}
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
+
+	if sc.VecesVisitado != 3 {
+		t.Errorf("esperaba 3 visitas previas al mismo destino, got %d", sc.VecesVisitado)
+	}
+	tieneRacha := false
+	for _, f := range sc.Factores {
+		if f.Clave == "racha_limpia" {
+			tieneRacha = true
+		}
+	}
+	if !tieneRacha {
+		t.Error("3 aprobaciones seguidas al mismo destino deben dar racha_limpia")
+	}
+}
+
+// Un rechazo en OTRO destino sí debe seguir contando como señal negativa --
+// a diferencia de la recurrencia, un rechazo es una alerta que no se vuelve
+// irrelevante solo porque haya sido en otra puerta del mismo fraccionamiento.
+func TestAnalizarVisita_RechazoPrevioSiCruzaDestino(t *testing.T) {
+	historial := []Visita{
+		{CasaDestino: "DEPTO 11", Estado: EstadoRechazado},
+	}
+	nueva := Visita{CasaDestino: "DEPTO 12", Curp: "GARJ900101HMCRNA01"}
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
+
+	if !sc.RechazadoPrevio {
+		t.Error("un rechazo en otro destino debe seguir marcando RechazadoPrevio")
+	}
+}
+
+// DestinoID manda sobre el texto de CasaDestino cuando ambos lo tienen --
+// evita que un mismo destino con el texto capturado distinto (backfill,
+// typo, etc.) se trate como "distinto" solo por el string.
+func TestAnalizarVisita_RecurrenciaUsaDestinoID(t *testing.T) {
+	id := uint(7)
+	historial := []Visita{
+		{CasaDestino: "Edificio Norte, depto 11", DestinoID: &id, Estado: EstadoAprobado},
+		{CasaDestino: "Edificio Norte, depto 11", DestinoID: &id, Estado: EstadoAprobado},
+		{CasaDestino: "Edificio Norte, depto 11", DestinoID: &id, Estado: EstadoAprobado},
+	}
+	nueva := Visita{CasaDestino: "DEPTO 11", DestinoID: &id, Curp: "GARJ900101HMCRNA01"}
+	sc := AnalizarVisita(historial, nueva, EvidenciaEsperada{}, fuentesTodas)
+
+	if sc.VecesVisitado != 3 {
+		t.Errorf("con el mismo DestinoID debe contar aunque el texto difiera, got %d", sc.VecesVisitado)
+	}
+}
+
 func TestScoreContexto_AScoreIA(t *testing.T) {
 	ahora := time.Now()
 	sc := ScoreContexto{

@@ -48,7 +48,7 @@ func GenerarResumen(ctx context.Context, llmURL string, s ScoreContexto, v Visit
 		// comportamiento de siempre (las 3 fuentes prendidas) -- este
 		// recálculo es solo un respaldo para cuando el score llegó sin
 		// factores, no la vía normal en la que sí se conoce la config.
-		evaluarEntrada(&s, v, nil, EvidenciaEsperada{}, ScoreIaFuentes{Documento: true, Placa: true, Rostro: true})
+		evaluarEntrada(&s, v, nil, nil, EvidenciaEsperada{}, ScoreIaFuentes{Documento: true, Placa: true, Rostro: true})
 	}
 
 	if strings.TrimSpace(llmURL) == "" {
