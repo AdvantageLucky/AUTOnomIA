@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 
@@ -29,6 +31,15 @@ class QrResultViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMsg = e.toString().replaceFirst('Exception: ', '');
       _estado = QrResultEstado.error;
+      // Cualquier rechazo del backend al consumir la invitación (vencida,
+      // revocada, ya agotada, token inexistente) cuenta como "QR inválido"
+      // para la pestaña "Seguridad" -- a diferencia del PIN, aquí no hay un
+      // solo mensaje de error a comparar, así que se reporta en todo el
+      // catch en vez de filtrar por texto.
+      unawaited(KioskoServicio().reportarEventoSeguridad(
+        tipo: 'qr_invalido',
+        detalle: _errorMsg,
+      ));
     }
     notifyListeners();
   }
