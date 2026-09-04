@@ -742,6 +742,71 @@ func (h *Handler) ResetHistorialPersona(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
 }
 
+// HistorialPorCURPHandler (admin) es el equivalente a HistorialCorrelacionado
+// para un visitante sin cuenta -- su historial se agrupa por CURP.
+func (h *Handler) HistorialPorCURPHandler(c *gin.Context) {
+	curp := strings.TrimSpace(c.Param("curp"))
+	if curp == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "CURP inválido"})
+		return
+	}
+
+	list, err := h.repo.WithContext(c.Request.Context()).HistorialPorCURP(curp)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]VisitaResponse, 0, len(list))
+	for _, v := range list {
+		items = append(items, toVisitaResponse(v))
+	}
+	c.JSON(http.StatusOK, gin.H{"visitas": items, "total": len(items)})
+}
+
+// ResetHistorialPorCURP (admin) es el equivalente a ResetHistorialPersona
+// para un visitante sin cuenta -- su historial se agrupa por CURP, no por
+// PersonaID (ver HistorialDeVisitante), así que el reset también se ancla
+// ahí. Global: aplica sin importar a qué destino del tenant llegue después.
+func (h *Handler) ResetHistorialPorCURP(c *gin.Context) {
+	adminID := c.MustGet(ctxkeys.AdminID).(uint)
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	curp := strings.TrimSpace(c.Param("curp"))
+	if curp == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "CURP inválido"})
+		return
+	}
+
+	repoCtx := h.repo.WithContext(c.Request.Context())
+	if err := repoCtx.CrearResetPorCURP(tenantID, curp, "", nil, &adminID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
+}
+
+// ListarIdentidades (admin) es la pantalla "Identidades y confianza" --
+// todas las identidades con historial en el tenant, para verlas y
+// resetearlas sin tener que llegar ahí desde el detalle de una visita en
+// particular.
+//
+// @Summary Listar identidades con historial de confianza
+// @Tags visitas
+// @Produce json
+// @Success 200 {object} map[string]any
+// @Router /visitas/identidades [get]
+func (h *Handler) ListarIdentidades(c *gin.Context) {
+	tenantID := c.MustGet(ctxkeys.TenantID).(uint)
+
+	list, err := h.repo.WithContext(c.Request.Context()).ListarIdentidadesConScore(tenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"identidades": list, "total": len(list)})
+}
+
 // parsearEmbedding lee el vector que manda el kiosko. Un embedding invalido se
 // descarta en silencio en vez de rechazar la visita entera: sirve para
 // identificar al visitante despues, no para dejarlo pasar ahora, y tumbar un

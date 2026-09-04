@@ -7,6 +7,7 @@ import 'package:kigo_user/models/visita_historial_model.dart';
 import 'package:kigo_user/models/visita_pendiente_model.dart';
 import 'package:kigo_user/theme/app_theme.dart';
 import 'package:kigo_user/viewmodels/auth_viewmodel.dart';
+import 'package:kigo_user/viewmodels/identidades_confianza_viewmodel.dart';
 import 'package:kigo_user/viewmodels/invitation_viewmodel.dart';
 import 'package:kigo_user/viewmodels/pending_visits_viewmodel.dart';
 import 'package:kigo_user/viewmodels/settings_viewmodel.dart';
@@ -96,6 +97,7 @@ void main() {
         ChangeNotifierProvider<PendingVisitsViewModel>.value(value: _PendingFake()),
         ChangeNotifierProvider<VisitHistoryViewModel>.value(value: historial),
         ChangeNotifierProvider<InvitationViewModel>(create: (_) => InvitationViewModel()),
+        ChangeNotifierProvider<IdentidadesConfianzaViewModel>(create: (_) => IdentidadesConfianzaViewModel()),
         ChangeNotifierProvider<SettingsViewModel>(create: (_) => SettingsViewModel()),
       ],
       child: MaterialApp(theme: _tema(), home: const KigoShell()),
