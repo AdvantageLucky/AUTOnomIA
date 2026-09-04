@@ -57,6 +57,10 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if strings.TrimSpace(req.TelefonoContacto) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "El teléfono de contacto es requerido"})
+		return
+	}
 
 	actual, err := h.repo.FindByID(id)
 	if err != nil {
@@ -74,10 +78,14 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 	fields["descripcion"] = req.Descripcion
 	fields["telefono_contacto"] = req.TelefonoContacto
 
-	// El código se genera solo una vez, a partir del nombre — el admin nunca
-	// lo escribe. Una vez asignado queda fijo, aunque el nombre cambie después.
-	if req.Nombre != "" && (actual.Codigo == nil || *actual.Codigo == "") {
-		fields["codigo"] = h.generarCodigoUnico(req.Nombre)
+	// El código se deriva del nombre y el admin nunca lo escribe directamente
+	// -- se regenera cuando el nombre cambia (o no existe todavía) para que
+	// siga reflejando el nombre actual del centro. Esto no rompe a los
+	// residentes ya vinculados: Membresia referencia al centro por su ID
+	// numérico, no por este código -- solo un enlace de invitación sin usar
+	// compartido con el código viejo dejaría de servir.
+	if req.Nombre != "" && (actual.Codigo == nil || *actual.Codigo == "" || req.Nombre != actual.Nombre) {
+		fields["codigo"] = h.generarCodigoUnico(req.Nombre, actual.ID)
 	}
 
 	if err := h.repo.Update(id, fields); err != nil {
@@ -96,11 +104,14 @@ func (h *Handler) PatchTenant(c *gin.Context) {
 
 // generarCodigoUnico deriva el código del nombre y le agrega un sufijo
 // numérico si ya está en uso por otro centro (Codigo es uniqueIndex).
-func (h *Handler) generarCodigoUnico(nombre string) string {
+// excludeID es el propio centro que se está actualizando -- si el código
+// derivado coincide con el que ya tenía asignado, no cuenta como colisión.
+func (h *Handler) generarCodigoUnico(nombre string, excludeID uint) string {
 	base := GenerarCodigo(nombre)
 	codigo := base
 	for i := 2; ; i++ {
-		if _, err := h.repo.FindByCodigo(codigo); errors.Is(err, gorm.ErrRecordNotFound) {
+		existente, err := h.repo.FindByCodigo(codigo)
+		if errors.Is(err, gorm.ErrRecordNotFound) || existente.ID == excludeID {
 			return codigo
 		}
 		codigo = fmt.Sprintf("%s-%d", base, i)
