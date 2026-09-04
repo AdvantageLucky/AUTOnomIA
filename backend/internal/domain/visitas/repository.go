@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"time"
@@ -465,8 +466,21 @@ func (r *Repository) BuscarPersonaPorIdentidad(tenantID uint, curp string, embed
 		}
 	}
 	if mejor == nil || mejorScore < umbralSimilitud {
+		// Sin este log, un intento que falla por poco (0.68 contra un umbral
+		// de 0.85) no deja ningun rastro de que tan cerca estuvo -- la
+		// proxima vez que alguien reporte "reconocio mi rostro una vez y la
+		// siguiente ya no", esto es lo unico que permite distinguir ruido
+		// normal de camara de un bug real en el calculo de similitud.
+		if mejor != nil {
+			log.Printf("BuscarPersonaPorIdentidad tenant %d: mejor candidato persona %d con similitud %.4f, no alcanza el umbral %.4f",
+				tenantID, mejor.PersonaID, mejorScore, umbralSimilitud)
+		} else {
+			log.Printf("BuscarPersonaPorIdentidad tenant %d: sin candidatos activos contra los que comparar", tenantID)
+		}
 		return nil, nil
 	}
+	log.Printf("BuscarPersonaPorIdentidad tenant %d: match por rostro, persona %d con similitud %.4f (umbral %.4f)",
+		tenantID, mejor.PersonaID, mejorScore, umbralSimilitud)
 
 	return &PersonaReconocida{
 		PersonaID:   mejor.PersonaID,
@@ -600,7 +614,12 @@ func (r *Repository) GetKioskoConfig(kioskoID uint) (*kiosko.KioskoConfig, error
 	var cfg kiosko.KioskoConfig
 	err := r.db.Scopes(ByTenant).Where("kiosko_id = ?", kioskoID).First(&cfg).Error
 	if err == gorm.ErrRecordNotFound {
-		return &kiosko.KioskoConfig{AutoPassHabilitado: true, UmbralFacialPct: 85, UmbralAutopassPct: 80}, nil
+		// UmbralSimilitudCara en su zero-value (0.0) haria que
+		// BuscarPersonaPorIdentidad aceptara cualquier similitud de rostro
+		// como match -- sin este valor explicito, un kiosko sin config
+		// propia todavia (recien creado, antes del primer guardado) quedaria
+		// reconociendo a cualquiera como el residente que sea.
+		return &kiosko.KioskoConfig{AutoPassHabilitado: true, UmbralFacialPct: 85, UmbralAutopassPct: 80, UmbralSimilitudCara: 0.85}, nil
 	}
 	return &cfg, err
 }
