@@ -27,44 +27,85 @@ import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
 /// Lado del recuadro de escaneo como fracción del ancho.
 ///
-/// Antes 0.66: el recuadro (centrado verticalmente) se comía tanto alto que
-/// a la franja de abajo ("Apunta al código QR" + botón "No tengo la app")
-/// le quedaba una banda angosta -- medido con un RenderParagraph de esa
-/// franja contra su rect ya escalado, el FittedBox que la envuelve la
-/// reducía a ~40% de su tamaño real. Bajarlo a 0.5 (siguen siendo ~400px de
-/// lado en el panel de 800x1280, de sobra para leer un QR a un brazo de
-/// distancia) le devuelve a esa franja el espacio que necesita para
-/// renderizarse a tamaño completo.
+/// Antes 0.5375 (430px en el panel). Con la franja de abajo colgada del piso
+/// quedaban 143px muertos entre el recuadro y sus textos -- medidos: el
+/// recuadro terminaba en 838 y "Apunta al código QR" empezaba en 981. Ahora
+/// esa franja se cuelga del recuadro y no del piso, así que ese hueco se lo
+/// queda el encuadre.
 ///
-/// 0.5375 son 430px clavados en el panel de 800x1280, que es la medida
-/// pedida; sigue siendo una fracción y no un número fijo para que el
-/// recuadro se adapte a otros lienzos.
-const double _fraccionRecuadro = 0.5375;
+/// 0.63 son 504px en el panel de 800x1280 y el tope de [_ladoRecuadroPedido]
+/// los deja en los 503 que hacen que todo caiga con 10px de aire; sigue
+/// siendo una fracción y no un número fijo para que el recuadro se adapte a
+/// otros lienzos.
+const double _fraccionRecuadro = 0.63;
 
 /// Lado del recuadro para un lienzo dado.
 ///
 /// El tope contra el alto es para no quedarnos sin las dos franjas de
-/// contenido: en un lienzo apaisado 0.5 del ancho no cabe siquiera en la
-/// pantalla, y arriba y abajo sobraba espacio negativo.
+/// contenido: en un lienzo apaisado 0.63 del ancho no cabe siquiera en la
+/// pantalla, y arriba y abajo sobraba espacio negativo. Era 0.38 cuando el
+/// recuadro medía 430; 0.43 es lo mínimo que deja pasar los 503 del panel
+/// (503/1280 = 0.393) sin que este tope se los recorte.
 double _ladoRecuadro(Size lienzo) => math.min(
       _ladoRecuadroPedido,
-      math.min(lienzo.width * _fraccionRecuadro, lienzo.height * 0.38),
+      math.min(lienzo.width * _fraccionRecuadro, lienzo.height * 0.43),
     );
 
 /// La medida pedida para el panel, en píxeles lógicos y no como fracción.
 ///
-/// La fracción sola daba 430 sólo si el lienzo mide exactamente 800 de ancho;
-/// en cualquier otro el recuadro salía de otro tamaño y parecía que el cambio
-/// no se había aplicado. Con el tope, 430 son 430 mientras quepan, y la
+/// La fracción sola daba la medida sólo si el lienzo mide exactamente 800 de
+/// ancho; en cualquier otro el recuadro salía de otro tamaño y parecía que el
+/// cambio no se había aplicado. Con el tope, 503 son 503 mientras quepan, y la
 /// fracción sigue mandando en lienzos más chicos.
-const double _ladoRecuadroPedido = 430.0;
-
-/// Qué parte del sobrante vertical va ARRIBA del recuadro.
 ///
-/// Era 0.32. Con el bloque de abajo anclado a los botones flotantes, el
-/// recuadro y sus textos bajan: el sobrante que eso libera se va todo a la
-/// franja de arriba, que es donde vive la pastilla del mensaje.
-const double _fraccionTopRecuadro = 0.48;
+/// 503 no es un número elegido a ojo: es exactamente lo que sobra en el panel
+/// de 800x1280 una vez descontada la franja de arriba (428, lo que necesitan
+/// la marca y la pastilla del mensaje bajo el bloque de la mascota) y todo lo
+/// que se cuelga por debajo del recuadro -- [_huecoRecuadroBloque], los 215
+/// que mide el bloque de textos + CTA con la fuente real,
+/// [_huecoCtaBotonesFlotantes] y los 124 del bloque de botones flotantes
+/// ([KigoDesign.offsetBotonesFlotantes] +
+/// [KigoDesign.altoBotonAccionConEtiqueta]). Si alguno de esos cambia, hay que
+/// restarlo de aquí: fue 543 mientras los botones medían 64 de lado y la
+/// mascota 76.
+///
+/// Es el CASO PEOR: esos 428 son el tope de la franja de arriba
+/// ([_fraccionTopRecuadro]), el que hace falta cuando el mensaje del
+/// dashboard se va a tres renglones. Con el mensaje del panel, que entra en
+/// uno, la franja mide 303 y el recuadro sube 125 -- con sus textos y su CTA
+/// detrás. El lado no cambia: sigue midiendo lo que cabía en el caso peor, y
+/// lo que sobra queda de aire sobre los botones flotantes.
+///
+/// El reparto ya no cierra al milímetro en ese caso peor: el bloque pasó de
+/// 205 a 215 al subir el CTA a [_altoBotonSinCodigo], 10 más de los que le
+/// deja la franja con el recuadro en su tope. No se le quitaron al lado del
+/// recuadro porque ahí el `FittedBox` de la franja de abajo ya hace su
+/// trabajo -- con el mensaje a tres renglones el bloque sale al 97% en vez
+/// de desbordar --, y con el mensaje del panel sobran 125px y nunca entra en
+/// acción.
+const double _ladoRecuadroPedido = 503.0;
+
+/// Qué parte del sobrante vertical va ARRIBA del recuadro, COMO TOPE.
+///
+/// Ya no es la posición del recuadro sino lo más abajo que puede caer: el
+/// recuadro se cuelga de la pastilla del mensaje (ver `topPedido` en
+/// [rectRecuadroQr]) y esta fracción sólo lo detiene cuando la pastilla crece
+/// tanto que empujarlo más abajo se comería la franja de abajo. 0.5508 del
+/// sobrante son 428 en el panel, que es exactamente lo que queda una vez
+/// descontado todo lo que cuelga del recuadro ([_ladoRecuadroPedido] explica
+/// el reparto).
+///
+/// Era 0.48 cuando el recuadro medía 430 y la franja de arriba 408. El
+/// recuadro creció (sin tocar esa franja: los px salieron del hueco muerto de
+/// abajo) y después la mascota creció a 96, que le pide a la franja los 20px
+/// que subió [KigoDesign.clearanceAsistenteArriba].
+const double _fraccionTopRecuadro = 0.5508;
+
+/// Marca el hueco del encuadre en el árbol de widgets: la posición del
+/// recuadro ya no se puede recalcular desde fuera con sólo el tamaño de la
+/// pantalla (depende de cuánto mide la pastilla del mensaje con la fuente
+/// real), así que quien lo necesite lo mide.
+const Key claveRecuadroQr = ValueKey('recuadro-qr');
 
 /// Hueco que ocupa el recuadro de escaneo en un lienzo dado: la única fuente
 /// de verdad de esa geometría.
@@ -83,19 +124,43 @@ const double _fraccionTopRecuadro = 0.48;
 /// desbordar en un lienzo apaisado bajito -- por debajo de eso el Column de la
 /// franja de arriba revienta (RenderFlex overflow), confirmado con
 /// qr_scanner_layout_test en Size(784, 361).
-Rect rectRecuadroQr(Size lienzo) {
+///
+/// [topPedido] es dónde termina de verdad la franja de arriba: la suma medida
+/// de la marca, la pastilla del mensaje y [_huecoPastillaRecuadro]. Es lo que
+/// cuelga el recuadro de la pastilla en vez de dejarlo a una fracción fija:
+/// con el mensaje del panel en un renglón la pastilla mide 127 y la fracción
+/// sola dejaba 145px muertos entre ella y el encuadre. El tope manda cuando
+/// el mensaje se va a varios renglones -- ahí bajar el recuadro le quitaría a
+/// la franja de abajo el alto que necesitan los textos y el CTA, así que la
+/// pastilla se queda con su franja y es el `FittedBox` de la pantalla el que
+/// la encoge si hace falta. Sin él (mensaje vacío, no hay pastilla de la que
+/// colgarse) se cae al tope, que es el reparto de siempre.
+Rect rectRecuadroQr(Size lienzo, {double? topPedido}) {
   final lado = _ladoRecuadro(lienzo);
+  final tope = math.max((lienzo.height - lado) * _fraccionTopRecuadro, 100.0);
   final top = math
-      .max((lienzo.height - lado) * _fraccionTopRecuadro, 100.0)
+      .min(topPedido ?? tope, tope)
       .clamp(0.0, lienzo.height);
   return Rect.fromLTWH((lienzo.width - lado) / 2, top, lado, lado);
 }
 
 /// Alto del CTA "no tengo la app". Va fijo y no calculado desde el padding:
-/// la medida es un requisito de diseño (750x100 en el panel) y derivarla del
+/// la medida es un requisito de diseño (750x110 en el panel) y derivarla del
 /// texto la dejaba a merced de cuántos renglones ocupe la frase en cada
 /// idioma.
-const double _altoBotonSinCodigo = 100;
+const double _altoBotonSinCodigo = 110;
+
+/// Tamaño de la frase del CTA, atado al alto del botón.
+///
+/// 26 sobre 100 es la proporción con la que se calibró: a 38 la frase pedía
+/// ~1400px de un tirón, más que el ancho entero del panel, y se partía en
+/// tres renglones; a 26 entra de largo en los 710 interiores del botón y
+/// sigue siendo más grande que el subtítulo de la franja. Se deja escrito
+/// como esa proporción y no como un número suelto para que subir el botón
+/// suba la letra con él en vez de dejarla nadando dentro de una caja más
+/// alta -- a 110 son 28.6, y con Manrope la frase sigue entrando en un
+/// renglón (el FittedBox interior es la red para los idiomas donde no).
+const double _fuenteBotonSinCodigo = _altoBotonSinCodigo * 26 / 100;
 
 /// Ancho pedido para el CTA. Mismo motivo que [_ladoRecuadroPedido]: derivarlo
 /// del ancho del lienzo sólo daba 750 en un panel de 800.
@@ -103,6 +168,38 @@ const double _anchoBotonPedido = 750.0;
 
 /// Aire entre el CTA y los botones flotantes de abajo.
 const double _huecoCtaBotonesFlotantes = 10.0;
+
+/// Aire entre la pastilla del mensaje y el recuadro.
+///
+/// Es el padding de abajo de la franja superior Y el sumando con el que
+/// [rectRecuadroQr] cuelga el recuadro de la pastilla: los dos tienen que ser
+/// el mismo número o el recuadro no cae donde termina la franja.
+///
+/// El doble que [_huecoRecuadroBloque], y a propósito: abajo el recuadro
+/// tiene enfrente un texto suelto sobre el fondo, arriba una pastilla con
+/// borde y relleno. A la misma distancia la pastilla se le pegaba encima.
+const double _huecoPastillaRecuadro = 20.0;
+
+/// Aire entre el recuadro y el bloque de abajo (los dos textos + el CTA).
+///
+/// El bloque va pegado al recuadro y no repartido en su franja: cuelga de su
+/// borde de abajo con esto de por medio, así que sube y baja con él. Contra
+/// los botones flotantes ya no se encuentran justos -- eso pasaba cuando el
+/// recuadro caía siempre en su tope; ahora [_huecoCtaBotonesFlotantes] es
+/// sólo la reserva mínima y lo que sobra queda de aire ahí abajo.
+const double _huecoRecuadroBloque = 10.0;
+
+/// Escala de la pastilla del mensaje en esta pantalla (la bienvenida la deja
+/// en 1).
+///
+/// 3.0 sale de medir el hueco: con el recuadro en su tope la franja de arriba
+/// deja 264px y a esta escala la pastilla ocupa 127 en un renglón, 187 en dos
+/// y 247 en tres, así que entra sin que el `FittedBox` tenga que encogerla en
+/// ninguno de los tres casos. El alto de cada renglón sí es independiente de
+/// la fuente (se lo fija el `height: 1.25` del badge); cuántos renglones
+/// salen, no -- por eso la pastilla se mide con la fuente real
+/// ([altoPastillaComunidad]) en vez de estimarla.
+const double _escalaPastilla = 3.0;
 
 /// Margen lateral de la franja de arriba, y por lo tanto lo unico que le
 /// queda por crecer a la pastilla del mensaje: es lo unico de esa franja que
@@ -440,9 +537,46 @@ class _QrScannerViewState extends State<QrScannerView>
     // siempre la pantalla completa, que es sobre lo que pinta el painter.
     final pantalla = MediaQuery.sizeOf(context);
     final safe = MediaQuery.paddingOf(context);
-    final recuadro = rectRecuadroQr(pantalla);
+
+    // Renglón de la marca. Sale del tope y no del top final del recuadro
+    // porque el top final depende de él: si se mordieran la cola no habría
+    // número que resolviera las dos cosas a la vez. Contra el tope da lo
+    // mismo que daba antes (132 en el panel) y su otro término -- la red del
+    // apaisado -- sigue midiéndose contra la franja más grande posible, que
+    // es la única en la que puede desbordar.
+    final topeFranjaSuperior = rectRecuadroQr(pantalla).top;
+    final altoRenglonMarca = math.min(
+      KigoDesign.clearanceAsistenteArriba - 24 + _huecoAsistentePastilla,
+      math.max(topeFranjaSuperior - safe.top - 44, 0.0) * 0.55,
+    );
+
+    // Dónde termina de verdad la franja de arriba: el padding, el renglón de
+    // la marca, la pastilla medida con la fuente real y el aire pedido. El
+    // recuadro se cuelga de ahí -- y con él los textos y el CTA, que ya
+    // colgaban de su borde de abajo.
+    final anchoPastilla = pantalla.width - _margenFranjaSuperior * 2;
+    final altoPastilla = altoPastillaComunidad(
+      context,
+      mensaje: mensaje,
+      ancho: anchoPastilla,
+      escala: _escalaPastilla,
+      envolverTexto: true,
+    );
+    final recuadro = rectRecuadroQr(
+      pantalla,
+      topPedido: mensaje.isEmpty
+          ? null
+          : safe.top +
+              24 +
+              altoRenglonMarca +
+              altoPastilla +
+              _huecoPastillaRecuadro,
+    );
     final topRecuadro = recuadro.top;
     final bottomRecuadro = recuadro.bottom.clamp(0.0, pantalla.height);
+    // Lo que queda del recuadro para abajo: la franja de la que cuelgan los
+    // textos y el CTA, y contra la que se topan sus dos reservas.
+    final franjaInferior = pantalla.height - bottomRecuadro;
 
     return Scaffold(
       // Fuera del recuadro no se ve la vista previa: el fondo del Scaffold y
@@ -519,9 +653,23 @@ class _QrScannerViewState extends State<QrScannerView>
                   scanned: widget.viewModel.isScanned,
                   pulso: _anilloCtrl.value,
                   colorVelo: context.kBg,
+                  hueco: recuadro,
                 ),
                 child: const SizedBox.expand(),
               ),
+            ),
+          ),
+
+          // El hueco del encuadre, como widget: no dibuja nada ni recibe
+          // toques, existe para que se pueda medir desde fuera dónde quedó
+          // (las pruebas de layout comprueban contra él las separaciones de
+          // 10px). El anillo lo sigue pintando el painter sobre el mismo
+          // rectángulo.
+          Positioned.fromRect(
+            rect: recuadro,
+            child: const IgnorePointer(
+              key: claveRecuadroQr,
+              child: SizedBox.expand(),
             ),
           ),
 
@@ -529,8 +677,9 @@ class _QrScannerViewState extends State<QrScannerView>
           // painter pinta sobre la pantalla completa y repartir el sobrante a
           // ojo terminaba con el texto encima del encuadre.
 
-          // Franja de arriba: la marca pegada al borde y el mensaje del
-          // dashboard a media altura entre ella y el recuadro.
+          // Franja de arriba: la marca pegada al borde y, debajo, el mensaje
+          // del dashboard. Mide justo lo que miden los dos, porque es de su
+          // altura de la que cuelga el recuadro.
           Positioned(
             top: 0,
             left: 0,
@@ -541,7 +690,7 @@ class _QrScannerViewState extends State<QrScannerView>
                 _margenFranjaSuperior,
                 safe.top + 24,
                 _margenFranjaSuperior,
-                20,
+                _huecoPastillaRecuadro,
               ),
               child: Column(
                 children: [
@@ -551,16 +700,9 @@ class _QrScannerViewState extends State<QrScannerView>
                   // Sin esta reserva el badge de comunidad -- que es de ancho
                   // completo -- subía hasta meterse por debajo de la mascota
                   // (medido: su borde de arriba caía 10px dentro de ella).
-                  // El tope contra la franja es para el apaisado, donde no
-                  // hay 108px que reservar; ahí el FittedBox achica la marca
-                  // en vez de desbordar.
+                  // La medida se calcula arriba: el recuadro cuelga de ella.
                   SizedBox(
-                    height: math.min(
-                      KigoDesign.clearanceAsistenteArriba -
-                          24 +
-                          _huecoAsistentePastilla,
-                      math.max(topRecuadro - safe.top - 44, 0.0) * 0.55,
-                    ),
+                    height: altoRenglonMarca,
                     child: const FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.topCenter,
@@ -570,8 +712,11 @@ class _QrScannerViewState extends State<QrScannerView>
                   Expanded(
                     // Arriba, no centrada: así la pastilla queda lo más
                     // pegada posible al bloque del asistente (el renglón de
-                    // arriba ya reservó su huella exacta) en vez de flotar a
-                    // media altura entre él y el recuadro.
+                    // arriba ya reservó su huella exacta). En el panel el
+                    // `Expanded` reparte cero -- la franja mide exactamente
+                    // marca + pastilla --; sólo sobra alto cuando el tope de
+                    // [rectRecuadroQr] frenó al recuadro, y entonces el aire
+                    // va abajo, entre la pastilla y el encuadre.
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: mensaje.isEmpty
@@ -579,8 +724,7 @@ class _QrScannerViewState extends State<QrScannerView>
                           : FittedBox(
                               fit: BoxFit.scaleDown,
                               child: SizedBox(
-                                width: pantalla.width -
-                                    _margenFranjaSuperior * 2,
+                                width: anchoPastilla,
                                 // Sin `Center` en medio: con él la pastilla se
                                 // encogía hasta abrazar su texto, así que su
                                 // ancho lo decidía el mensaje del dashboard y
@@ -588,18 +732,9 @@ class _QrScannerViewState extends State<QrScannerView>
                                 // agrandaba la letra pero la pastilla seguía a
                                 // media pantalla. Pegada al SizedBox recibe
                                 // ancho fijo y ocupa la franja completa.
-                                // 3.0 sale de medir el hueco: la franja de
-                                // arriba deja 264px y a esta escala la
-                                // pastilla ocupa 187 con dos renglones y 247
-                                // con tres, así que entra sin que el
-                                // FittedBox tenga que encogerla en ninguno de
-                                // los dos casos. El alto de cada renglón sí
-                                // es independiente de la fuente (se lo fija
-                                // el `height: 1.25` del badge); cuántos
-                                // renglones salen, no.
                                 child: ComunidadBadge(
                                   mensaje: mensaje,
-                                  escala: 3.0,
+                                  escala: _escalaPastilla,
                                   envolverTexto: true,
                                 ),
                               ),
@@ -622,23 +757,30 @@ class _QrScannerViewState extends State<QrScannerView>
             right: 0,
             bottom: 0,
             child: Padding(
-              // El CTA se cuelga del piso, no del recuadro: queda exactamente
-              // [_huecoCtaBotonesFlotantes] por encima del micrófono y el
-              // vigilante, que ocupan 64 de lado a 20 del borde de abajo.
-              // El tope contra la mitad de la franja es para el apaisado
-              // bajito (784x361), donde la reserva entera dejaría al
-              // FittedBox con alto negativo (RenderParagraph con NaN, ver
-              // qr_scanner_layout_test.dart).
+              // El bloque se cuelga del recuadro: arranca
+              // [_huecoRecuadroBloque] por debajo de su borde de abajo.
+              //
+              // La reserva de abajo es la huella REAL de los botones
+              // flotantes, no el lado de su círculo: el del vigilante mide 84
+              // porque lleva la etiqueta "AYUDA" debajo, así que reservar 64
+              // dejaba al CTA terminando en 1186 con la etiqueta empezando en
+              // 1176 -- 10px encimados, que es como se veía en el panel.
+              //
+              // Los dos topes contra la franja son para el apaisado bajito
+              // (784x361), donde las reservas enteras dejarían al FittedBox
+              // con alto negativo (RenderParagraph con NaN, ver
+              // qr_scanner_layout_test.dart). Juntos nunca se comen más de
+              // tres cuartos de la franja.
               padding: EdgeInsets.fromLTRB(
                 25,
-                12,
+                math.min(_huecoRecuadroBloque, franjaInferior * 0.25),
                 25,
                 math.min(
                   safe.bottom +
                       KigoDesign.offsetBotonesFlotantes +
-                      KigoDesign.ladoBotonAccion +
+                      KigoDesign.altoBotonAccionConEtiqueta +
                       _huecoCtaBotonesFlotantes,
-                  (pantalla.height - bottomRecuadro) * 0.5,
+                  franjaInferior * 0.5,
                 ),
               ),
               // El ancho pedido es exactamente el que deja el padding de 24
@@ -648,9 +790,12 @@ class _QrScannerViewState extends State<QrScannerView>
               // franja completa.
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                // Al piso de su franja: lo que sobra queda ARRIBA, entre el
-                // recuadro y el texto, no repartido a la mitad.
-                alignment: Alignment.bottomCenter,
+                // Al techo de su franja: pegado al recuadro. Lo que sobre
+                // queda ABAJO, sobre los botones flotantes, no abriendo un
+                // hueco entre el encuadre y su texto. En el panel no sobra
+                // nada -- el recuadro está dimensionado para que las dos
+                // separaciones den 10 exactos.
+                alignment: Alignment.topCenter,
                 child: SizedBox(
                   width: pantalla.width - 50,
                   child: _buildBottomHint(
@@ -758,13 +903,11 @@ class _QrScannerViewState extends State<QrScannerView>
             child: Text(
               AppLocalizations.t(context, 'no_tengo_app_o_qr'),
               textAlign: TextAlign.center,
-              // 38 dejaba la frase en tres renglones: de un tirón pide
-              // ~1400px, más del ancho entero del panel. A 32 parte limpio en
-              // dos ("No tengo la app" / "AUTOnomIA o código QR") y sigue
-              // siendo más grande que el subtítulo de la franja.
+              // El tamaño sale del alto del botón: ver
+              // [_fuenteBotonSinCodigo].
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 26,
+                fontSize: _fuenteBotonSinCodigo,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.2,
               ),
@@ -788,10 +931,19 @@ class _QrOverlayPainter extends CustomPainter {
   /// quien construye el painter a partir del tema activo.
   final Color colorVelo;
 
+  /// El hueco del encuadre, ya calculado por quien monta la pantalla.
+  ///
+  /// No se recalcula aquí: ahora depende de cuánto mide la pastilla del
+  /// mensaje, que sólo se sabe en el `build`. Recalcularlo por separado es
+  /// justo lo que dejó una vez el anillo montado encima del "Apunta al código
+  /// QR" -- el layout lo subía y el painter lo centraba.
+  final Rect hueco;
+
   const _QrOverlayPainter({
     required this.scanned,
     required this.pulso,
     required this.colorVelo,
+    required this.hueco,
   });
 
   @override
@@ -801,10 +953,6 @@ class _QrOverlayPainter extends CustomPainter {
     // sala de fondo compita con el texto.
     final overlayPaint = Paint()..color = colorVelo;
 
-    // El hueco sale de rectRecuadroQr, el mismo que usa el layout para
-    // colocar las franjas de texto: calcularlo aquí de nuevo es justo lo que
-    // dejó el anillo montado encima del "Apunta al código QR".
-    final hueco = rectRecuadroQr(size);
     // Respiración sutil (0.97–1.0) mientras espera; sólido y estable ya
     // detectado. Late alrededor de su propio centro, así que nunca se sale
     // del hueco reservado.
@@ -845,5 +993,6 @@ class _QrOverlayPainter extends CustomPainter {
   bool shouldRepaint(_QrOverlayPainter oldDelegate) =>
       oldDelegate.scanned != scanned ||
       oldDelegate.pulso != pulso ||
-      oldDelegate.colorVelo != colorVelo;
+      oldDelegate.colorVelo != colorVelo ||
+      oldDelegate.hueco != hueco;
 }

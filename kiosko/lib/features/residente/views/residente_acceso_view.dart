@@ -24,6 +24,95 @@ import 'package:kigo_kiosco/features/welcome/views/resident_pin_view.dart';
 import 'package:kigo_kiosco/features/welcome/views/resident_welcome_view.dart';
 import 'package:kigo_kiosco/l10n/app_localizations.dart';
 
+/// El header de esta pantalla crece 10px, igual que el de la bienvenida: el
+/// botón de regresar de 44 a 54, el isotipo de 48 a 58 y la mascota del
+/// asistente de 96 a 106.
+///
+/// Lo de adentro de cada pieza NO suma 10: sigue la proporción de su caja.
+/// Sumarle 10 a la flecha la dejaría llenando el botón de borde a borde, y 10
+/// más al subtítulo lo pondría casi tan grande como el nombre.
+///
+/// Son los mismos números que en `welcome_view.dart`, escritos aparte: las
+/// dos pantallas dibujan su header a mano y no comparten widget. Si se toca
+/// uno hay que tocar el otro (o extraer el header a un widget común).
+const double _ladoBotonRegresar = 54;
+const double _escalaBotonRegresar = _ladoBotonRegresar / 44;
+const double _tamanoFlechaRegresar = 18 * _escalaBotonRegresar;
+const double _radioBotonRegresar = 12 * _escalaBotonRegresar;
+
+/// Isotipo, nombre y subtítulo crecen con un solo factor -- el del isotipo,
+/// que es lo único de los tres con una medida en px que se pueda subir 10.
+const double _ladoLogoHeader = 58;
+const double _escalaLockup = _ladoLogoHeader / 48;
+const double _huecoLogoNombre = 14 * _escalaLockup;
+const double _fuenteNombreHeader = 29 * _escalaLockup;
+const double _fuenteSubtituloHeader = 14 * _escalaLockup;
+const double _huecoNombreSubtitulo = 2 * _escalaLockup;
+const double _espaciadoSubtituloHeader = 4 * _escalaLockup;
+
+/// La mascota de esta pantalla, 10 más que la de las demás
+/// ([KigoDesign.ladoAsistente]). Va por parámetro y no subiendo la constante
+/// para no descuadrar a las otras pantallas que se anclan a ella.
+const double _ladoAsistenteHeader = KigoDesign.ladoAsistente + 10;
+
+/// Los 10px de más son sólo para los lienzos que los tienen.
+///
+/// La mascota cuelga del techo y debajo de ella arranca "Mira a la cámara
+/// para identificarte". En un panel o una tablet sobra sitio (69px de aire en
+/// el de 800x1280, 3 en el más apretado); en un teléfono el área facial --
+/// que se dimensiona contra el ancho -- sube el texto, y ahí la mascota ya
+/// rozaba la instrucción con sus 96 de siempre: medido, 0.9px de aire. Diez
+/// más se le metían 8px encima. Por debajo de una tablet se queda como
+/// estaba: crecer no vale que se encime.
+double _ladoAsistente(double anchoPantalla) =>
+    anchoPantalla >= 600 ? _ladoAsistenteHeader : KigoDesign.ladoAsistente;
+
+/// El botón de "acceder por PIN" crece 20px de alto: medía 48 con la fuente
+/// real (12 de padding arriba y abajo, 1.5 de borde y 21 de renglón) y pasa a
+/// 68. Multiplica TODO lo de adentro -- padding, borde, radio, icono,
+/// separación y letra -- para que sea el mismo botón más grande y no una caja
+/// más alta con el contenido nadando dentro.
+const double _escalaBotonPin = 68 / 48;
+
+/// Mínimo del óvalo de la cámara. Por debajo deja de leerse como un encuadre
+/// de rostro.
+const double _altoMinimoOvalo = 160.0;
+
+/// Lo que ocupa la columna sin contar el óvalo -- header, instrucción,
+/// pastilla de estado, botón de PIN, sus separaciones y los paddings de
+/// PantallaAdaptable, con la reserva de los botones flotantes incluida.
+/// Medido con tester.getRect.
+///
+/// Eran 500 cuando el header medía 63 de alto y el botón de PIN 48. Los dos
+/// crecieron (54 el botón de regresar, 58 el isotipo, 68 el de PIN) y el tope
+/// se quedó corto: en un lienzo de 800x800 el botón terminaba 27px dentro de
+/// la franja reservada abajo. En el panel de 800x1280 este término no manda
+/// -- ahí al óvalo lo limita el 50% del alto -- así que subirlo no cambia
+/// nada de lo que se ve en el kiosko.
+const double _altoFijoColumna = 530.0;
+
+/// Los 20px de más del botón de PIN son sólo para los lienzos que los tienen.
+///
+/// El óvalo es la única pieza elástica de la columna: cede alto hasta
+/// [_altoMinimoOvalo] para que quepa todo lo demás. Cuando ya está en ese
+/// mínimo no hay de dónde sacar los 20 -- la columna se desborda hacia abajo
+/// y el botón se mete en los botones flotantes (medido en 320x640: 30px
+/// encima). Ahí se queda como estaba.
+double _escalaPin(BuildContext context) {
+  final altoUtil = MediaQuery.sizeOf(context).height -
+      MediaQuery.paddingOf(context).vertical;
+  return altoUtil - _altoFijoColumna >= _altoMinimoOvalo
+      ? _escalaBotonPin
+      : 1.0;
+}
+
+/// Padding horizontal de la pantalla, que es también el `rightDelBorde` de la
+/// mascota: por eso la mascota arranca justo en el borde derecho del header.
+const double _margenHorizontal = 34;
+
+/// Aire mínimo entre el lockup de marca y la mascota que flota a su derecha.
+const double _aireLockupMascota = 12;
+
 class ResidenteAccesoView extends StatefulWidget {
   const ResidenteAccesoView({super.key});
 
@@ -364,14 +453,19 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
           // alto) llegaba hasta y≈145 y se montaba sobre "Mira a la cámara
           // para identificarte", que arranca justo después del header.
           //
-          // 12 sale de centrar la mascota en el título: el header ocupa
-          // y=[48,111] y "AUTOnomIA" y=[48,89] (medido con tester.getRect);
-          // la etiqueta (11) + su separación (6) van encima de la mascota
-          // (76), así que 12 + 17 = 29 deja la mascota en [29,105] --
-          // centrada en el título y todavía dentro del header.
+          // 2 sale de centrar la mascota en el título: el header ocupa
+          // y=[48,111] y "AUTOnomIA" y=[48,89] (medido con tester.getRect).
+          // Encima de la mascota van la etiqueta (16) y su separación (6), y
+          // la caja de la mascota mide KigoDesign.ladoAsistente, así que el
+          // dibujo queda centrado en 2 + 22 + 48 = 72 -- dentro de los 12px
+          // de tolerancia del título y con la etiqueta todavía en pantalla.
+          //
+          // Era 12 cuando la mascota medía 76: crecer a 96 bajó el dibujo 10px
+          // y lo sacó de esa tolerancia, así que este offset los devuelve.
           // rightDelBorde: 34 = el padding horizontal de PantallaAdaptable.
-          topDelBorde: 12,
-          rightDelBorde: 34,
+          topDelBorde: 2,
+          rightDelBorde: _margenHorizontal,
+          lado: _ladoAsistente(MediaQuery.sizeOf(context).width),
           mostrarEtiqueta: true,
           onRespuestaLibre: (_) {},
           onCampoExtraido: (_) {},
@@ -381,60 +475,90 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   }
 
   Widget _buildHeader(BuildContext context) {
+    // Lo más ancho que puede ser el lockup sin meterse debajo de la mascota,
+    // que flota pegada al borde derecho y fuera de esta fila. Va centrado en
+    // pantalla (los dos extremos de la fila miden lo mismo), así que su mitad
+    // derecha sólo tiene libre lo que hay entre el centro y el borde
+    // izquierdo del dibujo. En el panel sobra de más; en un lienzo angosto es
+    // lo que evita que el nombre termine pintado debajo de la mascota.
+    final ancho = MediaQuery.sizeOf(context).width;
+    final bordeIzquierdoMascota =
+        ancho - _margenHorizontal - _ladoAsistente(ancho);
+    final anchoMaxLockup = math.max(
+      (bordeIzquierdoMascota - ancho / 2 - _aireLockupMascota) * 2,
+      0.0,
+    );
+
     return Row(
       children: [
         Presionable(
           onTap: () => Navigator.pop(context),
           child: Container(
-            width: 44,
-            height: 44,
+            width: _ladoBotonRegresar,
+            height: _ladoBotonRegresar,
             decoration: BoxDecoration(
               color: KigoDesign.brand,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(_radioBotonRegresar),
             ),
             child: const Icon(
               Icons.arrow_back_ios_new_rounded,
               color: Colors.white,
-              size: 18,
+              size: _tamanoFlechaRegresar,
             ),
           ),
         ),
-        const Spacer(),
-        const MarcaBadge(lado: 48),
-        const SizedBox(width: 14),
-        // Encoge parejo en una pantalla más angosta que el panel, en vez de
-        // desbordar la fila (mismo trato que en WelcomeView).
-        Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.t(context, 'kigo_label'),
-                  style: TextStyle(
-                    color: context.kTextPrimary,
-                    fontSize: 29,
-                    fontWeight: FontWeight.w800,
-                  ),
+        // Un `Expanded` con `Center` y no dos `Spacer` con el lockup en
+        // medio: los `Spacer` son flex igual que él y le repartían un tercio
+        // del sobrante, así que el `FittedBox` lo encogía aunque la fila
+        // tuviera sitio de sobra. Con esto sólo encoge cuando no cabe, y
+        // sigue centrado porque los dos extremos de la fila miden lo mismo.
+        Expanded(
+          child: Center(
+            // Isotipo + nombre + subtítulo son una sola pieza y encogen
+            // juntos: con el isotipo fuera del FittedBox, en una pantalla
+            // angosta el texto se achicaba hasta ser ilegible mientras el
+            // logo seguía enorme al lado.
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: anchoMaxLockup),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const MarcaBadge(lado: _ladoLogoHeader),
+                    const SizedBox(width: _huecoLogoNombre),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.t(context, 'kigo_label'),
+                          style: TextStyle(
+                            color: context.kTextPrimary,
+                            fontSize: _fuenteNombreHeader,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: _huecoNombreSubtitulo),
+                        Text(
+                          AppLocalizations.t(context, 'self_checkin_label'),
+                          style: TextStyle(
+                            color: context.kTextSecondary,
+                            fontSize: _fuenteSubtituloHeader,
+                            letterSpacing: _espaciadoSubtituloHeader,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  AppLocalizations.t(context, 'self_checkin_label'),
-                  style: TextStyle(
-                    color: context.kTextSecondary,
-                    fontSize: 14,
-                    letterSpacing: 4,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
-        const Spacer(),
-        const SizedBox(width: 44),
+        // Hueco espejo del botón de regresar: es lo que mantiene el lockup
+        // centrado en la pantalla.
+        const SizedBox(width: _ladoBotonRegresar),
       ],
     );
   }
@@ -451,15 +575,32 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
     // _buildPinFallback) para liberar ese espacio.
     final size = MediaQuery.sizeOf(context);
     final altoUtil = size.height - MediaQuery.paddingOf(context).vertical;
-    double ovalH = math.min(size.width * 0.85, altoUtil * 0.5);
+    // Las dos fracciones son topes contra cada eje, y mandan sólo donde el
+    // lienzo da de sí. Eran 0.85 del ancho y 0.5 del alto: en el panel de
+    // 800x1280 el segundo dejaba el óvalo en 640 y el bloque entero (texto,
+    // óvalo, botón de PIN) flotaba con 56px muertos arriba y otros 56 abajo,
+    // repartidos por los dos `Spacer` de la columna. 0.55 se los da al óvalo
+    // -- 704 de alto, 563 de ancho -- y deja 23 de aire a cada lado, que es
+    // lo que separa el bloque del header y de la franja de los botones
+    // flotantes.
+    //
+    // El tope del ancho sube a 0.95 sólo para que deje de ser él quien manda
+    // en el panel (0.85 lo clavaba en 680): el ancho real del óvalo lo sigue
+    // dando la proporción 1:1.25 y, más abajo, `anchoMax` -- 563 de los 732
+    // que deja el padding.
+    //
+    // En los lienzos cortos ninguna de las dos manda: ahí gobierna el tope
+    // contra [_altoFijoColumna] de la línea siguiente, así que el óvalo mide
+    // lo mismo que antes.
+    double ovalH = math.min(size.width * 0.95, altoUtil * 0.55);
     // Sin scroll (ver desplazable: false arriba) el óvalo es la única pieza
     // elástica de la columna: todo lo demás -- header, instrucción, pastilla
     // de estado, botón de PIN, sus separaciones y los paddings de
     // PantallaAdaptable, con la reserva de los botones flotantes incluida --
-    // suma 500 fijos, medido con tester.getRect. Sin este tope, en un panel
-    // corto el 50% del alto dejaba al botón de PIN debajo del micrófono.
-    const altoFijoColumna = 500.0;
-    ovalH = math.max(160, math.min(ovalH, altoUtil - altoFijoColumna));
+    // suma [_altoFijoColumna]. Sin este tope, en un panel corto el 50% del
+    // alto dejaba al botón de PIN debajo del micrófono.
+    ovalH = math.max(
+        _altoMinimoOvalo, math.min(ovalH, altoUtil - _altoFijoColumna));
     double ovalW = ovalH / 1.25;
     final anchoMax = size.width - 68; // 34 de padding horizontal a cada lado (ver PantallaAdaptable)
     if (ovalW > anchoMax) {
@@ -609,40 +750,52 @@ class _ResidenteAccesoViewState extends State<ResidenteAccesoView>
   /// botón compacto para liberar el espacio vertical que ahora usa el óvalo
   /// (mucho más grande, ver _buildAreaFacial).
   Widget _buildPinFallback() {
+    final escala = _escalaPin(context);
     return Presionable(
       onTap: _irAlPin,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: KigoDesign.brand.withValues(alpha: 0.5),
-            width: 1.5,
+      // A 68 de alto la pastilla mide 284 de ancho, y en un lienzo de 320
+      // (252 útiles) la etiqueta saltaba de renglón: el botón se estiraba a
+      // 98 de alto y se montaba sobre los botones flotantes. Encogido entero
+      // sigue siendo la misma pastilla de un renglón, más chica.
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: 20 * escala,
+            vertical: 12 * escala,
           ),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.dialpad_rounded,
-              color: KigoDesign.brand,
-              size: 20,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: KigoDesign.brand.withValues(alpha: 0.5),
+              width: 1.5 * escala,
             ),
-            const SizedBox(width: 8),
-            // La pastilla se ajusta al texto (mainAxisSize.min): sin esto la
-            // etiqueta la desbordaba en una pantalla angosta en vez de
-            // saltar de renglón.
-            Flexible(
-              child: Text(
-                AppLocalizations.t(context, 'acceder_por_pin'),
-                style: const TextStyle(
-                  color: KigoDesign.brand,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+            borderRadius: BorderRadius.circular(14 * escala),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.dialpad_rounded,
+                color: KigoDesign.brand,
+                size: 20 * escala,
+              ),
+              SizedBox(width: 8 * escala),
+              // La pastilla se ajusta al texto (mainAxisSize.min). El
+              // `Flexible` se queda por si alguien la monta con ancho
+              // acotado: colgando del FittedBox recibe ancho libre y nunca
+              // parte el renglón.
+              Flexible(
+                child: Text(
+                  AppLocalizations.t(context, 'acceder_por_pin'),
+                  style: TextStyle(
+                    color: KigoDesign.brand,
+                    fontSize: 15 * escala,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
