@@ -449,12 +449,19 @@ class _HistorialCard extends StatelessWidget {
     );
   }
 
+  /// El backend corre en UTC y serializa `created_at` con la Z al final, asi
+  /// que `DateTime.parse` devuelve un DateTime en UTC. Sin `toLocal()` la
+  /// tarjeta imprimia la hora UTC tal cual: una entrada de las 20:21 en el
+  /// kiosko se leia "04 Sep · 02:21", seis horas adelantada y con la fecha ya
+  /// cambiada de dia. Es la misma conversion que ya hacen el detalle de la
+  /// visita y el historial.
   String _formatearFecha(BuildContext context, DateTime dt) {
-    final dia = dt.day.toString().padLeft(2, '0');
+    final local = dt.toLocal();
+    final dia = local.day.toString().padLeft(2, '0');
     final esEs = AppLocalizations.of(context).locale.languageCode == 'es';
-    final mes = (esEs ? _mesesEs : _mesesEn)[dt.month - 1];
-    final hora = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
+    final mes = (esEs ? _mesesEs : _mesesEn)[local.month - 1];
+    final hora = local.hour.toString().padLeft(2, '0');
+    final min = local.minute.toString().padLeft(2, '0');
     return '$dia $mes · $hora:$min';
   }
 

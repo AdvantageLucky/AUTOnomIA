@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
+import '../utils/fechas.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/invitation_viewmodel.dart';
 import '../widgets/kigo_primary_button.dart';
@@ -480,6 +481,10 @@ class _InvitarTabViewState extends State<InvitarTabView>
                                 AppLocalizations.t(context, 'vence_el'),
                                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                               ),
+                              // Sin fechaCortaLocal: _expiraEl sale de
+                              // showDatePicker, o sea que ya nacio en la zona
+                              // del dispositivo. Solo las fechas que vuelven
+                              // del backend llegan en UTC y necesitan convertirse.
                               Text(
                                 _expiraEl == null
                                     ? AppLocalizations.t(context, 'sin_fecha_limite')
@@ -642,7 +647,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
                         if (inv.expiresAt != null) ...[
                           const Text(' · ', style: TextStyle(color: AppTheme.textDimmed, fontSize: 12)),
                           Text(
-                            '${AppLocalizations.t(context, 'vence_prefix')} ${inv.expiresAt!.day}/${inv.expiresAt!.month}/${inv.expiresAt!.year}',
+                            '${AppLocalizations.t(context, 'vence_prefix')} ${fechaCortaLocal(inv.expiresAt!)}',
                             style: const TextStyle(color: AppTheme.textDimmed, fontSize: 12),
                           ),
                         ],
