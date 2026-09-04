@@ -96,14 +96,13 @@ Con el backend activo, accede a la documentación interactiva en:
 | GET | `/api/v1/kioskos/solicitudes/stream` | Feed en tiempo real SSE (Admin) |
 | GET | `/api/v1/kioskos/:id/config/stream` | Config SSE en tiempo real (Kiosko) |
 | GET | `/api/v1/centros/:codigo/destinos` | Destinos de una instalación (público) |
-| POST | `/api/v1/centros/:codigo/residentes/auto-registro` | Alta de residente (queda pendiente) |
-| POST | `/api/v1/centros/:codigo/residentes/login` | Login de residente con PIN |
-| GET | `/api/v1/residentes/me/visitas/pendientes` | Visitas pendientes de aprobación (Residente) |
-| PATCH | `/api/v1/residentes/me/visitas/:id/estado` | El residente aprueba o rechaza una visita |
-| POST | `/api/v1/residentes/me/invitaciones` | Crear invitación QR |
 | POST | `/api/v1/personas/registro/solicitar-otp` | Solicitar OTP de verificación telefónica |
 | POST | `/api/v1/personas/registro/verificar-otp` | Verificar OTP y crear/recuperar `Persona` |
-| GET | `/api/v1/personas/me/qr` | QR de identidad del residente |
+| POST | `/api/v1/personas/me/membresias` | Unirse a un centro habitacional (queda pendiente) |
+| GET | `/api/v1/personas/me/visitas/pendientes` | Visitas pendientes de aprobación (Persona) |
+| PATCH | `/api/v1/personas/me/visitas/:id/estado` | La persona aprueba o rechaza una visita |
+| POST | `/api/v1/personas/me/invitaciones` | Crear invitación QR |
+| GET | `/api/v1/personas/me/qr` | QR de identidad de la persona |
 
 Para regenerar la documentación tras modificar handlers:
 
