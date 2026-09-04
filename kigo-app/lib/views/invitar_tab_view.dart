@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
@@ -40,6 +41,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
   bool _permiteFacial = true;
   String? _motivoSeleccionado;
   static const _motivosFrecuentes = ['Paquete', 'Servicio', 'Visita', 'Proveedor'];
+  // Motivos que el propio residente escribió alguna vez -- se guardan en el
+  // dispositivo (no son configuración del tenant, son de este residente) para
+  // que no haya que volver a escribirlos en cada invitación.
+  static const _keyMotivosCustom = 'motivos_custom';
+  List<String> _motivosCustom = [];
   DateTime? _expiraEl;
   int? _tenantIdCargado;
   String? _errorLocal;
@@ -53,6 +59,55 @@ class _InvitarTabViewState extends State<InvitarTabView>
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
+    _cargarMotivosCustom();
+  }
+
+  Future<void> _cargarMotivosCustom() async {
+    final prefs = await SharedPreferences.getInstance();
+    final guardados = prefs.getStringList(_keyMotivosCustom) ?? [];
+    if (mounted) setState(() => _motivosCustom = guardados);
+  }
+
+  Future<void> _agregarMotivoCustom(BuildContext context) async {
+    final ctrl = TextEditingController();
+    final nuevo = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: Text(AppLocalizations.t(ctx, 'nuevo_motivo_titulo')),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 40,
+          decoration: InputDecoration(hintText: AppLocalizations.t(ctx, 'nuevo_motivo_hint')),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(ctx, 'cancel'))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: Text(AppLocalizations.t(ctx, 'agregar')),
+          ),
+        ],
+      ),
+    );
+    final limpio = nuevo?.trim() ?? '';
+    if (limpio.isEmpty || !mounted) return;
+
+    // Ni duplicar un motivo frecuente ya existente ni uno personalizado que
+    // ya se había agregado antes -- comparación sin distinguir mayúsculas,
+    // para que "paquete" y "Paquete" cuenten como el mismo.
+    final yaExiste = [..._motivosFrecuentes, ..._motivosCustom]
+        .any((m) => m.toLowerCase() == limpio.toLowerCase());
+
+    setState(() {
+      _motivoSeleccionado = limpio;
+      if (!yaExiste) _motivosCustom = [..._motivosCustom, limpio];
+    });
+    if (!yaExiste) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_keyMotivosCustom, _motivosCustom);
+    }
   }
 
   @override
@@ -147,14 +202,34 @@ class _InvitarTabViewState extends State<InvitarTabView>
 
   Future<void> _elegirFechaExpiracion(BuildContext context) async {
     final ahora = DateTime.now();
-    final elegida = await showDatePicker(
+    final fecha = await showDatePicker(
       context: context,
       initialDate: _expiraEl ?? ahora.add(const Duration(days: 1)),
       firstDate: ahora,
       lastDate: ahora.add(const Duration(days: 365)),
       helpText: AppLocalizations.t(context, 'vence_el'),
     );
-    if (elegida != null) setState(() => _expiraEl = elegida);
+    if (fecha == null || !context.mounted) return;
+
+    // Sin hora exacta, un pase "vence hoy" seguía siendo válido hasta la
+    // medianoche aunque el residente pensara en una hora puntual (p.ej.
+    // "hasta las 6pm que se va el paquetero") -- se encadena un segundo
+    // picker en vez de asumir un valor fijo.
+    final horaInicial = TimeOfDay.fromDateTime(_expiraEl ?? DateTime(0, 0, 0, 20));
+    final hora = await showTimePicker(
+      context: context,
+      initialTime: horaInicial,
+      helpText: AppLocalizations.t(context, 'vence_el'),
+    );
+    if (!mounted) return;
+
+    setState(() => _expiraEl = DateTime(
+          fecha.year,
+          fecha.month,
+          fecha.day,
+          hora?.hour ?? horaInicial.hour,
+          hora?.minute ?? horaInicial.minute,
+        ));
   }
 
   void _compartir(String token) {
@@ -410,20 +485,32 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 14),
-                Text(AppLocalizations.t(context, 'motivo_opcional'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(AppLocalizations.t(context, 'motivo_label'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.t(context, 'motivo_visible_admin'),
+                  style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _motivosFrecuentes.map((m) {
-                    final seleccionado = _motivoSeleccionado == m;
-                    return ChoiceChip(
-                      label: Text(m),
-                      selected: seleccionado,
-                      selectedColor: AppTheme.primaryOrange.withValues(alpha: 0.2),
-                      onSelected: (_) => setState(() => _motivoSeleccionado = seleccionado ? null : m),
-                    );
-                  }).toList(),
+                  children: [
+                    ...[..._motivosFrecuentes, ..._motivosCustom].map((m) {
+                      final seleccionado = _motivoSeleccionado == m;
+                      return ChoiceChip(
+                        label: Text(m),
+                        selected: seleccionado,
+                        selectedColor: AppTheme.primaryOrange.withValues(alpha: 0.2),
+                        onSelected: (_) => setState(() => _motivoSeleccionado = seleccionado ? null : m),
+                      );
+                    }),
+                    ActionChip(
+                      avatar: const Icon(Icons.add_rounded, size: 16, color: AppTheme.primaryOrange),
+                      label: Text(AppLocalizations.t(context, 'motivo_personalizado_btn')),
+                      onPressed: () => _agregarMotivoCustom(context),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -488,7 +575,8 @@ class _InvitarTabViewState extends State<InvitarTabView>
                               Text(
                                 _expiraEl == null
                                     ? AppLocalizations.t(context, 'sin_fecha_limite')
-                                    : '${_expiraEl!.day}/${_expiraEl!.month}/${_expiraEl!.year}',
+                                    : '${_expiraEl!.day}/${_expiraEl!.month}/${_expiraEl!.year}'
+                                        ' ${_expiraEl!.hour.toString().padLeft(2, '0')}:${_expiraEl!.minute.toString().padLeft(2, '0')}',
                                 style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
                               ),
                             ],
