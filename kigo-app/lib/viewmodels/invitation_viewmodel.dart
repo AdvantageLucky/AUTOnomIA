@@ -161,6 +161,7 @@ class InvitationViewModel extends ChangeNotifier {
     required bool permiteReconocimientoFacial,
     String? motivo,
     DateTime? expiraEl,
+    int? maxUsos,
   }) async {
     _isLoading = true;
     _error = null;
@@ -177,6 +178,10 @@ class InvitationViewModel extends ChangeNotifier {
           'permite_reconocimiento_facial': permiteReconocimientoFacial,
           if (motivo != null && motivo.isNotEmpty) 'motivo': motivo,
           if (expiraEl != null) 'expires_at': expiraEl.toUtc().toIso8601String(),
+          // Sin esto el backend siempre forzaba max_usos=1 para invitaciones
+          // PERSONAL (ver persona.Handler.CrearInvitacion): el residente no
+          // tenía forma de pedir un pase que sirviera más de una vez.
+          if (maxUsos != null) 'max_usos': maxUsos,
         },
         auth: true,
       );
