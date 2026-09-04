@@ -230,6 +230,41 @@ func TestListarCompanerosCasa(t *testing.T) {
 	}
 }
 
+// Caso reportado: una Persona enrolada como invitado frecuente (Status
+// activo, para que su rostro/QR funcionen en el kiosko, pero Rol
+// invitado_frecuente, no residente) no debe poder ver acciones exclusivas
+// de residente -- antes solo se checaba Status, nunca Rol.
+func TestListarCompanerosCasa_InvitadoFrecuenteNoPuede(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupTestDB(t)
+	repo := NewRepository(db)
+	membresiaRepo := residente.NewMembresiaRepository(db)
+
+	p := &Persona{Telefono: "+525500000003", Nombre: "Carla", ApellidoPaterno: "Diaz"}
+	repo.Create(p)
+	db.Create(&residente.Membresia{
+		PersonaID: p.ID, TenantID: 1, CasaDestino: "Casa 1",
+		Status: residente.ResidenteStatusActivo, Rol: residente.RolInvitadoFrecuente,
+	})
+
+	h := NewHandler(repo, nil, nil, nil, "", testQREd25519Seed, membresiaRepo, nil, nil, nil, nil, "", "", KigoVerifyConfig{}, nil, nil, nil)
+
+	router := gin.New()
+	router.GET("/personas/me/companeros-casa", func(c *gin.Context) {
+		c.Set(ctxkeys.PersonaID, p.ID)
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkeys.PersonaID, p.ID))
+		h.ListarCompanerosCasa(c)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/personas/me/companeros-casa?tenant_id=1", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("esperaba 403 para un invitado frecuente, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
 func TestListarCompanerosCasa_SinMembresiaEnEseTenant(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db := setupTestDB(t)
@@ -285,13 +320,16 @@ func TestListarCompanerosCasa_TenantIDInvalido(t *testing.T) {
 // nada hasta que la membresia quede activa (FindActivasPorTenant filtra por
 // status, ver kiosko_login_handler.go).
 func TestPinVisible(t *testing.T) {
-	if got := pinVisible(residente.ResidenteStatusActivo, "12345"); got != "12345" {
-		t.Errorf("esperaba el PIN visible para status activo, got %q", got)
+	if got := pinVisible(residente.ResidenteStatusActivo, residente.RolResidente, "12345"); got != "12345" {
+		t.Errorf("esperaba el PIN visible para residente activo, got %q", got)
 	}
-	if got := pinVisible(residente.ResidenteStatusPendiente, "12345"); got != "" {
+	if got := pinVisible(residente.ResidenteStatusPendiente, residente.RolResidente, "12345"); got != "" {
 		t.Errorf("esperaba PIN vacio para status pendiente, got %q", got)
 	}
-	if got := pinVisible(residente.ResidenteStatusRechazado, "12345"); got != "" {
+	if got := pinVisible(residente.ResidenteStatusRechazado, residente.RolResidente, "12345"); got != "" {
 		t.Errorf("esperaba PIN vacio para status rechazado, got %q", got)
+	}
+	if got := pinVisible(residente.ResidenteStatusActivo, residente.RolInvitadoFrecuente, "12345"); got != "" {
+		t.Errorf("esperaba PIN vacio para invitado frecuente (entra por rostro/QR, no PIN), got %q", got)
 	}
 }

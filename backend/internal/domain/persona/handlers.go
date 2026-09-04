@@ -119,8 +119,8 @@ func (h *Handler) ListarDestinos(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if m.Status != residente.ResidenteStatusActivo {
-		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+	if m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
 		return
 	}
 
@@ -166,8 +166,8 @@ func (h *Handler) ListarCompanerosCasa(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if m.Status != residente.ResidenteStatusActivo {
-		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+	if m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
 		return
 	}
 
@@ -438,7 +438,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 			TenantID:    existente.TenantID,
 			CasaDestino: existente.CasaDestino,
 			Status:      existente.Status,
-			Pin:         pinVisible(existente.Status, existente.PinCodigo),
+			Pin:         pinVisible(existente.Status, existente.Rol, existente.PinCodigo),
 		})
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -472,7 +472,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		TenantID:    m.TenantID,
 		CasaDestino: m.CasaDestino,
 		Status:      m.Status,
-		Pin:         pinVisible(m.Status, m.PinCodigo),
+		Pin:         pinVisible(m.Status, m.Rol, m.PinCodigo),
 	})
 }
 
@@ -506,15 +506,18 @@ func (h *Handler) avisarAdminNuevaMembresia(tenantID, personaID uint, casaDestin
 	}
 }
 
-// pinVisible oculta el PIN en claro mientras la membresía no está activa.
-// El PIN ya se genera y se guarda desde que se crea la membresía (pendiente
-// de aprobación) -- eso es necesario para que quede fijo y no cambie al
-// aprobarla, pero mostrárselo a la Persona antes de esa aprobación es
-// engañoso: sugiere que ya puede entrar cuando el PIN todavía no funciona
-// en ningún kiosko (FindActivasPorTenant, el que resuelve el login por PIN,
-// solo trae membresías con status activo).
-func pinVisible(status, pinCodigo string) string {
-	if status == residente.ResidenteStatusActivo {
+// pinVisible oculta el PIN en claro mientras la membresía no está activa, o
+// mientras no sea una membresía de residente. El PIN ya se genera y se
+// guarda desde que se crea la membresía (pendiente de aprobación) -- eso es
+// necesario para que quede fijo y no cambie al aprobarla, pero mostrárselo a
+// la Persona antes de esa aprobación es engañoso: sugiere que ya puede
+// entrar cuando el PIN todavía no funciona en ningún kiosko
+// (FindActivasPorTenant, el que resuelve el login por PIN, solo trae
+// membresías con status activo). Un invitado frecuente (Rol
+// invitado_frecuente) tampoco debe verlo -- su acceso es por rostro/QR, no
+// por PIN, aunque su membresía sí esté activa para que eso funcione.
+func pinVisible(status, rol, pinCodigo string) string {
+	if status == residente.ResidenteStatusActivo && rol == residente.RolResidente {
 		return pinCodigo
 	}
 	return ""
@@ -767,6 +770,10 @@ func (h *Handler) ResetHistorialContacto(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "no perteneces a este centro habitacional"})
 		return
 	}
+	if miMembresia.Status != residente.ResidenteStatusActivo || miMembresia.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
+		return
+	}
 
 	if err := h.visitaRepo.CrearReset(tenantID, uint(contactoID64), miMembresia.CasaDestino, &miPersonaID, nil); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -811,12 +818,6 @@ func (h *Handler) CrearInvitadoFrecuente(c *gin.Context) {
 		return
 	}
 
-	codigo, hash, err := h.generarPinParaTenant(req.TenantID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo generar el PIN"})
-		return
-	}
-
 	nombre := strings.TrimSpace(req.NombreInvitado)
 	if nombre != "" && invitado.Nombre == "" {
 		// Persona "en blanco" (nunca ha usado Kigo): se le precarga el
@@ -826,12 +827,14 @@ func (h *Handler) CrearInvitadoFrecuente(c *gin.Context) {
 	}
 
 	nueva := &residente.Membresia{
-		PersonaID:                   invitado.ID,
-		TenantID:                    req.TenantID,
-		CasaDestino:                 m.CasaDestino,
-		DestinoID:                   m.DestinoID,
-		Pin:                         hash,
-		PinCodigo:                   codigo,
+		PersonaID:   invitado.ID,
+		TenantID:    req.TenantID,
+		CasaDestino: m.CasaDestino,
+		DestinoID:   m.DestinoID,
+		// Sin PIN a propósito -- un invitado frecuente entra por rostro o
+		// QR, nunca por PIN (eso es exclusivo de un residente real). Antes
+		// se le generaba uno igual, y aunque pinVisible() ya lo oculta en
+		// las respuestas, es mejor que ni siquiera exista.
 		Status:                      residente.ResidenteStatusActivo,
 		Rol:                         residente.RolInvitadoFrecuente,
 		PermiteReconocimientoFacial: true,
@@ -861,8 +864,8 @@ func (h *Handler) ListarInvitadosFrecuentes(c *gin.Context) {
 	tenantID := uint(tenantID64)
 
 	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
-	if err != nil || m.Status != residente.ResidenteStatusActivo {
-		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía activa en ese centro"})
+	if err != nil || m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
 		return
 	}
 
@@ -893,8 +896,8 @@ func (h *Handler) RevocarInvitadoFrecuente(c *gin.Context) {
 	}
 
 	m, err := h.membresiaRepo.FindByPersonaAndTenant(personaID, tenantID)
-	if err != nil || m.Status != residente.ResidenteStatusActivo {
-		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes una membresía activa en ese centro"})
+	if err != nil || m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
 		return
 	}
 
@@ -1196,8 +1199,8 @@ func (h *Handler) ListarVisitasPendientes(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if m.Status != residente.ResidenteStatusActivo {
-		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+	if m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
 		return
 	}
 
@@ -1278,8 +1281,8 @@ func (h *Handler) ListarHistorialVisitas(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if m.Status != residente.ResidenteStatusActivo {
-		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+	if m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
 		return
 	}
 
@@ -1335,8 +1338,8 @@ func (h *Handler) ResponderVisita(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if m.Status != residente.ResidenteStatusActivo {
-		c.JSON(http.StatusForbidden, gin.H{"error": "tu membresía en ese centro no está activa"})
+	if m.Status != residente.ResidenteStatusActivo || m.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
 		return
 	}
 
@@ -1415,7 +1418,7 @@ func (h *Handler) ListarMisMembresias(c *gin.Context) {
 			CentroNombre: nombreCentro,
 			CasaDestino:  m.CasaDestino,
 			Status:       m.Status,
-			Pin:          pinVisible(m.Status, m.PinCodigo),
+			Pin:          pinVisible(m.Status, m.Rol, m.PinCodigo),
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"membresias": items})
