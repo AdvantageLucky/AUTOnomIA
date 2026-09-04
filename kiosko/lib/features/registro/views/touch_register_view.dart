@@ -363,73 +363,120 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           // Fondo unificado para toda la pantalla, en el tema que toque
           backgroundColor: context.kBg,
           body: SizedBox.expand(
-            //Expandimos a pantalla completa quitando Center y Container restrictivos
             child: Column(
               children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Padding(
-                      // incremente el padding vertical superior (60) e inferior (40) para proteger la legibilidad sin depender de SafeArea.
-                      padding: const EdgeInsets.only(
-                        left: 42,
-                        right: 42,
-                        top: 32,
-                        bottom: 40,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                _buildHeader(),
-                                Positioned(
-                                  left: 0,
-                                  child: _buildTopBackButton(),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // height: 52 (no 16) -- misma estructura que
-                          // VehicularRegisterView: BotonAsistenteFlotante usa
-                          // topDelBorde: 32 + mostrarEtiqueta: true (~98px de
-                          // alto), y con 16 el StepIndicator arrancaba dentro
-                          // de la mascota (confirmado con tester.getRect en
-                          // la pantalla gemela).
-                          const SizedBox(height: 52),
-
-                          StepIndicator(
-                            currentStep: viewModel.indicatorStep,
-                            totalSteps: viewModel.indicatorTotalSteps,
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          _buildVideoPlaceholder(),
-
-                          const SizedBox(height: 32),
-
-                          // --- BOTÓN PRINCIPAL CON LOADER ---
-                          (viewModel.isProcessingIne || viewModel.isProcessingRostro)
-                              ? _buildBotonCargando()
-                              : _buildMainButton(
-                                  AppLocalizations.t(
-                                    context,
-                                    step.buttonTextKey,
+                // Bloque fijo de arriba: marca, regreso y barra de progreso.
+                // Queda anclado para que el paso en curso siempre se lea a la
+                // misma altura, aunque lo de abajo se acomode al centro.
+                Padding(
+                  padding: const EdgeInsets.only(left: 42, right: 42, top: 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) => SizedBox(
+                          width: double.infinity,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Reserva a los lados: a la izquierda el botón
+                              // de regreso, a la derecha la mascota, que vive
+                              // en otra capa del Stack de la pantalla y por
+                              // eso no empuja a nadie. Con el logo y el título
+                              // más grandes el título alcanzaba a meterse bajo
+                              // la mascota; con este aire el FittedBox del
+                              // header lo encoge un pelo antes de que pase.
+                              // En un lienzo angosto (un teléfono, no el
+                              // panel) la reserva cede: primero está que el
+                              // header quepa.
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: _reservaLateral(
+                                    constraints.maxWidth,
                                   ),
                                 ),
-
-                          if (viewModel.currentStep > 1) ...[
-                            const SizedBox(height: 12),
-                            _buildBackButton(),
-                          ],
-                        ],
+                                child: _buildHeader(),
+                              ),
+                              Positioned(left: 0, child: _buildTopBackButton()),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+
+                      // Antes 52, calibrado contra una mascota de 96: con ese
+                      // hueco el indicador ya rozaba su caja, y al crecer la
+                      // mascota a 116 se le habría metido dentro. Estos 72 lo
+                      // dejan por debajo de la mascota completa (medido con
+                      // tester.getRect en la prueba de layout).
+                      const SizedBox(height: 72),
+
+                      StepIndicator(
+                        currentStep: viewModel.indicatorStep,
+                        totalSteps: viewModel.indicatorTotalSteps,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // La animación y su CTA ya no cuelgan del indicador: se
+                // reparten lo que queda de pantalla, que antes se quedaba
+                // vacía abajo con todo amontonado arriba. La separación se
+                // calcula en vez de fijarse, porque un padding fijo más un
+                // Center dejaba el bloque descentrado (el piso se sumaba
+                // sólo de un lado). Así la animación cae en el centro real
+                // y la separación pedida sólo manda cuando ya no hay
+                // espacio para centrar -- ahí entra el scroll y nada se
+                // encima.
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double separacion = math.max(
+                        _separacionIndicadorAnimacion,
+                        (constraints.maxHeight -
+                                _margenInferior -
+                                _altoBloqueCentral(
+                                  constraints.maxWidth - _margenLateral * 2,
+                                )) /
+                            2,
+                      );
+
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: _margenLateral,
+                            right: _margenLateral,
+                            top: separacion,
+                            bottom: _margenInferior,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              _buildVideoPlaceholder(),
+
+                              const SizedBox(height: _separacionAnimacionCta),
+
+                              // --- BOTÓN PRINCIPAL CON LOADER ---
+                              (viewModel.isProcessingIne ||
+                                      viewModel.isProcessingRostro)
+                                  ? _buildBotonCargando()
+                                  : _buildMainButton(
+                                      AppLocalizations.t(
+                                        context,
+                                        step.buttonTextKey,
+                                      ),
+                                    ),
+
+                              if (viewModel.currentStep > 1) ...[
+                                const SizedBox(height: _separacionBotonRegreso),
+                                _buildBackButton(),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -446,6 +493,12 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
           // pero confirmar en dispositivo real que no desalinea el ícono.
           topDelBorde: 32,
           rightDelBorde: 42,
+          // +20 sobre la mascota estándar, por parámetro y no subiendo
+          // KigoDesign.ladoAsistente: esa constante la comparten cinco
+          // pantallas que calibran su contenido contra ella (welcome y
+          // residentes ya crecen así, +10). El hueco del StepIndicator de
+          // arriba está calculado contra este lado.
+          lado: _ladoAsistente,
           mostrarEtiqueta: true,
           controlador: _asistenteController,
           onRespuestaLibre:
@@ -460,16 +513,19 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     return Presionable(
       onTap: () => Navigator.pop(context),
       child: Container(
-        width: 44,
-        height: 44,
+        // 44 + 20. El radio y la flecha suben en la misma proporción para
+        // que siga siendo el mismo cuadro, no un cuadro grande con un
+        // ícono chico adentro.
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
           color: KigoDesign.brand,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(17),
         ),
         child: const Icon(
           Icons.arrow_back_ios_new_rounded,
           color: Colors.white,
-          size: 18,
+          size: 26,
         ),
       ),
     );
@@ -479,8 +535,11 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const MarcaBadge(lado: 54),
-        const SizedBox(width: 18),
+        // 54 + 20. El nombre y la separación crecen en la misma proporción
+        // que el isotipo: el header entero sube de escala, no sólo el
+        // cuadrito.
+        const MarcaBadge(lado: _ladoMarca),
+        const SizedBox(width: 24),
         // En una pantalla más angosta que el panel el nombre desbordaba la
         // fila; encoge parejo con el logo en vez de recortarse.
         Flexible(
@@ -491,7 +550,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               AppLocalizations.t(context, 'kigo_label'),
               style: TextStyle(
                 color: context.kTextPrimary,
-                fontSize: 34,
+                fontSize: 46,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -504,7 +563,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
   Widget _buildVideoPlaceholder() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double maxH = math.min(constraints.maxWidth * 0.75, 300.0);
+        final double maxH = _altoCajaAnimacion(constraints.maxWidth);
         return SizedBox(
           width: double.infinity,
           height: maxH,
@@ -515,9 +574,21 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
             ),
             child: ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(24)),
-              child: viewModel.pasoActual == PasoRegistro.ine
-                  ? const IneApproachAnimation()
-                  : const FaceApproachAnimation(),
+              // Las dos animaciones se dibujan a un tamaño fijo (el busto
+              // mide 230x280, la credencial 260x164), así que subir la caja
+              // sola las habría dejado igual de chicas con más aire vacío
+              // alrededor. El FittedBox las escala a la caja conservando su
+              // proporción -- crecen de verdad -- y el padding les deja el
+              // aire para no llegar a tocar el borde redondeado.
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: viewModel.pasoActual == PasoRegistro.ine
+                      ? const IneApproachAnimation()
+                      : const FaceApproachAnimation(),
+                ),
+              ),
             ),
           ),
         );
@@ -539,7 +610,10 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: HazardStripeBar(height: 10, borderRadius: BorderRadius.zero),
+              child: HazardStripeBar(
+                height: 10,
+                borderRadius: BorderRadius.zero,
+              ),
             ),
             Text(
               AppLocalizations.t(context, 'procesando_captura'),
@@ -556,10 +630,69 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
     );
   }
 
+  /// Lado del isotipo del header: el de siempre (54) + 20.
+  static const double _ladoMarca = 74;
+
+  /// Mascota del asistente en esta pantalla: la estándar + 20.
+  static const double _ladoAsistente = KigoDesign.ladoAsistente + 20;
+
+  /// Aire que el header deja a cada lado para no cruzarse con lo que flota
+  /// encima: el botón de regreso (64) a la izquierda y la mascota
+  /// ([_ladoAsistente]) a la derecha, más un margen. Simétrico a propósito:
+  /// así el logo sigue centrado en la pantalla y no contra el hueco libre.
+  static const double _reservaLateralHeader = _ladoAsistente + 12;
+
+  /// Ancho que el header necesita para no desbordar: isotipo + separación +
+  /// un mínimo legible de nombre (el FittedBox lo encoge hasta ahí).
+  static const double _anchoMinimoHeader = _ladoMarca + 24 + 120;
+
+  /// La reserva completa sólo cabe en un panel; en un lienzo angosto se cede
+  /// lo necesario para que el header entre, que es lo primero.
+  static double _reservaLateral(double anchoDisponible) => math.min(
+    _reservaLateralHeader,
+    math.max(0, (anchoDisponible - _anchoMinimoHeader) / 2),
+  );
+
+  /// Alto máximo de la caja de la animación (antes 300). La animación se
+  /// escala a esta caja, así que este número es lo que se ve crecer.
+  static const double _altoAnimacion = 420;
+
+  static const double _margenLateral = 42;
+  static const double _margenInferior = 40;
+  static const double _separacionAnimacionCta = 32;
+  static const double _separacionBotonRegreso = 12;
+
+  /// Alto de la caja de la animación con el ancho que le toque: en un panel
+  /// ancho manda [_altoAnimacion], y en uno angosto la proporción, para que
+  /// no se vuelva una banda desproporcionada.
+  static double _altoCajaAnimacion(double anchoDisponible) =>
+      math.min(anchoDisponible * 0.75, _altoAnimacion);
+
+  /// Alto del bloque que se centra: animación + CTA (+ "Regresar" cuando
+  /// toca). Se calcula aquí porque el centrado necesita saberlo ANTES de
+  /// medirlo, y la prueba de layout verifica contra el árbol real que estas
+  /// cuentas siguen coincidiendo.
+  double _altoBloqueCentral(double anchoDisponible) =>
+      _altoCajaAnimacion(anchoDisponible) +
+      _separacionAnimacionCta +
+      _altoBotonPrincipal +
+      (viewModel.currentStep > 1
+          ? _separacionBotonRegreso + _altoBotonRegreso
+          : 0);
+
+  /// Separación mínima entre la barra de progreso y la animación. Es un
+  /// piso, no una medida fija: cuando sobra pantalla el bloque de abajo
+  /// (animación + CTA) se centra en lo que queda y la separación crece
+  /// parejo; en una pantalla corta se queda justo en estos 100.
+  static const double _separacionIndicadorAnimacion = 100;
+
   /// Alto del CTA de abajo. Lo comparten el botón normal y su estado
   /// "procesando": si sólo cambiara uno, el botón se encogería a media
   /// captura.
   static const double _altoBotonPrincipal = 150;
+
+  /// Alto del botón "Regresar" de abajo: 62 + 20.
+  static const double _altoBotonRegreso = 82;
 
   Widget _buildMainButton(String text) {
     return Presionable(
@@ -586,11 +719,7 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
             // alto (x2), así que icono, textos y separaciones van al doble.
             // Con los tamaños viejos el texto quedaba flotando chiquito en
             // una caja del doble de grande.
-            const Icon(
-              Icons.camera_alt_rounded,
-              color: Colors.white,
-              size: 56,
-            ),
+            const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 56),
             const SizedBox(width: 28),
             Flexible(
               // La caja es de alto fijo, así que el texto no puede empujarla:
@@ -643,10 +772,12 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       onTap: viewModel.previousStep,
       child: Container(
         width: double.infinity,
-        height: 62,
+        // 62 + 20, con el radio, el ícono y la letra a la misma escala: la
+        // barra crece entera, no se estira.
+        height: _altoBotonRegreso,
         decoration: BoxDecoration(
           color: context.kSurface2,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: context.kBorder, width: 1.2),
         ),
         child: Row(
@@ -655,14 +786,14 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
             const Icon(
               Icons.arrow_back_rounded,
               color: KigoDesign.brand,
-              size: 24,
+              size: 32,
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 13),
             Text(
               AppLocalizations.t(context, 'back_button_text'),
               style: TextStyle(
                 color: context.kTextPrimary,
-                fontSize: 18,
+                fontSize: 24,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -671,5 +802,4 @@ class _TouchRegisterViewState extends State<TouchRegisterView> {
       ),
     );
   }
-
 }
