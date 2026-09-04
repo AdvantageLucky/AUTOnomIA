@@ -349,8 +349,11 @@ class _InvitarTabViewState extends State<InvitarTabView>
         ),
       );
 
-      // Cambiamos a la pestaña de "Mis Invitaciones"
+      // Cambiamos a la pestaña de "Mis Invitaciones" -- sin este refresco la
+      // lista se queda con lo que cargó al entrar a la pestaña, así que la
+      // invitación recién creada no aparecía hasta hacer pull-to-refresh.
       _tabController.animateTo(1);
+      unawaited(vm.cargarInvitaciones());
 
       if (token != null) {
         unawaited(Share.share(
