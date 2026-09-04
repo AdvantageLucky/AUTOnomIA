@@ -496,13 +496,27 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
     }
   }
 
+  /// Las tarjetas de calle/tipo/número miden 30 más de alto que antes
+  /// (102.4 -> 132.4, borde incluido). Sólo crece el alto: el ancho, el
+  /// radio, el margen entre tarjetas y el texto se quedan como estaban.
+  ///
+  /// Los 30 se reparten entre el chip del ícono, que sube en proporción
+  /// (56 -> 72, y con él su glifo y su radio, para que siga siendo el mismo
+  /// cuadro redondeado y no un chip chico perdido en una tarjeta alta), y
+  /// el aire de arriba y abajo, que absorbe el resto (22 -> 29).
+  static const double _ladoChipIcono = 72;
+  static const double _paddingVerticalTarjeta = 29;
+
   Widget _buildCard({required IconData icono, required String titulo, required VoidCallback onTap}) {
     return Presionable(
       onTap: onTap,
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: _paddingVerticalTarjeta,
+        ),
         decoration: BoxDecoration(
           color: context.kSurfaceCard,
           borderRadius: BorderRadius.circular(20),
@@ -511,13 +525,13 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
         child: Row(
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: _ladoChipIcono,
+              height: _ladoChipIcono,
               decoration: BoxDecoration(
                 color: context.kChipMarca,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(18),
               ),
-              child: Icon(icono, color: KigoDesign.brand, size: 28),
+              child: Icon(icono, color: KigoDesign.brand, size: 36),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -526,7 +540,7 @@ class _CasaDestinoViewState extends State<CasaDestinoView> {
                 style: TextStyle(color: context.kTextPrimary, fontSize: 20, fontWeight: FontWeight.w700),
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: context.kTextSecondary, size: 28),
+            Icon(Icons.chevron_right_rounded, color: context.kTextSecondary, size: 36),
           ],
         ),
       ),
