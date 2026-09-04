@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"kigo-autonomia-backend/internal/domain/residente"
 )
 
 const (
@@ -22,6 +24,17 @@ type EventoSeguridad struct {
 	Tipo     string `gorm:"not null;index"`
 	Detalle  string `gorm:"not null;default:''"`
 	FotoURL  string `gorm:"column:foto_url;not null;default:''"`
+	// EmbeddingRostro es la huella facial (192 flotantes, MobileFaceNet)
+	// tomada en segundo plano al momento del intento fallido -- permite
+	// correlacionar si la misma persona ya lo intentó antes, sin depender
+	// de que esté dada de alta como Persona (ver ContarCorrelacionados).
+	EmbeddingRostro residente.FloatArray `gorm:"column:embedding_rostro;type:float[]"`
+	// IntentosPrevios se calcula una sola vez, al crear el evento (ver
+	// Handler.Reportar) -- cuántos eventos ANTERIORES de este tenant
+	// correlacionan por rostro con este. Igual que Visita.PersonaID, es más
+	// barato resolverlo una vez que recalcularlo en cada lectura: el
+	// dashboard hace polling de esta lista cada ~20s.
+	IntentosPrevios int `gorm:"column:intentos_previos;not null;default:0"`
 }
 
 func (EventoSeguridad) TableName() string { return "eventos_seguridad" }

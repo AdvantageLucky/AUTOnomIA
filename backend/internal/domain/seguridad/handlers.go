@@ -10,12 +10,21 @@ import (
 	"strings"
 	"time"
 
+	"kigo-autonomia-backend/internal/domain/residente"
 	"kigo-autonomia-backend/internal/domain/visitas"
 	"kigo-autonomia-backend/internal/platform/ctxkeys"
 	"kigo-autonomia-backend/internal/platform/sse"
 
 	"github.com/gin-gonic/gin"
 )
+
+// umbralCorrelacionPct es el mismo 85% por defecto que
+// kiosko_configs.umbral_similitud_cara (ver migración 000076): no vale la
+// pena traer aquí el repo de KioskoConfig solo para leer un valor que casi
+// nunca se cambia por kiosko -- correlacionar intentos fallidos es una señal
+// para el admin, no una decisión de acceso, así que un umbral fijo razonable
+// basta.
+const umbralCorrelacionPct = 85
 
 type Handler struct {
 	repo       *Repository
@@ -81,8 +90,31 @@ func (h *Handler) Reportar(c *gin.Context) {
 		}
 	}
 
-	evento := &EventoSeguridad{TenantID: tenantID, KioskoID: kioskoID, Tipo: tipo, Detalle: detalle, FotoURL: fotoURL}
-	if err := h.repo.WithContext(c.Request.Context()).Crear(evento); err != nil {
+	// El embedding viaja como JSON de floats en un campo de texto normal
+	// (no un archivo) -- mismo campo/formato que ya usa el kiosko para
+	// visitas (ver KioskoServicio._enviarRegistro, 'embedding_rostro').
+	repo := h.repo.WithContext(c.Request.Context())
+	var embedding residente.FloatArray
+	var intentosPrevios int
+	if raw := c.PostForm("embedding_rostro"); raw != "" {
+		var vals []float64
+		if err := json.Unmarshal([]byte(raw), &vals); err != nil {
+			log.Printf("EventoSeguridad: embedding_rostro invalido: %v", err)
+		} else {
+			embedding = residente.FloatArray(vals)
+			if n, err := repo.ContarCorrelacionados(tenantID, vals, umbralCorrelacionPct); err != nil {
+				log.Printf("EventoSeguridad: error correlacionando: %v", err)
+			} else {
+				intentosPrevios = n
+			}
+		}
+	}
+
+	evento := &EventoSeguridad{
+		TenantID: tenantID, KioskoID: kioskoID, Tipo: tipo, Detalle: detalle, FotoURL: fotoURL,
+		EmbeddingRostro: embedding, IntentosPrevios: intentosPrevios,
+	}
+	if err := repo.Crear(evento); err != nil {
 		log.Printf("EventoSeguridad: error guardando: %v", err)
 	}
 
@@ -129,13 +161,16 @@ func (h *Handler) avisarAdmin(tenantID, kioskoID uint, tipo string) {
 }
 
 type eventoSeguridadResponse struct {
-	ID           uint      `json:"id"`
-	KioskoID     uint      `json:"kiosko_id"`
-	KioskoNombre string    `json:"kiosko_nombre"`
-	Tipo         string    `json:"tipo"`
-	Detalle      string    `json:"detalle"`
-	FotoURL      string    `json:"foto_url"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID              uint      `json:"id"`
+	KioskoID        uint      `json:"kiosko_id"`
+	KioskoNombre    string    `json:"kiosko_nombre"`
+	Tipo            string    `json:"tipo"`
+	Detalle         string    `json:"detalle"`
+	FotoURL         string    `json:"foto_url"`
+	CreatedAt       time.Time `json:"created_at"`
+	// IntentosPrevios > 0 significa que este mismo rostro ya generó otros
+	// eventos de seguridad antes en este tenant (ver ContarCorrelacionados).
+	IntentosPrevios int `json:"intentos_previos"`
 }
 
 // Listar devuelve los eventos de seguridad del tenant del admin logueado,
@@ -162,6 +197,7 @@ func (h *Handler) Listar(c *gin.Context) {
 		items = append(items, eventoSeguridadResponse{
 			ID: e.ID, KioskoID: e.KioskoID, KioskoNombre: e.KioskoNombre, Tipo: e.Tipo,
 			Detalle: e.Detalle, FotoURL: e.FotoURL, CreatedAt: e.CreatedAt,
+			IntentosPrevios: e.IntentosPrevios,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"eventos": items, "total": len(items)})

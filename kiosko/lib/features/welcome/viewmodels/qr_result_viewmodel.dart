@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:kigo_kiosco/core/services/evidencia_seguridad_servicio.dart';
 import 'package:kigo_kiosco/features/registro/services/kiosko_servicio.dart';
 
 enum QrResultEstado { cargando, exitoso, error }
@@ -36,11 +37,21 @@ class QrResultViewModel extends ChangeNotifier {
       // para la pestaña "Seguridad" -- a diferencia del PIN, aquí no hay un
       // solo mensaje de error a comparar, así que se reporta en todo el
       // catch en vez de filtrar por texto.
-      unawaited(KioskoServicio().reportarEventoSeguridad(
-        tipo: 'qr_invalido',
-        detalle: _errorMsg,
-      ));
+      unawaited(_reportarConEvidencia());
     }
     notifyListeners();
+  }
+
+  /// Toma la foto en segundo plano y recién entonces reporta -- el mobile_scanner
+  /// ya soltó su cámara antes de llegar aquí (ver QrScannerView._onQrDetected),
+  /// así que no compite por la lente con el escaneo del QR.
+  Future<void> _reportarConEvidencia() async {
+    final evidencia = await EvidenciaSeguridadServicio.capturar();
+    await KioskoServicio().reportarEventoSeguridad(
+      tipo: 'qr_invalido',
+      detalle: _errorMsg,
+      pathFoto: evidencia.pathFoto,
+      embedding: evidencia.embedding,
+    );
   }
 }

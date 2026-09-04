@@ -299,6 +299,8 @@
       seguridad_tipo_pin: "PIN incorrecto",
       seguridad_tipo_qr: "QR inválido",
       seguridad_sin_foto: "Sin foto",
+      seguridad_mismo_rostro: n => `Mismo rostro · ${n + 1}ª vez`,
+      seguridad_mismo_rostro_tooltip: "Este rostro ya generó otro(s) evento(s) de seguridad en este fraccionamiento",
       seguridad_evento_sse: "Intento de acceso fallido en un kiosko",
       // __NEW_I18N_ES_MARKER__
       // --- fix modal residente: claves faltantes ---
@@ -3146,11 +3148,17 @@
           <div class="evidencia-pie"><span>${t("ver_completa")}</span></div>
         </div>`
       : `<div class="empty-text" style="font-size:12px">${t("seguridad_sin_foto")}</div>`;
+    // intentos_previos viene resuelto por el backend (correlación por
+    // rostro contra otros eventos de este tenant, ver
+    // seguridad.ContarCorrelacionados) -- no se recalcula aquí.
+    const correlacion = e.intentos_previos > 0
+      ? `<span class="badge badge--pendiente" title="${t("seguridad_mismo_rostro_tooltip")}">${t("seguridad_mismo_rostro")(e.intentos_previos)}</span>`
+      : "";
     return `<div class="sol-card" style="animation-delay:${i * 40}ms;align-items:center">
       <div class="sol-card-left">
         <div class="feed-dot"></div>
         <div>
-          <div class="row-name">${esc(e.kiosko_nombre || `Kiosko #${e.kiosko_id}`)} <span class="badge badge--rechazado">${esc(tipoLabel)}</span></div>
+          <div class="row-name">${esc(e.kiosko_nombre || `Kiosko #${e.kiosko_id}`)} <span class="badge badge--rechazado">${esc(tipoLabel)}</span> ${correlacion}</div>
           <div class="row-sub">${e.detalle ? esc(e.detalle) + " · " : ""}${fmtDate(e.created_at)}</div>
         </div>
       </div>
