@@ -817,6 +817,47 @@ func (h *Handler) ResetHistorialContactoPorCURP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
 }
 
+// ResetHistorialContactoPorRostro es el equivalente a
+// ResetHistorialContactoPorCURP para un visitante sin ningún dato de
+// identidad más que su cara -- ver visitas.Handler.ResetHistorialPorRostro.
+func (h *Handler) ResetHistorialContactoPorRostro(c *gin.Context) {
+	miPersonaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	visitaID64, err := strconv.ParseUint(c.Param("visitaId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de visita inválido"})
+		return
+	}
+	tenantID64, err := strconv.ParseUint(c.Query("tenant_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id inválido"})
+		return
+	}
+	tenantID := uint(tenantID64)
+
+	miMembresia, err := h.membresiaRepo.FindByPersonaAndTenant(miPersonaID, tenantID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "no perteneces a este centro habitacional"})
+		return
+	}
+	if miMembresia.Status != residente.ResidenteStatusActivo || miMembresia.Rol != residente.RolResidente {
+		c.JSON(http.StatusForbidden, gin.H{"error": "esta acción es solo para residentes"})
+		return
+	}
+
+	v, err := h.visitaRepo.FindByIDAndTenantID(uint(visitaID64), tenantID)
+	if err != nil || len(v.EmbeddingRostro) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "visita sin rostro identificable"})
+		return
+	}
+
+	if err := h.visitaRepo.CrearResetPorRostro(tenantID, v.EmbeddingRostro, miMembresia.CasaDestino, &miPersonaID, nil); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "historial reseteado"})
+}
+
 // ListarIdentidadesMiCasa es el equivalente a visitas.Handler.ListarIdentidades
 // para un residente -- solo la gente que ha visitado SU casa, para poder
 // resetearles la confianza sin tener que llegar ahí desde una visita en
@@ -969,6 +1010,15 @@ func (h *Handler) RevocarInvitadoFrecuente(c *gin.Context) {
 		return
 	}
 
+	// Se lee antes de revocar para saber a qué Persona pertenecía -- hace
+	// falta después de borrarla para revocar también sus invitaciones de
+	// enrolamiento (ver más abajo).
+	invitadoFrecuente, err := h.membresiaRepo.FindByTenantAndID(tenantID, uint(id))
+	if err != nil || invitadoFrecuente.Rol != residente.RolInvitadoFrecuente {
+		c.JSON(http.StatusNotFound, gin.H{"error": "invitado frecuente no encontrado"})
+		return
+	}
+
 	if err := h.membresiaRepo.RevocarInvitadoFrecuente(uint(id), tenantID, m.CasaDestino); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "invitado frecuente no encontrado"})
@@ -977,6 +1027,15 @@ func (h *Handler) RevocarInvitadoFrecuente(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Antes esto solo borraba la Membresia: el QR/link original con el que
+	// se le dio acceso frecuente seguía vigente, así que la persona podía
+	// volver a entrar (o re-enrolarse) usándolo de nuevo -- "Quitar" desde
+	// invitados frecuentes tenía que ir a eliminar también el link a mano.
+	if _, err := h.invitacionRepo.RevocarEnrolamientosPorPersonaYTenant(tenantID, invitadoFrecuente.PersonaID); err != nil {
+		log.Printf("RevocarInvitadoFrecuente: error revocando invitaciones de enrolamiento: %v", err)
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "acceso revocado"})
 }
 
