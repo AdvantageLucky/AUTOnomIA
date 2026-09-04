@@ -279,6 +279,19 @@
       resetear_confianza_texto: "Se olvida todo su historial anterior para el cálculo de confianza -- su próxima visita se evalúa desde cero, como si fuera la primera vez. Esto no borra el historial, solo deja de contar para el análisis.",
       no_pudo_resetear_confianza: "No se pudo restablecer la confianza. Intenta de nuevo.",
       confianza_reseteada_ok: "Confianza restablecida",
+      nav_seguridad: "Seguridad",
+      seguridad_title: "Seguridad",
+      seguridad_sub: "Intentos de acceso fallidos (PIN incorrecto, QR inválido) con foto",
+      seguridad_filtro_todos: "Todos",
+      seguridad_filtro_pin: "PIN incorrecto",
+      seguridad_filtro_qr: "QR inválido",
+      seguridad_cargando: "Cargando eventos…",
+      seguridad_sin_eventos: "Sin eventos de seguridad",
+      seguridad_sin_eventos_sub: "Los intentos fallidos de PIN o QR en los kioskos aparecerán aquí, con foto.",
+      seguridad_tipo_pin: "PIN incorrecto",
+      seguridad_tipo_qr: "QR inválido",
+      seguridad_sin_foto: "Sin foto",
+      seguridad_evento_sse: "Intento de acceso fallido en un kiosko",
       // __NEW_I18N_ES_MARKER__
       // --- fix modal residente: claves faltantes ---
       activo_badge: "Activo",
@@ -1089,8 +1102,8 @@
   const ESTADO_BADGE = { PENDIENTE: "badge--pendiente", APROBADO: "badge--aprobado", RECHAZADO: "badge--rechazado", REVISION: "badge--revision" };
 
   const RUTAS_POR_ROL = {
-    admin:     ["dashboard","solicitudes","visitas","detalle","residentes","kioskos","ayuda","configuracion","instalacion","perfil"],
-    vigilante: ["solicitudes","ayuda","perfil"],
+    admin:     ["dashboard","solicitudes","visitas","detalle","residentes","kioskos","ayuda","seguridad","configuracion","instalacion","perfil"],
+    vigilante: ["solicitudes","ayuda","seguridad","perfil"],
   };
 
   const state = {
@@ -1209,6 +1222,12 @@
           if (currentNavScreen === "ayuda") loadAyuda();
           return;
         }
+        if (v.tipo === "evento_seguridad") {
+          mostrarToast(`⚠️ ${t("seguridad_evento_sse")}`, "urgente");
+          loadSeguridadBadge();
+          if (currentNavScreen === "seguridad") loadSeguridad();
+          return;
+        }
         const nombre = v.titular || t("nuevo_visitante");
         if (v.estado === "REVISION") {
           mostrarToast(`${t("alerta_revision_manual")} ${nombre}`, "revision");
@@ -1311,6 +1330,7 @@
     if (screen === "residentes")    { loadResidentesActivos(); loadResidentesPendientesBadge(); }
     if (screen === "kioskos")       startKioPolling();
     if (screen === "ayuda")         loadAyuda();
+    if (screen === "seguridad")     loadSeguridad();
     if (screen === "instalacion")   { loadDestinosSection(); }
     if (screen === "configuracion") loadConfigAccesos();
     if (screen === "perfil")        loadPerfil();
@@ -1779,6 +1799,7 @@
     loadResidentesPendientesBadge();
     loadKioskosOfflineBadge();
     loadAyudaBadge();
+    loadSeguridadBadge();
     startBadgesAmbientalesPolling();
     // state.rol viene del JWT y a veces no trae el rol real (visto con
     // login por Google) -- state.admin.rol viene de /admins/:id, directo
@@ -2783,6 +2804,7 @@
       loadAlertasIABadge();
       loadKioskosOfflineBadge();
       loadAyudaBadge();
+      loadSeguridadBadge();
     }, 20000);
   }
 
@@ -3024,6 +3046,89 @@
       document.querySelectorAll('#screen-ayuda .tab-btn').forEach(b => b.classList.toggle('active', b === btn));
       state.ayudaFiltro = btn.dataset.ayudaFiltro;
       loadAyuda();
+    });
+  });
+
+  /* ─── Seguridad (intentos fallidos de PIN/QR con foto) ──────────────── */
+  state.seguridadFiltro = "";
+
+  async function loadSeguridadBadge() {
+    const res = await api("/eventos-seguridad/");
+    if (!res || !res.ok) return;
+    let total = 0;
+    try {
+      const d = await res.json();
+      total = d.total || 0;
+    } catch (e) { console.error(e); return; }
+    const text = total > 99 ? "99+" : String(total);
+    const hidden = total <= 0;
+    const badge = document.getElementById("nav-badge-seguridad");
+    if (badge) { badge.textContent = text; badge.hidden = hidden; }
+    const badgeMob = document.getElementById("nav-badge-seguridad-mob");
+    if (badgeMob) { badgeMob.textContent = text; badgeMob.hidden = hidden; }
+  }
+
+  function showSeguridadState(s) {
+    ["loading", "empty", "error"].forEach(x => {
+      const el = document.getElementById(`seguridad-${x}`);
+      if (el) el.hidden = x !== s;
+    });
+    const rows = document.getElementById("seguridad-rows");
+    if (rows) rows.hidden = s !== "rows";
+  }
+
+  const SEGURIDAD_TIPO_LABEL = {
+    pin_incorrecto: () => t("seguridad_tipo_pin"),
+    qr_invalido: () => t("seguridad_tipo_qr"),
+  };
+
+  async function loadSeguridad() {
+    showSeguridadState("loading");
+    const query = state.seguridadFiltro ? `?tipo=${encodeURIComponent(state.seguridadFiltro)}` : "";
+    const res = await api(`/eventos-seguridad/${query}`);
+    if (!res || !res.ok) { showSeguridadState("error"); return; }
+
+    let eventos = [];
+    try {
+      const d = await res.json();
+      eventos = d.eventos || [];
+    } catch (e) { console.error(e); showSeguridadState("error"); return; }
+
+    loadSeguridadBadge();
+
+    if (eventos.length === 0) { showSeguridadState("empty"); return; }
+
+    const container = document.getElementById("seguridad-rows");
+    if (!container) return;
+    container.innerHTML = eventos.map((e, i) => renderSeguridadRow(e, i)).join("");
+    showSeguridadState("rows");
+  }
+
+  function renderSeguridadRow(e, i) {
+    const tipoLabel = (SEGURIDAD_TIPO_LABEL[e.tipo] || (() => e.tipo))();
+    const foto = e.foto_url
+      ? `<div class="evidencia-card" style="max-width:180px" tabindex="0" role="button" data-foto="${esc(e.foto_url)}" data-foto-label="${esc(tipoLabel)}">
+          <div class="evidencia-marco"><img class="evidencia-img" src="${esc(e.foto_url)}" alt="${esc(tipoLabel)}" loading="lazy"></div>
+          <div class="evidencia-pie"><span>${t("ver_completa")}</span></div>
+        </div>`
+      : `<div class="empty-text" style="font-size:12px">${t("seguridad_sin_foto")}</div>`;
+    return `<div class="sol-card" style="animation-delay:${i * 40}ms;align-items:center">
+      <div class="sol-card-left">
+        <div class="feed-dot"></div>
+        <div>
+          <div class="row-name">${esc(e.kiosko_nombre || `Kiosko #${e.kiosko_id}`)} <span class="badge badge--rechazado">${esc(tipoLabel)}</span></div>
+          <div class="row-sub">${e.detalle ? esc(e.detalle) + " · " : ""}${fmtDate(e.created_at)}</div>
+        </div>
+      </div>
+      ${foto}
+    </div>`;
+  }
+
+  document.querySelectorAll('#screen-seguridad .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#screen-seguridad .tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      state.seguridadFiltro = btn.dataset.seguridadFiltro;
+      loadSeguridad();
     });
   });
 

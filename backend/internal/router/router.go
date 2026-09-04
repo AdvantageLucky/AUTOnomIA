@@ -15,6 +15,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/persona"
 	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/domain/seguridad"
 	"kigo-autonomia-backend/internal/domain/sync"
 	"kigo-autonomia-backend/internal/domain/tenant"
 	"kigo-autonomia-backend/internal/domain/visitas"
@@ -241,6 +242,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	visitaHandler := visitas.NewHandler(visitaRepo, cfg.UploadsDir, cfg.LLMUrl, hub, notificador)
 	asistenciaRepo := persona.NewAsistenciaUrgenteRepository(db)
 	asistenciaHandler := persona.NewAsistenciaUrgenteHandler(personaRepo, asistenciaRepo, adminEmailSender(cfg), hub)
+	seguridadHandler := seguridad.NewHandler(seguridad.NewRepository(db), cfg.UploadsDir, adminEmailSender(cfg), hub)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: solo registra visitas
@@ -257,6 +259,14 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	ay.Use(auth.RequireKiosko(sesionRepo))
 	{
 		ay.POST("/", asistenciaHandler.Solicitar)
+	}
+
+	// kiosko: reporta un intento de acceso fallido (PIN incorrecto, QR
+	// inválido) con foto -- avisa al admin por SSE y correo
+	es := rg.Group("/kioskos/:id/eventos-seguridad")
+	es.Use(auth.RequireKiosko(sesionRepo))
+	{
+		es.POST("/", seguridadHandler.Reportar)
 	}
 
 	// dashboard admin: lectura paginada, detalle, historial y reportes
@@ -286,6 +296,13 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 		au.GET("/", asistenciaHandler.ListarAsistencias)
 		au.PATCH("/:id/resolver", asistenciaHandler.MarcarResuelta)
 		au.PATCH("/:id/motivo", asistenciaHandler.ActualizarMotivo)
+	}
+
+	// dashboard admin: listado de eventos de seguridad
+	segAdmin := rg.Group("/eventos-seguridad")
+	segAdmin.Use(auth.RequireAdmin(cfg.JWTSecret))
+	{
+		segAdmin.GET("/", seguridadHandler.Listar)
 	}
 }
 
