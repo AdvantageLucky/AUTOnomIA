@@ -105,6 +105,22 @@ func (r *Repository) RevocarByIDAndPersonaCreadora(id, personaID uint) error {
 	return nil
 }
 
+// RevocarByIDAndPersonaInvitada hace soft-delete comprobando que la
+// invitación fue dirigida a esta Persona -- la usa EliminarInvitacionRecibida:
+// "eliminar" una invitación recibida no debe dejar su QR/token todavía
+// válido en el kiosko, así que revoca la fila entera (igual que
+// RevocarByIDAndPersonaCreadora), no solo la oculta de la lista.
+func (r *Repository) RevocarByIDAndPersonaInvitada(id, personaID uint) error {
+	result := r.db.Where("id = ? AND persona_invitada_id = ?", id, personaID).Delete(&Invitacion{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 // FindByPersonaInvitada lista las invitaciones activas (no revocadas, no
 // expiradas, no agotadas) dirigidas a una Persona — usado por kigo-app para
 // mostrar "invitaciones recibidas" sin importar el tenant.

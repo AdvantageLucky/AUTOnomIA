@@ -186,6 +186,44 @@ func TestEliminarInvitacionRecibida_RevocaMembresiaDeInvitadoFrecuente(t *testin
 	}
 }
 
+// Caso reportado: al eliminar desde "Recibidas" una invitación normal (sin
+// reconocimiento facial, todavía no usada), la tarjeta desaparecía pero el
+// token seguía siendo válido -- el kiosko lo seguía aceptando porque
+// EliminarInvitacionRecibida solo la ocultaba (OcultarParaInvitado), nunca
+// la revocaba de verdad.
+func TestEliminarInvitacionRecibida_InvalidaElToken(t *testing.T) {
+	h, db, residenteReal, invitado := setupInvitadoFrecuenteTest(t)
+
+	invitadoID := invitado.ID
+	inv := &invitaciones.Invitacion{
+		TenantID: 1, Token: "tok-pase-normal", Titular: "Beto", ResidenteID: residenteReal.ID, DestinoID: 1,
+		PersonaInvitadaID: &invitadoID,
+	}
+	if err := db.Create(inv).Error; err != nil {
+		t.Fatalf("no se pudo crear la invitación: %v", err)
+	}
+
+	router := gin.New()
+	router.DELETE("/personas/me/invitaciones/recibidas/:id", func(c *gin.Context) {
+		c.Set(ctxkeys.PersonaID, invitado.ID)
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkeys.PersonaID, invitado.ID))
+		h.EliminarInvitacionRecibida(c)
+	})
+
+	req := httptest.NewRequest(http.MethodDelete, "/personas/me/invitaciones/recibidas/"+itoa(inv.ID), nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("esperaba 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	invitacionRepo := invitaciones.NewRepository(db)
+	if _, err := invitacionRepo.FindByToken("tok-pase-normal"); !errors.Is(err, invitaciones.ErrInvitacionNoValida) {
+		t.Errorf("esperaba que el token quedara invalido tras eliminarla, got err=%v", err)
+	}
+}
+
 func itoa(id uint) string {
 	return strconv.FormatUint(uint64(id), 10)
 }
