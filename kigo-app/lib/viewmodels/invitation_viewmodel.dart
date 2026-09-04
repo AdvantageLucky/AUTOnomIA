@@ -207,4 +207,18 @@ class InvitationViewModel extends ChangeNotifier {
       rethrow;
     }
   }
+
+  /// Quita una invitación de "recibidas" -- solo del lado del invitado, no
+  /// la revoca para quien la creó (ver backend: OcultarParaInvitado).
+  Future<void> eliminarRecibida(int id) async {
+    try {
+      await ApiService().delete('/personas/me/invitaciones/recibidas/$id');
+      _recibidas.removeWhere((i) => i.id == id);
+      notifyListeners();
+    } on ApiException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      rethrow;
+    }
+  }
 }

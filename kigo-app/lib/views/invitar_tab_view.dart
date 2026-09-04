@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
+import '../models/invitacion_model.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 import '../utils/fechas.dart';
@@ -40,6 +42,35 @@ class _InvitarTabViewState extends State<InvitarTabView>
   bool _permiteFacial = true;
   String? _motivoSeleccionado;
   static const _motivosFrecuentes = ['Paquete', 'Servicio', 'Visita', 'Proveedor'];
+  // Motivos que el propio residente escribió alguna vez -- se guardan en el
+  // dispositivo (no son configuración del tenant, son de este residente) para
+  // que no haya que volver a escribirlos en cada invitación.
+  static const _keyMotivosCustom = 'motivos_custom';
+  List<String> _motivosCustom = [];
+
+  // Lista básica de groserías comunes en español -- no exhaustiva ni
+  // pretende serlo (esto no es moderación de contenido en serio, es un
+  // filtro simple para el motivo de una invitación). Comparación por
+  // palabra completa sin acentos/mayúsculas, no por substring: así
+  // "pendiente" no cae por contener "pendej-" a medias, por ejemplo.
+  static const _palabrasProhibidas = {
+    'puto', 'puta', 'pendejo', 'pendeja', 'verga', 'chingada', 'chingado',
+    'mierda', 'cabron', 'cabrona', 'joder', 'coño', 'culero', 'culera',
+    'pinche', 'maricon', 'imbecil', 'idiota', 'estupido', 'estupida',
+  };
+
+  bool _contieneGroseria(String texto) {
+    final sinAcentos = texto
+        .toLowerCase()
+        .replaceAll(RegExp('[áà]'), 'a')
+        .replaceAll(RegExp('[éè]'), 'e')
+        .replaceAll(RegExp('[íì]'), 'i')
+        .replaceAll(RegExp('[óò]'), 'o')
+        .replaceAll(RegExp('[úù]'), 'u')
+        .replaceAll('ñ', 'n');
+    final palabras = sinAcentos.split(RegExp(r'[^a-z]+'));
+    return palabras.any(_palabrasProhibidas.contains);
+  }
   DateTime? _expiraEl;
   int? _tenantIdCargado;
   String? _errorLocal;
@@ -53,6 +84,180 @@ class _InvitarTabViewState extends State<InvitarTabView>
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
+    _cargarMotivosCustom();
+  }
+
+  Future<void> _cargarMotivosCustom() async {
+    final prefs = await SharedPreferences.getInstance();
+    final guardados = prefs.getStringList(_keyMotivosCustom) ?? [];
+    if (mounted) setState(() => _motivosCustom = guardados);
+  }
+
+  Future<void> _agregarMotivoCustom(BuildContext context) async {
+    final ctrl = TextEditingController();
+    final nuevo = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: Text(AppLocalizations.t(ctx, 'nuevo_motivo_titulo')),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 40,
+          decoration: InputDecoration(hintText: AppLocalizations.t(ctx, 'nuevo_motivo_hint')),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(ctx, 'cancel'))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: Text(AppLocalizations.t(ctx, 'agregar')),
+          ),
+        ],
+      ),
+    );
+    final limpio = nuevo?.trim() ?? '';
+    if (limpio.isEmpty || !mounted) return;
+
+    if (_contieneGroseria(limpio)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.t(context, 'motivo_lenguaje_no_permitido'))),
+      );
+      return;
+    }
+    await _seleccionarMotivo(limpio);
+  }
+
+  /// Quita un motivo personalizado -- solo puede llamarse sobre uno de
+  /// _motivosCustom (ver _menuMotivo), nunca sobre uno de los frecuentes.
+  Future<void> _eliminarMotivoCustom(String motivo) async {
+    setState(() {
+      _motivosCustom = _motivosCustom.where((m) => m != motivo).toList();
+      if (_motivoSeleccionado == motivo) _motivoSeleccionado = null;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keyMotivosCustom, _motivosCustom);
+  }
+
+  /// Menú contextual de un motivo personalizado, anclado a donde se tocó --
+  /// "Seleccionar" (reemplaza al tap directo que sí tienen los frecuentes) y
+  /// "Eliminar". Los frecuentes nunca llaman a esto, se seleccionan con un
+  /// tap normal (ver el onTap condicional en _filaMotivo).
+  Future<void> _menuMotivo(BuildContext context, Offset posicionGlobal, String motivo) async {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final opcion = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        posicionGlobal & const Size(1, 1),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        PopupMenuItem(
+          value: 'seleccionar',
+          child: Row(
+            children: [
+              const Icon(Icons.check_rounded, color: AppTheme.primaryOrange, size: 18),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.t(context, 'seleccionar_motivo_btn')),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'eliminar',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline_rounded, color: AppTheme.error, size: 18),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.t(context, 'eliminar_btn'), style: const TextStyle(color: AppTheme.error)),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (opcion == 'eliminar') {
+      await _eliminarMotivoCustom(motivo);
+    } else if (opcion == 'seleccionar') {
+      setState(() => _motivoSeleccionado = _motivoSeleccionado == motivo ? null : motivo);
+    }
+  }
+
+  Widget _filaMotivo(BuildContext context, String motivo, {required bool esCustom}) {
+    final seleccionado = _motivoSeleccionado == motivo;
+    final esUltimoFrecuente = !esCustom && motivo == _motivosFrecuentes.last && _motivosCustom.isEmpty;
+    return Column(
+      children: [
+        GestureDetector(
+          // Un motivo personalizado abre el menú (Seleccionar/Eliminar) en
+          // vez de seleccionarse directo -- necesita la posición exacta del
+          // toque para anclar el menú, así que usa onTapUp en vez del onTap
+          // de InkWell.
+          onTapUp: esCustom ? (details) => _menuMotivo(context, details.globalPosition, motivo) : null,
+          child: InkWell(
+            onTap: esCustom ? null : () => setState(() => _motivoSeleccionado = seleccionado ? null : motivo),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    seleccionado ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+                    size: 18,
+                    color: seleccionado ? AppTheme.primaryOrange : AppTheme.textDimmed,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      motivo,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: seleccionado ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!esUltimoFrecuente) const Divider(height: 1, indent: 14, endIndent: 14),
+      ],
+    );
+  }
+
+  /// Selecciona un motivo, agregándolo a la lista de motivos propios si no
+  /// estaba ahí -- lo usan tanto el diálogo de "agregar motivo" como
+  /// replicar una invitación pasada con un motivo que ya no aparece entre
+  /// los frecuentes ni los guardados.
+  Future<void> _seleccionarMotivo(String motivo) async {
+    // Ni duplicar un motivo frecuente ya existente ni uno personalizado que
+    // ya se había agregado antes -- comparación sin distinguir mayúsculas,
+    // para que "paquete" y "Paquete" cuenten como el mismo.
+    final yaExiste = [..._motivosFrecuentes, ..._motivosCustom]
+        .any((m) => m.toLowerCase() == motivo.toLowerCase());
+
+    setState(() {
+      _motivoSeleccionado = motivo;
+      if (!yaExiste) _motivosCustom = [..._motivosCustom, motivo];
+    });
+    if (!yaExiste) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_keyMotivosCustom, _motivosCustom);
+    }
+  }
+
+  /// Rellena el formulario con los datos de una invitación anterior --
+  /// nombre, teléfono (si el invitado ya tenía cuenta cuando se resolvió),
+  /// destino y motivo. El vencimiento NO se copia: replicar una invitación
+  /// de hace tiempo con esa misma fecha de vencimiento la crearía ya
+  /// caducada o a punto de estarlo.
+  Future<void> _replicarInvitacion(InvitacionModel inv) async {
+    _nombreCtrl.text = inv.titular;
+    _telefonoCtrl.text = inv.telefono ?? '';
+    setState(() => _destinoIdSeleccionado = inv.destinoId);
+    if (inv.motivo.isNotEmpty) {
+      await _seleccionarMotivo(inv.motivo);
+    } else {
+      setState(() => _motivoSeleccionado = null);
+    }
   }
 
   @override
@@ -147,14 +352,34 @@ class _InvitarTabViewState extends State<InvitarTabView>
 
   Future<void> _elegirFechaExpiracion(BuildContext context) async {
     final ahora = DateTime.now();
-    final elegida = await showDatePicker(
+    final fecha = await showDatePicker(
       context: context,
       initialDate: _expiraEl ?? ahora.add(const Duration(days: 1)),
       firstDate: ahora,
       lastDate: ahora.add(const Duration(days: 365)),
       helpText: AppLocalizations.t(context, 'vence_el'),
     );
-    if (elegida != null) setState(() => _expiraEl = elegida);
+    if (fecha == null || !context.mounted) return;
+
+    // Sin hora exacta, un pase "vence hoy" seguía siendo válido hasta la
+    // medianoche aunque el residente pensara en una hora puntual (p.ej.
+    // "hasta las 6pm que se va el paquetero") -- se encadena un segundo
+    // picker en vez de asumir un valor fijo.
+    final horaInicial = TimeOfDay.fromDateTime(_expiraEl ?? DateTime(0, 0, 0, 20));
+    final hora = await showTimePicker(
+      context: context,
+      initialTime: horaInicial,
+      helpText: AppLocalizations.t(context, 'vence_el'),
+    );
+    if (!mounted) return;
+
+    setState(() => _expiraEl = DateTime(
+          fecha.year,
+          fecha.month,
+          fecha.day,
+          hora?.hour ?? horaInicial.hour,
+          hora?.minute ?? horaInicial.minute,
+        ));
   }
 
   void _compartir(String token) {
@@ -196,6 +421,34 @@ class _InvitarTabViewState extends State<InvitarTabView>
     }
   }
 
+  Future<void> _eliminarRecibida(int id) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.t(ctx, 'eliminar_recibida_titulo')),
+        content: Text(AppLocalizations.t(ctx, 'eliminar_recibida_contenido')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(ctx, 'cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(AppLocalizations.t(ctx, 'eliminar_btn')),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+
+    try {
+      await context.read<InvitationViewModel>().eliminarRecibida(id);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.t(context, 'eliminar_recibida_error'))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
@@ -208,8 +461,10 @@ class _InvitarTabViewState extends State<InvitarTabView>
       _destinoIdSeleccionado = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         vm.cargarDestinos(tenantId);
+        // "Invitar de nuevo" ahora se arma desde vm.invitaciones (cada
+        // invitación pasada, con su propio motivo) -- cargarContactos()
+        // quedó sin usar aquí, ver _replicarInvitacion.
         vm.cargarInvitaciones();
-        vm.cargarContactos();
         vm.cargarInvitadosFrecuentes(tenantId);
       });
     }
@@ -350,30 +605,67 @@ class _InvitarTabViewState extends State<InvitarTabView>
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       children: [
-        if (vm.contactos.isNotEmpty) ...[
+        if (vm.invitaciones.isNotEmpty) ...[
           Text(
             AppLocalizations.t(context, 'invitar_de_nuevo'),
             style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: vm.contactos.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, i) {
-                final contacto = vm.contactos[i];
-                return ActionChip(
-                  avatar: const Icon(Icons.person_outline, size: 16),
-                  label: Text(contacto.nombre.isNotEmpty ? contacto.nombre : contacto.telefono),
-                  onPressed: () => setState(() {
-                    _nombreCtrl.text = contacto.nombre;
-                    _telefonoCtrl.text = contacto.telefono;
-                    _destinoIdSeleccionado = contacto.destinoId;
-                  }),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.cardDark : AppTheme.surfaceLight,
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+            ),
+            // Cada invitación pasada por separado (no una por persona
+            // deduplicada) para que el motivo y el destino que se usaron
+            // ESA vez sean los que se replican -- no solo nombre/teléfono.
+            // Limitado a las 6 más recientes: ya viene ordenado por fecha
+            // desde el backend, y esta lista es un atajo, no un historial
+            // completo (ese vive en la pestaña "Mis invitaciones").
+            child: Column(
+              children: vm.invitaciones.take(6).toList().asMap().entries.map((entry) {
+                final i = entry.key;
+                final inv = entry.value;
+                return Column(
+                  children: [
+                    if (i > 0) Divider(height: 1, color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+                    InkWell(
+                      onTap: () => _replicarInvitacion(inv),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.replay_rounded, color: AppTheme.primaryOrange, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    inv.titular,
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    [
+                                      _nombreDestinoSeleccionado(context, vm, inv.destinoId),
+                                      if (inv.motivo.isNotEmpty) inv.motivo,
+                                      fechaCortaLocal(inv.createdAt),
+                                    ].join(' · '),
+                                    style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 );
-              },
+              }).toList(),
             ),
           ),
           const SizedBox(height: 16),
@@ -410,20 +702,45 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 14),
-                Text(AppLocalizations.t(context, 'motivo_opcional'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(AppLocalizations.t(context, 'motivo_label'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.t(context, 'motivo_visible_admin'),
+                  style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _motivosFrecuentes.map((m) {
-                    final seleccionado = _motivoSeleccionado == m;
-                    return ChoiceChip(
-                      label: Text(m),
-                      selected: seleccionado,
-                      selectedColor: AppTheme.primaryOrange.withValues(alpha: 0.2),
-                      onSelected: (_) => setState(() => _motivoSeleccionado = seleccionado ? null : m),
-                    );
-                  }).toList(),
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
+                  ),
+                  child: Column(
+                    children: [
+                      // Los frecuentes van primero y nunca reaccionan a un
+                      // long-press (no se pueden eliminar) -- solo los
+                      // personalizados lo abren, para no confundir "no pasó
+                      // nada" con "no había nada que borrar".
+                      ..._motivosFrecuentes.map((m) => _filaMotivo(context, m, esCustom: false)),
+                      ..._motivosCustom.map((m) => _filaMotivo(context, m, esCustom: true)),
+                      InkWell(
+                        onTap: () => _agregarMotivoCustom(context),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.add_rounded, color: AppTheme.primaryOrange, size: 18),
+                              const SizedBox(width: 10),
+                              Text(
+                                AppLocalizations.t(context, 'motivo_personalizado_btn'),
+                                style: const TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -488,7 +805,8 @@ class _InvitarTabViewState extends State<InvitarTabView>
                               Text(
                                 _expiraEl == null
                                     ? AppLocalizations.t(context, 'sin_fecha_limite')
-                                    : '${_expiraEl!.day}/${_expiraEl!.month}/${_expiraEl!.year}',
+                                    : '${_expiraEl!.day}/${_expiraEl!.month}/${_expiraEl!.year}'
+                                        ' ${_expiraEl!.hour.toString().padLeft(2, '0')}:${_expiraEl!.minute.toString().padLeft(2, '0')}',
                                 style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
                               ),
                             ],
@@ -768,6 +1086,12 @@ class _InvitarTabViewState extends State<InvitarTabView>
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                color: AppTheme.textDimmed,
+                tooltip: AppLocalizations.t(context, 'eliminar_btn'),
+                onPressed: () => _eliminarRecibida(inv.id),
               ),
               const Icon(Icons.chevron_right_rounded, color: AppTheme.textDimmed),
             ],

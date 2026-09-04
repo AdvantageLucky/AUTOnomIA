@@ -438,7 +438,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 			TenantID:    existente.TenantID,
 			CasaDestino: existente.CasaDestino,
 			Status:      existente.Status,
-			Pin:         existente.PinCodigo,
+			Pin:         pinVisible(existente.Status, existente.PinCodigo),
 		})
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -472,7 +472,7 @@ func (h *Handler) UnirseCentro(c *gin.Context) {
 		TenantID:    m.TenantID,
 		CasaDestino: m.CasaDestino,
 		Status:      m.Status,
-		Pin:         m.PinCodigo,
+		Pin:         pinVisible(m.Status, m.PinCodigo),
 	})
 }
 
@@ -504,6 +504,20 @@ func (h *Handler) avisarAdminNuevaMembresia(tenantID, personaID uint, casaDestin
 			log.Printf("avisarAdminNuevaMembresia: error mandando correo a %s: %v", correo, err)
 		}
 	}
+}
+
+// pinVisible oculta el PIN en claro mientras la membresía no está activa.
+// El PIN ya se genera y se guarda desde que se crea la membresía (pendiente
+// de aprobación) -- eso es necesario para que quede fijo y no cambie al
+// aprobarla, pero mostrárselo a la Persona antes de esa aprobación es
+// engañoso: sugiere que ya puede entrar cuando el PIN todavía no funciona
+// en ningún kiosko (FindActivasPorTenant, el que resuelve el login por PIN,
+// solo trae membresías con status activo).
+func pinVisible(status, pinCodigo string) string {
+	if status == residente.ResidenteStatusActivo {
+		return pinCodigo
+	}
+	return ""
 }
 
 // generarPinParaTenant reúne los PIN ya ocupados en el centro (los
@@ -688,9 +702,28 @@ func (h *Handler) ListarInvitaciones(c *gin.Context) {
 		return
 	}
 
+	// El teléfono no vive en Invitacion, solo en la Persona invitada -- se
+	// resuelve en un solo query batch (no uno por invitación) para que
+	// kigo-app pueda "replicar" una invitación pasada sin tener que
+	// volver a teclear el teléfono del invitado.
+	idsInvitados := make([]uint, 0, len(list))
+	for _, inv := range list {
+		if inv.PersonaInvitadaID != nil {
+			idsInvitados = append(idsInvitados, *inv.PersonaInvitadaID)
+		}
+	}
+	telefonos, err := h.repo.FindTelefonosByIDs(idsInvitados)
+	if err != nil {
+		log.Printf("ListarInvitaciones: error resolviendo telefonos: %v", err)
+		telefonos = map[uint]string{}
+	}
+
 	resp := make([]invitaciones.InvitacionResponse, len(list))
 	for i, inv := range list {
 		resp[i] = invitaciones.ToInvitacionResponse(&inv, true)
+		if inv.PersonaInvitadaID != nil {
+			resp[i].Telefono = telefonos[*inv.PersonaInvitadaID]
+		}
 	}
 	c.JSON(http.StatusOK, resp)
 }
@@ -904,6 +937,30 @@ func (h *Handler) ListarInvitacionesRecibidas(c *gin.Context) {
 		resp[i] = invitaciones.ToInvitacionRecibidaResponse(&inv, casaDestino, nombreInvita)
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+// EliminarInvitacionRecibida quita una invitación de "recibidas" para quien
+// la recibió -- no la revoca ni la borra para quien la creó, que sigue
+// viéndola en "mis invitaciones" (ver invitaciones.Repository.OcultarParaInvitado).
+func (h *Handler) EliminarInvitacionRecibida(c *gin.Context) {
+	personaID := c.MustGet(ctxkeys.PersonaID).(uint)
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	if err := h.invitacionRepo.OcultarParaInvitado(uint(id), personaID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "invitacion no encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "invitacion eliminada"})
 }
 
 // VerificarQR resuelve un QR personal escaneado por el kiosko: verifica la
@@ -1358,7 +1415,7 @@ func (h *Handler) ListarMisMembresias(c *gin.Context) {
 			CentroNombre: nombreCentro,
 			CasaDestino:  m.CasaDestino,
 			Status:       m.Status,
-			Pin:          m.PinCodigo,
+			Pin:          pinVisible(m.Status, m.PinCodigo),
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"membresias": items})
