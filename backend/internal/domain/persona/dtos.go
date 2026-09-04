@@ -132,6 +132,11 @@ type MembresiaMeResponse struct {
 	CentroNombre string `json:"centro_nombre"`
 	CasaDestino  string `json:"casa_destino"`
 	Status       string `json:"status"`
+	// Rol distingue un residente real de un invitado frecuente (ver
+	// residente.RolInvitadoFrecuente) -- kigo-app lo necesita para no
+	// presentarle "Mi Residencia" a alguien que solo tiene acceso por
+	// rostro/QR como si de verdad viviera ahí.
+	Rol string `json:"rol"`
 	// Pin son los 5 dígitos en claro — la app los muestra en "Mi QR". Va
 	// solo en esta respuesta, que ya está autenticada como la Persona
 	// dueña de la membresía.
