@@ -77,6 +77,12 @@ class _InvitarTabViewState extends State<InvitarTabView>
     return palabras.any(_palabrasProhibidas.contains);
   }
   DateTime? _expiraEl;
+  // Antes el backend forzaba siempre 1 uso para invitaciones PERSONAL sin
+  // que kigo-app expusiera forma de cambiarlo -- este es el mismo default,
+  // ahora editable (rango acotado para no invitar a un abuso del pase).
+  static const _usosMin = 1;
+  static const _usosMax = 20;
+  int _usosPermitidos = 1;
   int? _tenantIdCargado;
   String? _errorLocal;
   bool _recibidasCargadas = false;
@@ -302,6 +308,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
         permiteReconocimientoFacial: _permiteFacial,
         motivo: _motivoSeleccionado,
         expiraEl: _expiraEl,
+        maxUsos: _usosPermitidos,
       );
 
       // El toggle "acceso frecuente por reconocimiento facial" ya no abre
@@ -330,6 +337,7 @@ class _InvitarTabViewState extends State<InvitarTabView>
       setState(() {
         _expiraEl = null;
         _motivoSeleccionado = null;
+        _usosPermitidos = 1;
       });
 
       if (!mounted) return;
@@ -830,6 +838,50 @@ class _InvitarTabViewState extends State<InvitarTabView>
                           ),
                       ],
                     ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.repeat_rounded, color: AppTheme.primaryOrange, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.t(context, 'usos_permitidos_titulo'),
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                            Text(
+                              '${AppLocalizations.t(context, 'usos_permitidos_prefijo')} $_usosPermitidos '
+                              '${_usosPermitidos == 1 ? AppLocalizations.t(context, 'vez_singular') : AppLocalizations.t(context, 'veces_plural')}',
+                              style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, size: 22),
+                        color: _usosPermitidos > _usosMin ? AppTheme.primaryOrange : AppTheme.textDimmed,
+                        onPressed: _usosPermitidos > _usosMin
+                            ? () => setState(() => _usosPermitidos--)
+                            : null,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline, size: 22),
+                        color: _usosPermitidos < _usosMax ? AppTheme.primaryOrange : AppTheme.textDimmed,
+                        onPressed: _usosPermitidos < _usosMax
+                            ? () => setState(() => _usosPermitidos++)
+                            : null,
+                      ),
+                    ],
                   ),
                 ),
                 if (_errorLocal != null || vm.error != null) ...[
