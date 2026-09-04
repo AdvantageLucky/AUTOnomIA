@@ -15,6 +15,7 @@ import (
 	"kigo-autonomia-backend/internal/domain/kiosko"
 	"kigo-autonomia-backend/internal/domain/persona"
 	"kigo-autonomia-backend/internal/domain/residente"
+	"kigo-autonomia-backend/internal/domain/salidas"
 	"kigo-autonomia-backend/internal/domain/seguridad"
 	"kigo-autonomia-backend/internal/domain/sync"
 	"kigo-autonomia-backend/internal/domain/tenant"
@@ -243,6 +244,7 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	asistenciaRepo := persona.NewAsistenciaUrgenteRepository(db)
 	asistenciaHandler := persona.NewAsistenciaUrgenteHandler(personaRepo, asistenciaRepo, adminEmailSender(cfg), hub)
 	seguridadHandler := seguridad.NewHandler(seguridad.NewRepository(db), cfg.UploadsDir, adminEmailSender(cfg), hub)
+	salidaHandler := salidas.NewHandler(salidas.NewRepository(db), cfg.UploadsDir)
 	sesionRepo := auth.NewSesionRepository(db)
 
 	// kiosko: solo registra visitas
@@ -267,6 +269,13 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	es.Use(auth.RequireKiosko(sesionRepo))
 	{
 		es.POST("/", seguridadHandler.Reportar)
+	}
+
+	// kiosko de salida: tap + foto de rostro, sin OCR ni QR -- solo bitacora
+	sa := rg.Group("/kioskos/:id/salidas")
+	sa.Use(auth.RequireKiosko(sesionRepo))
+	{
+		sa.POST("/", salidaHandler.Reportar)
 	}
 
 	// dashboard admin: lectura paginada, detalle, historial y reportes
@@ -306,6 +315,13 @@ func registerVisitaRoutes(rg *gin.RouterGroup, db *gorm.DB, cfg *configs.Config,
 	segAdmin.Use(auth.RequireAdmin(cfg.JWTSecret))
 	{
 		segAdmin.GET("/", seguridadHandler.Listar)
+	}
+
+	// dashboard admin: bitacora de salidas
+	salAdmin := rg.Group("/salidas")
+	salAdmin.Use(auth.RequireAdmin(cfg.JWTSecret))
+	{
+		salAdmin.GET("/", salidaHandler.Listar)
 	}
 }
 
