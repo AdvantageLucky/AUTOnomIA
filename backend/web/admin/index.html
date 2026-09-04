@@ -287,6 +287,7 @@
 					<button class="nav-btn" data-nav="residentes"><span data-i18n="nav_residentes">Residentes</span><span class="nav-badge" id="tab-badge-res-sol" hidden>0</span></button>
 					<button class="nav-btn" data-nav="kioskos"><span data-i18n="nav_kioskos">Kioskos</span><span class="nav-badge nav-badge--danger" id="nav-badge-kioskos-offline" hidden>0</span></button>
 					<button class="nav-btn" data-nav="ayuda"><span data-i18n="nav_ayuda">Ayuda</span><span class="nav-badge nav-badge--danger" id="nav-badge-ayuda" hidden>0</span></button>
+					<button class="nav-btn" data-nav="seguridad"><span data-i18n="nav_seguridad">Seguridad</span><span class="nav-badge nav-badge--danger" id="nav-badge-seguridad" hidden>0</span></button>
 					<button class="nav-btn" data-nav="instalacion" data-i18n="nav_instalacion">Centro</button>
 				</nav>
 
@@ -671,6 +672,40 @@
 							<div class="empty-title" data-i18n="load_err_title">Error al cargar</div>
 						</div>
 						<div id="ayuda-rows"></div>
+					</div>
+				</section>
+
+				<!-- SEGURIDAD (intentos fallidos de PIN/QR con foto) -->
+				<section id="screen-seguridad" class="screen" hidden>
+					<div class="screen-header">
+						<div>
+							<div class="screen-title" data-i18n="seguridad_title">Seguridad</div>
+							<div class="screen-sub" data-i18n="seguridad_sub">Intentos de acceso fallidos (PIN incorrecto, QR inválido) con foto</div>
+						</div>
+					</div>
+
+					<div class="tab-bar">
+						<div class="tab-bar-inner">
+							<button class="tab-btn active" data-seguridad-filtro="" data-i18n="seguridad_filtro_todos">Todos</button>
+							<button class="tab-btn" data-seguridad-filtro="pin_incorrecto" data-i18n="seguridad_filtro_pin">PIN incorrecto</button>
+							<button class="tab-btn" data-seguridad-filtro="qr_invalido" data-i18n="seguridad_filtro_qr">QR inválido</button>
+						</div>
+					</div>
+
+					<div class="screen-body">
+						<div id="seguridad-loading" class="loading-state" hidden>
+							<div class="spinner"></div>
+							<div class="loading-text" data-i18n="seguridad_cargando">Cargando eventos…</div>
+						</div>
+						<div id="seguridad-empty" class="empty-state" hidden>
+							<div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"/></svg></div>
+							<div class="empty-title" data-i18n="seguridad_sin_eventos">Sin eventos de seguridad</div>
+							<div class="empty-text" data-i18n="seguridad_sin_eventos_sub">Los intentos fallidos de PIN o QR en los kioskos aparecerán aquí, con foto.</div>
+						</div>
+						<div id="seguridad-error" class="empty-state" hidden>
+							<div class="empty-title" data-i18n="load_err_title">Error al cargar</div>
+						</div>
+						<div id="seguridad-rows"></div>
 					</div>
 				</section>
 
@@ -1166,6 +1201,13 @@
 						<span class="nav-badge mob-badge nav-badge--danger" id="nav-badge-ayuda-mob" hidden>0</span>
 					</div>
 					<span data-i18n="nav_ayuda">Ayuda</span>
+				</button>
+				<button class="mobile-nav-btn" data-nav="seguridad">
+					<div class="mobile-nav-icon-wrap">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"></path></svg>
+						<span class="nav-badge mob-badge nav-badge--danger" id="nav-badge-seguridad-mob" hidden>0</span>
+					</div>
+					<span data-i18n="nav_seguridad">Seguridad</span>
 				</button>
 				<button class="mobile-nav-btn" data-nav="instalacion">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
