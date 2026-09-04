@@ -280,6 +280,8 @@
       ayuda_resuelta_hace: h => `Resuelta hace ${h}`,
       ayuda_motivo_label: "Motivo",
       ayuda_guardar_motivo: "Guardar motivo",
+      ayuda_motivo_guardado_ok: "Motivo guardado",
+      ayuda_no_se_pudo_guardar_motivo: "No se pudo guardar el motivo. Intenta de nuevo.",
       resetear_confianza_btn: "Restablecer confianza",
       resetear_confianza_titulo: "¿Restablecer la confianza con esta persona?",
       resetear_confianza_texto: "Se olvida todo su historial anterior para el cálculo de confianza -- su próxima visita se evalúa desde cero, como si fuera la primera vez. Esto no borra el historial, solo deja de contar para el análisis.",
@@ -804,6 +806,8 @@
       ayuda_resuelta_hace: h => `Resolved ${h} ago`,
       ayuda_motivo_label: "Reason",
       ayuda_guardar_motivo: "Save reason",
+      ayuda_motivo_guardado_ok: "Reason saved",
+      ayuda_no_se_pudo_guardar_motivo: "Could not save the reason. Try again.",
       resetear_confianza_btn: "Reset trust",
       resetear_confianza_titulo: "Reset trust with this person?",
       resetear_confianza_texto: "Forgets their entire prior history for the trust calculation -- their next visit is evaluated from scratch, as if it were the first time. This does not delete the history, it just stops counting for the analysis.",
@@ -3034,15 +3038,32 @@
     modal.querySelectorAll("[data-cerrar-ayuda]").forEach(btn => {
       btn.addEventListener("click", () => { modal.hidden = true; });
     });
-    modal.querySelector("[data-ayuda-guardar]")?.addEventListener("click", async () => {
-      const motivo = document.getElementById("ayuda-motivo-input")?.value || "";
-      const res = await api(`/asistencias-urgentes/${a.id}/motivo`, {
-        method: "PATCH",
-        body: JSON.stringify({ motivo }),
-      });
-      if (!res || !res.ok) return;
-      modal.hidden = true;
-      loadAyuda();
+    modal.querySelector("[data-ayuda-guardar]")?.addEventListener("click", async (e) => {
+      // Antes esto fallaba en silencio (ni toast de error ni de éxito): si
+      // el PATCH tronaba, la única señal era que el modal seguía abierto
+      // -- fácil de confundir con "no hice nada todavía" y perder el motivo
+      // que se acababa de escribir.
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try {
+        const motivo = document.getElementById("ayuda-motivo-input")?.value || "";
+        const res = await api(`/asistencias-urgentes/${a.id}/motivo`, {
+          method: "PATCH",
+          body: JSON.stringify({ motivo }),
+        });
+        if (!res || !res.ok) {
+          mostrarToast(t("ayuda_no_se_pudo_guardar_motivo"), "err");
+          return;
+        }
+        mostrarToast(t("ayuda_motivo_guardado_ok"), "ok");
+        modal.hidden = true;
+        loadAyuda();
+      } catch (err) {
+        console.error(err);
+        mostrarToast(t("ayuda_no_se_pudo_guardar_motivo"), "err");
+      } finally {
+        btn.disabled = false;
+      }
     });
     modal.querySelector("[data-ayuda-resolver]")?.addEventListener("click", async () => {
       modal.hidden = true;
