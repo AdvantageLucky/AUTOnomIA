@@ -47,6 +47,30 @@ class _InvitarTabViewState extends State<InvitarTabView>
   // que no haya que volver a escribirlos en cada invitación.
   static const _keyMotivosCustom = 'motivos_custom';
   List<String> _motivosCustom = [];
+
+  // Lista básica de groserías comunes en español -- no exhaustiva ni
+  // pretende serlo (esto no es moderación de contenido en serio, es un
+  // filtro simple para el motivo de una invitación). Comparación por
+  // palabra completa sin acentos/mayúsculas, no por substring: así
+  // "pendiente" no cae por contener "pendej-" a medias, por ejemplo.
+  static const _palabrasProhibidas = {
+    'puto', 'puta', 'pendejo', 'pendeja', 'verga', 'chingada', 'chingado',
+    'mierda', 'cabron', 'cabrona', 'joder', 'coño', 'culero', 'culera',
+    'pinche', 'maricon', 'imbecil', 'idiota', 'estupido', 'estupida',
+  };
+
+  bool _contieneGroseria(String texto) {
+    final sinAcentos = texto
+        .toLowerCase()
+        .replaceAll(RegExp('[áà]'), 'a')
+        .replaceAll(RegExp('[éè]'), 'e')
+        .replaceAll(RegExp('[íì]'), 'i')
+        .replaceAll(RegExp('[óò]'), 'o')
+        .replaceAll(RegExp('[úù]'), 'u')
+        .replaceAll('ñ', 'n');
+    final palabras = sinAcentos.split(RegExp(r'[^a-z]+'));
+    return palabras.any(_palabrasProhibidas.contains);
+  }
   DateTime? _expiraEl;
   int? _tenantIdCargado;
   String? _errorLocal;
@@ -94,7 +118,90 @@ class _InvitarTabViewState extends State<InvitarTabView>
     );
     final limpio = nuevo?.trim() ?? '';
     if (limpio.isEmpty || !mounted) return;
+
+    if (_contieneGroseria(limpio)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.t(context, 'motivo_lenguaje_no_permitido'))),
+      );
+      return;
+    }
     await _seleccionarMotivo(limpio);
+  }
+
+  /// Quita un motivo personalizado -- solo puede llamarse sobre uno de
+  /// _motivosCustom (ver _menuMotivo), nunca sobre uno de los frecuentes.
+  Future<void> _eliminarMotivoCustom(String motivo) async {
+    setState(() {
+      _motivosCustom = _motivosCustom.where((m) => m != motivo).toList();
+      if (_motivoSeleccionado == motivo) _motivoSeleccionado = null;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keyMotivosCustom, _motivosCustom);
+  }
+
+  /// Menú contextual de un solo motivo personalizado, anclado a donde se
+  /// mantuvo presionado -- solo "Eliminar". Los frecuentes nunca llaman a
+  /// esto (ver el onLongPress condicional en el build de la lista).
+  Future<void> _menuMotivo(BuildContext context, Offset posicionGlobal, String motivo) async {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final opcion = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        posicionGlobal & const Size(1, 1),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        PopupMenuItem(
+          value: 'eliminar',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline_rounded, color: AppTheme.error, size: 18),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.t(context, 'eliminar_motivo_btn'), style: const TextStyle(color: AppTheme.error)),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (opcion == 'eliminar') await _eliminarMotivoCustom(motivo);
+  }
+
+  Widget _filaMotivo(BuildContext context, String motivo, {required bool esCustom}) {
+    final seleccionado = _motivoSeleccionado == motivo;
+    final esUltimoFrecuente = !esCustom && motivo == _motivosFrecuentes.last && _motivosCustom.isEmpty;
+    return Column(
+      children: [
+        GestureDetector(
+          onLongPressStart: esCustom ? (details) => _menuMotivo(context, details.globalPosition, motivo) : null,
+          child: InkWell(
+            onTap: () => setState(() => _motivoSeleccionado = seleccionado ? null : motivo),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    seleccionado ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+                    size: 18,
+                    color: seleccionado ? AppTheme.primaryOrange : AppTheme.textDimmed,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      motivo,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: seleccionado ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!esUltimoFrecuente) const Divider(height: 1, indent: 14, endIndent: 14),
+      ],
+    );
   }
 
   /// Selecciona un motivo, agregándolo a la lista de motivos propios si no
@@ -555,25 +662,38 @@ class _InvitarTabViewState extends State<InvitarTabView>
                   style: const TextStyle(color: AppTheme.textDimmed, fontSize: 11),
                 ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ...[..._motivosFrecuentes, ..._motivosCustom].map((m) {
-                      final seleccionado = _motivoSeleccionado == m;
-                      return ChoiceChip(
-                        label: Text(m),
-                        selected: seleccionado,
-                        selectedColor: AppTheme.primaryOrange.withValues(alpha: 0.2),
-                        onSelected: (_) => setState(() => _motivoSeleccionado = seleccionado ? null : m),
-                      );
-                    }),
-                    ActionChip(
-                      avatar: const Icon(Icons.add_rounded, size: 16, color: AppTheme.primaryOrange),
-                      label: Text(AppLocalizations.t(context, 'motivo_personalizado_btn')),
-                      onPressed: () => _agregarMotivoCustom(context),
-                    ),
-                  ],
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.surface2Dark : AppTheme.surface2Light,
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
+                  ),
+                  child: Column(
+                    children: [
+                      // Los frecuentes van primero y nunca reaccionan a un
+                      // long-press (no se pueden eliminar) -- solo los
+                      // personalizados lo abren, para no confundir "no pasó
+                      // nada" con "no había nada que borrar".
+                      ..._motivosFrecuentes.map((m) => _filaMotivo(context, m, esCustom: false)),
+                      ..._motivosCustom.map((m) => _filaMotivo(context, m, esCustom: true)),
+                      InkWell(
+                        onTap: () => _agregarMotivoCustom(context),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.add_rounded, color: AppTheme.primaryOrange, size: 18),
+                              const SizedBox(width: 10),
+                              Text(
+                                AppLocalizations.t(context, 'motivo_personalizado_btn'),
+                                style: const TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
