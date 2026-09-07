@@ -31,18 +31,28 @@ Ver [ADR 0020](../backend/docs/adr/0020-auto-registro-residente-por-codigo-insta
 
 ## Arquitectura
 
-**MVVM con Provider** (`ChangeNotifier`), con navegación por rutas nombradas declaradas en
-`main.dart`.
+**MVVM con Provider** (`ChangeNotifier`), organizado **por feature** — mismo criterio que el
+kiosko y kiosko-salida (ver [ADR 0002 de kiosko](../kiosko/docs/ADR/0002-arquitectura-por-feature.md)
+y [ADR 0009 de esta app](docs/ADR/0009-migracion-a-arquitectura-por-feature.md), que reemplaza a la
+organización por tipo de archivo original). Navegación por rutas nombradas declaradas en `main.dart`.
 
 ```
 lib/
-├── l10n/            AppLocalizations — i18n español/inglés
-├── models/          InvitationModel
-├── services/        ApiService (HTTP + JWT), RegistroService (alta pública)
-├── theme/           AppTheme — tokens de diseño
-├── viewmodels/      auth, invitation, registro, settings, user
-└── views/           splash, login, registro, registro_estado, dashboard,
-                     generate_qr, my_invitations, settings, recovery_password
+├── core/                     Transversal a toda la app
+│   ├── l10n/                 AppLocalizations — i18n español/inglés
+│   ├── models/                membresia_model
+│   ├── services/              ApiService (HTTP + JWT), PushService (FCM), DeepLinkServicio
+│   ├── theme/                 AppTheme — tokens de diseño
+│   ├── utils/                  constants, fechas
+│   ├── viewmodels/            AuthViewModel (sesión + membresías), SettingsViewModel
+│   └── widgets/                kigo_list_row, kigo_primary_button, kigo_text_field
+└── features/
+    ├── shell/                 KigoShell (bottom nav 3 pestañas), splash
+    ├── onboarding/            teléfono+OTP, identidad (INE+rostro / Kigo Verify), unirse a centro
+    ├── invitar/               crear invitaciones, Mis invitaciones, invitados frecuentes, Mi QR
+    ├── solicitudes/           pendientes en tiempo real, historial de visitas, identidades y confianza
+    ├── companeros_casa/       compañeros de la misma casa_destino
+    └── settings/              ajustes y aviso de privacidad
 ```
 
 ### i18n

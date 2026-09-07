@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:kigo_user/models/membresia_model.dart';
-import 'package:kigo_user/models/visita_historial_model.dart';
-import 'package:kigo_user/models/visita_pendiente_model.dart';
-import 'package:kigo_user/theme/app_theme.dart';
-import 'package:kigo_user/viewmodels/auth_viewmodel.dart';
-import 'package:kigo_user/viewmodels/identidades_confianza_viewmodel.dart';
-import 'package:kigo_user/viewmodels/invitation_viewmodel.dart';
-import 'package:kigo_user/viewmodels/pending_visits_viewmodel.dart';
-import 'package:kigo_user/viewmodels/settings_viewmodel.dart';
-import 'package:kigo_user/viewmodels/visit_history_viewmodel.dart';
-import 'package:kigo_user/views/kigo_shell.dart';
+import 'package:kigo_user/core/models/membresia_model.dart';
+import 'package:kigo_user/features/solicitudes/models/visita_historial_model.dart';
+import 'package:kigo_user/features/solicitudes/models/visita_pendiente_model.dart';
+import 'package:kigo_user/core/theme/app_theme.dart';
+import 'package:kigo_user/core/viewmodels/auth_viewmodel.dart';
+import 'package:kigo_user/features/solicitudes/viewmodels/identidades_confianza_viewmodel.dart';
+import 'package:kigo_user/features/invitar/viewmodels/invitation_viewmodel.dart';
+import 'package:kigo_user/features/solicitudes/viewmodels/pending_visits_viewmodel.dart';
+import 'package:kigo_user/core/viewmodels/settings_viewmodel.dart';
+import 'package:kigo_user/features/solicitudes/viewmodels/visit_history_viewmodel.dart';
+import 'package:kigo_user/features/shell/views/kigo_shell.dart';
 
 class _AuthFake extends AuthViewModel {
   @override

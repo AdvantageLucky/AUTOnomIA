@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:kigo_user/models/membresia_model.dart';
-import 'package:kigo_user/utils/constants.dart';
-import 'package:kigo_user/viewmodels/auth_viewmodel.dart';
+import 'package:kigo_user/core/models/membresia_model.dart';
+import 'package:kigo_user/core/utils/constants.dart';
+import 'package:kigo_user/core/viewmodels/auth_viewmodel.dart';
 
 MembresiaActual _m(int tenantId, String status, {String nombre = 'Centro'}) =>
     MembresiaActual(
