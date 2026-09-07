@@ -20,7 +20,7 @@ Las decisiones que cruzan más de un subproyecto (backend, kiosko, residente) vi
 - [0011 - Configuración parametrizable por kiosko](0011-configuracion-parametrizable-kiosko.md)
 - [0012 - Búsqueda fuzzy multi-campo en bitácora de visitas](0012-busqueda-fuzzy-multicampo-visitas.md)
 - [0013 - Aprobación manual de solicitudes desde el dashboard](0013-solicitudes-aprobacion-manual-dashboard.md)
-- [0014 - WebSockets para solicitudes en tiempo real (pendiente)](0014-websockets-solicitudes-tiempo-real.md)
+- [0014 - Tiempo real para solicitudes: SSE en vez de WebSockets](0014-websockets-solicitudes-tiempo-real.md)
 - [0015 - Alcance de residentes en escenario multi-kiosko](0015-residentes-alcance-multikiosko.md)
 - [0016 - TipoVisitante y refactor de campos INE en KioskoConfig](0016-tipo-visitante-y-refactor-kioskoconfig-ine.md) *(reemplazado parcialmente por 0024)*
 - [0017 - Invitaciones con token opaco generado por el servidor](0017-invitaciones-token-opaco.md)
@@ -37,6 +37,8 @@ Las decisiones que cruzan más de un subproyecto (backend, kiosko, residente) vi
 - [0028 - Backend en Docker sobre un homelab, expuesto por Tailscale Funnel](0028-deploy-homelab-docker-tailscale-funnel.md)
 - [0029 - FCM real, con caída automática al notificador falso si falla](0029-fcm-real-con-respaldo-a-notificador-falso.md)
 - [0030 - La app Kigo sí obtiene un picker de destino](0030-picker-destino-app-kigo-reversion.md)
+- [0031 - Persona + Membresia reemplazan a Residente: identidad global ancla en teléfono](0031-persona-membresia-identidad-global.md)
+- [0032 - Kigo Verify como proveedor externo de liveness, backend como intermediario](0032-kigo-verify-respaldo-liveness-externo.md)
 
 ---
 
@@ -47,14 +49,14 @@ La arquitectura del backend de AUTOnomIA está diseñada para mantener un servid
 1. **Modelado de Dominio y Datos ([0003](0003-organizacion-por-dominio.md), [0006](0006-visita-como-evento-no-entidad.md), [0007](0007-destinos-con-titular-para-verificacion-stt.md), [0015](0015-residentes-alcance-multikiosko.md), [0016](0016-tipo-visitante-y-refactor-kioskoconfig-ine.md), [0017](0017-invitaciones-token-opaco.md), [0018](0018-multitenancy-centro-habitacional.md), [0021](0021-aislamiento-tenant-por-admin-y-scopes-calificados.md)):**
    El núcleo de la base de datos no registra "visitantes" estáticos, sino **eventos inmutables de visita** asignados a un **destino validado**. El sistema distingue entre un visitante inesperado y un invitado pre-autorizado[cite: 23]. Para agilizar el acceso, se generan invitaciones mediante tokens opacos (semillas aleatorias) que permiten revocación instantánea vía *soft-delete*[cite: 22]. Todo esto opera bajo el alcance de residentes a nivel de comunidad[cite: 24] y la separación *multi-tenant*, donde cada administrador es dueño de su propia instalación y las consultas con JOIN califican explícitamente la columna de tenant.
 
-2. **Autenticación Especializada ([0004](0004-auth-dual-mecanismo.md), [0009](0009-google-oauth-en-dashboard-sin-bundler.md), [0019](0019-activacion-kiosko-device-authorization-grant.md), [0020](0020-auto-registro-residente-por-codigo-instalacion.md)):**
-   Se aplica el principio de menor privilegio dependiendo de la interfaz. Los **Kioskos** se activan mediante el *Device Authorization Grant* (RFC 8628) —el dispositivo genera un código corto que el admin aprueba desde el dashboard— y luego operan con una sesión persistida revocable. Los **Residentes** se auto-registran con el código público de su instalación y entran con un PIN numérico, sujeto a aprobación previa del administrador. Los **Administradores** acceden mediante correo/contraseña o Google Identity Services (GSI).
+2. **Autenticación Especializada ([0004](0004-auth-dual-mecanismo.md), [0009](0009-google-oauth-en-dashboard-sin-bundler.md), [0019](0019-activacion-kiosko-device-authorization-grant.md), [0031](0031-persona-membresia-identidad-global.md), [0032](0032-kigo-verify-respaldo-liveness-externo.md)):**
+   Se aplica el principio de menor privilegio dependiendo de la interfaz. Los **Kioskos** se activan mediante el *Device Authorization Grant* (RFC 8628) —el dispositivo genera un código corto que el admin aprueba desde el dashboard— y luego operan con una sesión persistida revocable. Las **Personas** (identidad global ancla en teléfono, independiente de cualquier tenant) se registran por OTP y se unen a uno o más centros como **Membresia**, sujeta a aprobación previa del administrador; su rostro puede capturarse con la cámara del dispositivo o, como respaldo, mediante el liveness check externo de Kigo Verify. Los **Administradores** acceden mediante correo/contraseña o Google Identity Services (GSI).
 
 3. **Operación e Interfaces ([0001](0001-stack-tecnologico.md), [0010](0010-i18n-y-theming-en-dashboard-vanilla.md), [0011](0011-configuracion-parametrizable-kiosko.md), [0012](0012-busqueda-fuzzy-multicampo-visitas.md), [0013](0013-solicitudes-aprobacion-manual-dashboard.md), [0022](0022-tipo-kiosko-en-config.md), [0023](0023-capturas-de-invitado-al-usar-invitacion.md)):**
    La validación de la documentación oficial (INE) se procesa condicionalmente en el *handler* del servidor; es siempre obligatoria para visitantes inesperados, pero configurable para invitados[cite: 23]. Esa configuración llega a la terminal por el mismo canal que su tipo de acceso —peatonal o vehicular—, de modo que un solo APK atiende ambas casetas y el admin decide cuál es cada una desde el dashboard. El panel administrativo gestiona la internacionalización (i18n) sin dependencias externas, y la parametrización física mitiga inconsistencias del escaneo OCR mediante búsquedas *fuzzy*.
 
 4. **Sincronización ([0014](0014-websockets-solicitudes-tiempo-real.md)):**
-   La latencia actual en la aprobación manual de visitas mediante *polling* será reemplazada por una infraestructura de WebSockets para garantizar comunicación bidireccional en tiempo real entre los accesos físicos y el panel de vigilancia.
+   La aprobación manual de visitas se notifica en tiempo real al dashboard mediante Server-Sent Events (SSE) sobre HTTP plano, el mismo mecanismo que ya empuja la configuración en caliente al kiosko — se descartaron los WebSockets porque el canal es unidireccional (servidor → dashboard) y no lo justificaba.
 
 *(Para revisar los diagramas de estado y flujos de secuencia del sistema, consulta el archivo [diagramas_sistema.md](diagramas_sistema.md)).*
 
