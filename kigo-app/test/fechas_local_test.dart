@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kigo_user/models/invitacion_model.dart';
-import 'package:kigo_user/models/visita_historial_model.dart';
-import 'package:kigo_user/utils/fechas.dart';
+import 'package:kigo_user/features/invitar/models/invitacion_model.dart';
+import 'package:kigo_user/features/solicitudes/models/visita_historial_model.dart';
+import 'package:kigo_user/core/utils/fechas.dart';
 
 /// El backend serializa las fechas en UTC (con la Z al final). Estas pruebas
 /// fijan que lo que se pinta sea la hora del usuario y no la UTC cruda: el

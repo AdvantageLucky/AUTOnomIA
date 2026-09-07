@@ -3,21 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
-import 'l10n/app_localizations.dart';
-import 'services/deep_link_servicio.dart';
-import 'theme/app_theme.dart';
-import 'viewmodels/auth_viewmodel.dart';
-import 'viewmodels/companeros_casa_viewmodel.dart';
-import 'viewmodels/identidades_confianza_viewmodel.dart';
-import 'viewmodels/invitation_viewmodel.dart';
-import 'viewmodels/pending_visits_viewmodel.dart';
-import 'viewmodels/settings_viewmodel.dart';
-import 'viewmodels/visit_history_viewmodel.dart';
+import 'package:kigo_user/core/l10n/app_localizations.dart';
+import 'package:kigo_user/core/services/deep_link_servicio.dart';
+import 'package:kigo_user/core/theme/app_theme.dart';
+import 'package:kigo_user/core/viewmodels/auth_viewmodel.dart';
+import 'package:kigo_user/features/companeros_casa/viewmodels/companeros_casa_viewmodel.dart';
+import 'package:kigo_user/features/solicitudes/viewmodels/identidades_confianza_viewmodel.dart';
+import 'package:kigo_user/features/invitar/viewmodels/invitation_viewmodel.dart';
+import 'package:kigo_user/features/solicitudes/viewmodels/pending_visits_viewmodel.dart';
+import 'package:kigo_user/core/viewmodels/settings_viewmodel.dart';
+import 'package:kigo_user/features/solicitudes/viewmodels/visit_history_viewmodel.dart';
 
-import 'views/kigo_shell.dart';
-import 'views/onboarding/onboarding_view.dart';
-import 'views/settings_view.dart';
-import 'views/splash_view.dart';
+import 'package:kigo_user/features/shell/views/kigo_shell.dart';
+import 'package:kigo_user/features/onboarding/views/onboarding_view.dart';
+import 'package:kigo_user/features/settings/views/settings_view.dart';
+import 'package:kigo_user/features/shell/views/splash_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:kigo_user/l10n/app_localizations.dart';
-import 'package:kigo_user/theme/app_theme.dart';
+import 'package:kigo_user/core/l10n/app_localizations.dart';
+import 'package:kigo_user/core/theme/app_theme.dart';
 
 void main() {
   group('AppLocalizations', () {

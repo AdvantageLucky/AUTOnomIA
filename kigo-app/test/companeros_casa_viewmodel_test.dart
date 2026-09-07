@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kigo_user/viewmodels/companeros_casa_viewmodel.dart';
+import 'package:kigo_user/features/companeros_casa/viewmodels/companeros_casa_viewmodel.dart';
 
 void main() {
   test('estado inicial: sin companeros, sin error, no cargando', () {

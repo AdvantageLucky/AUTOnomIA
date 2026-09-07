@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kigo_user/theme/app_theme.dart';
-import 'package:kigo_user/views/onboarding/widgets/step_bienvenida.dart';
+import 'package:kigo_user/core/theme/app_theme.dart';
+import 'package:kigo_user/features/onboarding/views/widgets/step_bienvenida.dart';
 
 /// Smoke test: la pantalla de entrada (credencial de acceso animada + dos
 /// opciones) debe renderizar sin overflow ni excepciones en ambos temas --
