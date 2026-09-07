@@ -10,7 +10,8 @@ Cada ADR es inmutable una vez aceptado: si una decisión cambia, se crea un ADR 
 reemplaza y se marca el anterior como `Superseded by NNNN`.
 
 ## Índice de Decisiones
-- [0001 - Sistema de diseño unificado entre los tres productos](0001-sistema-diseno-unificado.md)
+- [0001 - Sistema de diseño unificado entre los tres productos](0001-sistema-diseno-unificado.md) *(tipografía reemplazada por 0002)*
+- [0002 - Rebranding tipográfico a Unbounded/Manrope/JetBrains Mono, empaquetados localmente](0002-tipografia-unbounded-manrope-assets-locales.md)
 
 ## Plantilla
 ```markdown
