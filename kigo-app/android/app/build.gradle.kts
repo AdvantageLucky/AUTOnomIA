@@ -31,29 +31,27 @@ android {
         versionName = flutter.versionName
     }
 
-    // Se fija el debug signingConfig a un keystore commiteado en el repo
-    // (android/debug.keystore) en vez de dejar el default implícito de AGP
-    // (~/.android/debug.keystore del home de quien compile). Sin esto, la
-    // build de release en CI (runs-on: ubuntu-latest, máquina nueva cada
-    // vez) quedaba firmada con una llave distinta en cada corrida, y quien
-    // ya tenía instalado un build anterior no podía instalar el siguiente
-    // encima ("app no instalada, conflicto de paquete"). Con el keystore
-    // explícito, cualquier máquina que compile (CI o local) firma siempre
-    // igual.
+    // Firma de release: el keystore NO vive en el repo. En CI se restaura
+    // desde secrets de GitHub y se pasa por variables de entorno
+    // (KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD). Sin ellas
+    // (build local) se firma con el debug de AGP para que `flutter run
+    // --release` siga funcionando.
+    val keystorePath = System.getenv("KEYSTORE_PATH")
     signingConfigs {
-        getByName("debug") {
-            storeFile = file("../debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+        if (keystorePath != null) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

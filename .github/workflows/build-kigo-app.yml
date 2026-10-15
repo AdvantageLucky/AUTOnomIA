@@ -3,16 +3,11 @@ name: Build kigo-app APK
 # Compila el APK de release de kigo-app y lo publica como asset de un
 # release fijo (tag "kigo-app-latest") — da una URL de descarga estable
 # para el QR del stand, sin tener que compilar a mano cada vez que cambia
-# algo. Firma con la keystore de debug (no hay Play Store de por medio,
-# es distribución directa para FEPRO).
-#
-# La firma sale de android/debug.keystore, referenciado explícitamente en
-# app/build.gradle.kts -- no del default implícito de AGP
-# (~/.android/debug.keystore), que en runs-on: ubuntu-latest (máquina
-# nueva cada vez) resultó no ser el archivo que este workflow copiaba
-# ahí (quedaba en otra ruta, y AGP generaba uno aleatorio propio). Con la
-# ruta explícita en el .kts, cualquier máquina que compile firma siempre
-# igual sin importar dónde busque AGP por default.
+# algo. Firma con un keystore propio que vive solo en secrets de GitHub
+# (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) y toma
+# google-services.json del secret GOOGLE_SERVICES_JSON. Ninguno de los dos
+# archivos se versiona.
+
 on:
   push:
     branches: [dev]
@@ -38,8 +33,18 @@ jobs:
         working-directory: kigo-app
         run: flutter pub get
 
+      - name: Restaurar credenciales desde secrets
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > kigo-app/android/app/google-services.json
+
       - name: Compilar APK de release
         working-directory: kigo-app
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release
 
       - name: Publicar como release "kigo-app-latest"
